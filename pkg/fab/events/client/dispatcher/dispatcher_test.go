@@ -213,6 +213,7 @@ func TestConnectionEvent(t *testing.T) {
 		t.Fatalf("Error stopping dispatcher: %s", err1)
 	}
 
+	// Wait for event that test is done
 	err = <-errch
 	if err != nil {
 		t.Fatal(err.Error())

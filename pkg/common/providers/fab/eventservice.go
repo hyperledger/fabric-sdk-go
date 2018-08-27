@@ -113,6 +113,29 @@ type ConnectionEvent struct {
 	Err       error
 }
 
+// EventSnapshot contains a snapshot of the event client before it was stopped.
+// The snapshot includes all of the event registrations and the last block received.
+type EventSnapshot interface {
+	// LastBlockReceived returns the block number of the last block received at the time
+	// that the snapshot was taken.
+	LastBlockReceived() uint64
+
+	// BlockRegistrations returns the block registrations.
+	BlockRegistrations() []Registration
+
+	// FilteredBlockRegistrations returns the filtered block registrations.
+	FilteredBlockRegistrations() []Registration
+
+	// CCRegistrations returns the chaincode registrations.
+	CCRegistrations() []Registration
+
+	// TxStatusRegistrations returns the transaction status registrations.
+	TxStatusRegistrations() []Registration
+
+	// Closes all registrations
+	Close()
+}
+
 // EventClient is a client that connects to a peer and receives channel events
 // such as block, filtered block, chaincode, and transaction status events.
 type EventClient interface {
@@ -131,4 +154,9 @@ type EventClient interface {
 	// A return value of false indicates that the client could not be closed since
 	// there was at least one registration.
 	CloseIfIdle() bool
+
+	// TransferRegistrations transfers all registrations into an EventSnapshot.
+	// The registrations are not closed and may be transferred to a new event client.
+	// - close: If true then the client will also be closed
+	TransferRegistrations(close bool) (EventSnapshot, error)
 }

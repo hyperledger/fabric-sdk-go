@@ -8,6 +8,7 @@ package dispatcher
 
 import (
 	"fmt"
+	"math"
 	"sync"
 	"time"
 
@@ -238,22 +239,61 @@ func (ed *Dispatcher) clearConnectionRegistration() {
 }
 
 func (ed *Dispatcher) filterByBlockHeght(peers []fab.Peer) []fab.Peer {
-	if ed.blockHeightLagThreshold < 0 || len(peers) == 1 {
-		logger.Debugf("Returning all peers")
-		return peers
+	var minBlockHeight uint64
+	if ed.minBlockHeight > 0 {
+		if ed.LastBlockNum() != math.MaxUint64 {
+			// No blocks received yet
+			logger.Debugf("Min block height was specified: %d", ed.minBlockHeight)
+			minBlockHeight = ed.minBlockHeight
+		} else {
+			// Make sure minBlockHeight is greater than the last block received
+			if ed.minBlockHeight > ed.LastBlockNum() {
+				minBlockHeight = ed.minBlockHeight
+			} else {
+				minBlockHeight = ed.LastBlockNum() + 1
+				logger.Debugf("Min block height was specified as %d but the last block received was %d. Setting min height to %d", ed.minBlockHeight, ed.LastBlockNum(), minBlockHeight)
+			}
+		}
 	}
 
-	maxHeight := getMaxBlockHeight(peers)
-	logger.Debugf("Max block height of peers: %d", maxHeight)
-
-	if maxHeight <= uint64(ed.blockHeightLagThreshold) {
-		logger.Debugf("Max block height of peers is %d and lag threshold is %d so returning all peers", maxHeight, ed.blockHeightLagThreshold)
-		return peers
+	retPeers := ed.doFilterByBlockHeght(minBlockHeight, peers)
+	if len(retPeers) == 0 && minBlockHeight > 0 {
+		// The last block that was received may have been the last block in the channel. Try again with lastBlock-1.
+		logger.Infof("No peers at the minimum height %d. Trying again with min height %d ...", minBlockHeight, minBlockHeight-1)
+		minBlockHeight--
+		retPeers = ed.doFilterByBlockHeght(minBlockHeight, peers)
+		if len(retPeers) == 0 {
+			// No peers at the given height. Try again without min height
+			logger.Infof("No peers at the minimum height %d. Trying again without min height ...", minBlockHeight)
+			retPeers = ed.doFilterByBlockHeght(0, peers)
+		}
 	}
 
-	cutoffHeight := maxHeight - uint64(ed.blockHeightLagThreshold)
+	return retPeers
+}
 
-	logger.Debugf("Choosing peers whose block heights are greater than the cutoff height %d ...", cutoffHeight)
+func (ed *Dispatcher) doFilterByBlockHeght(minBlockHeight uint64, peers []fab.Peer) []fab.Peer {
+	var cutoffHeight uint64
+	if minBlockHeight > 0 {
+		logger.Debugf("Setting cutoff height to be min block height: %d ...", minBlockHeight)
+		cutoffHeight = minBlockHeight
+	} else {
+		if ed.blockHeightLagThreshold < 0 || len(peers) == 1 {
+			logger.Debugf("Returning all peers")
+			return peers
+		}
+
+		maxHeight := getMaxBlockHeight(peers)
+		logger.Debugf("Max block height of peers: %d", maxHeight)
+
+		if maxHeight <= uint64(ed.blockHeightLagThreshold) {
+			logger.Debugf("Max block height of peers is %d and lag threshold is %d so returning all peers", maxHeight, ed.blockHeightLagThreshold)
+			return peers
+		}
+		cutoffHeight = maxHeight - uint64(ed.blockHeightLagThreshold)
+	}
+
+	logger.Debugf("Choosing peers whose block heights are at least the cutoff height %d ...", cutoffHeight)
 
 	var retPeers []fab.Peer
 	for _, p := range peers {

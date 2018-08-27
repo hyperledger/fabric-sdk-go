@@ -11,6 +11,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/service/blockfilter"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/service/blockfilter/headertypefilter"
@@ -117,7 +119,7 @@ func TestBlockEventsWithFilter(t *testing.T) {
 
 	var fbreg fab.Registration
 	select {
-	case breg = <-regch:
+	case fbreg = <-regch:
 	case err := <-errch:
 		t.Fatalf("Error registering for filtered block events: %s", err)
 	}
@@ -818,5 +820,169 @@ func checkCCEvent(t *testing.T, event *fab.CCEvent, expectedCCID string, expecte
 	}
 	if !found {
 		t.Fatalf("expecting one of [%v] but received [%s]", expectedEventNames, event.EventName)
+	}
+}
+
+// TestTransferSnapshot tests the scenario where all of the event registrations are
+// transferred from one dispatcher to another.
+func TestTransfer(t *testing.T) {
+	t.Run("Transfer", func(t *testing.T) {
+		testTransferSnapshot(t, func(dispatcher *Dispatcher) (fab.EventSnapshot, error) {
+			dispatcherch, err := dispatcher.EventCh()
+			require.NoError(t, err)
+
+			errch := make(chan error)
+			snapshotch := make(chan fab.EventSnapshot)
+			dispatcherch <- NewTransferEvent(snapshotch, errch)
+			select {
+			case snapshot := <-snapshotch:
+				return snapshot, nil
+			case err := <-errch:
+				return nil, err
+			}
+		})
+	})
+	t.Run("StopAndTransfer", func(t *testing.T) {
+		testTransferSnapshot(t, func(dispatcher *Dispatcher) (fab.EventSnapshot, error) {
+			dispatcherch, err := dispatcher.EventCh()
+			require.NoError(t, err)
+
+			errch := make(chan error)
+			snapshotch := make(chan fab.EventSnapshot)
+			dispatcherch <- NewStopAndTransferEvent(snapshotch, errch)
+			select {
+			case snapshot := <-snapshotch:
+				require.Equalf(t, int32(dispatcherStateStopped), dispatcher.getState(), "expecting dispatcher to be stopped")
+				return snapshot, nil
+			case err := <-errch:
+				return nil, err
+			}
+		})
+	})
+}
+
+type transferFunc func(dispatcher *Dispatcher) (fab.EventSnapshot, error)
+
+func testTransferSnapshot(t *testing.T, transferFunc transferFunc) {
+	channelID := "testchannel"
+	txID := "tx_1234"
+	ccID := "cc_id"
+	eventID := "event_1"
+
+	dispatcher1 := New(
+		WithEventConsumerBufferSize(100),
+		WithEventConsumerTimeout(2*time.Second),
+	)
+	err := dispatcher1.Start()
+	require.NoError(t, err, "Error starting dispatcher")
+
+	dispatcher1Eventch, err := dispatcher1.EventCh()
+	require.NoError(t, err, "Error getting event channel from dispatcher")
+
+	regch := make(chan fab.Registration)
+	errch := make(chan error)
+
+	beventch := make(chan *fab.BlockEvent, 10)
+	dispatcher1Eventch <- NewRegisterBlockEvent(blockfilter.AcceptAny, beventch, regch, errch)
+	checkReg(t, regch, errch)
+
+	fbeventch := make(chan *fab.FilteredBlockEvent, 10)
+	dispatcher1Eventch <- NewRegisterFilteredBlockEvent(fbeventch, regch, errch)
+	checkReg(t, regch, errch)
+
+	cceventch := make(chan *fab.CCEvent, 10)
+	dispatcher1Eventch <- NewRegisterChaincodeEvent(ccID, eventID, cceventch, regch, errch)
+	checkReg(t, regch, errch)
+
+	txeventch := make(chan *fab.TxStatusEvent, 10)
+	dispatcher1Eventch <- NewRegisterTxStatusEvent(txID, txeventch, regch, errch)
+	checkReg(t, regch, errch)
+
+	// Ensure that events are received from dispatcher1
+	dispatcher1Eventch <- NewBlockEvent(servicemocks.NewBlockProducer().NewBlock(
+		channelID,
+		servicemocks.NewTransactionWithCCEvent(txID, pb.TxValidationCode_VALID, ccID, eventID, nil),
+	), sourceURL)
+	ensureBlockEvent(t, beventch)
+	ensureFilteredBlockEvent(t, fbeventch)
+	ensureCCEvent(t, cceventch, ccID, eventID)
+	ensureTxStatusEvent(t, txeventch, txID)
+
+	snapshot, err := transferFunc(dispatcher1)
+
+	require.NoError(t, err)
+	require.NotNil(t, snapshot)
+	require.NotEmptyf(t, snapshot.BlockRegistrations, "expecting block registrations in snapshot but got none")
+	require.NotEmptyf(t, snapshot.FilteredBlockRegistrations, "expecting filtered block registrations in snapshot but got none")
+	require.NotEmptyf(t, snapshot.CCRegistrations, "expecting chaincode registrations in snapshot but got none")
+	require.NotEmptyf(t, snapshot.TxStatusRegistrations, "expecting TxStatus registrations in snapshot but got none")
+
+	// Create a new dispatcher
+	dispatcher2 := New(
+		WithEventConsumerBufferSize(100),
+		WithEventConsumerTimeout(2*time.Second),
+		WithSnapshot(snapshot),
+	)
+	err = dispatcher2.Start()
+	require.NoError(t, err, "Error starting dispatcher")
+
+	dispatcher2Eventch, err := dispatcher2.EventCh()
+	require.NoError(t, err, "Error getting event channel from dispatcher2")
+
+	// Ensure that events are received from dispatcher2
+	dispatcher2Eventch <- NewBlockEvent(servicemocks.NewBlockProducer().NewBlock(
+		channelID,
+		servicemocks.NewTransactionWithCCEvent(txID, pb.TxValidationCode_VALID, ccID, eventID, nil),
+	), sourceURL)
+	ensureBlockEvent(t, beventch)
+	ensureFilteredBlockEvent(t, fbeventch)
+	ensureCCEvent(t, cceventch, ccID, eventID)
+	ensureTxStatusEvent(t, txeventch, txID)
+}
+
+func checkReg(t *testing.T, regch <-chan fab.Registration, errch <-chan error) {
+	select {
+	case <-regch:
+	case err := <-errch:
+		require.NoError(t, err, "Error registering for events")
+	}
+}
+
+func ensureBlockEvent(t *testing.T, eventch <-chan *fab.BlockEvent) {
+	select {
+	case _, ok := <-eventch:
+		require.True(t, ok, "unexpected closed channel")
+	case <-time.After(5 * time.Second):
+		t.Fatal("timed out waiting for block event")
+	}
+}
+
+func ensureFilteredBlockEvent(t *testing.T, eventch <-chan *fab.FilteredBlockEvent) {
+	select {
+	case _, ok := <-eventch:
+		require.True(t, ok, "unexpected closed channel")
+	case <-time.After(5 * time.Second):
+		t.Fatal("timed out waiting for filtered block event")
+	}
+}
+
+func ensureCCEvent(t *testing.T, eventch <-chan *fab.CCEvent, ccID, eventName string) {
+	select {
+	case ccEvent, ok := <-eventch:
+		require.True(t, ok, "unexpected closed channel")
+		require.Equalf(t, ccID, ccEvent.ChaincodeID, "unexpected CC ID")
+		require.Equalf(t, eventName, ccEvent.EventName, "unexpected event name")
+	case <-time.After(5 * time.Second):
+		t.Fatal("timed out waiting for CC event")
+	}
+}
+
+func ensureTxStatusEvent(t *testing.T, eventch <-chan *fab.TxStatusEvent, txID string) {
+	select {
+	case txEvent, ok := <-eventch:
+		require.True(t, ok, "unexpected closed channel")
+		require.Equalf(t, txID, txEvent.TxID, "unexpected Tx ID")
+	case <-time.After(5 * time.Second):
+		t.Fatal("timed out waiting for TxStatus event")
 	}
 }

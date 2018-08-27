@@ -76,16 +76,64 @@ func (s *Service) Stop() {
 		return
 	}
 
-	regch := make(chan error)
-	eventch <- dispatcher.NewStopEvent(regch)
+	errch := make(chan error)
+	eventch <- dispatcher.NewStopEvent(errch)
 
 	select {
-	case err := <-regch:
+	case err := <-errch:
 		if err != nil {
 			logger.Warnf("Error while stopping dispatcher: %s", err)
 		}
 	case <-time.After(stopTimeout):
 		logger.Infof("Timed out waiting for dispatcher to stop")
+	}
+}
+
+// StopAndTransfer stops the event service and transfers all event registrations into a snapshot.
+func (s *Service) StopAndTransfer() (fab.EventSnapshot, error) {
+	eventch, err := s.dispatcher.EventCh()
+	if err != nil {
+		logger.Warnf("Error stopping event service: %s", err)
+		return nil, err
+	}
+
+	snapshotch := make(chan fab.EventSnapshot)
+	errch := make(chan error)
+	eventch <- dispatcher.NewStopAndTransferEvent(snapshotch, errch)
+
+	select {
+	case snapshot := <-snapshotch:
+		return snapshot, nil
+	case err := <-errch:
+		logger.Warnf("Error while stopping dispatcher: %s", err)
+		return nil, err
+	case <-time.After(stopTimeout):
+		logger.Warnf("Timed out waiting for dispatcher to stop")
+		return nil, errors.New("timed out waiting for dispatcher to stop")
+	}
+}
+
+// Transfer transfers all event registrations into a snapshot.
+func (s *Service) Transfer() (fab.EventSnapshot, error) {
+	eventch, err := s.dispatcher.EventCh()
+	if err != nil {
+		logger.Warnf("Error transferring registrations: %s", err)
+		return nil, err
+	}
+
+	snapshotch := make(chan fab.EventSnapshot)
+	errch := make(chan error)
+	eventch <- dispatcher.NewTransferEvent(snapshotch, errch)
+
+	select {
+	case snapshot := <-snapshotch:
+		return snapshot, nil
+	case err := <-errch:
+		logger.Warnf("Error while transferring event registrations into snapshot: %s", err)
+		return nil, err
+	case <-time.After(stopTimeout):
+		logger.Warnf("Timed out waiting to transfer event registrations")
+		return nil, errors.New("timed out waiting to transfer event registrations")
 	}
 }
 
