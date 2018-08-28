@@ -556,11 +556,16 @@ func (ed *Dispatcher) publishFilteredBlockEvents(fblock *pb.FilteredBlock, sourc
 			if txActions == nil {
 				continue
 			}
+			if len(txActions.ChaincodeActions) == 0 {
+				logger.Debugf("No chaincode action found for TxID[%s], block[%d], source URL[%s]", tx.Txid, fblock.Number, sourceURL)
+			}
 			for _, action := range txActions.ChaincodeActions {
 				if action.ChaincodeEvent != nil {
 					ed.publishCCEvents(action.ChaincodeEvent, fblock.Number, sourceURL)
 				}
 			}
+		} else {
+			logger.Debugf("Cannot publish CCEvents for block[%d] and source URL[%s] since Tx Validation Code[%d] is not valid", fblock.Number, sourceURL, tx.TxValidationCode)
 		}
 	}
 }

@@ -107,6 +107,40 @@ func (t *SimpleChaincode) Query(stub shim.ChaincodeStubInterface) pb.Response {
 	return shim.Error("Unknown supported call")
 }
 
+//set sets given key-value in state
+func (t *SimpleChaincode) set(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+	var err error
+
+	if len(args) < 3 {
+		return shim.Error("Incorrect number of arguments. Expecting a key and a value")
+	}
+
+	// Initialize the chaincode
+	key := args[1]
+	value := args[2]
+	eventID := "testEvent"
+	if len(args) >= 4 {
+		eventID = args[3]
+	}
+
+	logger.Debugf("Setting value for key[%s]", key)
+
+	// Write the state to the ledger
+	err = stub.PutState(key, []byte(value))
+	if err != nil {
+		logger.Errorf("Failed to set value for key[%s] : ", key, err)
+		return shim.Error(err.Error())
+	}
+
+	err = stub.SetEvent(eventID, []byte("Test Payload"))
+	if err != nil {
+		logger.Errorf("Failed to set event for key[%s] : ", key, err)
+		return shim.Error(err.Error())
+	}
+
+	return shim.Success(nil)
+}
+
 // Invoke ...
 // Transaction makes payment of X units from A to B
 func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
@@ -138,6 +172,12 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 		// queries an entity state
 		return t.query(stub, args)
 	}
+
+	if args[0] == "set" {
+		// setting an entity state
+		return t.set(stub, args)
+	}
+
 	if args[0] == "move" {
 		eventID := "testEvent"
 		if len(args) >= 5 {

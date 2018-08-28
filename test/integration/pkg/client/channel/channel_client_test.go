@@ -197,7 +197,7 @@ func TestCCToCC(t *testing.T) {
 			channel.Request{
 				ChaincodeID: cc1ID,
 				Fcn:         "invokecc",
-				Args:        [][]byte{[]byte(cc2ID), []byte(`{"Args":["invoke","move","a","b","1"]}`)},
+				Args:        [][]byte{[]byte(cc2ID), []byte(`{"Args":["invoke","set","x1","y1"]}`)},
 			},
 			channel.WithRetry(retry.DefaultChannelOpts),
 		)
@@ -223,7 +223,7 @@ func TestCCToCC(t *testing.T) {
 			channel.Request{
 				ChaincodeID: cc1ID,
 				Fcn:         "invokecc",
-				Args:        [][]byte{[]byte(cc2ID), []byte(`{"Args":["invoke","move","a","b","1"]}`)},
+				Args:        [][]byte{[]byte(cc2ID), []byte(`{"Args":["invoke","set","x1","y1"]}`)},
 				InvocationChain: []*fab.ChaincodeCall{
 					{ID: cc2ID},
 				},
@@ -241,7 +241,7 @@ func TestCCToCC(t *testing.T) {
 			channel.Request{
 				ChaincodeID: cc1ID,
 				Fcn:         "invokecc",
-				Args:        [][]byte{[]byte(cc2ID), []byte(`{"Args":["invoke","move","a","b","1"]}`)},
+				Args:        [][]byte{[]byte(cc2ID), []byte(`{"Args":["invoke","set","x1","y1"]}`)},
 			},
 			channel.WithRetry(retry.DefaultChannelOpts),
 		)
@@ -477,7 +477,7 @@ func testChaincodeEventListener(t *testing.T, ccID string, chClient *channel.Cli
 
 func testChaincodeError(t *testing.T, client *channel.Client, ccID string) {
 	// Try calling unknown function call and expect an error
-	r, err := client.Execute(channel.Request{ChaincodeID: ccID, Fcn: "DUMMY_FUNCTION", Args: integration.ExampleCCTxArgs()},
+	r, err := client.Execute(channel.Request{ChaincodeID: ccID, Fcn: "DUMMY_FUNCTION", Args: integration.ExampleCCTxRandomSetArgs()},
 		channel.WithRetry(retry.DefaultChannelOpts))
 
 	t.Logf("testChaincodeError err: %s ***** responses: %v", err, r)
@@ -545,7 +545,7 @@ func TestNoEndpoints(t *testing.T) {
 	}
 
 	// Test execute transaction: since peer has been disabled for endorsement this transaction should fail
-	_, err = chClient.Execute(channel.Request{ChaincodeID: mainChaincodeID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()},
+	_, err = chClient.Execute(channel.Request{ChaincodeID: mainChaincodeID, Fcn: "invoke", Args: integration.ExampleCCTxRandomSetArgs()},
 		channel.WithRetry(retry.DefaultChannelOpts))
 	if !strings.Contains(err.Error(), expected1_1Err) && !strings.Contains(err.Error(), expected1_2Err) {
 		t.Fatal("Should have failed due to no chaincode query peers")

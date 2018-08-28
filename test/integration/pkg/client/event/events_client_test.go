@@ -95,7 +95,7 @@ func testCCEvent(ccID string, chClient *channel.Client, eventClient *event.Clien
 	}
 	defer eventClient.Unregister(reg)
 
-	response, err := chClient.Execute(channel.Request{ChaincodeID: ccID, Fcn: "invoke", Args: append(integration.ExampleCCTxArgs(), []byte(eventID))},
+	response, err := chClient.Execute(channel.Request{ChaincodeID: ccID, Fcn: "invoke", Args: append(integration.ExampleCCTxRandomSetArgs(), []byte(eventID))},
 		channel.WithRetry(retry.DefaultChannelOpts))
 	if err != nil {
 		t.Fatalf("Failed to move funds: %s", err)
@@ -127,7 +127,7 @@ func testRegisterBlockEvent(ccID string, chClient *channel.Client, eventClient *
 	}
 	defer eventClient.Unregister(breg)
 
-	response, err := chClient.Execute(channel.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()},
+	response, err := chClient.Execute(channel.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCTxRandomSetArgs()},
 		channel.WithRetry(retry.DefaultChannelOpts))
 	if err != nil {
 		t.Fatalf("Failed to move funds: %s", err)
@@ -155,7 +155,7 @@ func testRegisterFilteredBlockEvent(ccID string, chClient *channel.Client, event
 	}
 	defer eventClient.Unregister(fbreg)
 
-	response, err := chClient.Execute(channel.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()},
+	response, err := chClient.Execute(channel.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCTxRandomSetArgs()},
 		channel.WithRetry(retry.DefaultChannelOpts))
 	if err != nil {
 		t.Fatalf("Failed to move funds: %s", err)

@@ -70,6 +70,11 @@ func ExampleCCTxArgs() [][]byte {
 	return txArgs
 }
 
+// ExampleCCTxRandomSetArgs returns example cc set args with random key-value pairs
+func ExampleCCTxRandomSetArgs() [][]byte {
+	return [][]byte{[]byte("set"), []byte(GenerateRandomID()), []byte(GenerateRandomID())}
+}
+
 //ExampleCCInitArgs returns example cc initialization args
 func ExampleCCInitArgs() [][]byte {
 	return initArgs
