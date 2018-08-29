@@ -69,7 +69,7 @@ func TestEndToEndForCustomCryptoSuite(t *testing.T) {
 		t.Fatalf("Failed to create new channel client: %s", err)
 	}
 
-	response, err := chClient.Query(channel.Request{ChaincodeID: chainCodeID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()},
+	response, err := chClient.Query(channel.Request{ChaincodeID: chainCodeID, Fcn: "invoke", Args: integration.ExampleCCDefaultQueryArgs()},
 		channel.WithRetry(retry.DefaultChannelOpts))
 	if err != nil {
 		t.Fatalf("Failed to query funds: %s", err)

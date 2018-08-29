@@ -63,7 +63,7 @@ func TestParentContext(t *testing.T) {
 		t.Fatalf("Failed to create new resource management client: %s", err)
 	}
 
-	_, err = chClient.Query(channel.Request{ChaincodeID: chaincodeID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()},
+	_, err = chClient.Query(channel.Request{ChaincodeID: chaincodeID, Fcn: "invoke", Args: integration.ExampleCCDefaultQueryArgs()},
 		channel.WithParentContext(parentContext),
 		channel.WithRetry(retry.DefaultChannelOpts))
 	if err == nil || !strings.Contains(err.Error(), "request timed out or been cancelled") {

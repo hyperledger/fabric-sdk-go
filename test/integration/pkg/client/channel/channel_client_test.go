@@ -33,6 +33,10 @@ func TestChannelClient(t *testing.T) {
 	testSetup := mainTestSetup
 	chaincodeID := mainChaincodeID
 
+	aKey := integration.GetKeyName(t)
+	bKey := integration.GetKeyName(t)
+	moveOneTx := integration.ExampleCCTxArgs(aKey, bKey, "1")
+
 	//prepare context
 	org1ChannelClientContext := sdk.ChannelContext(testSetup.ChannelID, fabsdk.WithUser(org1User), fabsdk.WithOrg(org1Name))
 
@@ -42,8 +46,10 @@ func TestChannelClient(t *testing.T) {
 		t.Fatalf("Failed to create new channel client: %s", err)
 	}
 
+	integration.ResetKeys(t, chClient, chaincodeID, "200", aKey, bKey)
+
 	// Synchronous query
-	testQuery(t, chClient, "200", chaincodeID)
+	testQuery(t, chClient, "200", chaincodeID, bKey)
 
 	transientData := "Some data"
 	transientDataMap := make(map[string][]byte)
@@ -54,7 +60,7 @@ func TestChannelClient(t *testing.T) {
 		channel.Request{
 			ChaincodeID:  chaincodeID,
 			Fcn:          "invoke",
-			Args:         integration.ExampleCCTxArgs(),
+			Args:         integration.ExampleCCTxArgs(aKey, bKey, "1"),
 			TransientMap: transientDataMap,
 		},
 		channel.WithRetry(retry.DefaultChannelOpts))
@@ -67,28 +73,30 @@ func TestChannelClient(t *testing.T) {
 	}
 
 	// Verify transaction using query
-	testQuery(t, chClient, "201", chaincodeID)
+	testQuery(t, chClient, "201", chaincodeID, bKey)
 
 	// transaction
 	nestedCCID := integration.GenerateExampleID(true)
 	err = integration.PrepareExampleCC(sdk, fabsdk.WithUser("Admin"), testSetup.OrgID, nestedCCID)
 	require.Nil(t, err, "InstallAndInstantiateExampleCC return error")
-	testTransaction(t, chClient, chaincodeID, nestedCCID)
+
+	//perform Transaction
+	testTransaction(t, chClient, chaincodeID, nestedCCID, moveOneTx)
 
 	// Verify transaction
-	testQuery(t, chClient, "202", chaincodeID)
+	testQuery(t, chClient, "202", chaincodeID, bKey)
 
 	// Verify that filter error and commit error did not modify value
-	testQuery(t, chClient, "202", chaincodeID)
+	testQuery(t, chClient, "202", chaincodeID, bKey)
 
 	// Test register and receive chaincode event
-	testChaincodeEvent(chaincodeID, chClient, t)
+	testChaincodeEvent(chaincodeID, chClient, t, moveOneTx)
 
 	// Verify transaction with chain code event completed
-	testQuery(t, chClient, "203", chaincodeID)
+	testQuery(t, chClient, "203", chaincodeID, bKey)
 
 	// Test invocation of custom handler
-	testInvokeHandler(t, chClient, chaincodeID)
+	testInvokeHandler(t, chClient, chaincodeID, moveOneTx)
 
 	// Test chaincode error
 	testChaincodeError(t, chClient, chaincodeID)
@@ -99,22 +107,22 @@ func TestChannelClient(t *testing.T) {
 		t.Fatalf("Failed to create new channel client: %s", err)
 	}
 
-	testChaincodeEventListener(t, chaincodeID, chClient, listener)
+	testChaincodeEventListener(t, chaincodeID, chClient, listener, moveOneTx)
 
-	testDuplicateTargets(t, chaincodeID, chClient)
+	testDuplicateTargets(t, chaincodeID, chClient, bKey, moveOneTx)
 
 	//test if CCEvents for chaincode events are in sync when new channel client are created
 	// for each transaction
 	testMultipleClientChaincodeEventLoop(t, chaincodeID)
 }
 
-func testDuplicateTargets(t *testing.T, chaincodeID string, chClient *channel.Client) {
+func testDuplicateTargets(t *testing.T, chaincodeID string, chClient *channel.Client, key string, args [][]byte) {
 
 	// Using shared SDK instance to increase test speed.
 	sdk := mainSDK
 
 	// Synchronous query
-	testQuery(t, chClient, "205", chaincodeID)
+	testQuery(t, chClient, "205", chaincodeID, key)
 
 	transientData := "Some data"
 	transientDataMap := make(map[string][]byte)
@@ -139,7 +147,7 @@ func testDuplicateTargets(t *testing.T, chaincodeID string, chClient *channel.Cl
 		channel.Request{
 			ChaincodeID:  chaincodeID,
 			Fcn:          "invoke",
-			Args:         integration.ExampleCCTxArgs(),
+			Args:         args,
 			TransientMap: transientDataMap,
 		},
 		channel.WithRetry(retry.DefaultChannelOpts), channel.WithTargetEndpoints(targets...))
@@ -152,7 +160,7 @@ func testDuplicateTargets(t *testing.T, chaincodeID string, chClient *channel.Cl
 	}
 
 	// Verify transaction using query
-	testQuery(t, chClient, "206", chaincodeID)
+	testQuery(t, chClient, "206", chaincodeID, key)
 }
 
 // TestCCToCC tests one chaincode invoking another chaincode. The first chaincode
@@ -251,14 +259,14 @@ func TestCCToCC(t *testing.T) {
 	})
 }
 
-func testQuery(t *testing.T, chClient *channel.Client, expected string, ccID string) {
+func testQuery(t *testing.T, chClient *channel.Client, expected string, ccID, key string) {
 	const (
 		maxRetries = 10
 		retrySleep = 500 * time.Millisecond
 	)
 
 	for r := 0; r < 10; r++ {
-		response, err := chClient.Query(channel.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()},
+		response, err := chClient.Query(channel.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs(key)},
 			channel.WithRetry(retry.DefaultChannelOpts))
 		require.NoError(t, err, "failed to invoke example cc")
 
@@ -274,12 +282,12 @@ func testQuery(t *testing.T, chClient *channel.Client, expected string, ccID str
 	t.Fatal("Exceeded max retries")
 }
 
-func testTransaction(t *testing.T, chClient *channel.Client, ccID, nestedCCID string) {
+func testTransaction(t *testing.T, chClient *channel.Client, ccID, nestedCCID string, args [][]byte) {
 	response, err := chClient.Execute(
 		channel.Request{
 			ChaincodeID:     ccID,
 			Fcn:             "invoke",
-			Args:            integration.ExampleCCTxArgs(),
+			Args:            args,
 			InvocationChain: []*fab.ChaincodeCall{{ID: nestedCCID}},
 		},
 		channel.WithRetry(retry.DefaultChannelOpts),
@@ -315,7 +323,7 @@ func (h *testHandler) Handle(requestContext *invoke.RequestContext, clientContex
 	}
 }
 
-func testInvokeHandler(t *testing.T, chClient *channel.Client, ccID string) {
+func testInvokeHandler(t *testing.T, chClient *channel.Client, ccID string, args [][]byte) {
 	// Insert a custom handler before and after the commit.
 	// Ensure that the handlers are being called by writing out some data
 	// and comparing with response.
@@ -345,7 +353,7 @@ func testInvokeHandler(t *testing.T, chClient *channel.Client, ccID string) {
 		channel.Request{
 			ChaincodeID: ccID,
 			Fcn:         "invoke",
-			Args:        integration.ExampleCCTxArgs(),
+			Args:        args,
 		},
 		channel.WithTimeout(fab.Execute, 5*time.Second),
 	)
@@ -366,7 +374,7 @@ func testInvokeHandler(t *testing.T, chClient *channel.Client, ccID string) {
 	}
 }
 
-func testChaincodeEvent(ccID string, chClient *channel.Client, t *testing.T) {
+func testChaincodeEvent(ccID string, chClient *channel.Client, t *testing.T, args [][]byte) {
 
 	eventID := "test([a-zA-Z]+)"
 
@@ -377,7 +385,7 @@ func testChaincodeEvent(ccID string, chClient *channel.Client, t *testing.T) {
 	}
 	defer chClient.UnregisterChaincodeEvent(reg)
 
-	response, err := chClient.Execute(channel.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()},
+	response, err := chClient.Execute(channel.Request{ChaincodeID: ccID, Fcn: "invoke", Args: args},
 		channel.WithRetry(retry.DefaultChannelOpts))
 	if err != nil {
 		t.Fatalf("Failed to move funds: %s", err)
@@ -429,7 +437,7 @@ func testMultipleClientChaincodeEvent(t *testing.T, channelID string, chainCodeI
 
 	// Move funds
 	resp, err := chClient.Execute(channel.Request{ChaincodeID: chainCodeID, Fcn: "invoke",
-		Args: integration.ExampleCCTxArgs()}, channel.WithRetry(retry.DefaultChannelOpts))
+		Args: integration.ExampleCCTxRandomSetArgs()}, channel.WithRetry(retry.DefaultChannelOpts))
 	if err != nil {
 		t.Fatalf("Failed to move funds: %s", err)
 	}
@@ -446,7 +454,7 @@ func testMultipleClientChaincodeEvent(t *testing.T, channelID string, chainCodeI
 	assert.Equal(t, string(txID), ccEvent.TxID, "mismatched ccEvent.TxID")
 }
 
-func testChaincodeEventListener(t *testing.T, ccID string, chClient *channel.Client, listener *channel.Client) {
+func testChaincodeEventListener(t *testing.T, ccID string, chClient *channel.Client, listener *channel.Client, args [][]byte) {
 
 	eventID := integration.GenerateRandomID()
 
@@ -457,7 +465,7 @@ func testChaincodeEventListener(t *testing.T, ccID string, chClient *channel.Cli
 	}
 	defer chClient.UnregisterChaincodeEvent(reg)
 
-	response, err := chClient.Execute(channel.Request{ChaincodeID: ccID, Fcn: "invoke", Args: append(integration.ExampleCCTxArgs(), []byte(eventID))},
+	response, err := chClient.Execute(channel.Request{ChaincodeID: ccID, Fcn: "invoke", Args: append(args, []byte(eventID))},
 		channel.WithRetry(retry.DefaultChannelOpts))
 	if err != nil {
 		t.Fatalf("Failed to move funds: %s", err)
@@ -534,7 +542,7 @@ func TestNoEndpoints(t *testing.T) {
 	}
 
 	// Test query chaincode: since peer has been disabled for chaincode query this query should fail
-	_, err = chClient.Query(channel.Request{ChaincodeID: mainChaincodeID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()},
+	_, err = chClient.Query(channel.Request{ChaincodeID: mainChaincodeID, Fcn: "invoke", Args: integration.ExampleCCDefaultQueryArgs()},
 		channel.WithRetry(retry.DefaultChannelOpts))
 	require.Error(t, err)
 

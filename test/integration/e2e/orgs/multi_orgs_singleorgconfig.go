@@ -52,7 +52,7 @@ func TestMultiOrgWithSingleOrgConfig(t *testing.T, examplecc string) {
 	req := channel.Request{
 		ChaincodeID: examplecc,
 		Fcn:         "invoke",
-		Args:        integration.ExampleCCQueryArgs(),
+		Args:        integration.ExampleCCDefaultQueryArgs(),
 	}
 	resp, err := chClientOrg1User.Query(req, channel.WithRetry(retry.DefaultChannelOpts))
 

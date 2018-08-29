@@ -45,7 +45,7 @@ func TestTransient(t *testing.T) {
 	peers, err := getProposalProcessors(sdk, "Admin", testSetup.OrgID, testSetup.Targets[:1])
 	require.Nil(t, err, "creating peers failed")
 
-	transactionProposalResponse, _, err := createAndSendTransactionProposal(transactor, chaincodeID, fcn, integration.ExampleCCTxArgs(), peers, transientDataMap)
+	transactionProposalResponse, _, err := createAndSendTransactionProposal(transactor, chaincodeID, fcn, integration.ExampleCCDefaultTxArgs(), peers, transientDataMap)
 	if err != nil {
 		t.Fatalf("CreateAndSendTransactionProposal return error: %s", err)
 	}
@@ -61,7 +61,7 @@ func TestTransient(t *testing.T) {
 	}
 	//transient data null
 	transientDataMap["result"] = []byte{}
-	transactionProposalResponse, _, err = createAndSendTransactionProposal(transactor, chaincodeID, fcn, integration.ExampleCCTxArgs(), peers, transientDataMap)
+	transactionProposalResponse, _, err = createAndSendTransactionProposal(transactor, chaincodeID, fcn, integration.ExampleCCDefaultTxArgs(), peers, transientDataMap)
 	if err != nil {
 		t.Fatalf("CreateAndSendTransactionProposal with empty transient data return an error: %s", err)
 	}

@@ -56,7 +56,7 @@ func TestDynamicSelection(t *testing.T) {
 		t.Fatalf("Failed to create new channel client: %s", err)
 	}
 
-	response, err := chClient.Query(channel.Request{ChaincodeID: chaincodeID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()},
+	response, err := chClient.Query(channel.Request{ChaincodeID: chaincodeID, Fcn: "invoke", Args: integration.ExampleCCDefaultQueryArgs()},
 		channel.WithRetry(retry.DefaultChannelOpts))
 	if err != nil {
 		t.Fatalf("Failed to query funds: %s", err)
@@ -64,7 +64,7 @@ func TestDynamicSelection(t *testing.T) {
 	value := response.Payload
 
 	// Move funds
-	response, err = chClient.Execute(channel.Request{ChaincodeID: chaincodeID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()},
+	response, err = chClient.Execute(channel.Request{ChaincodeID: chaincodeID, Fcn: "invoke", Args: integration.ExampleCCDefaultTxArgs()},
 		channel.WithRetry(retry.DefaultChannelOpts))
 	if err != nil {
 		t.Fatalf("Failed to move funds: %s", err)
@@ -78,7 +78,7 @@ func verifyValue(t *testing.T, chClient *channel.Client, expectedValue int, ccID
 	req := channel.Request{
 		ChaincodeID: ccID,
 		Fcn:         "invoke",
-		Args:        integration.ExampleCCQueryArgs(),
+		Args:        integration.ExampleCCDefaultQueryArgs(),
 	}
 
 	_, err := retry.NewInvoker(retry.New(retry.TestRetryOpts)).Invoke(

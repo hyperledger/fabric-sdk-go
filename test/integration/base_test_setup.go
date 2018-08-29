@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
 	mspclient "github.com/hyperledger/fabric-sdk-go/pkg/client/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
@@ -49,30 +50,46 @@ const (
 	ExampleCCUpgradeB = "400"
 	AdminUser         = "Admin"
 	OrdererOrgName    = "OrdererOrg"
+	keyExp            = "key-%s-%s"
 )
 
 // ExampleCC query and transaction arguments
-var queryArgs = [][]byte{[]byte("query"), []byte("b")}
-var txArgs = [][]byte{[]byte("move"), []byte("a"), []byte("b"), []byte("1")}
+var defaultQueryArgs = [][]byte{[]byte("query"), []byte("b")}
+var defaultTxArgs = [][]byte{[]byte("move"), []byte("a"), []byte("b"), []byte("1")}
 
 // ExampleCC init and upgrade args
 var initArgs = [][]byte{[]byte("init"), []byte("a"), []byte("100"), []byte("b"), []byte(ExampleCCInitB)}
 var upgradeArgs = [][]byte{[]byte("init"), []byte("a"), []byte("100"), []byte("b"), []byte(ExampleCCUpgradeB)}
 var resetArgs = [][]byte{[]byte("a"), []byte("100"), []byte("b"), []byte(ExampleCCInitB)}
 
-// ExampleCCQueryArgs returns example cc query args
-func ExampleCCQueryArgs() [][]byte {
-	return queryArgs
+// ExampleCCDefaultQueryArgs returns example cc query args
+func ExampleCCDefaultQueryArgs() [][]byte {
+	return defaultQueryArgs
 }
 
-// ExampleCCTxArgs returns example cc move funds args
-func ExampleCCTxArgs() [][]byte {
-	return txArgs
+// ExampleCCQueryArgs returns example cc query args
+func ExampleCCQueryArgs(key string) [][]byte {
+	return [][]byte{[]byte("query"), []byte(key)}
+}
+
+// ExampleCCTxArgs returns example cc query args
+func ExampleCCTxArgs(from, to, val string) [][]byte {
+	return [][]byte{[]byte("move"), []byte(from), []byte(to), []byte(val)}
+}
+
+// ExampleCCDefaultTxArgs returns example cc move funds args
+func ExampleCCDefaultTxArgs() [][]byte {
+	return defaultTxArgs
 }
 
 // ExampleCCTxRandomSetArgs returns example cc set args with random key-value pairs
 func ExampleCCTxRandomSetArgs() [][]byte {
 	return [][]byte{[]byte("set"), []byte(GenerateRandomID()), []byte(GenerateRandomID())}
+}
+
+//ExampleCCTxSetArgs sets the given key value in examplecc
+func ExampleCCTxSetArgs(key, value string) [][]byte {
+	return [][]byte{[]byte("set"), []byte(key), []byte(value)}
 }
 
 //ExampleCCInitArgs returns example cc initialization args
@@ -417,4 +434,26 @@ func isCCInstalled(resMgmt *resmgmt.Client, ccName, ccVersion string, peers []fa
 		}
 	}
 	return installedOnAllPeers, nil
+}
+
+//GetKeyName creates random key name based on test name
+func GetKeyName(t *testing.T) string {
+	return fmt.Sprintf(keyExp, t.Name(), GenerateRandomID())
+}
+
+//ResetKeys resets given set of keys in example cc to given value
+func ResetKeys(t *testing.T, chClient *channel.Client, chaincodeID, value string, keys ...string) {
+	for _, key := range keys {
+		// Synchronous transaction
+		_, err := chClient.Execute(
+			channel.Request{
+				ChaincodeID: chaincodeID,
+				Fcn:         "invoke",
+				Args:        ExampleCCTxSetArgs(key, value),
+			},
+			channel.WithRetry(retry.DefaultChannelOpts))
+		if err != nil {
+			t.Fatalf("Failed to reset keys: %s", err)
+		}
+	}
 }
