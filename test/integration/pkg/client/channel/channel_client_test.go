@@ -93,7 +93,7 @@ func TestChannelClient(t *testing.T) {
 	testQuery(t, chClient, "202", chaincodeID, bKey)
 
 	// Test register and receive chaincode event
-	testChaincodeEvent(chaincodeID, chClient, t, moveOneTx)
+	testChaincodeEvent(t, chClient, moveOneTx, chaincodeID)
 
 	// Verify transaction with chain code event completed
 	testQuery(t, chClient, "203", chaincodeID, bKey)
@@ -440,7 +440,7 @@ func testInvokeHandler(t *testing.T, chClient *channel.Client, ccID string, args
 	}
 }
 
-func testChaincodeEvent(ccID string, chClient *channel.Client, t *testing.T, args [][]byte) {
+func testChaincodeEvent(t *testing.T, chClient *channel.Client, args [][]byte, ccID string) {
 
 	eventID := "test([a-zA-Z]+)"
 
