@@ -43,13 +43,14 @@ func TestChannelClient(t *testing.T) {
 	//prepare context
 	org1ChannelClientContext := sdk.ChannelContext(testSetup.ChannelID, fabsdk.WithUser(org1User), fabsdk.WithOrg(org1Name))
 
+	//Reset example cc keys
+	integration.ResetKeys(t, org1ChannelClientContext, chaincodeID, "200", aKey, bKey)
+
 	//get channel client
 	chClient, err := channel.New(org1ChannelClientContext)
 	if err != nil {
 		t.Fatalf("Failed to create new channel client: %s", err)
 	}
-
-	integration.ResetKeys(t, chClient, chaincodeID, "200", aKey, bKey)
 
 	// Synchronous query
 	testQuery(t, chClient, "200", chaincodeID, bKey)

@@ -68,6 +68,11 @@ func initializeLedgerTests(t *testing.T) (*fabsdk.FabricSDK, []string) {
 func TestLedgerQueries(t *testing.T) {
 	testSetup := mainTestSetup
 
+	aKey := integration.GetKeyName(t)
+	bKey := integration.GetKeyName(t)
+	moveTxArg := integration.ExampleCCTxArgs(aKey, bKey, "1")
+	queryArg := integration.ExampleCCQueryArgs(bKey)
+
 	// Setup tests with a random chaincode ID.
 	sdk, targets := initializeLedgerTests(t)
 
@@ -79,8 +84,10 @@ func TestLedgerQueries(t *testing.T) {
 	require.Nil(t, err, "InstallAndInstantiateExampleCC return error")
 
 	//prepare required contexts
-
 	channelClientCtx := sdk.ChannelContext(channelID, fabsdk.WithUser("Admin"), fabsdk.WithOrg(orgName))
+
+	//Reset example cc keys
+	integration.ResetKeys(t, channelClientCtx, chaincodeID, "200", aKey, bKey)
 
 	// Get a ledger client.
 	ledgerClient, err := ledger.New(channelClientCtx)
@@ -99,12 +106,12 @@ func TestLedgerQueries(t *testing.T) {
 		t.Fatalf("creating channel failed: %s", err)
 	}
 
-	txID, expectedQueryValue, err := changeBlockState(t, channelClient, chaincodeID)
+	txID, expectedQueryValue, err := changeBlockState(t, channelClient, queryArg, moveTxArg, chaincodeID)
 	if err != nil {
 		t.Fatalf("Failed to change block state (invoke transaction). Return error: %s", err)
 	}
 
-	verifyTargetsChangedBlockState(t, channelClient, chaincodeID, targets, expectedQueryValue)
+	verifyTargetsChangedBlockState(t, channelClient, chaincodeID, targets, queryArg, expectedQueryValue)
 
 	// Test Query Info - retrieve values after transaction
 	bciAfterTx, err := ledgerClient.QueryInfo(ledger.WithTargetEndpoints(testTargets...))
@@ -135,12 +142,12 @@ func TestLedgerQueries(t *testing.T) {
 	testQueryConfigBlock(t, ledgerClient, targets)
 }
 
-func changeBlockState(t *testing.T, client *channel.Client, chaincodeID string) (fab.TransactionID, int, error) {
+func changeBlockState(t *testing.T, client *channel.Client, queryArg [][]byte, moveArg [][]byte, chaincodeID string) (fab.TransactionID, int, error) {
 
 	req := channel.Request{
 		ChaincodeID: chaincodeID,
 		Fcn:         "invoke",
-		Args:        integration.ExampleCCDefaultQueryArgs(),
+		Args:        queryArg,
 	}
 	resp, err := client.Query(req, channel.WithRetry(retry.DefaultChannelOpts))
 	if err != nil {
@@ -149,7 +156,7 @@ func changeBlockState(t *testing.T, client *channel.Client, chaincodeID string) 
 	value := resp.Payload
 
 	// Start transaction that will change block state
-	txID, err := moveFundsAndGetTxID(t, client, chaincodeID)
+	txID, err := moveFundsAndGetTxID(t, client, moveArg, chaincodeID)
 	if err != nil {
 		return "", 0, errors.WithMessage(err, "move funds failed")
 	}
@@ -160,17 +167,17 @@ func changeBlockState(t *testing.T, client *channel.Client, chaincodeID string) 
 	return txID, valueInt, nil
 }
 
-func verifyTargetsChangedBlockState(t *testing.T, client *channel.Client, chaincodeID string, targets []string, expectedValue int) {
+func verifyTargetsChangedBlockState(t *testing.T, client *channel.Client, chaincodeID string, targets []string, queryArg [][]byte, expectedValue int) {
 	for _, target := range targets {
-		verifyTargetChangedBlockState(t, client, chaincodeID, target, expectedValue)
+		verifyTargetChangedBlockState(t, client, chaincodeID, target, queryArg, expectedValue)
 	}
 }
 
-func verifyTargetChangedBlockState(t *testing.T, client *channel.Client, chaincodeID string, target string, expectedValue int) {
+func verifyTargetChangedBlockState(t *testing.T, client *channel.Client, chaincodeID string, target string, queryArg [][]byte, expectedValue int) {
 	req := channel.Request{
 		ChaincodeID: chaincodeID,
 		Fcn:         "invoke",
-		Args:        integration.ExampleCCDefaultQueryArgs(),
+		Args:        queryArg,
 	}
 
 	_, err := retry.NewInvoker(retry.New(retry.TestRetryOpts)).Invoke(
@@ -290,7 +297,7 @@ func testInstantiatedChaincodes(t *testing.T, ccID string, channelID string, res
 }
 
 // MoveFundsAndGetTxID ...
-func moveFundsAndGetTxID(t *testing.T, client *channel.Client, chaincodeID string) (fab.TransactionID, error) {
+func moveFundsAndGetTxID(t *testing.T, client *channel.Client, moveArg [][]byte, chaincodeID string) (fab.TransactionID, error) {
 
 	transientDataMap := make(map[string][]byte)
 	transientDataMap["result"] = []byte("Transient data in move funds...")
@@ -298,7 +305,7 @@ func moveFundsAndGetTxID(t *testing.T, client *channel.Client, chaincodeID strin
 	req := channel.Request{
 		ChaincodeID:  chaincodeID,
 		Fcn:          "invoke",
-		Args:         integration.ExampleCCDefaultTxArgs(),
+		Args:         moveArg,
 		TransientMap: transientDataMap,
 	}
 	resp, err := client.Execute(req, channel.WithRetry(retry.DefaultChannelOpts))

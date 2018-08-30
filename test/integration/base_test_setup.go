@@ -442,7 +442,11 @@ func GetKeyName(t *testing.T) string {
 }
 
 //ResetKeys resets given set of keys in example cc to given value
-func ResetKeys(t *testing.T, chClient *channel.Client, chaincodeID, value string, keys ...string) {
+func ResetKeys(t *testing.T, ctx contextAPI.ChannelProvider, chaincodeID, value string, keys ...string) {
+	chClient, err := channel.New(ctx)
+	if err != nil {
+		t.Fatalf("Failed to create new channel client for reseting keys: %s", err)
+	}
 	for _, key := range keys {
 		// Synchronous transaction
 		_, err := chClient.Execute(

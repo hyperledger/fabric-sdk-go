@@ -30,6 +30,10 @@ func TestDynamicSelection(t *testing.T) {
 
 	// Using shared SDK instance to increase test speed.
 	testSetup := mainTestSetup
+	aKey := integration.GetKeyName(t)
+	bKey := integration.GetKeyName(t)
+	moveTxArg := integration.ExampleCCTxArgs(aKey, bKey, "1")
+	queryArg := integration.ExampleCCQueryArgs(bKey)
 
 	// Create SDK setup for channel client with dynamic selection
 	sdk, err := fabsdk.New(integration.ConfigBackend,
@@ -51,12 +55,15 @@ func TestDynamicSelection(t *testing.T) {
 	//prepare contexts
 	org1ChannelClientContext := sdk.ChannelContext(testSetup.ChannelID, fabsdk.WithUser(org1User), fabsdk.WithOrg(org1Name))
 
+	//Reset example cc keys
+	integration.ResetKeys(t, org1ChannelClientContext, chaincodeID, "200", aKey, bKey)
+
 	chClient, err := channel.New(org1ChannelClientContext)
 	if err != nil {
 		t.Fatalf("Failed to create new channel client: %s", err)
 	}
 
-	response, err := chClient.Query(channel.Request{ChaincodeID: chaincodeID, Fcn: "invoke", Args: integration.ExampleCCDefaultQueryArgs()},
+	response, err := chClient.Query(channel.Request{ChaincodeID: chaincodeID, Fcn: "invoke", Args: queryArg},
 		channel.WithRetry(retry.DefaultChannelOpts))
 	if err != nil {
 		t.Fatalf("Failed to query funds: %s", err)
@@ -64,21 +71,21 @@ func TestDynamicSelection(t *testing.T) {
 	value := response.Payload
 
 	// Move funds
-	response, err = chClient.Execute(channel.Request{ChaincodeID: chaincodeID, Fcn: "invoke", Args: integration.ExampleCCDefaultTxArgs()},
+	response, err = chClient.Execute(channel.Request{ChaincodeID: chaincodeID, Fcn: "invoke", Args: moveTxArg},
 		channel.WithRetry(retry.DefaultChannelOpts))
 	if err != nil {
 		t.Fatalf("Failed to move funds: %s", err)
 	}
 
 	valueInt, _ := strconv.Atoi(string(value))
-	verifyValue(t, chClient, valueInt+1, chaincodeID)
+	verifyValue(t, chClient, queryArg, valueInt+1, chaincodeID)
 }
 
-func verifyValue(t *testing.T, chClient *channel.Client, expectedValue int, ccID string) {
+func verifyValue(t *testing.T, chClient *channel.Client, queryArg [][]byte, expectedValue int, ccID string) {
 	req := channel.Request{
 		ChaincodeID: ccID,
 		Fcn:         "invoke",
-		Args:        integration.ExampleCCDefaultQueryArgs(),
+		Args:        queryArg,
 	}
 
 	_, err := retry.NewInvoker(retry.New(retry.TestRetryOpts)).Invoke(
