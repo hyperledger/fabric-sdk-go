@@ -12,8 +12,10 @@ import (
 	"fmt"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/msp"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestIdentity(t *testing.T) {
@@ -233,10 +235,33 @@ func containsIdentity(identities []*msp.IdentityResponse, request *msp.IdentityR
 	return false
 }
 
-func setupClient(t *testing.T) (*msp.Client, *fabsdk.FabricSDK) {
+type setupOptions struct {
+	configProvider core.ConfigProvider
+}
+
+type setupOption func(*setupOptions) error
+
+func withConfigProvider(configProvider core.ConfigProvider) setupOption {
+	return func(s *setupOptions) error {
+		s.configProvider = configProvider
+		return nil
+	}
+}
+
+func setupClient(t *testing.T, opts ...setupOption) (*msp.Client, *fabsdk.FabricSDK) {
+
+	o := setupOptions{
+		configProvider: integration.ConfigBackend,
+	}
+	for _, param := range opts {
+		err := param(&o)
+		if err != nil {
+			t.Fatalf("failed to create setup: %s", err)
+		}
+	}
 
 	// Instantiate the SDK
-	sdk, err := fabsdk.New(integration.ConfigBackend)
+	sdk, err := fabsdk.New(o.configProvider)
 	if err != nil {
 		t.Fatalf("SDK init failed: %s", err)
 	}
@@ -297,4 +322,38 @@ func containsAttribute(att msp.Attribute, attributes []msp.Attribute) bool {
 		}
 	}
 	return false
+}
+
+type emptyCredentialStorePathBackend struct {
+}
+
+func (c *emptyCredentialStorePathBackend) Lookup(key string) (interface{}, bool) {
+	if key == "client.credentialStore.path" {
+		return "", true
+	}
+	return nil, false
+}
+
+func TestCreateSDKWithoutCredentialStorePath(t *testing.T) {
+
+	integrationConfigProvider, err := integration.ConfigBackend()
+	assert.Nil(t, err)
+
+	emptyCredentialStorePathConfigProvider := func() ([]core.ConfigBackend, error) {
+		emptyCredentialStorePathBackendSlice := []core.ConfigBackend{
+			&emptyCredentialStorePathBackend{},
+		}
+		return append(emptyCredentialStorePathBackendSlice, integrationConfigProvider...), nil
+	}
+
+	client, sdk := setupClient(t, withConfigProvider(emptyCredentialStorePathConfigProvider))
+	defer integration.CleanupUserData(t, sdk)
+
+	ctxProvider := sdk.Context()
+	registrarEnrollID, _ := getRegistrarEnrollmentCredentials(t, ctxProvider)
+
+	// CA registrar should have been enrolled after the SDK was created
+	sid, err := client.GetSigningIdentity(registrarEnrollID)
+	assert.Nil(t, err)
+	assert.NotNil(t, sid)
 }
