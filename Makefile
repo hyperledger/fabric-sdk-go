@@ -358,7 +358,6 @@ integration-tests-stable-negative: clean-tests depend-noforce populate-noforce
 .PHONY: integration-tests-stable-pkcs11
 integration-tests-stable-pkcs11: clean-tests depend-noforce populate-noforce
 	@. $(FIXTURE_DOCKERENV_PATH)/stable-env.sh && \
-	    . $(FIXTURE_DOCKERENV_PATH)/nomutualtls-env.sh && \
 	    . $(FIXTURE_CRYPTOCONFIG_PATH)/env.sh && \
 		$(FABRIC_DEV_REGISTRY_PRE_CMD) && \
 		cd $(FIXTURE_DOCKERENV_PATH) && \

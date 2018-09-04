@@ -42,10 +42,10 @@ declare -a PKGS=(
 # Reduce unit tests to changed packages.
 if [ "$TEST_CHANGED_ONLY" = true ]; then
     # findChangedFiles assumes that the working directory contains the repo; so change to the repo directory.
-    PWD=$(pwd)
+    PWD_ORIG=$(pwd)
     cd "${GOPATH}/src/${REPO}"
     findChangedFiles
-    cd ${PWD}
+    cd ${PWD_ORIG}
 
     if [[ "${CHANGED_FILES[@]}" =~ ( |^)(test/fixtures/|test/metadata/|test/scripts/|Makefile( |$)|Gopkg.lock( |$)|gometalinter.json( |$)|ci.properties( |$)) ]]; then
         echo "Test scripts, fixtures or metadata changed - running all tests"
