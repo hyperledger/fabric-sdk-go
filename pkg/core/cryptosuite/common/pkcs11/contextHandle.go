@@ -222,6 +222,15 @@ func (handle *ContextHandle) FindObjectsFinal(session pkcs11.SessionHandle) erro
 	return handle.ctx.FindObjectsFinal(session)
 }
 
+//Encrypt encrypts single-part data.
+func (handle *ContextHandle) Encrypt(session pkcs11.SessionHandle, message []byte) ([]byte, error) {
+
+	handle.lock.RLock()
+	defer handle.lock.RUnlock()
+
+	return handle.ctx.Encrypt(session, message)
+}
+
 //EncryptInit initializes an encryption operation.
 func (handle *ContextHandle) EncryptInit(session pkcs11.SessionHandle, m []*pkcs11.Mechanism, o pkcs11.ObjectHandle) error {
 
