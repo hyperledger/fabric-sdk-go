@@ -185,6 +185,70 @@ func (handle *ContextHandle) GenerateKeyPair(session pkcs11.SessionHandle, m []*
 	return handle.ctx.GenerateKeyPair(session, m, public, private)
 }
 
+//GenerateKey generates a secret key, creating a new key object.
+func (handle *ContextHandle) GenerateKey(session pkcs11.SessionHandle, m []*pkcs11.Mechanism, temp []*pkcs11.Attribute) (pkcs11.ObjectHandle, error) {
+
+	handle.lock.RLock()
+	defer handle.lock.RUnlock()
+
+	return handle.ctx.GenerateKey(session, m, temp)
+}
+
+// FindObjectsInit initializes a search for token and session objects that match a template.
+func (handle *ContextHandle) FindObjectsInit(session pkcs11.SessionHandle, temp []*pkcs11.Attribute) error {
+
+	handle.lock.RLock()
+	defer handle.lock.RUnlock()
+
+	return handle.ctx.FindObjectsInit(session, temp)
+}
+
+// FindObjects continues a search for token and session objects that match a template, obtaining additional object
+// handles. The returned boolean indicates if the list would have been larger than max.
+func (handle *ContextHandle) FindObjects(session pkcs11.SessionHandle, max int) ([]pkcs11.ObjectHandle, bool, error) {
+
+	handle.lock.RLock()
+	defer handle.lock.RUnlock()
+
+	return handle.ctx.FindObjects(session, max)
+}
+
+//FindObjectsFinal finishes a search for token and session objects.
+func (handle *ContextHandle) FindObjectsFinal(session pkcs11.SessionHandle) error {
+
+	handle.lock.RLock()
+	defer handle.lock.RUnlock()
+
+	return handle.ctx.FindObjectsFinal(session)
+}
+
+//EncryptInit initializes an encryption operation.
+func (handle *ContextHandle) EncryptInit(session pkcs11.SessionHandle, m []*pkcs11.Mechanism, o pkcs11.ObjectHandle) error {
+
+	handle.lock.RLock()
+	defer handle.lock.RUnlock()
+
+	return handle.ctx.EncryptInit(session, m, o)
+}
+
+//DecryptInit initializes a decryption operation.
+func (handle *ContextHandle) DecryptInit(session pkcs11.SessionHandle, m []*pkcs11.Mechanism, o pkcs11.ObjectHandle) error {
+
+	handle.lock.RLock()
+	defer handle.lock.RUnlock()
+
+	return handle.ctx.DecryptInit(session, m, o)
+}
+
+//Decrypt decrypts encrypted data in a single part.
+func (handle *ContextHandle) Decrypt(session pkcs11.SessionHandle, cypher []byte) ([]byte, error) {
+
+	handle.lock.RLock()
+	defer handle.lock.RUnlock()
+
+	return handle.ctx.Decrypt(session, cypher)
+}
+
 // SignInit initializes a signature (private key encryption)
 // operation, where the signature is (will be) an appendix to
 // the data, and plaintext cannot be recovered from the signature.
