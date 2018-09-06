@@ -168,6 +168,7 @@ func TestDiscoveryClientEndorsers(t *testing.T) {
 		testEndorsers(
 			t, mainSDK,
 			newInterest(newCCCall(ccID)),
+			discclient.NoFilter,
 			[]string{peer0Org1URL},
 			[]string{peer1Org1URL},
 		)
@@ -183,6 +184,7 @@ func TestDiscoveryClientEndorsers(t *testing.T) {
 		testEndorsers(
 			t, mainSDK,
 			newInterest(newCCCall(ccID)),
+			discclient.NoFilter,
 			[]string{peer0Org2URL},
 			[]string{peer1Org2URL},
 		)
@@ -199,6 +201,7 @@ func TestDiscoveryClientEndorsers(t *testing.T) {
 		testEndorsers(
 			t, mainSDK,
 			newInterest(newCCCall(ccID)),
+			discclient.NoFilter,
 			[]string{peer0Org1URL},
 			[]string{peer1Org1URL},
 			[]string{peer0Org2URL},
@@ -216,6 +219,7 @@ func TestDiscoveryClientEndorsers(t *testing.T) {
 		testEndorsers(
 			t, mainSDK,
 			newInterest(newCCCall(ccID)),
+			discclient.NoFilter,
 			[]string{peer0Org1URL, peer0Org2URL},
 			[]string{peer1Org1URL, peer0Org2URL},
 			[]string{peer0Org1URL, peer1Org2URL},
@@ -241,6 +245,7 @@ func TestDiscoveryClientEndorsers(t *testing.T) {
 		testEndorsers(
 			t, mainSDK,
 			newInterest(newCCCall(ccID1), newCCCall(ccID2)),
+			discclient.NoFilter,
 			[]string{peer0Org1URL, peer0Org2URL},
 			[]string{peer1Org1URL, peer0Org2URL},
 			[]string{peer0Org1URL, peer1Org2URL},
@@ -249,7 +254,7 @@ func TestDiscoveryClientEndorsers(t *testing.T) {
 	})
 }
 
-func testEndorsers(t *testing.T, sdk *fabsdk.FabricSDK, interest *fabdiscovery.ChaincodeInterest, expectedEndorserGroups ...[]string) {
+func testEndorsers(t *testing.T, sdk *fabsdk.FabricSDK, interest *fabdiscovery.ChaincodeInterest, filter discclient.Filter, expectedEndorserGroups ...[]string) {
 	ctxProvider := sdk.Context(fabsdk.WithUser(org1User), fabsdk.WithOrg(org1Name))
 	ctx, err := ctxProvider()
 	require.NoError(t, err, "error getting channel context")
@@ -281,7 +286,7 @@ func testEndorsers(t *testing.T, sdk *fabsdk.FabricSDK, interest *fabdiscovery.C
 
 	// Get endorsers a few times, since each time a different set may be returned
 	for i := 0; i < 3; i++ {
-		endorsers, err := chanResp.Endorsers(interest.Chaincodes, discclient.PrioritiesByHeight, discclient.NoExclusion)
+		endorsers, err := chanResp.Endorsers(interest.Chaincodes, filter)
 		require.NoError(t, err, "error getting endorsers")
 		checkEndorsers(t, asURLs(t, endorsers), expectedEndorserGroups)
 	}
@@ -366,7 +371,7 @@ func sendEndorserQuery(t *testing.T, ctx contextAPI.Client, client *discovery.Cl
 
 	chanResp := responses[0].ForChannel(orgChannelID)
 
-	_, err = chanResp.Endorsers(interest.Chaincodes, discclient.NoPriorities, discclient.NoExclusion)
+	_, err = chanResp.Endorsers(interest.Chaincodes, discclient.NewFilter(discclient.NoPriorities, discclient.NoExclusion))
 	if err != nil {
 		return nil, err
 	}

@@ -198,6 +198,24 @@ func (f *filter) Accept(p fab.Peer) bool {
 	return p.URL() == f.peer.URL()
 }
 
+// Target sorter
+type sorter struct {
+	preferredPeerIndex int
+}
+
+func (s *sorter) Sort(peers []fab.Peer) []fab.Peer {
+	var sortedPeers []fab.Peer
+	for i := s.preferredPeerIndex; i < len(peers); i++ {
+		sortedPeers = append(sortedPeers, peers[i])
+	}
+
+	for i := 0; i < s.preferredPeerIndex; i++ {
+		sortedPeers = append(sortedPeers, peers[i])
+	}
+
+	return sortedPeers
+}
+
 func TestResponseValidation(t *testing.T) {
 	p1 := &fab.TransactionProposalResponse{
 		Endorser: "peer 1",
@@ -265,33 +283,37 @@ func TestProposalProcessorHandlerPassDirectly(t *testing.T) {
 func TestProposalProcessorHandler(t *testing.T) {
 	peer1 := fcmocks.NewMockPeer("p1", "peer1:7051")
 	peer2 := fcmocks.NewMockPeer("p2", "peer2:7051")
-	discoveryPeers := []fab.Peer{peer1, peer2}
+	peer3 := fcmocks.NewMockPeer("p3", "peer3:7051")
+	discoveryPeers := []fab.Peer{peer1, peer2, peer3}
 
 	handler := NewProposalProcessorHandler()
 	request := Request{ChaincodeID: "testCC", Fcn: "invoke", Args: [][]byte{[]byte("query"), []byte("b")}}
-	requestContext := prepareRequestContext(request, Opts{}, t)
-	handler.Handle(requestContext, setupChannelClientContext(nil, nil, discoveryPeers, t))
-	if requestContext.Error != nil {
-		t.Fatalf("Got error: %s", requestContext.Error)
-	}
-	if len(requestContext.Opts.Targets) != len(discoveryPeers) {
-		t.Fatalf("Expecting %d proposal processors but got %d", len(discoveryPeers), len(requestContext.Opts.Targets))
-	}
-	if requestContext.Opts.Targets[0] != peer1 || requestContext.Opts.Targets[1] != peer2 {
-		t.Fatal("Didn't get expected peers")
-	}
 
-	requestContext = prepareRequestContext(request, Opts{TargetFilter: &filter{peer: peer2}}, t)
-	handler.Handle(requestContext, setupChannelClientContext(nil, nil, discoveryPeers, t))
-	if requestContext.Error != nil {
-		t.Fatalf("Got error: %s", requestContext.Error)
-	}
-	if len(requestContext.Opts.Targets) != 1 {
-		t.Fatalf("Expecting 1 proposal processor but got %d", len(requestContext.Opts.Targets))
-	}
-	if requestContext.Opts.Targets[0] != peer2 {
-		t.Fatal("Didn't get expected peers")
-	}
+	t.Run("Basic", func(t *testing.T) {
+		requestContext := prepareRequestContext(request, Opts{}, t)
+		handler.Handle(requestContext, setupChannelClientContext(nil, nil, discoveryPeers, t))
+		require.NoError(t, requestContext.Error)
+		require.Equal(t, len(discoveryPeers), len(requestContext.Opts.Targets), "Unexpected number of proposal processors")
+		assert.Falsef(t, requestContext.Opts.Targets[0] != peer1 || requestContext.Opts.Targets[1] != peer2, "Didn't get expected peers")
+	})
+
+	t.Run("Target Filter", func(t *testing.T) {
+		requestContext := prepareRequestContext(request, Opts{TargetFilter: &filter{peer: peer2}}, t)
+		handler.Handle(requestContext, setupChannelClientContext(nil, nil, discoveryPeers, t))
+		require.NoError(t, requestContext.Error)
+		require.Equal(t, 1, len(requestContext.Opts.Targets), "Unexpected number of proposal processors")
+		assert.Equalf(t, peer2.URL(), requestContext.Opts.Targets[0].URL(), "Expecting [%s] but got [%s]", peer2.URL(), requestContext.Opts.Targets[0].URL())
+	})
+
+	t.Run("Target Sorter", func(t *testing.T) {
+		for i := len(discoveryPeers) - 1; i >= 0; i-- {
+			requestContext := prepareRequestContext(request, Opts{TargetSorter: &sorter{preferredPeerIndex: i}}, t)
+			handler.Handle(requestContext, setupChannelClientContext(nil, nil, discoveryPeers, t))
+			require.NoError(t, requestContext.Error)
+			require.Equal(t, len(discoveryPeers), len(requestContext.Opts.Targets), "Unexpected number of proposal processors")
+			assert.Equalf(t, discoveryPeers[i].URL(), requestContext.Opts.Targets[0].URL(), "Expecting [%s] to be the first target but got [%s]", discoveryPeers[i].URL(), requestContext.Opts.Targets[0].URL())
+		}
+	})
 }
 
 func TestNewInvocationChain(t *testing.T) {
@@ -405,6 +427,11 @@ func prepareRequestContext(request Request, opts Opts, t *testing.T) *RequestCon
 	if opts.TargetFilter != nil {
 		requestContext.SelectionFilter = func(peer fab.Peer) bool {
 			return opts.TargetFilter.Accept(peer)
+		}
+	}
+	if opts.TargetSorter != nil {
+		requestContext.PeerSorter = func(peers []fab.Peer) []fab.Peer {
+			return opts.TargetSorter.Sort(peers)
 		}
 	}
 

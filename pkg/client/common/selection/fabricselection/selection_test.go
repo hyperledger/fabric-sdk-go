@@ -13,7 +13,9 @@ import (
 	"time"
 
 	clientmocks "github.com/hyperledger/fabric-sdk-go/pkg/client/common/mocks"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/balancer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/options"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/sorter/blockheightsorter"
 	contextAPI "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	fab "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	discmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/discovery/mocks"
@@ -69,12 +71,12 @@ var (
 	peer2Org1Endpoint = &discmocks.MockDiscoveryPeerEndpoint{
 		MSPID:        mspID1,
 		Endpoint:     peer2Org1URL,
-		LedgerHeight: 1002,
+		LedgerHeight: 1001,
 	}
 	peer1Org2Endpoint = &discmocks.MockDiscoveryPeerEndpoint{
 		MSPID:        mspID2,
 		Endpoint:     peer1Org2URL,
-		LedgerHeight: 1001,
+		LedgerHeight: 1002,
 	}
 	peer2Org2Endpoint = &discmocks.MockDiscoveryPeerEndpoint{
 		MSPID:        mspID2,
@@ -84,12 +86,12 @@ var (
 	peer1Org3Endpoint = &discmocks.MockDiscoveryPeerEndpoint{
 		MSPID:        mspID3,
 		Endpoint:     peer1Org3URL,
-		LedgerHeight: 1000,
+		LedgerHeight: 1004,
 	}
 	peer2Org3Endpoint = &discmocks.MockDiscoveryPeerEndpoint{
 		MSPID:        mspID3,
 		Endpoint:     peer2Org3URL,
-		LedgerHeight: 1003,
+		LedgerHeight: 1005,
 	}
 
 	cc1ChaincodeCall = &fab.ChaincodeCall{
@@ -133,9 +135,7 @@ func TestSelection(t *testing.T) {
 				Error:         fmt.Errorf("simulated response error"),
 			},
 		)
-		endorsers, err := service.GetEndorsersForChaincode([]*fab.ChaincodeCall{{ID: cc1}})
-		assert.Error(t, err)
-		assert.Equal(t, 0, len(endorsers))
+		testSelectionError(t, service)
 	})
 
 	t.Run("CCtoCC", func(t *testing.T) {
@@ -150,57 +150,23 @@ func TestSelection(t *testing.T) {
 
 		// Wait for cache to refresh
 		time.Sleep(200 * time.Millisecond)
-
-		endorsers, err := service.GetEndorsersForChaincode([]*fab.ChaincodeCall{cc1ChaincodeCall, cc2ChaincodeCall})
-
-		assert.NoError(t, err)
-		assert.Equalf(t, 6, len(endorsers), "Expecting 6 endorser")
+		testSelectionCCtoCC(t, service)
 	})
 
 	t.Run("Peer Filter", func(t *testing.T) {
-		endorsers, err := service.GetEndorsersForChaincode([]*fab.ChaincodeCall{{ID: cc1}},
-			options.WithPeerFilter(func(peer fab.Peer) bool {
-				return peer.(fab.PeerState).BlockHeight() > 1001
-			}),
-		)
+		testSelectionPeerFilter(t, service)
+	})
 
-		assert.NoError(t, err)
-		assert.Equalf(t, 3, len(endorsers), "Expecting 3 endorser")
+	t.Run("Block Height Sorter Round Robin", func(t *testing.T) {
+		testSelectionDistribution(t, service, balancer.RoundRobin(), 0)
+	})
 
-		// Ensure the endorsers all have a block height > 1001 and they are returned in descending order of block height
-		lastBlockHeight := uint64(9999999)
-		for _, endorser := range endorsers {
-			blockHeight := endorser.(fab.PeerState).BlockHeight()
-			assert.Truef(t, blockHeight > 1001, "Expecting block height to be > 1001")
-			assert.Truef(t, blockHeight <= lastBlockHeight, "Expecting endorsers to be returned in order of descending block height. Block Height: %d, Last Block Height: %d", blockHeight, lastBlockHeight)
-			lastBlockHeight = blockHeight
-		}
+	t.Run("Block Height Sorter Random", func(t *testing.T) {
+		testSelectionDistribution(t, service, balancer.Random(), 50)
 	})
 
 	t.Run("Priority Selector", func(t *testing.T) {
-		endorsers, err := service.GetEndorsersForChaincode([]*fab.ChaincodeCall{{ID: cc1}},
-			options.WithPrioritySelector(func(peer1, peer2 fab.Peer) int {
-				// Return peers in alphabetical order
-				if peer1.URL() < peer2.URL() {
-					return -1
-				}
-				if peer1.URL() > peer2.URL() {
-					return 1
-				}
-				return 0
-			}),
-		)
-
-		assert.NoError(t, err)
-		assert.Equalf(t, 6, len(endorsers), "Expecting 6 endorser")
-
-		var lastURL string
-		for _, endorser := range endorsers {
-			if lastURL != "" {
-				assert.Truef(t, endorser.URL() <= lastURL, "Expecting endorsers in alphabetical order")
-			}
-			lastURL = endorser.URL()
-		}
+		testSelectionPrioritySelector(t, service)
 	})
 }
 
@@ -271,8 +237,94 @@ func TestWithDiscoveryFilter(t *testing.T) {
 				return peer.(fab.PeerState).BlockHeight() > 1001
 			}))
 		assert.NoError(t, err)
-		assert.Equalf(t, 3, len(endorsers), "Expecting 3 endorser")
+		assert.Equalf(t, 2, len(endorsers), "Expecting 2 endorser but got")
 	})
+}
+
+func testSelectionError(t *testing.T, service *Service) {
+	endorsers, err := service.GetEndorsersForChaincode([]*fab.ChaincodeCall{{ID: cc1}})
+	assert.Error(t, err)
+	assert.Equal(t, 0, len(endorsers))
+}
+
+func testSelectionCCtoCC(t *testing.T, service *Service) {
+	endorsers, err := service.GetEndorsersForChaincode([]*fab.ChaincodeCall{cc1ChaincodeCall, cc2ChaincodeCall})
+	assert.NoError(t, err)
+	assert.Equalf(t, 6, len(endorsers), "Expecting 6 endorser")
+}
+
+func testSelectionPeerFilter(t *testing.T, service *Service) {
+	endorsers, err := service.GetEndorsersForChaincode([]*fab.ChaincodeCall{{ID: cc1}},
+		options.WithPeerFilter(func(peer fab.Peer) bool {
+			return peer.(fab.PeerState).BlockHeight() > 1001
+		}),
+	)
+
+	assert.NoError(t, err)
+	assert.Equalf(t, 4, len(endorsers), "Expecting 4 endorser")
+
+	// Ensure the endorsers all have a block height > 1001
+	for _, endorser := range endorsers {
+		blockHeight := endorser.(fab.PeerState).BlockHeight()
+		assert.Truef(t, blockHeight > 1001, "Expecting block height to be > 1001")
+	}
+}
+
+func testSelectionDistribution(t *testing.T, service *Service, balancer balancer.Balancer, tolerance int) {
+	iterations := 1000
+
+	for threshold := 5; threshold >= 0; threshold-- {
+		sorter := blockheightsorter.New(
+			blockheightsorter.WithBlockHeightLagThreshold(threshold),
+			blockheightsorter.WithBalancer(balancer),
+		)
+
+		expectedMin := iterations/(threshold+1) - tolerance
+		count := make(map[string]int)
+
+		for i := 0; i < iterations; i++ {
+			endorsers, err := service.GetEndorsersForChaincode(
+				[]*fab.ChaincodeCall{{ID: cc1}},
+				options.WithPeerSorter(sorter),
+			)
+
+			assert.NoError(t, err)
+			assert.Equalf(t, 6, len(endorsers), "Expecting 6 endorser")
+
+			endorser := endorsers[0]
+			count[endorser.URL()] = count[endorser.URL()] + 1
+		}
+
+		for url, c := range count {
+			assert.Truef(t, c >= expectedMin, "Expecting peer [%s] to have been called at least %d times but got only %d", url, expectedMin, c)
+		}
+	}
+}
+
+func testSelectionPrioritySelector(t *testing.T, service *Service) {
+	endorsers, err := service.GetEndorsersForChaincode([]*fab.ChaincodeCall{{ID: cc1}},
+		options.WithPrioritySelector(func(peer1, peer2 fab.Peer) int {
+			// Return peers in alphabetical order
+			if peer1.URL() < peer2.URL() {
+				return -1
+			}
+			if peer1.URL() > peer2.URL() {
+				return 1
+			}
+			return 0
+		}),
+	)
+
+	assert.NoError(t, err)
+	assert.Equalf(t, 6, len(endorsers), "Expecting 6 endorser")
+
+	var lastURL string
+	for _, endorser := range endorsers {
+		if lastURL != "" {
+			assert.Truef(t, endorser.URL() <= lastURL, "Expecting endorsers in alphabetical order")
+		}
+		lastURL = endorser.URL()
+	}
 }
 
 type config struct {

@@ -133,6 +133,12 @@ func (s *SelectionService) GetEndorsersForChaincode(chaincodes []*fab.ChaincodeC
 		peers = filteredPeers
 	}
 
+	if params.PeerSorter != nil {
+		sortedPeers := make([]fab.Peer, len(peers))
+		copy(sortedPeers, peers)
+		peers = params.PeerSorter(sortedPeers)
+	}
+
 	peerGroup, err := resolver.Resolve(peers)
 	if err != nil {
 		return nil, err

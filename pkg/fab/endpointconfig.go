@@ -632,13 +632,24 @@ func (c *EndpointConfig) getChannelPolicies(chNwCfg ChannelEndpointConfig) fab.C
 		RetryOpts:    chNwCfg.Policies.Discovery.RetryOpts,
 	}
 
+	selectionPolicy := fab.SelectionPolicy{
+
+		SortingStrategy:         fab.SelectionSortingStrategy(chNwCfg.Policies.Selection.SortingStrategy),
+		Balancer:                fab.BalancerType(chNwCfg.Policies.Selection.Balancer),
+		BlockHeightLagThreshold: chNwCfg.Policies.Selection.BlockHeightLagThreshold,
+	}
+
 	channelCfgPolicy := fab.QueryChannelConfigPolicy{
 		MaxTargets:   chNwCfg.Policies.QueryChannelConfig.MaxTargets,
 		MinResponses: chNwCfg.Policies.QueryChannelConfig.MinResponses,
 		RetryOpts:    chNwCfg.Policies.QueryChannelConfig.RetryOpts,
 	}
 
-	return fab.ChannelPolicies{Discovery: discoveryPolicy, QueryChannelConfig: channelCfgPolicy}
+	return fab.ChannelPolicies{
+		Discovery:          discoveryPolicy,
+		Selection:          selectionPolicy,
+		QueryChannelConfig: channelCfgPolicy,
+	}
 }
 
 func (c *EndpointConfig) addMissingChannelPoliciesItems(chNwCfg ChannelEndpointConfig) fab.ChannelPolicies {
@@ -646,6 +657,7 @@ func (c *EndpointConfig) addMissingChannelPoliciesItems(chNwCfg ChannelEndpointC
 	policies := c.getChannelPolicies(chNwCfg)
 
 	policies.Discovery = c.addMissingDiscoveryPolicyInfo(policies.Discovery)
+	policies.Selection = c.addMissingSelectionPolicyInfo(policies.Selection)
 	policies.QueryChannelConfig = c.addMissingQueryChannelConfigPolicyInfo(policies.QueryChannelConfig)
 
 	return policies
@@ -665,6 +677,23 @@ func (c *EndpointConfig) addMissingDiscoveryPolicyInfo(policy fab.DiscoveryPolic
 		policy.RetryOpts = c.defaultChannelPolicies.Discovery.RetryOpts
 	} else {
 		policy.RetryOpts = addMissingRetryOpts(policy.RetryOpts, c.defaultChannelPolicies.Discovery.RetryOpts)
+	}
+
+	return policy
+}
+
+func (c *EndpointConfig) addMissingSelectionPolicyInfo(policy fab.SelectionPolicy) fab.SelectionPolicy {
+
+	if policy.SortingStrategy == "" {
+		policy.SortingStrategy = c.defaultChannelPolicies.Selection.SortingStrategy
+	}
+
+	if policy.Balancer == "" {
+		policy.Balancer = c.defaultChannelPolicies.Selection.Balancer
+	}
+
+	if policy.BlockHeightLagThreshold == 0 {
+		policy.BlockHeightLagThreshold = defaultBlockHeightLagThreshold
 	}
 
 	return policy
@@ -895,6 +924,18 @@ func (c *EndpointConfig) loadDefaultChannelPolicies(configEntity *endpointConfig
 
 	if defaultChPolicies.Discovery.MinResponses == 0 {
 		defaultChPolicies.Discovery.MinResponses = defaultMinResponses
+	}
+
+	if defaultChPolicies.Selection.SortingStrategy == "" {
+		defaultChPolicies.Selection.SortingStrategy = fab.BlockHeightPriority
+	}
+
+	if defaultChPolicies.Selection.Balancer == "" {
+		defaultChPolicies.Selection.Balancer = fab.RoundRobin
+	}
+
+	if defaultChPolicies.Selection.BlockHeightLagThreshold == 0 {
+		defaultChPolicies.Selection.BlockHeightLagThreshold = defaultBlockHeightLagThreshold
 	}
 
 	if defaultChPolicies.QueryChannelConfig.MaxTargets == 0 {

@@ -206,6 +206,18 @@ channels:
           maxBackoff: 5s
           #[Optional] he factor by which the initial back off period is exponentially incremented
           backoffFactor: 2.0
+      #[Optional] options for selection service
+      selection:
+        #[Optional] endorser selection sorting strategy. Possible values: [BlockHeightPriority,Balanced]
+        SortingStrategy: BlockHeightPriority
+        #[Optional] load-balancer type. Possible values: [RoundRobin,Random]
+        Balancer: RoundRobin
+        #[Optional] the number of blocks from the highest block number of a group of peers that a peer
+        #can lag behind and still be considered to be up-to-date. These peers will be sorted using the
+        #given Balancer. If a peer's block height falls behind this threshold then it will be demoted
+        #to a lower priority list of peers which will be sorted according to block height.
+        #Note: This property only applies to BlockHeightPriority sorter.
+        BlockHeightLagThreshold: 5
 
   # multi-org test channel
   orgchannel:

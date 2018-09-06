@@ -48,6 +48,12 @@ func (s *SelectionService) GetEndorsersForChaincode(chaincodes []*fab.ChaincodeC
 		channelPeers = peers
 	}
 
+	if params.PeerSorter != nil {
+		peers := make([]fab.Peer, len(channelPeers))
+		copy(peers, channelPeers)
+		channelPeers = params.PeerSorter(peers)
+	}
+
 	if logging.IsEnabledFor(loggerModule, logging.DEBUG) {
 		str := ""
 		for i, peer := range channelPeers {

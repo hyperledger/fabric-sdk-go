@@ -22,6 +22,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel/invoke"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/discovery/greylist"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/filter"
+	selectopts "github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/options"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
@@ -243,6 +244,13 @@ func (cc *Client) prepareHandlerContexts(reqCtx reqContext.Context, request Requ
 		return true
 	}
 
+	var peerSorter selectopts.PeerSorter
+	if o.TargetSorter != nil {
+		peerSorter = func(peers []fab.Peer) []fab.Peer {
+			return o.TargetSorter.Sort(peers)
+		}
+	}
+
 	clientContext := &invoke.ClientContext{
 		Selection:    selection,
 		Discovery:    discovery,
@@ -258,6 +266,7 @@ func (cc *Client) prepareHandlerContexts(reqCtx reqContext.Context, request Requ
 		RetryHandler:    retry.New(o.Retry),
 		Ctx:             reqCtx,
 		SelectionFilter: peerFilter,
+		PeerSorter:      peerSorter,
 	}
 
 	return requestContext, clientContext, nil

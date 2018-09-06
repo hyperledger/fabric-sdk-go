@@ -150,7 +150,7 @@ func (s *Service) GetEndorsersForChaincode(chaincodes []*fab.ChaincodeCall, opts
 	// the peers returned from the endorser query and it may take a while for them to sync.
 	endpoints, err := retry.NewInvoker(retry.New(s.retryOpts)).Invoke(
 		func() (interface{}, error) {
-			return s.getEndorsers(chaincodes, chResponse, newSelector(s.ctx, params.PrioritySelector), params.PeerFilter)
+			return s.getEndorsers(chaincodes, chResponse, params.PeerFilter, params.PeerSorter)
 		},
 	)
 
@@ -167,13 +167,13 @@ func (s *Service) Close() {
 	s.chResponseCache.Close()
 }
 
-func (s *Service) getEndorsers(chaincodes []*fab.ChaincodeCall, chResponse discclient.ChannelResponse, prioritySelector discclient.PrioritySelector, peerFilter soptions.PeerFilter) (discclient.Endorsers, error) {
+func (s *Service) getEndorsers(chaincodes []*fab.ChaincodeCall, chResponse discclient.ChannelResponse, peerFilter soptions.PeerFilter, sorter soptions.PeerSorter) (discclient.Endorsers, error) {
 	peers, err := s.discovery.GetPeers()
 	if err != nil {
 		return nil, errors.Wrapf(err, "error getting peers from discovery service for channel [%s]", s.channelID)
 	}
 
-	endpoints, err := chResponse.Endorsers(asInvocationChain(chaincodes), prioritySelector, newFilter(s.ctx, peerFilter, peers))
+	endpoints, err := chResponse.Endorsers(asInvocationChain(chaincodes), newFilter(s.channelID, s.ctx, peers, peerFilter, sorter))
 	if err != nil && newDiscoveryError(err).isTransient() {
 		return nil, status.New(status.DiscoveryServerStatus, int32(status.QueryEndorsers), fmt.Sprintf("error getting endorsers: %s", err), []interface{}{})
 	}
@@ -247,7 +247,7 @@ func (s *Service) query(req *discclient.Request, chaincodes []*fab.ChaincodeCall
 		logger.Debugf("Checking response from [%s]...", response.Target())
 		chResp := response.ForChannel(s.channelID)
 		// Make sure the target didn't return an error
-		_, err := chResp.Endorsers(invocChain, discclient.NoPriorities, discclient.NoExclusion)
+		_, err := chResp.Endorsers(invocChain, discclient.NoFilter)
 		if err != nil {
 			logger.Debugf("... got error response from [%s]: %s", response.Target(), err)
 			discErrs = append(discErrs, newDiscoveryError(err))

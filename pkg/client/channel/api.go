@@ -23,6 +23,7 @@ import (
 type requestOptions struct {
 	Targets       []fab.Peer // targets
 	TargetFilter  fab.TargetFilter
+	TargetSorter  fab.TargetSorter
 	Retry         retry.Opts
 	BeforeRetry   retry.BeforeRetryHandler
 	Timeouts      map[fab.TimeoutType]time.Duration //timeout options for channel client operations

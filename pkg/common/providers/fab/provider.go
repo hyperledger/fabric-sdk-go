@@ -69,6 +69,21 @@ type TargetFilter interface {
 	Accept(peer Peer) bool
 }
 
+// TargetSorter allows for sorting target peers
+type TargetSorter interface {
+	// Returns the sorted peers
+	Sort(peers []Peer) []Peer
+}
+
+// PrioritySelector determines how likely a peer is to be
+// selected over another peer
+type PrioritySelector interface {
+	// A positive return value means peer1 is selected
+	// A negative return value means the peer2 is selected
+	// Zero return value means their priorities are the same
+	Compare(peer1, peer2 Peer) int
+}
+
 // CommManager enables network communication.
 type CommManager interface {
 	DialContext(ctx reqContext.Context, target string, opts ...grpc.DialOption) (*grpc.ClientConn, error)
