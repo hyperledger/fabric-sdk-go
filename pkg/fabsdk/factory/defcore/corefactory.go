@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package defcore
 
 import (
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/logging/api"
@@ -17,6 +18,8 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/logging/modlog"
 )
+
+var logger = logging.NewLogger("fabsdk")
 
 // ProviderFactory represents the default SDK provider factory.
 type ProviderFactory struct {
@@ -30,6 +33,9 @@ func NewProviderFactory() *ProviderFactory {
 
 // CreateCryptoSuiteProvider returns a new default implementation of BCCSP
 func (f *ProviderFactory) CreateCryptoSuiteProvider(config core.CryptoSuiteConfig) (core.CryptoSuite, error) {
+	if config.SecurityProvider() != "sw" {
+		logger.Warnf("default provider factory doesn't support '%s' crypto provider", config.SecurityProvider())
+	}
 	cryptoSuiteProvider, err := cryptosuiteimpl.GetSuiteByConfig(config)
 	return cryptoSuiteProvider, err
 }
