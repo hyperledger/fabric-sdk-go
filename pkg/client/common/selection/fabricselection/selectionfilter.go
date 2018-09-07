@@ -80,6 +80,7 @@ func resolveBalancer(channelID string, channelConfig *fab.ChannelEndpointConfig)
 }
 
 func (s *selectionFilter) Filter(endorsers discclient.Endorsers) discclient.Endorsers {
+
 	// Convert the endorsers to peers
 	peers := s.asPeerValues(endorsers)
 
@@ -96,7 +97,7 @@ func (s *selectionFilter) Filter(endorsers discclient.Endorsers) discclient.Endo
 	sortedPeers := s.sortPeers(filteredPeers)
 
 	// Convert the filtered peers to endorsers
-	return asEndorsers(endorsers, sortedPeers)
+	return s.asEndorsers(endorsers, sortedPeers)
 }
 
 func (s *selectionFilter) sortPeers(peers []fab.Peer) []fab.Peer {
@@ -179,10 +180,10 @@ func (s *selectionFilter) sortByURL(peers []fab.Peer) []fab.Peer {
 	return peers
 }
 
-func asEndorsers(allEndorsers discclient.Endorsers, filteredPeers []fab.Peer) discclient.Endorsers {
+func (s *selectionFilter) asEndorsers(allEndorsers discclient.Endorsers, filteredPeers []fab.Peer) discclient.Endorsers {
 	var filteredEndorsers discclient.Endorsers
 	for _, peer := range filteredPeers {
-		endorser, found := asEndorser(allEndorsers, peer)
+		endorser, found := s.asEndorser(allEndorsers, peer)
 		if !found {
 			// This should never happen since the peer was composed from the initial list of endorsers
 			logger.Warnf("Endorser [%s] not found. Endorser will be excluded.", peer.URL())
@@ -194,9 +195,9 @@ func asEndorsers(allEndorsers discclient.Endorsers, filteredPeers []fab.Peer) di
 	return filteredEndorsers
 }
 
-func asEndorser(endorsers discclient.Endorsers, peer fab.Peer) (*discclient.Peer, bool) {
+func (s *selectionFilter) asEndorser(endorsers discclient.Endorsers, peer fab.Peer) (*discclient.Peer, bool) {
 	for _, endorser := range endorsers {
-		url := endorser.AliveMessage.GetAliveMsg().GetMembership().Endpoint
+		url := s.asPeerValue(endorser).URL()
 		if peer.URL() == url {
 			return endorser, true
 		}
