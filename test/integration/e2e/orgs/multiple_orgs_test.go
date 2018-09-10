@@ -73,6 +73,7 @@ type multiorgContext struct {
 	org2ResMgmt            *resmgmt.Client
 	ccName                 string
 	ccVersion              string
+	channelID              string
 }
 
 func TestMain(m *testing.M) {
@@ -132,6 +133,7 @@ func TestOrgsEndToEnd(t *testing.T) {
 		org2AdminClientContext: sdk.Context(fabsdk.WithUser(org2AdminUser), fabsdk.WithOrg(org2)),
 		ccName:                 exampleCC, // basic multi orgs test uses exampleCC for testing
 		ccVersion:              "0",
+		channelID:              channelID,
 	}
 
 	org1Peers, err := integration.DiscoverLocalPeers(mc.org1AdminClientContext, 2)
@@ -148,11 +150,14 @@ func TestOrgsEndToEnd(t *testing.T) {
 	}
 
 	expectedValue := testWithOrg1(t, sdk, &mc)
-	expectedValue = testWithOrg2(t, expectedValue, mc.ccName)
-	verifyWithOrg1(t, sdk, expectedValue, mc.ccName)
+	expectedValue = testWithOrg2(t, expectedValue, mc.ccName, channelID)
+	verifyWithOrg1(t, sdk, expectedValue, mc.ccName, channelID)
 
 	//test multi orgs with SDK config having single config
 	TestMultiOrgWithSingleOrgConfig(t, exampleCC)
+
+	//test Distributed signatures with 2 orgs (1 SDK per org, signature test done by SDK and another one done by OpenSSL)
+	DistributedSignaturesTests(t, exampleCC)
 }
 
 func createAndJoinChannel(t *testing.T, mc *multiorgContext) {
@@ -169,11 +174,11 @@ func createAndJoinChannel(t *testing.T, mc *multiorgContext) {
 
 	createChannel(org1AdminUser, org2AdminUser, mc, t)
 	// Org1 peers join channel
-	err = mc.org1ResMgmt.JoinChannel(channelID, resmgmt.WithRetry(retry.DefaultResMgmtOpts), resmgmt.WithOrdererEndpoint("orderer.example.com"))
+	err = mc.org1ResMgmt.JoinChannel(mc.channelID, resmgmt.WithRetry(retry.DefaultResMgmtOpts), resmgmt.WithOrdererEndpoint("orderer.example.com"))
 	require.NoError(t, err, "Org1 peers failed to JoinChannel")
 
 	// Org2 peers join channel
-	err = mc.org2ResMgmt.JoinChannel(channelID, resmgmt.WithRetry(retry.DefaultResMgmtOpts), resmgmt.WithOrdererEndpoint("orderer.example.com"))
+	err = mc.org2ResMgmt.JoinChannel(mc.channelID, resmgmt.WithRetry(retry.DefaultResMgmtOpts), resmgmt.WithOrdererEndpoint("orderer.example.com"))
 	require.NoError(t, err, "Org2 peers failed to JoinChannel")
 }
 
@@ -193,9 +198,9 @@ func setupClientContextsAndChannel(t *testing.T, sdk *fabsdk.FabricSDK, mc *mult
 
 func testWithOrg1(t *testing.T, sdk *fabsdk.FabricSDK, mc *multiorgContext) int {
 
-	org1AdminChannelContext := sdk.ChannelContext(channelID, fabsdk.WithUser(org1AdminUser), fabsdk.WithOrg(org1))
-	org1ChannelClientContext := sdk.ChannelContext(channelID, fabsdk.WithUser(org1User), fabsdk.WithOrg(org1))
-	org2ChannelClientContext := sdk.ChannelContext(channelID, fabsdk.WithUser(org2User), fabsdk.WithOrg(org2))
+	org1AdminChannelContext := sdk.ChannelContext(mc.channelID, fabsdk.WithUser(org1AdminUser), fabsdk.WithOrg(org1))
+	org1ChannelClientContext := sdk.ChannelContext(mc.channelID, fabsdk.WithUser(org1User), fabsdk.WithOrg(org1))
+	org2ChannelClientContext := sdk.ChannelContext(mc.channelID, fabsdk.WithUser(org2User), fabsdk.WithOrg(org2))
 
 	ccPkg, err := packager.NewCCPackage(ccPath, integration.GetDeployPath())
 	if err != nil {
@@ -205,7 +210,7 @@ func testWithOrg1(t *testing.T, sdk *fabsdk.FabricSDK, mc *multiorgContext) int 
 	// Create chaincode package for example cc
 	createCC(t, mc, ccPkg, mc.ccName, mc.ccVersion)
 
-	chClientOrg1User, chClientOrg2User := connectUserToOrgChannel(org1ChannelClientContext, t, org2ChannelClientContext)
+	chClientOrg1User, chClientOrg2User := createOrgsChannelClients(org1ChannelClientContext, t, org2ChannelClientContext)
 
 	// Call with a dummy function and expect a fail with multiple errors
 	verifyErrorFromCC(chClientOrg1User, t, mc.ccName)
@@ -245,7 +250,7 @@ func testWithOrg1(t *testing.T, sdk *fabsdk.FabricSDK, mc *multiorgContext) int 
 	return expectedValue
 }
 
-func connectUserToOrgChannel(org1ChannelClientContext contextAPI.ChannelProvider, t *testing.T, org2ChannelClientContext contextAPI.ChannelProvider) (*channel.Client, *channel.Client) {
+func createOrgsChannelClients(org1ChannelClientContext contextAPI.ChannelProvider, t *testing.T, org2ChannelClientContext contextAPI.ChannelProvider) (*channel.Client, *channel.Client) {
 	// Org1 user connects to 'orgchannel'
 	chClientOrg1User, err := channel.New(org1ChannelClientContext)
 	if err != nil {
@@ -295,38 +300,38 @@ func createChannel(org1AdminUser msp.SigningIdentity, org2AdminUser msp.SigningI
 	require.NoError(t, err, "failed to get a new channel management client")
 
 	// create a channel for orgchannel.tx
-	req := resmgmt.SaveChannelRequest{ChannelID: channelID,
+	req := resmgmt.SaveChannelRequest{ChannelID: mc.channelID,
 		ChannelConfigPath: integration.GetChannelConfigPath("orgchannel.tx"),
 		SigningIdentities: []msp.SigningIdentity{org1AdminUser, org2AdminUser}}
 	txID, err := chMgmtClient.SaveChannel(req, resmgmt.WithRetry(retry.DefaultResMgmtOpts), resmgmt.WithOrdererEndpoint("orderer.example.com"))
 	require.Nil(t, err, "error should be nil for SaveChannel of orgchannel")
 	require.NotEmpty(t, txID, "transaction ID should be populated")
 
-	lastConfigBlock = integration.WaitForOrdererConfigUpdate(t, configQueryClient, channelID, true, lastConfigBlock)
+	lastConfigBlock = integration.WaitForOrdererConfigUpdate(t, configQueryClient, mc.channelID, true, lastConfigBlock)
 
 	//do the same get ch client and create channel for each anchor peer as well (first for Org1MSP)
 	chMgmtClient, err = resmgmt.New(mc.org1AdminClientContext)
 	require.NoError(t, err, "failed to get a new channel management client for org1Admin")
-	req = resmgmt.SaveChannelRequest{ChannelID: channelID,
+	req = resmgmt.SaveChannelRequest{ChannelID: mc.channelID,
 		ChannelConfigPath: integration.GetChannelConfigPath("orgchannelOrg1MSPanchors.tx"),
 		SigningIdentities: []msp.SigningIdentity{org1AdminUser}}
 	txID, err = chMgmtClient.SaveChannel(req, resmgmt.WithRetry(retry.DefaultResMgmtOpts), resmgmt.WithOrdererEndpoint("orderer.example.com"))
 	require.Nil(t, err, "error should be nil for SaveChannel for anchor peer 1")
 	require.NotEmpty(t, txID, "transaction ID should be populated for anchor peer 1")
 
-	lastConfigBlock = integration.WaitForOrdererConfigUpdate(t, configQueryClient, channelID, false, lastConfigBlock)
+	lastConfigBlock = integration.WaitForOrdererConfigUpdate(t, configQueryClient, mc.channelID, false, lastConfigBlock)
 
 	// lastly create channel for Org2MSP anchor peer
 	chMgmtClient, err = resmgmt.New(mc.org2AdminClientContext)
 	require.NoError(t, err, "failed to get a new channel management client for org2Admin")
-	req = resmgmt.SaveChannelRequest{ChannelID: channelID,
+	req = resmgmt.SaveChannelRequest{ChannelID: mc.channelID,
 		ChannelConfigPath: integration.GetChannelConfigPath("orgchannelOrg2MSPanchors.tx"),
 		SigningIdentities: []msp.SigningIdentity{org2AdminUser}}
 	txID, err = chMgmtClient.SaveChannel(req, resmgmt.WithRetry(retry.DefaultResMgmtOpts), resmgmt.WithOrdererEndpoint("orderer.example.com"))
 	require.Nil(t, err, "error should be nil for SaveChannel for anchor peer 2")
 	require.NotEmpty(t, txID, "transaction ID should be populated for anchor peer 2")
 
-	integration.WaitForOrdererConfigUpdate(t, configQueryClient, channelID, false, lastConfigBlock)
+	integration.WaitForOrdererConfigUpdate(t, configQueryClient, mc.channelID, false, lastConfigBlock)
 }
 
 func testCCPolicy(chClientOrg2User *channel.Client, t *testing.T, ccName string) {
@@ -372,7 +377,7 @@ func upgradeCC(t *testing.T, mc *multiorgContext, ccPkg *resource.CCPackage, ccN
 	require.Nil(t, err, "error should be nil for getting cc policy with both orgs to approve")
 
 	// Org1 resource manager will instantiate 'example_cc' version 1 on 'orgchannel'
-	upgradeResp, err := mc.org1ResMgmt.UpgradeCC(channelID, resmgmt.UpgradeCCRequest{Name: ccName, Path: ccPath, Version: ccVersion, Args: integration.ExampleCCUpgradeArgs(), Policy: org1Andorg2Policy})
+	upgradeResp, err := mc.org1ResMgmt.UpgradeCC(mc.channelID, resmgmt.UpgradeCCRequest{Name: ccName, Path: ccPath, Version: ccVersion, Args: integration.ExampleCCUpgradeArgs(), Policy: org1Andorg2Policy})
 	require.Nil(t, err, "error should be nil for UpgradeCC version '1' on 'orgchannel'")
 	require.NotEmpty(t, upgradeResp, "transaction response should be populated")
 }
@@ -556,23 +561,23 @@ func createCC(t *testing.T, mc *multiorgContext, ccPkg *resource.CCPackage, ccNa
 	installed = queryInstalledCC(t, "Org2", mc.org2ResMgmt, ccName, ccVersion, org2Peers)
 	require.Truef(t, installed, "Expecting chaincode [%s:%s] to be installed on all peers in Org2")
 
-	instantiateCC(t, mc.org1ResMgmt, ccName, ccVersion)
+	instantiateCC(t, mc.org1ResMgmt, ccName, ccVersion, mc.channelID)
 
 	// Ensure the CC is instantiated on all peers in both orgs
-	found := queryInstantiatedCC(t, "Org1", mc.org1ResMgmt, channelID, ccName, ccVersion, org1Peers)
-	require.True(t, found, "Failed to find instantiated chaincode [%s:%s] in at least one peer in Org1 on channel [%s]", ccName, ccVersion, channelID)
+	found := queryInstantiatedCC(t, "Org1", mc.org1ResMgmt, mc.channelID, ccName, ccVersion, org1Peers)
+	require.True(t, found, "Failed to find instantiated chaincode [%s:%s] in at least one peer in Org1 on channel [%s]", ccName, ccVersion, mc.channelID)
 
-	found = queryInstantiatedCC(t, "Org2", mc.org2ResMgmt, channelID, ccName, ccVersion, org2Peers)
-	require.True(t, found, "Failed to find instantiated chaincode [%s:%s] in at least one peer in Org2 on channel [%s]", ccName, ccVersion, channelID)
+	found = queryInstantiatedCC(t, "Org2", mc.org2ResMgmt, mc.channelID, ccName, ccVersion, org2Peers)
+	require.True(t, found, "Failed to find instantiated chaincode [%s:%s] in at least one peer in Org2 on channel [%s]", ccName, ccVersion, mc.channelID)
 }
 
-func instantiateCC(t *testing.T, resMgmt *resmgmt.Client, ccName, ccVersion string) {
+func instantiateCC(t *testing.T, resMgmt *resmgmt.Client, ccName, ccVersion string, channelID string) {
 	instantiateResp, err := integration.InstantiateChaincode(resMgmt, channelID, ccName, ccPath, ccVersion, "AND ('Org1MSP.member','Org2MSP.member')", integration.ExampleCCInitArgs())
 	require.NoError(t, err)
 	require.NotEmpty(t, instantiateResp, "transaction response should be populated for instantateCC")
 }
 
-func testWithOrg2(t *testing.T, expectedValue int, ccName string) int {
+func testWithOrg2(t *testing.T, expectedValue int, ccName, channelID string) int {
 	// Create SDK setup for channel client with dynamic selection
 	sdk, err := fabsdk.New(integration.ConfigBackend)
 	if err != nil {
@@ -600,7 +605,7 @@ func testWithOrg2(t *testing.T, expectedValue int, ccName string) int {
 	return expectedValue
 }
 
-func verifyWithOrg1(t *testing.T, sdk *fabsdk.FabricSDK, expectedValue int, ccName string) {
+func verifyWithOrg1(t *testing.T, sdk *fabsdk.FabricSDK, expectedValue int, ccName string, channelID string) {
 	//prepare context
 	org1ChannelClientContext := sdk.ChannelContext(channelID, fabsdk.WithUser(org1User), fabsdk.WithOrg(org1))
 

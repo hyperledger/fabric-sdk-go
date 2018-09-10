@@ -17,6 +17,7 @@ fi
 
 declare -a oneOrgChannels=("mychannel")
 declare -a twoOrgChannels=("orgchannel")
+declare -a dsChannels=("dschannelsdk" "dschannelext")
 declare -a orgs=("Org1MSP" "Org2MSP")
 
 FIXTURES_CHANNEL_PATH=${FIXTURES_PATH}${FABRIC_VERSION_DIR}${CHANNEL_DIR}
@@ -48,5 +49,19 @@ do
    do
      echo "Generating anchor peer update for org $j"
      $CONFIGTXGEN_CMD -profile TwoOrgsChannel -outputAnchorPeersUpdate ${FIXTURES_CHANNEL_PATH}/${i}${j}anchors.tx -channelID $i -asOrg $j
+   done
+done
+
+for i in "${dsChannels[@]}"
+do
+   echo "Generating DsChannel (Distributed Signing Identities Channel) artifacts for channel: $i"
+
+   echo "Generating channel configuration transaction"
+   $CONFIGTXGEN_CMD -profile DsChannel -outputCreateChannelTx .${FIXTURES_CHANNEL_PATH}/${i}.tx -channelID $i
+
+   for j in "${orgs[@]}"
+   do
+     echo "Generating anchor peer update for org $j"
+     $CONFIGTXGEN_CMD -profile DsChannel -outputAnchorPeersUpdate ${FIXTURES_CHANNEL_PATH}/${i}${j}anchors.tx -channelID $i -asOrg $j
    done
 done

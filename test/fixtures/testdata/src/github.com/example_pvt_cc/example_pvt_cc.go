@@ -31,7 +31,7 @@ const (
 	putBothFunc       = "putboth"
 	getAndPutBothFunc = "getandputboth"
 	invokeCCFunc      = "invokecc"
-	addToIntFunc	  = "addToInt"
+	addToIntFunc      = "addToInt"
 )
 
 // ExampleCC example chaincode that puts and gets state and private data
@@ -220,7 +220,7 @@ func (cc *ExampleCC) getAndPutBoth(stub shim.ChaincodeStubInterface, args []stri
 
 // Adds a given int amount to the value stored in the given private collection's key, storing the result using the same key.
 // If the given key does not already exist then it will be added and stored with the given amount.
-func (cc *ExampleCC) addToInt(stub shim.ChaincodeStubInterface, args[]string) pb.Response {
+func (cc *ExampleCC) addToInt(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	if len(args) != 3 {
 		return shim.Error("Invalid args. Expecting collection, key, amountToAdd")
 	}

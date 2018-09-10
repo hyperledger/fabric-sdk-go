@@ -409,7 +409,7 @@ Profiles:
                       <<: *OrdererOrgPolicies
                       Admins:
                           Type: Signature
-                          Rule: "OR('OrdererMSP.member')"
+                          Rule: "OR('OrdererMSP.admin')"
         Consortiums:
             TestConsortium:
                 Organizations:
@@ -418,7 +418,7 @@ Profiles:
                       <<: *Org1Policies
                       Admins:
                           Type: Signature
-                          Rule: "OR('Org1MSP.member')"
+                          Rule: "OR('Org1MSP.admin')"
 
             SampleConsortium:
                 Organizations:
@@ -427,13 +427,13 @@ Profiles:
                           <<: *Org1Policies
                           Admins:
                               Type: Signature
-                              Rule: "OR('Org1MSP.member')"
+                              Rule: "OR('Org1MSP.admin')"
                     - <<: *Org2
                       Policies:
                           <<: *Org2Policies
                           Admins:
                               Type: Signature
-                              Rule: "OR('Org2MSP.member')"
+                              Rule: "OR('Org2MSP.admin')"
 
     OneOrgChannel:
         Consortium: TestConsortium
@@ -443,6 +443,14 @@ Profiles:
             - *Org1
 
     TwoOrgsChannel:
+        Consortium: SampleConsortium
+        Application:
+            <<: *ApplicationDefaults
+            Organizations:
+                - *Org1
+                - *Org2
+
+    DsChannel:
         Consortium: SampleConsortium
         Application:
             <<: *ApplicationDefaults

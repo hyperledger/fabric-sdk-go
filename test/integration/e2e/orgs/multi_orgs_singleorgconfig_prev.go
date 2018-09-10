@@ -18,3 +18,8 @@ func TestMultiOrgWithSingleOrgConfig(t *testing.T, examplecc string) {
 	//test nothing
 	t.Logf("Dynamic discovery tests didn't run for '%s', since tests are running prev-release", examplecc)
 }
+
+// DistributedSignaturesTests is not supported in prev tests
+func DistributedSignaturesTests(t *testing.T, examplecc string) {
+	t.Logf("Distributed Signatures tests require Dynamic Discovery which is not available in prev-release")
+}

@@ -62,6 +62,7 @@ func TestOrgsEndToEndWithBootstrapConfigs(t *testing.T) {
 		org2AdminClientContext: sdk.Context(fabsdk.WithUser(org2AdminUser), fabsdk.WithOrg(org2)),
 		ccName:                 bootStrapCC + metadata.TestRunID,
 		ccVersion:              "0",
+		channelID:              channelID,
 	}
 
 	// create channel and join orderer/orgs peers to it if was not done already
@@ -86,8 +87,8 @@ func TestOrgsEndToEndWithBootstrapConfigs(t *testing.T) {
 	loadOrgPeers(t, sdk.Context(fabsdk.WithUser(org1AdminUser), fabsdk.WithOrg(org1)))
 
 	expectedValue := testWithOrg1(t, sdk, &mc)
-	expectedValue = testWithOrg2(t, expectedValue, mc.ccName)
-	verifyWithOrg1(t, sdk, expectedValue, mc.ccName)
+	expectedValue = testWithOrg2(t, expectedValue, mc.ccName, channelID)
+	verifyWithOrg1(t, sdk, expectedValue, mc.ccName, channelID)
 }
 
 func testDynamicDiscovery(t *testing.T, sdk *fabsdk.FabricSDK, mc *multiorgContext) {
