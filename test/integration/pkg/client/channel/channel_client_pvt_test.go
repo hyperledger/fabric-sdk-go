@@ -9,7 +9,13 @@ SPDX-License-Identifier: Apache-2.0
 package channel
 
 import (
+	"strconv"
+	"strings"
+	"sync"
 	"testing"
+
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/multi"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/stretchr/testify/require"
 
@@ -135,6 +141,74 @@ func TestPrivateDataWithOrgDown(t *testing.T) {
 		t.Logf("Got %d response(s)", len(response.Responses))
 		require.NotEmptyf(t, response.Responses, "expecting at least one response")
 	})
+}
+
+// Data in a private data collection must be left untouched if the client receives an MVCC_READ_CONFLICT error.
+// We test this by submitting two cumulative changes to a private data collection, ensuring that the MVCC_READ_CONFLICT error
+// is reproduced, then asserting that only one of the changes was applied.
+func TestChannelClientRollsBackPvtDataIfMvccReadConflict(t *testing.T) {
+	orgsContext := setupMultiOrgContext(t, mainSDK)
+	require.NoError(t, integration.EnsureChannelCreatedAndPeersJoined(t, mainSDK, orgChannelID, "orgchannel.tx", orgsContext))
+	// private data collection used for test
+	const coll = "collection1"
+	// collection key used for test
+	const key = "collection_key"
+	ccID := integration.GenerateExamplePvtID(true)
+	collConfig, err := newCollectionConfig(coll, "OR('Org1MSP.member','Org2MSP.member','Org3MSP.member')", 0, 2, 1000)
+	require.NoError(t, err)
+	require.NoError(t, integration.InstallExamplePvtChaincode(orgsContext, ccID))
+	require.NoError(t, integration.InstantiateExamplePvtChaincode(orgsContext, orgChannelID, ccID, "OR('Org1MSP.member','Org2MSP.member','Org3MSP.member')", collConfig))
+	ctxProvider := mainSDK.ChannelContext(orgChannelID, fabsdk.WithUser(org1User), fabsdk.WithOrg(org1Name))
+	chClient, err := channel.New(ctxProvider)
+	require.NoError(t, err)
+
+	var errMtx sync.Mutex
+	errs := multi.Errors{}
+	var wg sync.WaitGroup
+
+	// test function; invokes a CC function that mutates the private data collection
+	changePvtData := func(amount int) {
+		defer wg.Done()
+		_, err := chClient.Execute(
+			channel.Request{
+				ChaincodeID: ccID,
+				Fcn:         "addToInt",
+				Args:        [][]byte{[]byte(coll), []byte(key), []byte(strconv.Itoa(amount))},
+			},
+		)
+		if err != nil {
+			errMtx.Lock()
+			errs = append(errs, err)
+			errMtx.Unlock()
+			return
+		}
+	}
+
+	// expected value at the end of the test
+	const expected = 10
+
+	wg.Add(2)
+	go changePvtData(expected)
+	go changePvtData(expected)
+	wg.Wait()
+
+	// ensure the MVCC_READ_CONFLICT was reproduced
+	require.Truef(t, len(errs) > 0 && strings.Contains(errs[0].Error(), "MVCC_READ_CONFLICT"), "could not reproduce MVCC_READ_CONFLICT")
+
+	// read current value of private data collection
+	resp, err := chClient.Query(
+		channel.Request{
+			ChaincodeID: ccID,
+			Fcn:         "getprivate",
+			Args:        [][]byte{[]byte(coll), []byte(key)},
+		},
+	)
+	require.NoErrorf(t, err, "error attempting to read private data")
+
+	actual, err := strconv.Atoi(string(resp.Payload))
+	require.NoError(t, err)
+
+	assert.Truef(t, actual == expected, "Private data not rolled back during MVCC_READ_CONFLICT")
 }
 
 func newCollectionConfig(colName, policy string, reqPeerCount, maxPeerCount int32, blockToLive uint64) (*cb.CollectionConfig, error) {
