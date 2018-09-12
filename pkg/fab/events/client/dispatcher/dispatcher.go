@@ -242,7 +242,7 @@ func (ed *Dispatcher) clearConnectionRegistration() {
 }
 
 func (ed *Dispatcher) monitorPeer(done chan struct{}) {
-	logger.Infof("Starting peer monitor on channel [%s]", ed.chConfig.ID())
+	logger.Debugf("Starting peer monitor on channel [%s]", ed.chConfig.ID())
 
 	ticker := time.NewTicker(ed.peerMonitorPeriod)
 	defer ticker.Stop()

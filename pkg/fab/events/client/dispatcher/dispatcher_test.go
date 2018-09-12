@@ -14,6 +14,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/lbp"
 	clientmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/peerresolver/minblockheight"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/peerresolver/preferorg"
 	esdispatcher "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/service/dispatcher"
 	servicemocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/service/mocks"
 	fabmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
@@ -293,8 +294,99 @@ func TestDisconnectIfBlockHeightLags(t *testing.T) {
 	dispatcherEventch <- esdispatcher.NewBlockEvent(blockProducer.NewBlock(channelID), sourceURL)
 	dispatcherEventch <- esdispatcher.NewBlockEvent(blockProducer.NewBlock(channelID), sourceURL)
 
-	time.Sleep(time.Second)
 	p2.SetBlockHeight(15)
+
+	select {
+	case e := <-connch:
+		assert.Falsef(t, e.Connected, "expecting disconnected event")
+	case <-time.After(time.Second):
+		t.Fatal("Expecting disconnected event but got none")
+	}
+}
+
+// TestPreferLocalOrgConnection tests the scenario where an org wishes to connect to it's own peers
+// if they are above the block height lag threshold but, if they fall below the threshold, the
+// connection should be made to another org's peer. Once the local org's peers have caught up in
+// block height, the connection to the other org's peer should be terminated.
+func TestPreferLocalOrgConnection(t *testing.T) {
+	channelID := "testchannel"
+	org1MSP := "Org1MSP"
+	org2MSP := "Org2MSP"
+
+	p1O1 := clientmocks.NewMockStatefulPeer("p1_o1", "peer1.org1.com:7051", clientmocks.WithMSP(org1MSP), clientmocks.WithBlockHeight(4))
+	p2O1 := clientmocks.NewMockStatefulPeer("p2_o1", "peer2.org1.com:7051", clientmocks.WithMSP(org1MSP), clientmocks.WithBlockHeight(3))
+	p1O2 := clientmocks.NewMockStatefulPeer("p1_o2", "peer1.org2.com:7051", clientmocks.WithMSP(org2MSP), clientmocks.WithBlockHeight(10))
+	p2O2 := clientmocks.NewMockStatefulPeer("p2_o2", "peer1.org2.com:7051", clientmocks.WithMSP(org2MSP), clientmocks.WithBlockHeight(12))
+
+	dispatcher := New(
+		fabmocks.NewMockContext(
+			mspmocks.NewMockSigningIdentity("user1", org1MSP),
+		),
+		fabmocks.NewMockChannelCfg(channelID),
+		clientmocks.NewDiscoveryService(p1O1, p2O1, p1O2, p2O2),
+		clientmocks.NewProviderFactory().Provider(
+			clientmocks.NewMockConnection(
+				clientmocks.WithLedger(
+					servicemocks.NewMockLedger(servicemocks.FilteredBlockEventFactory, sourceURL),
+				),
+			),
+		),
+		WithPeerResolver(preferorg.NewResolver()),
+		WithPeerMonitorPeriod(250*time.Millisecond),
+		minblockheight.WithBlockHeightLagThreshold(2),
+		minblockheight.WithReconnectBlockHeightThreshold(3),
+		WithLoadBalancePolicy(lbp.NewRandom()),
+	)
+
+	if err := dispatcher.Start(); err != nil {
+		t.Fatalf("Error starting dispatcher: %s", err)
+	}
+
+	dispatcherEventch, err := dispatcher.EventCh()
+	if err != nil {
+		t.Fatalf("Error getting event channel from dispatcher: %s", err)
+	}
+
+	// Register for connection events
+	regerrch := make(chan error)
+	regch := make(chan fab.Registration)
+	connch := make(chan *ConnectionEvent, 10)
+	dispatcherEventch <- NewRegisterConnectionEvent(connch, regch, regerrch)
+
+	select {
+	case <-regch:
+		// No need get the registration to unregister since we're relying on the
+		// connch channel being closed when the dispatcher is stopped.
+	case err := <-regerrch:
+		t.Fatalf("Error registering for connection events: %s", err)
+	}
+
+	// Connect
+	errch := make(chan error)
+	dispatcherEventch <- NewConnectEvent(errch)
+	err = <-errch
+	if err != nil {
+		t.Fatalf("Error connecting: %s", err)
+	}
+
+	dispatcherEventch <- NewConnectedEvent()
+
+	select {
+	case e := <-connch:
+		assert.Truef(t, e.Connected, "expecting connected event")
+	case <-time.After(time.Second):
+		t.Fatal("Expecting connected event but got none")
+	}
+
+	// The initial connection should have been to an Org2 peer since their block heights are higher than Org1
+	blockProducer := servicemocks.NewBlockProducer()
+	dispatcherEventch <- esdispatcher.NewBlockEvent(blockProducer.NewBlock(channelID), sourceURL)
+	dispatcherEventch <- esdispatcher.NewBlockEvent(blockProducer.NewBlock(channelID), sourceURL)
+	dispatcherEventch <- esdispatcher.NewBlockEvent(blockProducer.NewBlock(channelID), sourceURL)
+	dispatcherEventch <- esdispatcher.NewBlockEvent(blockProducer.NewBlock(channelID), sourceURL)
+	dispatcherEventch <- esdispatcher.NewBlockEvent(blockProducer.NewBlock(channelID), sourceURL)
+
+	p2O1.SetBlockHeight(15)
 
 	select {
 	case e := <-connch:

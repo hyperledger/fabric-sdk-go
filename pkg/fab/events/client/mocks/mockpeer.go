@@ -9,21 +9,49 @@ package mocks
 import (
 	"sync"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	fabmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 )
 
 // MockPeer contains mock PeerState
 type MockPeer struct {
-	fab.Peer
+	*fabmocks.MockPeer
 	blockHeight uint64
 	lock        sync.RWMutex
 }
 
+// MockPeerOpt is a mock peer option
+type MockPeerOpt func(*MockPeer)
+
+// WithMSP sets the MSP ID of the mock peer
+func WithMSP(mspID string) MockPeerOpt {
+	return func(p *MockPeer) {
+		p.SetMSPID(mspID)
+	}
+}
+
+// WithBlockHeight sets the block height of the mock peer
+func WithBlockHeight(blockHeight uint64) MockPeerOpt {
+	return func(p *MockPeer) {
+		p.blockHeight = blockHeight
+	}
+}
+
+// NewMockStatefulPeer returns a new MockPeer with the given options
+func NewMockStatefulPeer(name, url string, opts ...MockPeerOpt) *MockPeer {
+	p := &MockPeer{
+		MockPeer: fabmocks.NewMockPeer(name, url),
+	}
+	for _, opt := range opts {
+		opt(p)
+	}
+	return p
+}
+
 // NewMockPeer returns a new MockPeer
+// Deprecated: This function will be deprecated in the future. Use NewMockStatefulPeer instead.
 func NewMockPeer(name, url string, blockHeight uint64) *MockPeer {
 	return &MockPeer{
-		Peer:        fabmocks.NewMockPeer(name, url),
+		MockPeer:    fabmocks.NewMockPeer(name, url),
 		blockHeight: blockHeight,
 	}
 }
