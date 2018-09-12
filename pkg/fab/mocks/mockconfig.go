@@ -329,6 +329,8 @@ func (c *MockConfig) Lookup(key string) (interface{}, bool) {
 
 // MockEventServiceConfig contains configuration options for the event service
 type MockEventServiceConfig struct {
+	PeerResolverStrategy  fab.ResolverStrategy
+	PeerBalancer          fab.BalancerType
 	LagThreshold          int
 	ReconnectLagThreshold int
 	MonitorPeriod         time.Duration
@@ -348,4 +350,15 @@ func (c *MockEventServiceConfig) ReconnectBlockHeightLagThreshold() int {
 // the event client should disconnect and reconnect to another peer.
 func (c *MockEventServiceConfig) PeerMonitorPeriod() time.Duration {
 	return c.MonitorPeriod
+}
+
+// ResolverStrategy returns the peer resolver strategy to use when connecting to a peer
+// Default: MinBlockHeightPeerResolver
+func (c *MockEventServiceConfig) ResolverStrategy() fab.ResolverStrategy {
+	return c.PeerResolverStrategy
+}
+
+// Balancer is the balancer to use when choosing a peer to connect to
+func (c *MockEventServiceConfig) Balancer() fab.BalancerType {
+	return c.PeerBalancer
 }

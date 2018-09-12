@@ -9,8 +9,6 @@ package balanced
 import (
 	"testing"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/lbp"
-
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	clientmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
@@ -30,8 +28,15 @@ var (
 func TestResolve(t *testing.T) {
 	dispatcher := &clientmocks.MockDispatcher{}
 	ctx := mocks.NewMockContext(mockmsp.NewMockSigningIdentity("test", org1MSP))
+
+	config := &mocks.MockConfig{
+		EvtServiceConfig: &mocks.MockEventServiceConfig{
+			PeerBalancer: fab.RoundRobin,
+		},
+	}
+	ctx.SetEndpointConfig(config)
+
 	resolver := New(dispatcher, ctx)
-	resolver.loadBalancePolicy = lbp.NewRoundRobin()
 
 	chosenPeers := make(map[string]struct{})
 	for i := 0; i < len(peers); i++ {

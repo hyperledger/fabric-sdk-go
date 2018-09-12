@@ -11,9 +11,12 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/lbp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/peerresolver"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/peerresolver/balanced"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/peerresolver/minblockheight"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/peerresolver/preferorg"
 )
 
 type params struct {
@@ -26,7 +29,7 @@ func defaultParams(context context.Client) *params {
 
 	return &params{
 		peerMonitorPeriod:    config.PeerMonitorPeriod(),
-		peerResolverProvider: minblockheight.NewResolver(),
+		peerResolverProvider: getPeerResolver(config),
 	}
 }
 
@@ -79,4 +82,21 @@ type peerResolverSetter interface {
 func (p *params) SetPeerResolver(value peerresolver.Provider) {
 	logger.Debugf("PeerResolver: %#v", value)
 	p.peerResolverProvider = value
+}
+
+func getPeerResolver(config fab.EventServiceConfig) peerresolver.Provider {
+	switch config.ResolverStrategy() {
+	case fab.PreferOrgStrategy:
+		logger.Debugf("Using prefer-org peer resolver")
+		return preferorg.NewResolver()
+	case fab.MinBlockHeightStrategy:
+		logger.Debugf("Using min-block-height peer resolver")
+		return minblockheight.NewResolver()
+	case fab.BalancedStrategy:
+		logger.Debugf("Using balanced peer resolver")
+		return balanced.NewResolver()
+	default:
+		logger.Debugf("Resolver strategy not specified. Using prefer-org peer resolver.")
+		return preferorg.NewResolver()
+	}
 }

@@ -15,9 +15,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mitchellh/mapstructure"
-	"github.com/pkg/errors"
-
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/multi"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
@@ -29,6 +26,8 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/lookup"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/pkg/util/pathvar"
+	"github.com/mitchellh/mapstructure"
+	"github.com/pkg/errors"
 )
 
 var logger = logging.NewLogger("fabsdk/fab")
@@ -53,6 +52,8 @@ const (
 	defaultSelectionRefreshInterval       = time.Second * 5
 	defaultCacheSweepInterval             = time.Second * 15
 
+	defaultResolverStrategy        = fab.PreferOrgStrategy
+	defaultBalancer                = fab.Random
 	defaultBlockHeightLagThreshold = 5
 
 	//default grpc opts
@@ -1654,6 +1655,25 @@ func (c *EndpointConfig) regexMatchAndReplace(regex *regexp.Regexp, src, repl st
 // EventServiceConfig contains config options for the event service
 type EventServiceConfig struct {
 	backend *lookup.ConfigLookup
+}
+
+// ResolverStrategy returns the peer resolver strategy to use when connecting to a peer
+// Default: MinBlockHeightPeerResolver
+func (c *EventServiceConfig) ResolverStrategy() fab.ResolverStrategy {
+	strategy := fab.ResolverStrategy(c.backend.GetString("client.eventService.resolverStrategy"))
+	if strategy == "" {
+		return defaultResolverStrategy
+	}
+	return strategy
+}
+
+// Balancer is the balancer to use when choosing a peer to connect to
+func (c *EventServiceConfig) Balancer() fab.BalancerType {
+	balancer := fab.BalancerType(c.backend.GetString("client.eventService.balancer"))
+	if balancer == "" {
+		return defaultBalancer
+	}
+	return balancer
 }
 
 // BlockHeightLagThreshold returns the block height lag threshold. This value is used for choosing a peer

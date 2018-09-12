@@ -47,6 +47,25 @@ client:
 #        greylistExpiry: 10s
 #
 #  eventService:
+#    # resolverStrategy specifies the peer resolver strategy to use when connecting to a peer.
+#    # Possible values: [PreferOrg (default), MinBlockHeight, Balanced]
+#    #
+#    # PreferOrg:
+#    #   Determines which peers are suitable based on block height lag threshold, although will prefer the peers in the
+#    #   current org (as long as their block height is above a configured threshold). If none of the peers from the current org
+#    #   are suitable then a peer from another org is chosen.
+#    # MinBlockHeight:
+#    #   Chooses the best peer according to a block height lag threshold. The maximum block height of all peers is
+#    #   determined and the peers whose block heights are under the maximum height but above a provided "lag" threshold are load
+#    #   balanced. The other peers are not considered.
+#    # Balanced:
+#    #   Chooses peers using the configured balancer.
+#    resolverStrategy: PreferOrg
+#
+#    # balancer is the balancer to use when choosing a peer to connect to
+#    # Possible values: [Random (default), RoundRobin]
+#    balancer: Random
+#
 #    # blockHeightLagThreshold sets the block height lag threshold. This value is used for choosing a peer
 #    # to connect to. If a peer is lagging behind the most up-to-date peer by more than the given number of
 #    # blocks then it will be excluded from selection.

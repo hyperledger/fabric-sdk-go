@@ -21,7 +21,7 @@ var logger = logging.NewLogger("fabsdk/fab")
 
 // PeerResolver is a peer resolver that chooses the best peer according to a block height lag threshold.
 // The maximum block height of all peers is determined and the peers whose block heights are under
-// the maximum height but above a privided "lag" threshold are load balanced. The other peers are
+// the maximum height but above a provided "lag" threshold are load balanced. The other peers are
 // not considered.
 type PeerResolver struct {
 	*params
@@ -49,12 +49,12 @@ func New(dispatcher service.Dispatcher, context context.Client, opts ...options.
 }
 
 // Resolve returns the best peer according to a block height lag threshold. The maximum block height of
-// all peers is determined and the peers that are within a privided "lag" threshold are load balanced.
+// all peers is determined and the peers that are within a provided "lag" threshold are load balanced.
 func (r *PeerResolver) Resolve(peers []fab.Peer) (fab.Peer, error) {
 	return r.loadBalancePolicy.Choose(r.Filter(peers))
 }
 
-// Filter returns the peers that are within a privided "lag" threshold from the highest block height of all peers.
+// Filter returns the peers that are within a provided "lag" threshold from the highest block height of all peers.
 func (r *PeerResolver) Filter(peers []fab.Peer) []fab.Peer {
 	var minBlockHeight uint64
 	if r.minBlockHeight > 0 {

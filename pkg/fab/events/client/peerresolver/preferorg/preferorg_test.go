@@ -9,8 +9,6 @@ package preferorg
 import (
 	"testing"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/lbp"
-
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	clientmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/peerresolver/minblockheight"
@@ -35,6 +33,12 @@ var (
 func TestResolve(t *testing.T) {
 	dispatcher := &clientmocks.MockDispatcher{}
 	ctx := mocks.NewMockContext(mockmsp.NewMockSigningIdentity("test", org1MSP))
+	config := &mocks.MockConfig{
+		EvtServiceConfig: &mocks.MockEventServiceConfig{
+			PeerBalancer: fab.RoundRobin,
+		},
+	}
+	ctx.SetEndpointConfig(config)
 
 	resolver := New(dispatcher, ctx, minblockheight.WithBlockHeightLagThreshold(0))
 	peer, err := resolver.Resolve(peers)
@@ -47,7 +51,6 @@ func TestResolve(t *testing.T) {
 	assert.Equalf(t, p2O1.URL(), peer.URL(), "expected peer2 from org1 to be selected since threshold is set to 5")
 
 	resolver = New(dispatcher, ctx, minblockheight.WithBlockHeightLagThreshold(-1))
-	resolver.loadBalancePolicy = lbp.NewRoundRobin()
 
 	chosenPeers := make(map[string]struct{})
 	for i := 0; i < 10; i++ {

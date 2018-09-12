@@ -15,17 +15,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/peerresolver/preferorg"
-
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/dispatcher"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/lbp"
 	clientmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/mocks"
 	mockconn "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/mocks"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/peerresolver/minblockheight"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/peerresolver/preferpeer"
 	esdispatcher "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/service/dispatcher"
 	servicemocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/service/mocks"
@@ -1414,10 +1410,24 @@ func TestDisconnectIfBlockHeightLags(t *testing.T) {
 
 	channelID := "mychannel"
 
+	ctx := fabmocks.NewMockContext(
+		mspmocks.NewMockSigningIdentity("user1", "Org1MSP"),
+	)
+
+	ctx.SetEndpointConfig(
+		&fabmocks.MockConfig{
+			EvtServiceConfig: &fabmocks.MockEventServiceConfig{
+				PeerResolverStrategy:  fab.MinBlockHeightStrategy,
+				PeerBalancer:          fab.RoundRobin,
+				LagThreshold:          2,
+				ReconnectLagThreshold: 3,
+				MonitorPeriod:         250 * time.Millisecond,
+			},
+		},
+	)
+
 	eventClient, _, err := newClientWithMockConnAndOpts(
-		fabmocks.NewMockContext(
-			mspmocks.NewMockSigningIdentity("user1", "Org1MSP"),
-		),
+		ctx,
 		fabmocks.NewMockChannelCfg(channelID),
 		clientmocks.NewDiscoveryService(p1, p2, p3),
 		connectionProvider, filteredClientProvider,
@@ -1427,11 +1437,6 @@ func TestDisconnectIfBlockHeightLags(t *testing.T) {
 			WithTimeBetweenConnectAttempts(time.Millisecond),
 			WithConnectionEvent(connectch),
 			WithResponseTimeout(2 * time.Second),
-			dispatcher.WithPeerResolver(minblockheight.NewResolver()),
-			dispatcher.WithLoadBalancePolicy(lbp.NewRoundRobin()),
-			dispatcher.WithPeerMonitorPeriod(250 * time.Millisecond),
-			minblockheight.WithBlockHeightLagThreshold(2),
-			minblockheight.WithReconnectBlockHeightThreshold(3),
 		},
 	)
 	if err != nil {
@@ -1485,10 +1490,24 @@ func TestPreferLocalOrgConnection(t *testing.T) {
 	)
 	connectionProvider := clientmocks.NewProviderFactory().Provider(conn)
 
+	ctx := fabmocks.NewMockContext(
+		mspmocks.NewMockSigningIdentity("user1", "Org1MSP"),
+	)
+
+	ctx.SetEndpointConfig(
+		&fabmocks.MockConfig{
+			EvtServiceConfig: &fabmocks.MockEventServiceConfig{
+				PeerResolverStrategy:  fab.PreferOrgStrategy,
+				PeerBalancer:          fab.RoundRobin,
+				LagThreshold:          blockHeightLagThreshold,
+				ReconnectLagThreshold: 3,
+				MonitorPeriod:         250 * time.Millisecond,
+			},
+		},
+	)
+
 	eventClient, _, err := newClientWithMockConnAndOpts(
-		fabmocks.NewMockContext(
-			mspmocks.NewMockSigningIdentity("user1", "Org1MSP"),
-		),
+		ctx,
 		fabmocks.NewMockChannelCfg(channelID),
 		clientmocks.NewDiscoveryService(p1O1, p2O1, p1O2, p2O2),
 		connectionProvider, filteredClientProvider,
@@ -1498,11 +1517,6 @@ func TestPreferLocalOrgConnection(t *testing.T) {
 			WithTimeBetweenConnectAttempts(time.Millisecond),
 			WithConnectionEvent(connectch),
 			WithResponseTimeout(2 * time.Second),
-			dispatcher.WithPeerResolver(preferorg.NewResolver()),
-			dispatcher.WithLoadBalancePolicy(lbp.NewRoundRobin()),
-			dispatcher.WithPeerMonitorPeriod(250 * time.Millisecond),
-			minblockheight.WithBlockHeightLagThreshold(blockHeightLagThreshold),
-			minblockheight.WithReconnectBlockHeightThreshold(3),
 		},
 	)
 	require.NoErrorf(t, err, "error creating channel event client")
@@ -1558,10 +1572,24 @@ func TestPreferLocalPeersConnection(t *testing.T) {
 	)
 	connectionProvider := clientmocks.NewProviderFactory().Provider(conn)
 
+	ctx := fabmocks.NewMockContext(
+		mspmocks.NewMockSigningIdentity("user1", "Org1MSP"),
+	)
+
+	ctx.SetEndpointConfig(
+		&fabmocks.MockConfig{
+			EvtServiceConfig: &fabmocks.MockEventServiceConfig{
+				PeerResolverStrategy:  fab.PreferOrgStrategy,
+				PeerBalancer:          fab.RoundRobin,
+				LagThreshold:          blockHeightLagThreshold,
+				ReconnectLagThreshold: 3,
+				MonitorPeriod:         250 * time.Millisecond,
+			},
+		},
+	)
+
 	eventClient, _, err := newClientWithMockConnAndOpts(
-		fabmocks.NewMockContext(
-			mspmocks.NewMockSigningIdentity("user1", "Org1MSP"),
-		),
+		ctx,
 		fabmocks.NewMockChannelCfg(channelID),
 		clientmocks.NewDiscoveryService(p1O1, p2O1, p1O2, p2O2),
 		connectionProvider, filteredClientProvider,
@@ -1572,10 +1600,6 @@ func TestPreferLocalPeersConnection(t *testing.T) {
 			WithConnectionEvent(connectch),
 			WithResponseTimeout(2 * time.Second),
 			dispatcher.WithPeerResolver(preferpeer.NewResolver(p1O1.URL(), p2O1.URL())),
-			dispatcher.WithLoadBalancePolicy(lbp.NewRoundRobin()),
-			dispatcher.WithPeerMonitorPeriod(250 * time.Millisecond),
-			minblockheight.WithBlockHeightLagThreshold(blockHeightLagThreshold),
-			minblockheight.WithReconnectBlockHeightThreshold(3),
 		},
 	)
 	require.NoErrorf(t, err, "error creating channel event client")

@@ -11,6 +11,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/lbp"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/peerresolver"
 )
 
 type params struct {
@@ -26,7 +27,7 @@ func defaultParams(context context.Client) *params {
 	return &params{
 		blockHeightLagThreshold:          config.BlockHeightLagThreshold(),
 		reconnectBlockHeightLagThreshold: config.ReconnectBlockHeightLagThreshold(),
-		loadBalancePolicy:                lbp.NewRandom(),
+		loadBalancePolicy:                peerresolver.GetBalancer(config),
 	}
 }
 

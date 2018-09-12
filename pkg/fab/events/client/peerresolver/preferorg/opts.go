@@ -9,6 +9,7 @@ package preferorg
 import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/lbp"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/peerresolver"
 )
 
 type params struct {
@@ -17,7 +18,7 @@ type params struct {
 
 func defaultParams(context context.Client) *params {
 	return &params{
-		loadBalancePolicy: lbp.NewRandom(),
+		loadBalancePolicy: peerresolver.GetBalancer(context.EndpointConfig().EventServiceConfig()),
 	}
 }
 

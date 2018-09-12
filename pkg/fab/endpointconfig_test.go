@@ -198,6 +198,8 @@ func TestEventServiceConfig(t *testing.T) {
 	customBackend.KeyValueMap["client.eventService.blockHeightLagThreshold"] = "4"
 	customBackend.KeyValueMap["client.eventService.reconnectBlockHeightLagThreshold"] = "7"
 	customBackend.KeyValueMap["client.eventService.peerMonitorPeriod"] = "7s"
+	customBackend.KeyValueMap["client.eventService.resolverStrategy"] = "Balanced"
+	customBackend.KeyValueMap["client.eventService.balancer"] = "RoundRobin"
 
 	endpointConfig, err := ConfigFromBackend(customBackend)
 	require.NoError(t, err)
@@ -206,6 +208,8 @@ func TestEventServiceConfig(t *testing.T) {
 	assert.Equalf(t, 4, eventServiceConfig.BlockHeightLagThreshold(), "invalid value for blockHeightLagThreshold")
 	assert.Equalf(t, 7, eventServiceConfig.ReconnectBlockHeightLagThreshold(), "invalid value for reconnectBlockHeightLagThreshold")
 	assert.Equalf(t, 7*time.Second, eventServiceConfig.PeerMonitorPeriod(), "invalid value for peerMonitorPeriod")
+	assert.Equalf(t, fab.BalancedStrategy, eventServiceConfig.ResolverStrategy(), "invalid value for resolverStrategy")
+	assert.Equalf(t, fab.RoundRobin, eventServiceConfig.Balancer(), "invalid value for peerBalancer")
 }
 
 func checkTimeouts(endpointConfig fab.EndpointConfig, t *testing.T, errStr string) {

@@ -10,8 +10,6 @@ import (
 	"math"
 	"testing"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/lbp"
-
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	clientmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
@@ -80,13 +78,19 @@ func TestFilter(t *testing.T) {
 func TestResolve(t *testing.T) {
 	dispatcher := &clientmocks.MockDispatcher{}
 	ctx := mocks.NewMockContext(mockmsp.NewMockSigningIdentity("test", org1MSP))
+	config := &mocks.MockConfig{
+		EvtServiceConfig: &mocks.MockEventServiceConfig{
+			PeerBalancer: fab.RoundRobin,
+		},
+	}
+	ctx.SetEndpointConfig(config)
+
 	resolver := New(dispatcher, ctx, WithBlockHeightLagThreshold(0))
 	peer, err := resolver.Resolve(peers)
 	require.NoError(t, err)
 	assert.Equal(t, p3.URL(), peer.URL())
 
 	resolver = New(dispatcher, ctx, WithBlockHeightLagThreshold(-1))
-	resolver.loadBalancePolicy = lbp.NewRoundRobin()
 
 	chosenPeers := make(map[string]struct{})
 	for i := 0; i < len(peers); i++ {

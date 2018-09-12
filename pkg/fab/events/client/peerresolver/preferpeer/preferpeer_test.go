@@ -10,7 +10,6 @@ import (
 	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/lbp"
 	clientmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/peerresolver/minblockheight"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
@@ -34,15 +33,19 @@ var (
 func TestResolve(t *testing.T) {
 	dispatcher := &clientmocks.MockDispatcher{}
 	ctx := mocks.NewMockContext(mockmsp.NewMockSigningIdentity("test", org1MSP))
+	config := &mocks.MockConfig{
+		EvtServiceConfig: &mocks.MockEventServiceConfig{
+			PeerBalancer: fab.RoundRobin,
+		},
+	}
+	ctx.SetEndpointConfig(config)
 
 	resolver := New(dispatcher, ctx, []string{p2O1.URL()}, minblockheight.WithBlockHeightLagThreshold(0))
-
 	peer, err := resolver.Resolve(peers)
 	require.NoError(t, err)
 	assert.Equalf(t, p2O2.URL(), peer.URL(), "expected peer1 from org1 to be selected since threshold is set to 0 (highest block height)")
 
 	resolver = New(dispatcher, ctx, []string{p2O1.URL()}, minblockheight.WithBlockHeightLagThreshold(5))
-	resolver.loadBalancePolicy = lbp.NewRandom()
 	peer, err = resolver.Resolve(peers)
 	require.NoError(t, err)
 	assert.Equalf(t, p2O1.URL(), peer.URL(), "expected peer2 from org1 to be selected since threshold is set to 5 and it's the preferred peer")
@@ -53,7 +56,6 @@ func TestResolve(t *testing.T) {
 	assert.Equalf(t, p2O1.URL(), peer.URL(), "expected peer2 from org1 to be selected since the preferred peer (peer1 in org1) is below the threshold but the other peer in org1 is above the threshold")
 
 	resolver = New(dispatcher, ctx, []string{p1O1.URL(), p2O1.URL()}, minblockheight.WithBlockHeightLagThreshold(-1))
-	resolver.loadBalancePolicy = lbp.NewRandom()
 
 	chosenPeers := make(map[string]struct{})
 	for i := 0; i < 10; i++ {

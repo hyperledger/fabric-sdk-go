@@ -302,6 +302,14 @@ func (m *mockEventServiceConfig) EventServiceConfig() fab.EventServiceConfig {
 type mockEventServiceConfigImpl struct {
 }
 
+func (m *mockEventServiceConfigImpl) ResolverStrategy() fab.ResolverStrategy {
+	return fab.BalancedStrategy
+}
+
+func (m *mockEventServiceConfigImpl) Balancer() fab.BalancerType {
+	return fab.Random
+}
+
 func (m *mockEventServiceConfigImpl) BlockHeightLagThreshold() int {
 	return 5
 }
