@@ -124,9 +124,10 @@ type EventServiceConfig interface {
 	// affecting performance.
 	ReconnectBlockHeightLagThreshold() int
 
-	// BlockHeightMonitorPeriod is the period in which the connected peer's block height is monitored. Note that this
-	// value is only relevant if reconnectBlockHeightLagThreshold >0.
-	BlockHeightMonitorPeriod() time.Duration
+	// PeerMonitorPeriod is the period in which the connected peer is monitored to see if
+	// the event client should disconnect from it and reconnect to another peer.
+	// If set to 0 then the peer will not be monitored and will not be disconnected.
+	PeerMonitorPeriod() time.Duration
 }
 
 // TimeoutType enumerates the different types of outgoing connections

@@ -15,25 +15,26 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/lbp"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
-	"github.com/hyperledger/fabric-sdk-go/pkg/util/test"
-	"github.com/stretchr/testify/assert"
-
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/dispatcher"
 	clientmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/mocks"
 	mockconn "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/mocks"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/peerresolver/minblockheight"
 	esdispatcher "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/service/dispatcher"
 	servicemocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/service/mocks"
 	fabmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
+	"github.com/hyperledger/fabric-sdk-go/pkg/util/test"
 	cb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 	"github.com/pkg/errors"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -1424,9 +1425,11 @@ func TestDisconnectIfBlockHeightLags(t *testing.T) {
 			WithTimeBetweenConnectAttempts(time.Millisecond),
 			WithConnectionEvent(connectch),
 			WithResponseTimeout(2 * time.Second),
-			dispatcher.WithBlockHeightLagThreshold(2),
-			dispatcher.WithReconnectBlockHeightThreshold(3),
-			dispatcher.WithBlockHeightMonitorPeriod(250 * time.Millisecond),
+			dispatcher.WithPeerResolver(minblockheight.NewResolver()),
+			dispatcher.WithLoadBalancePolicy(lbp.NewRoundRobin()),
+			dispatcher.WithPeerMonitorPeriod(250 * time.Millisecond),
+			minblockheight.WithBlockHeightLagThreshold(2),
+			minblockheight.WithReconnectBlockHeightThreshold(3),
 		},
 	)
 	if err != nil {

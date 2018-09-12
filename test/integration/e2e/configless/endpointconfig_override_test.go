@@ -720,7 +720,7 @@ func (c *eventServiceConfig) ReconnectBlockHeightLagThreshold() int {
 	return 10
 }
 
-func (c *eventServiceConfig) BlockHeightMonitorPeriod() time.Duration {
+func (c *eventServiceConfig) PeerMonitorPeriod() time.Duration {
 	return 5 * time.Second
 }
 

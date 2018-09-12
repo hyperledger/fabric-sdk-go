@@ -331,7 +331,7 @@ func (c *MockConfig) Lookup(key string) (interface{}, bool) {
 type MockEventServiceConfig struct {
 	LagThreshold          int
 	ReconnectLagThreshold int
-	HeightMonitorPeriod   time.Duration
+	MonitorPeriod         time.Duration
 }
 
 // BlockHeightLagThreshold returns the block height lag threshold.
@@ -344,8 +344,8 @@ func (c *MockEventServiceConfig) ReconnectBlockHeightLagThreshold() int {
 	return c.ReconnectLagThreshold
 }
 
-// BlockHeightMonitorPeriod is the period in which the connected peer's block height is monitored. Note that this
-// value is only relevant if reconnectBlockHeightLagThreshold >0.
-func (c *MockEventServiceConfig) BlockHeightMonitorPeriod() time.Duration {
-	return c.HeightMonitorPeriod
+// PeerMonitorPeriod is the period in which the connected peer is monitored to see whether
+// the event client should disconnect and reconnect to another peer.
+func (c *MockEventServiceConfig) PeerMonitorPeriod() time.Duration {
+	return c.MonitorPeriod
 }

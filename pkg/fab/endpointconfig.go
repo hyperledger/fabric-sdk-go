@@ -53,8 +53,7 @@ const (
 	defaultSelectionRefreshInterval       = time.Second * 5
 	defaultCacheSweepInterval             = time.Second * 15
 
-	defaultBlockHeightLagThreshold  = 5
-	defaultBlockHeightMonitorPeriod = 5 * time.Second
+	defaultBlockHeightLagThreshold = 5
 
 	//default grpc opts
 	defaultKeepAliveTime    = 0
@@ -1684,14 +1683,11 @@ func (c *EventServiceConfig) ReconnectBlockHeightLagThreshold() int {
 	return c.backend.GetInt("client.eventService.reconnectBlockHeightLagThreshold")
 }
 
-// BlockHeightMonitorPeriod is the period in which the connected peer's block height is monitored. Note that this
-// value is only relevant if reconnectBlockHeightLagThreshold >0.
-func (c *EventServiceConfig) BlockHeightMonitorPeriod() time.Duration {
-	period := c.backend.GetDuration("client.eventService.blockHeightMonitorPeriod")
-	if period == 0 {
-		return defaultBlockHeightMonitorPeriod
-	}
-	return period
+// PeerMonitorPeriod is the period in which the connected peer is monitored to see if
+// the event client should disconnect from it and reconnect to another peer.
+// A value of 0 (default) means that the peer will not be monitored.
+func (c *EventServiceConfig) PeerMonitorPeriod() time.Duration {
+	return c.backend.GetDuration("client.eventService.peerMonitorPeriod")
 }
 
 //peerChannelConfigHookFunc returns hook function for unmarshalling 'fab.PeerChannelConfig'

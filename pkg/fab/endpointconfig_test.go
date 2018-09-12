@@ -197,7 +197,7 @@ func TestEventServiceConfig(t *testing.T) {
 	customBackend.KeyValueMap["client.eventService.type"] = "deliver"
 	customBackend.KeyValueMap["client.eventService.blockHeightLagThreshold"] = "4"
 	customBackend.KeyValueMap["client.eventService.reconnectBlockHeightLagThreshold"] = "7"
-	customBackend.KeyValueMap["client.eventService.blockHeightMonitorPeriod"] = "7s"
+	customBackend.KeyValueMap["client.eventService.peerMonitorPeriod"] = "7s"
 
 	endpointConfig, err := ConfigFromBackend(customBackend)
 	require.NoError(t, err)
@@ -205,7 +205,7 @@ func TestEventServiceConfig(t *testing.T) {
 	eventServiceConfig := endpointConfig.EventServiceConfig()
 	assert.Equalf(t, 4, eventServiceConfig.BlockHeightLagThreshold(), "invalid value for blockHeightLagThreshold")
 	assert.Equalf(t, 7, eventServiceConfig.ReconnectBlockHeightLagThreshold(), "invalid value for reconnectBlockHeightLagThreshold")
-	assert.Equalf(t, 7*time.Second, eventServiceConfig.BlockHeightMonitorPeriod(), "invalid value for blockHeightMonitorPeriod")
+	assert.Equalf(t, 7*time.Second, eventServiceConfig.PeerMonitorPeriod(), "invalid value for peerMonitorPeriod")
 }
 
 func checkTimeouts(endpointConfig fab.EndpointConfig, t *testing.T, errStr string) {

@@ -310,7 +310,7 @@ func (m *mockEventServiceConfigImpl) ReconnectBlockHeightLagThreshold() int {
 	return 10
 }
 
-func (m *mockEventServiceConfigImpl) BlockHeightMonitorPeriod() time.Duration {
+func (m *mockEventServiceConfigImpl) PeerMonitorPeriod() time.Duration {
 	return time.Second
 }
 

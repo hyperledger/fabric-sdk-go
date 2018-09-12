@@ -12,8 +12,8 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/lbp"
-
 	clientmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/mocks"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/peerresolver/minblockheight"
 	esdispatcher "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/service/dispatcher"
 	servicemocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/service/mocks"
 	fabmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
@@ -47,7 +47,7 @@ func TestConnect(t *testing.T) {
 			),
 		),
 		WithLoadBalancePolicy(lbp.NewRandom()),
-		WithBlockHeightLagThreshold(5),
+		minblockheight.WithBlockHeightLagThreshold(5),
 	)
 
 	if dispatcher.ChannelConfig().ID() != channelID {
@@ -220,26 +220,6 @@ func TestConnectionEvent(t *testing.T) {
 	}
 }
 
-func TestFilterByBlockHeight(t *testing.T) {
-	dispatcher := &Dispatcher{}
-
-	dispatcher.blockHeightLagThreshold = -1
-	filteredPeers := dispatcher.filterByBlockHeght([]fab.Peer{peer1, peer2, peer3})
-	assert.Equal(t, 3, len(filteredPeers))
-
-	dispatcher.blockHeightLagThreshold = 0
-	filteredPeers = dispatcher.filterByBlockHeght([]fab.Peer{peer1, peer2, peer3})
-	assert.Equal(t, 1, len(filteredPeers))
-
-	dispatcher.blockHeightLagThreshold = 5
-	filteredPeers = dispatcher.filterByBlockHeght([]fab.Peer{peer1, peer2, peer3})
-	assert.Equal(t, 2, len(filteredPeers))
-
-	dispatcher.blockHeightLagThreshold = 20
-	filteredPeers = dispatcher.filterByBlockHeght([]fab.Peer{peer1, peer2, peer3})
-	assert.Equal(t, 3, len(filteredPeers))
-}
-
 func TestDisconnectIfBlockHeightLags(t *testing.T) {
 	p1 := clientmocks.NewMockPeer("peer1", "grpcs://peer1.example.com:7051", 4)
 	p2 := clientmocks.NewMockPeer("peer2", "grpcs://peer2.example.com:7051", 1)
@@ -260,9 +240,10 @@ func TestDisconnectIfBlockHeightLags(t *testing.T) {
 				),
 			),
 		),
-		WithBlockHeightLagThreshold(2),
-		WithReconnectBlockHeightThreshold(3),
-		WithBlockHeightMonitorPeriod(250*time.Millisecond),
+		WithPeerResolver(minblockheight.NewResolver()),
+		WithPeerMonitorPeriod(250*time.Millisecond),
+		minblockheight.WithBlockHeightLagThreshold(2),
+		minblockheight.WithReconnectBlockHeightThreshold(3),
 	)
 
 	if err := dispatcher.Start(); err != nil {
