@@ -19,10 +19,11 @@ import (
 )
 
 const (
-	pin     = "98765432"
-	label   = "ForFabric"
-	label1  = "ForFabric1"
-	allLibs = "/usr/lib/x86_64-linux-gnu/softhsm/libsofthsm2.so,/usr/lib/softhsm/libsofthsm2.so,/usr/lib/s390x-linux-gnu/softhsm/libsofthsm2.so,/usr/lib/powerpc64le-linux-gnu/softhsm/libsofthsm2.so, /usr/local/Cellar/softhsm/2.1.0/lib/softhsm/libsofthsm2.so"
+	pin              = "98765432"
+	label            = "ForFabric"
+	label1           = "ForFabric1"
+	allLibs          = "/usr/lib/x86_64-linux-gnu/softhsm/libsofthsm2.so,/usr/lib/softhsm/libsofthsm2.so,/usr/lib/s390x-linux-gnu/softhsm/libsofthsm2.so,/usr/lib/powerpc64le-linux-gnu/softhsm/libsofthsm2.so, /usr/local/Cellar/softhsm/2.1.0/lib/softhsm/libsofthsm2.so"
+	ctxReloadTimeout = 2 * time.Second
 )
 
 var lib string
@@ -314,10 +315,21 @@ func TestContextRefreshOnInvalidSession(t *testing.T) {
 	assert.Equal(t, oldCtx, handle.ctx)
 
 	//get session again, now ctx should be refreshed
+	ch := make(chan struct{}, 1)
+	handle.NotifyCtxReload(ch)
 	session = handle.GetSession()
 	assert.NotEqual(t, oldCtx, handle.ctx)
 	assert.NotNil(t, session)
 
+	var receivedNotification bool
+	select {
+	case <-ch:
+		receivedNotification = true
+	case <-time.After(ctxReloadTimeout):
+		t.Fatal("couldn't get notification on ctx update")
+	}
+
+	assert.True(t, receivedNotification)
 	//reset session pool after test
 	handle.sessions = make(chan pkcs11.SessionHandle, handle.opts.sessionCacheSize)
 }
