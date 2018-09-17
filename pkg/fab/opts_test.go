@@ -27,7 +27,6 @@ var (
 	m11 = &mockChannelPeers{}
 	m12 = &mockChannelOrderers{}
 	m13 = &mockTLSCACertPool{}
-	m14 = &mockEventServiceConfig{}
 	m15 = &mockTLSClientCerts{}
 	m16 = &mockCryptoConfigPath{}
 )
@@ -72,7 +71,7 @@ func TestCreateCustomEndpointConfig(t *testing.T) {
 
 func TestCreateCustomEndpointConfigRemainingFunctions(t *testing.T) {
 	// test other sub interface functions
-	endpointConfigOption, err := BuildConfigEndpointFromOptions(m11, m12, m13, m14, m15, m16)
+	endpointConfigOption, err := BuildConfigEndpointFromOptions(m11, m12, m13, m15, m16)
 	if err != nil {
 		t.Fatalf("BuildConfigEndpointFromOptions returned unexpected error %s", err)
 	}
@@ -183,7 +182,7 @@ func TestIsEndpointConfigFullyOverridden(t *testing.T) {
 	}
 
 	// now try with all opts, expected value is true this time
-	endpointConfigOption, err = BuildConfigEndpointFromOptions(m1, m4, m5, m6, m7, m8, m9, m10, m11, m12, m13, m14, m15, m16)
+	endpointConfigOption, err = BuildConfigEndpointFromOptions(m1, m4, m5, m6, m7, m8, m9, m10, m11, m12, m13, m15, m16)
 	if err != nil {
 		t.Fatalf("BuildConfigEndpointFromOptions returned unexpected error %s", err)
 	}
@@ -199,7 +198,7 @@ func TestIsEndpointConfigFullyOverridden(t *testing.T) {
 
 func TestCreateCustomEndpointConfigWithSomeDefaultFunctionsRemainingFunctions(t *testing.T) {
 	// do the same test with the other interfaces in reverse
-	endpointConfigOption, err := BuildConfigEndpointFromOptions(m8, m9, m10, m11, m12, m13, m14, m15, m16)
+	endpointConfigOption, err := BuildConfigEndpointFromOptions(m8, m9, m10, m11, m12, m13, m15, m16)
 	if err != nil {
 		t.Fatalf("BuildConfigEndpointFromOptions returned unexpected error %s", err)
 	}
@@ -287,36 +286,6 @@ type mockTLSCACertPool struct{}
 
 func (m *mockTLSCACertPool) TLSCACertPool() fab.CertPool {
 	return nil
-}
-
-type mockEventServiceConfig struct {
-}
-
-func (m *mockEventServiceConfig) EventServiceConfig() fab.EventServiceConfig {
-	return &mockEventServiceConfigImpl{}
-}
-
-type mockEventServiceConfigImpl struct {
-}
-
-func (m *mockEventServiceConfigImpl) ResolverStrategy() fab.ResolverStrategy {
-	return fab.BalancedStrategy
-}
-
-func (m *mockEventServiceConfigImpl) Balancer() fab.BalancerType {
-	return fab.Random
-}
-
-func (m *mockEventServiceConfigImpl) BlockHeightLagThreshold() int {
-	return 5
-}
-
-func (m *mockEventServiceConfigImpl) ReconnectBlockHeightLagThreshold() int {
-	return 10
-}
-
-func (m *mockEventServiceConfigImpl) PeerMonitorPeriod() time.Duration {
-	return time.Second
 }
 
 type mockTLSClientCerts struct{}

@@ -22,4 +22,4 @@ type Resolver interface {
 }
 
 // Provider creates a peer Resolver
-type Provider func(ed service.Dispatcher, context context.Client, opts ...options.Opt) Resolver
+type Provider func(ed service.Dispatcher, context context.Client, channelID string, opts ...options.Opt) Resolver

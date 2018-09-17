@@ -7,6 +7,8 @@ SPDX-License-Identifier: Apache-2.0
 package fab
 
 import (
+	"time"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/endpoint"
 )
@@ -65,6 +67,8 @@ type ChannelPolicies struct {
 	Discovery DiscoveryPolicy
 	//Policy for endorser selection
 	Selection SelectionPolicy
+	//Policy for event service
+	EventService EventServicePolicy
 }
 
 //QueryChannelConfigPolicy defines opts for channelConfigBlock
@@ -118,6 +122,15 @@ type SelectionPolicy struct {
 	// demoted to a lower priority list of peers which will be sorted according to block height.
 	// Note: This property only applies to BlockHeightPriority sorter
 	BlockHeightLagThreshold int
+}
+
+// EventServicePolicy specifies the policy for the event service
+type EventServicePolicy struct {
+	ResolverStrategy                 string
+	Balancer                         BalancerType
+	BlockHeightLagThreshold          int
+	ReconnectBlockHeightLagThreshold int
+	PeerMonitorPeriod                time.Duration
 }
 
 // PeerChannelConfig defines the peer capabilities

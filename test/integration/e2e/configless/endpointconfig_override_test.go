@@ -263,21 +263,20 @@ var (
 	}
 
 	// creating instances of each interface to be referenced in the integration tests:
-	timeoutImpl            = &exampleTimeout{}
-	orderersConfigImpl     = newOrderersConfigImpl()
-	ordererConfigImpl      = &exampleOrdererConfig{}
-	peersConfigImpl        = newPeersConfigImpl()
-	peerConfigImpl         = &examplePeerConfig{}
-	networkConfigImpl      = &exampleNetworkConfig{}
-	networkPeersImpl       = &exampleNetworkPeers{}
-	channelConfigImpl      = &exampleChannelConfig{}
-	channelPeersImpl       = &exampleChannelPeers{}
-	channelOrderersImpl    = &exampleChannelOrderers{}
-	tlsCACertPoolImpl      = newTLSCACertPool(false)
-	eventServiceConfigImpl = &exampleEventServiceConfig{}
-	tlsClientCertsImpl     = &exampleTLSClientCerts{}
-	cryptoConfigPathImpl   = &exampleCryptoConfigPath{}
-	endpointConfigImpls    = []interface{}{
+	timeoutImpl          = &exampleTimeout{}
+	orderersConfigImpl   = newOrderersConfigImpl()
+	ordererConfigImpl    = &exampleOrdererConfig{}
+	peersConfigImpl      = newPeersConfigImpl()
+	peerConfigImpl       = &examplePeerConfig{}
+	networkConfigImpl    = &exampleNetworkConfig{}
+	networkPeersImpl     = &exampleNetworkPeers{}
+	channelConfigImpl    = &exampleChannelConfig{}
+	channelPeersImpl     = &exampleChannelPeers{}
+	channelOrderersImpl  = &exampleChannelOrderers{}
+	tlsCACertPoolImpl    = newTLSCACertPool(false)
+	tlsClientCertsImpl   = &exampleTLSClientCerts{}
+	cryptoConfigPathImpl = &exampleCryptoConfigPath{}
+	endpointConfigImpls  = []interface{}{
 		timeoutImpl,
 		orderersConfigImpl,
 		ordererConfigImpl,
@@ -289,7 +288,6 @@ var (
 		channelPeersImpl,
 		channelOrderersImpl,
 		tlsCACertPoolImpl,
-		eventServiceConfigImpl,
 		tlsClientCertsImpl,
 		cryptoConfigPathImpl,
 	}
@@ -698,35 +696,6 @@ func newTLSCACertPool(useSystemCertPool bool) *exampleTLSCACertPool {
 // TLSCACertPool overrides EndpointConfig's TLSCACertPool function which will add the list of cert args to the cert pool and return it
 func (m *exampleTLSCACertPool) TLSCACertPool() fab.CertPool {
 	return m.tlsCertPool
-}
-
-type exampleEventServiceConfig struct{}
-
-func (m *exampleEventServiceConfig) EventServiceConfig() fab.EventServiceConfig {
-	return &eventServiceConfig{}
-}
-
-type eventServiceConfig struct {
-}
-
-func (c *eventServiceConfig) ResolverStrategy() fab.ResolverStrategy {
-	return fab.BalancedStrategy
-}
-
-func (c *eventServiceConfig) Balancer() fab.BalancerType {
-	return fab.Random
-}
-
-func (c *eventServiceConfig) BlockHeightLagThreshold() int {
-	return 5
-}
-
-func (c *eventServiceConfig) ReconnectBlockHeightLagThreshold() int {
-	return 10
-}
-
-func (c *eventServiceConfig) PeerMonitorPeriod() time.Duration {
-	return 5 * time.Second
 }
 
 type exampleTLSClientCerts struct {

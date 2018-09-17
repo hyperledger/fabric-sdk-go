@@ -85,18 +85,6 @@ func (mr *MockEndpointConfigMockRecorder) CryptoConfigPath() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CryptoConfigPath", reflect.TypeOf((*MockEndpointConfig)(nil).CryptoConfigPath))
 }
 
-// EventServiceConfig mocks base method
-func (m *MockEndpointConfig) EventServiceConfig() fab.EventServiceConfig {
-	ret := m.ctrl.Call(m, "EventServiceConfig")
-	ret0, _ := ret[0].(fab.EventServiceConfig)
-	return ret0
-}
-
-// EventServiceConfig indicates an expected call of EventServiceConfig
-func (mr *MockEndpointConfigMockRecorder) EventServiceConfig() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EventServiceConfig", reflect.TypeOf((*MockEndpointConfig)(nil).EventServiceConfig))
-}
-
 // NetworkConfig mocks base method
 func (m *MockEndpointConfig) NetworkConfig() *fab.NetworkConfig {
 	ret := m.ctrl.Call(m, "NetworkConfig")

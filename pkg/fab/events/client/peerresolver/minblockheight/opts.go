@@ -21,13 +21,13 @@ type params struct {
 	loadBalancePolicy                lbp.LoadBalancePolicy
 }
 
-func defaultParams(context context.Client) *params {
-	config := context.EndpointConfig().EventServiceConfig()
+func defaultParams(context context.Client, channelID string) *params {
+	policy := context.EndpointConfig().ChannelConfig(channelID).Policies.EventService
 
 	return &params{
-		blockHeightLagThreshold:          config.BlockHeightLagThreshold(),
-		reconnectBlockHeightLagThreshold: config.ReconnectBlockHeightLagThreshold(),
-		loadBalancePolicy:                peerresolver.GetBalancer(config),
+		blockHeightLagThreshold:          policy.BlockHeightLagThreshold,
+		reconnectBlockHeightLagThreshold: policy.ReconnectBlockHeightLagThreshold,
+		loadBalancePolicy:                peerresolver.GetBalancer(policy),
 	}
 }
 

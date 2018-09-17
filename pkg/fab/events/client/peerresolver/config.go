@@ -15,8 +15,8 @@ import (
 var logger = logging.NewLogger("fabsdk/fab")
 
 // GetBalancer returns the configured load balancer
-func GetBalancer(config fab.EventServiceConfig) lbp.LoadBalancePolicy {
-	switch config.Balancer() {
+func GetBalancer(policy fab.EventServicePolicy) lbp.LoadBalancePolicy {
+	switch policy.Balancer {
 	case fab.RoundRobin:
 		logger.Debugf("Using round-robin load balancer.")
 		return lbp.NewRoundRobin()

@@ -24,14 +24,14 @@ type PeerResolver struct {
 
 // NewResolver returns a new "balanced" peer resolver provider.
 func NewResolver() peerresolver.Provider {
-	return func(ed service.Dispatcher, context context.Client, opts ...options.Opt) peerresolver.Resolver {
-		return New(ed, context, opts...)
+	return func(ed service.Dispatcher, context context.Client, channelID string, opts ...options.Opt) peerresolver.Resolver {
+		return New(ed, context, channelID, opts...)
 	}
 }
 
 // New returns a new "balanced" peer resolver.
-func New(dispatcher service.Dispatcher, context context.Client, opts ...options.Opt) *PeerResolver {
-	params := defaultParams(context)
+func New(dispatcher service.Dispatcher, context context.Client, channelID string, opts ...options.Opt) *PeerResolver {
+	params := defaultParams(context, channelID)
 	options.Apply(params, opts)
 
 	logger.Debugf("Creating new balanced peer resolver")

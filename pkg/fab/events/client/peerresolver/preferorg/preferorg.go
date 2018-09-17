@@ -29,14 +29,14 @@ type PeerResolver struct {
 
 // NewResolver returns a new "prefer org" resolver provider.
 func NewResolver() peerresolver.Provider {
-	return func(ed service.Dispatcher, context context.Client, opts ...options.Opt) peerresolver.Resolver {
-		return New(ed, context, opts...)
+	return func(ed service.Dispatcher, context context.Client, channelID string, opts ...options.Opt) peerresolver.Resolver {
+		return New(ed, context, channelID, opts...)
 	}
 }
 
 // New returns a new "prefer org" resolver.
-func New(dispatcher service.Dispatcher, context context.Client, opts ...options.Opt) *PeerResolver {
-	params := defaultParams(context)
+func New(dispatcher service.Dispatcher, context context.Client, channelID string, opts ...options.Opt) *PeerResolver {
+	params := defaultParams(context, channelID)
 	options.Apply(params, opts)
 
 	mspID := context.Identifier().MSPID
@@ -46,7 +46,7 @@ func New(dispatcher service.Dispatcher, context context.Client, opts ...options.
 	return &PeerResolver{
 		params:              params,
 		mspID:               mspID,
-		blockHeightResolver: minblockheight.New(dispatcher, context, opts...),
+		blockHeightResolver: minblockheight.New(dispatcher, context, channelID, opts...),
 	}
 }
 

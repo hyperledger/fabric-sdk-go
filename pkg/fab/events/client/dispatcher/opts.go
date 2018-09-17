@@ -24,12 +24,12 @@ type params struct {
 	peerResolverProvider peerresolver.Provider
 }
 
-func defaultParams(context context.Client) *params {
-	config := context.EndpointConfig().EventServiceConfig()
+func defaultParams(context context.Client, channelID string) *params {
+	policy := context.EndpointConfig().ChannelConfig(channelID).Policies.EventService
 
 	return &params{
-		peerMonitorPeriod:    config.PeerMonitorPeriod(),
-		peerResolverProvider: getPeerResolver(config),
+		peerMonitorPeriod:    policy.PeerMonitorPeriod,
+		peerResolverProvider: getPeerResolver(policy),
 	}
 }
 
@@ -84,8 +84,8 @@ func (p *params) SetPeerResolver(value peerresolver.Provider) {
 	p.peerResolverProvider = value
 }
 
-func getPeerResolver(config fab.EventServiceConfig) peerresolver.Provider {
-	switch config.ResolverStrategy() {
+func getPeerResolver(policy fab.EventServicePolicy) peerresolver.Provider {
+	switch policy.ResolverStrategy {
 	case fab.PreferOrgStrategy:
 		logger.Debugf("Using prefer-org peer resolver")
 		return preferorg.NewResolver()

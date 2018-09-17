@@ -30,7 +30,6 @@ type MockConfig struct {
 	customPeerCfg          *fab.PeerConfig
 	customOrdererCfg       *fab.OrdererConfig
 	customRandomOrdererCfg *fab.OrdererConfig
-	EvtServiceConfig       fab.EventServiceConfig
 	CustomTLSCACertPool    fab.CertPool
 	chConfig               map[string]*fab.ChannelEndpointConfig
 }
@@ -254,6 +253,7 @@ func (c *MockConfig) ChannelConfig(channelID string) *fab.ChannelEndpointConfig 
 			QueryChannelConfig: fab.QueryChannelConfigPolicy{},
 			Discovery:          fab.DiscoveryPolicy{},
 			Selection:          fab.SelectionPolicy{},
+			EventService:       fab.EventServicePolicy{},
 		},
 	}
 }
@@ -328,14 +328,6 @@ func (c *MockConfig) TLSClientCerts() []tls.Certificate {
 	return nil
 }
 
-// EventServiceConfig returns the type of event service client to use
-func (c *MockConfig) EventServiceConfig() fab.EventServiceConfig {
-	if c.EvtServiceConfig != nil {
-		return c.EvtServiceConfig
-	}
-	return &MockEventServiceConfig{}
-}
-
 // Lookup gets the Value from config file by Key
 func (c *MockConfig) Lookup(key string) (interface{}, bool) {
 	if key == "invalid" {
@@ -346,40 +338,4 @@ func (c *MockConfig) Lookup(key string) (interface{}, bool) {
 		return nil, false
 	}
 	return value, true
-}
-
-// MockEventServiceConfig contains configuration options for the event service
-type MockEventServiceConfig struct {
-	PeerResolverStrategy  fab.ResolverStrategy
-	PeerBalancer          fab.BalancerType
-	LagThreshold          int
-	ReconnectLagThreshold int
-	MonitorPeriod         time.Duration
-}
-
-// BlockHeightLagThreshold returns the block height lag threshold.
-func (c *MockEventServiceConfig) BlockHeightLagThreshold() int {
-	return c.LagThreshold
-}
-
-// ReconnectBlockHeightLagThreshold sets the ReconnectBlockHeightLagThreshold.
-func (c *MockEventServiceConfig) ReconnectBlockHeightLagThreshold() int {
-	return c.ReconnectLagThreshold
-}
-
-// PeerMonitorPeriod is the period in which the connected peer is monitored to see whether
-// the event client should disconnect and reconnect to another peer.
-func (c *MockEventServiceConfig) PeerMonitorPeriod() time.Duration {
-	return c.MonitorPeriod
-}
-
-// ResolverStrategy returns the peer resolver strategy to use when connecting to a peer
-// Default: MinBlockHeightPeerResolver
-func (c *MockEventServiceConfig) ResolverStrategy() fab.ResolverStrategy {
-	return c.PeerResolverStrategy
-}
-
-// Balancer is the balancer to use when choosing a peer to connect to
-func (c *MockEventServiceConfig) Balancer() fab.BalancerType {
-	return c.PeerBalancer
 }

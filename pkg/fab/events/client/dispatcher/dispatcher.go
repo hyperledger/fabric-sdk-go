@@ -44,7 +44,7 @@ type Dispatcher struct {
 
 // New creates a new dispatcher
 func New(context context.Client, chConfig fab.ChannelCfg, discoveryService fab.DiscoveryService, connectionProvider api.ConnectionProvider, opts ...options.Opt) *Dispatcher {
-	params := defaultParams(context)
+	params := defaultParams(context, chConfig.ID())
 	options.Apply(params, opts)
 
 	dispatcher := &Dispatcher{
@@ -55,7 +55,7 @@ func New(context context.Client, chConfig fab.ChannelCfg, discoveryService fab.D
 		discoveryService:   discoveryService,
 		connectionProvider: connectionProvider,
 	}
-	dispatcher.peerResolver = params.peerResolverProvider(dispatcher, context, opts...)
+	dispatcher.peerResolver = params.peerResolverProvider(dispatcher, context, chConfig.ID(), opts...)
 
 	return dispatcher
 }

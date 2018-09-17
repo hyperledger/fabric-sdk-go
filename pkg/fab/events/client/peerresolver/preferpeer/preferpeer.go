@@ -35,14 +35,14 @@ type PeerResolver struct {
 
 // NewResolver returns a new "prefer peer" resolver provider.
 func NewResolver(preferredPeers ...string) peerresolver.Provider {
-	return func(ed service.Dispatcher, context context.Client, opts ...options.Opt) peerresolver.Resolver {
-		return New(ed, context, preferredPeers, opts...)
+	return func(ed service.Dispatcher, context context.Client, channelID string, opts ...options.Opt) peerresolver.Resolver {
+		return New(ed, context, channelID, preferredPeers, opts...)
 	}
 }
 
 // New returns a new "prefer peer" resolver.
-func New(dispatcher service.Dispatcher, context context.Client, preferredPeers []string, opts ...options.Opt) *PeerResolver {
-	params := defaultParams(context)
+func New(dispatcher service.Dispatcher, context context.Client, channelID string, preferredPeers []string, opts ...options.Opt) *PeerResolver {
+	params := defaultParams(context, channelID)
 	options.Apply(params, opts)
 
 	logger.Debugf("Creating new PreferPeer peer resolver with options: Preferred Peers [%s]", preferredPeers)
@@ -50,8 +50,8 @@ func New(dispatcher service.Dispatcher, context context.Client, preferredPeers [
 	return &PeerResolver{
 		params:                 params,
 		preferredPeers:         preferredPeers,
-		preferOrgResolver:      preferorg.New(dispatcher, context, opts...),
-		minBlockHeightResolver: minblockheight.New(dispatcher, context, opts...),
+		preferOrgResolver:      preferorg.New(dispatcher, context, channelID, opts...),
+		minBlockHeightResolver: minblockheight.New(dispatcher, context, channelID, opts...),
 	}
 }
 

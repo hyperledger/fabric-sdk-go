@@ -103,7 +103,6 @@ type EndpointConfig interface {
 	ChannelPeers(name string) []ChannelPeer
 	ChannelOrderers(name string) []OrdererConfig
 	TLSCACertPool() CertPool
-	EventServiceConfig() EventServiceConfig
 	TLSClientCerts() []tls.Certificate
 	CryptoConfigPath() string
 }
@@ -125,35 +124,6 @@ const (
 	// If none of the peers from the current org are suitable then a peer from another org is chosen.
 	PreferOrgStrategy ResolverStrategy = "PreferOrg"
 )
-
-// EventServiceConfig specifies configuration options for the event service
-type EventServiceConfig interface {
-	// ResolverStrategy returns the peer resolver strategy to use when connecting to a peer
-	// Default: MinBlockHeightPeerResolver
-	ResolverStrategy() ResolverStrategy
-
-	// Balancer is the balancer to use when choosing a peer to connect to
-	Balancer() BalancerType
-
-	// BlockHeightLagThreshold returns the block height lag threshold. This value is used for choosing a peer
-	// to connect to. If a peer is lagging behind the most up-to-date peer by more than the given number of
-	// blocks then it will be excluded from selection.
-	// If set to 0 then only the most up-to-date peers are considered.
-	// If set to -1 then all peers (regardless of block height) are considered for selection.
-	BlockHeightLagThreshold() int
-
-	// ReconnectBlockHeightLagThreshold - if >0 then the event client will disconnect from the peer if the peer's
-	// block height falls behind the specified number of blocks and will reconnect to a better performing peer.
-	// If set to 0 (default) then the peer will not disconnect based on block height.
-	// NOTE: Setting this value too low may cause the event client to disconnect/reconnect too frequently, thereby
-	// affecting performance.
-	ReconnectBlockHeightLagThreshold() int
-
-	// PeerMonitorPeriod is the period in which the connected peer is monitored to see if
-	// the event client should disconnect from it and reconnect to another peer.
-	// If set to 0 then the peer will not be monitored and will not be disconnected.
-	PeerMonitorPeriod() time.Duration
-}
 
 // TimeoutType enumerates the different types of outgoing connections
 type TimeoutType int

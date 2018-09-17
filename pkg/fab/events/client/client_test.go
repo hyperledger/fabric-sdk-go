@@ -1414,17 +1414,15 @@ func TestDisconnectIfBlockHeightLags(t *testing.T) {
 		mspmocks.NewMockSigningIdentity("user1", "Org1MSP"),
 	)
 
-	ctx.SetEndpointConfig(
-		&fabmocks.MockConfig{
-			EvtServiceConfig: &fabmocks.MockEventServiceConfig{
-				PeerResolverStrategy:  fab.MinBlockHeightStrategy,
-				PeerBalancer:          fab.RoundRobin,
-				LagThreshold:          2,
-				ReconnectLagThreshold: 3,
-				MonitorPeriod:         250 * time.Millisecond,
-			},
+	ctx.SetEndpointConfig(clientmocks.NewMockConfig(channelID,
+		fab.EventServicePolicy{
+			ResolverStrategy:                 fab.MinBlockHeightStrategy,
+			Balancer:                         fab.RoundRobin,
+			BlockHeightLagThreshold:          2,
+			ReconnectBlockHeightLagThreshold: 3,
+			PeerMonitorPeriod:                250 * time.Millisecond,
 		},
-	)
+	))
 
 	eventClient, _, err := newClientWithMockConnAndOpts(
 		ctx,
@@ -1493,18 +1491,15 @@ func TestPreferLocalOrgConnection(t *testing.T) {
 	ctx := fabmocks.NewMockContext(
 		mspmocks.NewMockSigningIdentity("user1", "Org1MSP"),
 	)
-
-	ctx.SetEndpointConfig(
-		&fabmocks.MockConfig{
-			EvtServiceConfig: &fabmocks.MockEventServiceConfig{
-				PeerResolverStrategy:  fab.PreferOrgStrategy,
-				PeerBalancer:          fab.RoundRobin,
-				LagThreshold:          blockHeightLagThreshold,
-				ReconnectLagThreshold: 3,
-				MonitorPeriod:         250 * time.Millisecond,
-			},
+	ctx.SetEndpointConfig(clientmocks.NewMockConfig(channelID,
+		fab.EventServicePolicy{
+			ResolverStrategy:                 fab.PreferOrgStrategy,
+			Balancer:                         fab.RoundRobin,
+			BlockHeightLagThreshold:          blockHeightLagThreshold,
+			ReconnectBlockHeightLagThreshold: 3,
+			PeerMonitorPeriod:                250 * time.Millisecond,
 		},
-	)
+	))
 
 	eventClient, _, err := newClientWithMockConnAndOpts(
 		ctx,
@@ -1576,17 +1571,15 @@ func TestPreferLocalPeersConnection(t *testing.T) {
 		mspmocks.NewMockSigningIdentity("user1", "Org1MSP"),
 	)
 
-	ctx.SetEndpointConfig(
-		&fabmocks.MockConfig{
-			EvtServiceConfig: &fabmocks.MockEventServiceConfig{
-				PeerResolverStrategy:  fab.PreferOrgStrategy,
-				PeerBalancer:          fab.RoundRobin,
-				LagThreshold:          blockHeightLagThreshold,
-				ReconnectLagThreshold: 3,
-				MonitorPeriod:         250 * time.Millisecond,
-			},
+	ctx.SetEndpointConfig(clientmocks.NewMockConfig(channelID,
+		fab.EventServicePolicy{
+			ResolverStrategy:                 fab.PreferOrgStrategy,
+			Balancer:                         fab.RoundRobin,
+			BlockHeightLagThreshold:          blockHeightLagThreshold,
+			ReconnectBlockHeightLagThreshold: 3,
+			PeerMonitorPeriod:                250 * time.Millisecond,
 		},
-	)
+	))
 
 	eventClient, _, err := newClientWithMockConnAndOpts(
 		ctx,

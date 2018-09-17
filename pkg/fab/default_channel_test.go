@@ -9,7 +9,9 @@ package fab
 import (
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/stretchr/testify/assert"
 )
@@ -31,6 +33,13 @@ func TestDefaultChannelWithDefaultChannelConfiguredAndNoMatchers(t *testing.T) {
 	assert.Equal(t, 3, chConfig.Policies.QueryChannelConfig.MaxTargets)
 	assert.Equal(t, 1, chConfig.Policies.Discovery.MinResponses)
 	assert.Equal(t, 3, chConfig.Policies.Discovery.MaxTargets)
+
+	eventPolicies := chConfig.Policies.EventService
+	assert.Equalf(t, fab.BalancedStrategy, eventPolicies.ResolverStrategy, "Unexpected value for ResolverStrategy")
+	assert.Equal(t, fab.RoundRobin, eventPolicies.Balancer, "Unexpected value for Balancer")
+	assert.Equal(t, 3, eventPolicies.BlockHeightLagThreshold, "Unexpected value for BlockHeightLagThreshold")
+	assert.Equal(t, 7, eventPolicies.ReconnectBlockHeightLagThreshold, "Unexpected value for ReconnectBlockHeightLagThreshold")
+	assert.Equal(t, 8*time.Second, eventPolicies.PeerMonitorPeriod, "Unexpected value for PeerMonitorPeriod")
 
 	//When channel is not defined it should take channel peers from "_default"
 	chPeers := endpointConfig.ChannelPeers("test")

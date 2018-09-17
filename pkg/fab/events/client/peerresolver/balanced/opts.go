@@ -16,9 +16,9 @@ type params struct {
 	loadBalancePolicy lbp.LoadBalancePolicy
 }
 
-func defaultParams(context context.Client) *params {
+func defaultParams(context context.Client, channelID string) *params {
 	return &params{
-		loadBalancePolicy: peerresolver.GetBalancer(context.EndpointConfig().EventServiceConfig()),
+		loadBalancePolicy: peerresolver.GetBalancer(context.EndpointConfig().ChannelConfig(channelID).Policies.EventService),
 	}
 }
 
