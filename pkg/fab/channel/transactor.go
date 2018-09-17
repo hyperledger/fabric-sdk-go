@@ -111,11 +111,7 @@ func orderersFromChannelCfg(ctx context.Client, cfg fab.ChannelCfg) ([]fab.Order
 //will return empty list when orderers are not found in endpoint config
 func orderersFromChannel(ctx context.Client, channelID string) ([]fab.Orderer, error) {
 
-	chNetworkConfig, ok := ctx.EndpointConfig().ChannelConfig(channelID)
-	if !ok {
-		return []fab.Orderer{}, nil
-	}
-
+	chNetworkConfig := ctx.EndpointConfig().ChannelConfig(channelID)
 	orderers := []fab.Orderer{}
 	for _, chOrderer := range chNetworkConfig.Orderers {
 

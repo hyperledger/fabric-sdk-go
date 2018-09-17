@@ -278,9 +278,8 @@ func TestWithConfigEndpoint(t *testing.T) {
 	c := configImpl.FromFile(sdkConfigFile)
 
 	np := &MockNetworkPeers{}
-	co := &MockChannelOrderers{}
 	// override EndpointConfig's NetworkConfig() function with np's and co's instances
-	sdk, err := New(c, WithEndpointConfig(np, co))
+	sdk, err := New(c, WithEndpointConfig(np))
 	if err != nil {
 		t.Fatalf("Error inializing sdk WithEndpointConfig: %s", err)
 	}
@@ -310,19 +309,6 @@ func TestWithConfigEndpoint(t *testing.T) {
 	if !reflect.DeepEqual(network, expectedNetwork) {
 		t.Fatalf("Expected NetworkPeer was not returned by the sdk's config. Expected: %v, Received: %v", expectedNetwork, network)
 	}
-
-	channelOrderers, ok := endpointConfig.ChannelOrderers("")
-	if !ok {
-		t.Fatal("Error getting ChannelOrderers from config")
-	}
-	expectedChannelOrderers, ok := co.ChannelOrderers("")
-	if !ok {
-		t.Fatal("Error getting extecd ChannelOrderers from direct config")
-	}
-	if !reflect.DeepEqual(channelOrderers, expectedChannelOrderers) {
-		t.Fatalf("Expected ChannelOrderers was not returned by the sdk's config. Expected: %v, Received: %v", expectedChannelOrderers, channelOrderers)
-	}
-
 }
 
 func TestWithConfigEndpointAndBadOpt(t *testing.T) {
@@ -347,6 +333,6 @@ func (M *MockNetworkPeers) NetworkPeers() []fab.NetworkPeer {
 
 type MockChannelOrderers struct{}
 
-func (M *MockChannelOrderers) ChannelOrderers(name string) ([]fab.OrdererConfig, bool) {
-	return []fab.OrdererConfig{}, true
+func (M *MockChannelOrderers) ChannelOrderers(name string) []fab.OrdererConfig {
+	return []fab.OrdererConfig{}
 }

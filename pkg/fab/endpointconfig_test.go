@@ -17,11 +17,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pkg/errors"
-	"github.com/spf13/viper"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
@@ -30,6 +25,10 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/comm"
 	"github.com/hyperledger/fabric-sdk-go/pkg/util/pathvar"
+	"github.com/pkg/errors"
+	"github.com/spf13/viper"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -125,19 +124,14 @@ func TestCAConfigFailsByNetworkConfig(t *testing.T) {
 }
 
 func checkCAConfigFailsByNetworkConfig(sampleEndpointConfig *EndpointConfig, t *testing.T) {
-	//Testing ChannelConfig failure scenario
-	chConfig, ok := sampleEndpointConfig.ChannelConfig("invalid")
-	if chConfig != nil || ok {
-		t.Fatal("Testing ChannelConfig supposed to fail")
-	}
 	//Testing ChannelPeers failure scenario
-	cpConfigs, ok := sampleEndpointConfig.ChannelPeers("invalid")
-	if cpConfigs != nil || ok {
+	cpConfigs := sampleEndpointConfig.ChannelPeers("invalid")
+	if len(cpConfigs) > 0 {
 		t.Fatal("Testing ChannelPeeers supposed to fail")
 	}
 	//Testing ChannelOrderers failure scenario
-	coConfigs, ok := sampleEndpointConfig.ChannelOrderers("invalid")
-	if coConfigs != nil || ok {
+	coConfigs := sampleEndpointConfig.ChannelOrderers("invalid")
+	if len(coConfigs) > 0 {
 		t.Fatal("Testing ChannelOrderers supposed to fail")
 	}
 }
@@ -353,11 +347,7 @@ func TestChannelOrderers(t *testing.T) {
 		t.Fatal("Failed to get endpoint config from backend")
 	}
 
-	orderers, ok := endpointConfig.ChannelOrderers("mychannel")
-	if orderers == nil || !ok {
-		t.Fatal("Testing ChannelOrderers failed")
-	}
-
+	orderers := endpointConfig.ChannelOrderers("mychannel")
 	if len(orderers) != 1 {
 		t.Fatalf("Expecting one channel orderer got %d", len(orderers))
 	}
@@ -499,13 +489,10 @@ func testCommonConfigChannel(t *testing.T, expectedConfigName string, fetchedCon
 		t.Fatal("Failed to get endpoint config from backend")
 	}
 
-	expectedConfig, ok := endpointConfig.ChannelConfig(expectedConfigName)
-	assert.True(t, ok)
+	expectedConfig = endpointConfig.ChannelConfig(expectedConfigName)
+	fetchedConfig = endpointConfig.ChannelConfig(fetchedConfigName)
 
-	fetchedConfig, ok = endpointConfig.ChannelConfig(fetchedConfigName)
-	assert.True(t, ok)
-
-	return expectedConfig, fetchedConfig
+	return
 }
 
 func deepEquals(n, n2 interface{}) bool {
@@ -1369,8 +1356,7 @@ func TestEntityMatchers(t *testing.T) {
 	assert.True(t, ok, "supposed to find orderer config")
 	assert.NotNil(t, ordererConfig, "supposed to find orderer config")
 
-	channelConfig, ok := endpointConfig.ChannelConfig("samplexyzchannel")
-	assert.True(t, ok, "supposed to find channel config")
+	channelConfig := endpointConfig.ChannelConfig("samplexyzchannel")
 	assert.NotNil(t, channelConfig, "supposed to find channel config")
 }
 

@@ -99,9 +99,9 @@ type EndpointConfig interface {
 	PeerConfig(nameOrURL string) (*PeerConfig, bool)
 	NetworkConfig() *NetworkConfig
 	NetworkPeers() []NetworkPeer
-	ChannelConfig(name string) (*ChannelEndpointConfig, bool)
-	ChannelPeers(name string) ([]ChannelPeer, bool)
-	ChannelOrderers(name string) ([]OrdererConfig, bool)
+	ChannelConfig(name string) *ChannelEndpointConfig
+	ChannelPeers(name string) []ChannelPeer
+	ChannelOrderers(name string) []OrdererConfig
 	TLSCACertPool() CertPool
 	EventServiceConfig() EventServiceConfig
 	TLSClientCerts() []tls.Certificate

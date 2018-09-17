@@ -85,10 +85,7 @@ func TestCreateCustomEndpointConfigRemainingFunctions(t *testing.T) {
 		t.Fatal("build ConfigEndpointOption returned is nil")
 	}
 	// verify that their functions are available
-	p, ok := eco.ChannelPeers("")
-	if !ok {
-		t.Fatal("ChannelPeers expected to succeed")
-	}
+	p := eco.ChannelPeers("")
 	if len(p) != 1 {
 		t.Fatalf("ChannelPeers did not return expected interface value. Expected: 1 ChannelPeer, Received: %d", len(p))
 	}
@@ -270,20 +267,20 @@ func (m *mockNetworkPeers) NetworkPeers() []fab.NetworkPeer {
 
 type mockChannelConfig struct{}
 
-func (m *mockChannelConfig) ChannelConfig(name string) (*fab.ChannelEndpointConfig, bool) {
-	return &fab.ChannelEndpointConfig{}, true
+func (m *mockChannelConfig) ChannelConfig(name string) *fab.ChannelEndpointConfig {
+	return &fab.ChannelEndpointConfig{}
 }
 
 type mockChannelPeers struct{}
 
-func (m *mockChannelPeers) ChannelPeers(name string) ([]fab.ChannelPeer, bool) {
-	return []fab.ChannelPeer{{}}, true
+func (m *mockChannelPeers) ChannelPeers(name string) []fab.ChannelPeer {
+	return []fab.ChannelPeer{{}}
 }
 
 type mockChannelOrderers struct{}
 
-func (m *mockChannelOrderers) ChannelOrderers(name string) ([]fab.OrdererConfig, bool) {
-	return []fab.OrdererConfig{}, true
+func (m *mockChannelOrderers) ChannelOrderers(name string) []fab.OrdererConfig {
+	return []fab.OrdererConfig{}
 }
 
 type mockTLSCACertPool struct{}

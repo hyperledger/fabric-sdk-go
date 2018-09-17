@@ -25,8 +25,7 @@ func TestDefaultChannelWithDefaultChannelConfiguredAndNoMatchers(t *testing.T) {
 	assert.NotNil(t, endpointConfig, "expected valid endpointconfig")
 
 	//When channel is not defined it should take values from "_default"
-	chConfig, ok := endpointConfig.ChannelConfig("test")
-	assert.True(t, ok)
+	chConfig := endpointConfig.ChannelConfig("test")
 	assert.NotNil(t, chConfig)
 	assert.Equal(t, 1, chConfig.Policies.QueryChannelConfig.MinResponses)
 	assert.Equal(t, 3, chConfig.Policies.QueryChannelConfig.MaxTargets)
@@ -34,15 +33,12 @@ func TestDefaultChannelWithDefaultChannelConfiguredAndNoMatchers(t *testing.T) {
 	assert.Equal(t, 3, chConfig.Policies.Discovery.MaxTargets)
 
 	//When channel is not defined it should take channel peers from "_default"
-	chPeers, ok := endpointConfig.ChannelPeers("test")
-	assert.True(t, ok)
+	chPeers := endpointConfig.ChannelPeers("test")
 	assert.NotNil(t, chPeers)
 	assert.Equal(t, 1, len(chPeers))
 
 	//When channel is not defined it should take channel orderers from "_default"
-	chOrderers, ok := endpointConfig.ChannelOrderers("test")
-	assert.True(t, ok)
-	assert.NotNil(t, chOrderers)
+	chOrderers := endpointConfig.ChannelOrderers("test")
 	assert.Equal(t, 1, len(chOrderers))
 }
 
@@ -54,8 +50,7 @@ func TestDefaultChannelWithDefaultChannelConfiguredAndChannelMatchers(t *testing
 	assert.NotNil(t, endpointConfig, "expected valid endpointconfig")
 
 	//When channel is not defined and it fails matchers it should take values from "_default"
-	chConfig, ok := endpointConfig.ChannelConfig("test")
-	assert.True(t, ok)
+	chConfig := endpointConfig.ChannelConfig("test")
 	assert.NotNil(t, chConfig)
 	assert.Equal(t, 1, chConfig.Policies.QueryChannelConfig.MinResponses)
 	assert.Equal(t, 3, chConfig.Policies.QueryChannelConfig.MaxTargets)
@@ -63,8 +58,7 @@ func TestDefaultChannelWithDefaultChannelConfiguredAndChannelMatchers(t *testing
 	assert.Equal(t, 3, chConfig.Policies.Discovery.MaxTargets)
 
 	//When channel is not defined and it passes matchers it should take values from matched channel
-	chConfig, ok = endpointConfig.ChannelConfig("sampleachannel")
-	assert.True(t, ok)
+	chConfig = endpointConfig.ChannelConfig("sampleachannel")
 	assert.NotNil(t, chConfig)
 	// Discovery comes from 'ch1' channel
 	assert.Equal(t, 1, chConfig.Policies.Discovery.MinResponses)
@@ -81,18 +75,16 @@ func TestDefaultChannelWithNoDefaultChannelConfiguredAndNoMatchers(t *testing.T)
 	assert.Nil(t, err, "Failed to get endpoint config from backend")
 	assert.NotNil(t, endpointConfig, "expected valid endpointconfig")
 
-	// Channel 'test' is not configured and since there's no default channel in config all tests should 'fail'
-	chConfig, ok := endpointConfig.ChannelConfig("test")
-	assert.False(t, ok)
-	assert.Nil(t, chConfig)
+	// Channel 'test' is not configured and since there's no default channel in config
+	// we should be using the hard-coded default config
+	chConfig := endpointConfig.ChannelConfig("test")
+	assert.NotNil(t, chConfig)
 
-	chPeers, ok := endpointConfig.ChannelPeers("test")
-	assert.False(t, ok)
-	assert.Nil(t, chPeers)
+	chPeers := endpointConfig.ChannelPeers("test")
+	assert.Empty(t, len(chPeers))
 
-	chOrderers, ok := endpointConfig.ChannelOrderers("test")
-	assert.False(t, ok)
-	assert.Nil(t, chOrderers)
+	chOrderers := endpointConfig.ChannelOrderers("test")
+	assert.Empty(t, chOrderers)
 }
 
 func TestDefaultChannelWithNoDefaultChannelConfiguredAndWithMatchers(t *testing.T) {
@@ -106,37 +98,30 @@ func TestDefaultChannelWithNoDefaultChannelConfiguredAndWithMatchers(t *testing.
 	assert.Nil(t, err, "not supposed to get error")
 	assert.NotNil(t, endpointConfig)
 
-	// Channel 'abc' is not configured and since there's no channel match and no default channel in config all tests should 'fail'
-	chConfig, ok := endpointConfig.ChannelConfig("abc")
-	assert.False(t, ok)
-	assert.Nil(t, chConfig)
+	// Channel 'abc' is not configured and since there's no default channel in config
+	// we should be using the hard-coded default config
+	chConfig := endpointConfig.ChannelConfig("abc")
+	assert.NotNil(t, chConfig)
 
-	chPeers, ok := endpointConfig.ChannelPeers("abc")
-	assert.False(t, ok)
-	assert.Nil(t, chPeers)
+	chPeers := endpointConfig.ChannelPeers("abc")
+	assert.Empty(t, chPeers)
 
-	chOrderers, ok := endpointConfig.ChannelOrderers("abc")
-	assert.False(t, ok)
-	assert.Nil(t, chOrderers)
+	chOrderers := endpointConfig.ChannelOrderers("abc")
+	assert.Empty(t, chOrderers)
 
 	// Channel 'testXYZchannel' is not configured and however there is channel match so no test should fail
-	chConfig, ok = endpointConfig.ChannelConfig("testXYZchannel")
-	assert.True(t, ok, "supposed to find channel config")
+	chConfig = endpointConfig.ChannelConfig("testXYZchannel")
 	assert.Equal(t, 1, len(chConfig.Orderers))
 	assert.Equal(t, 1, len(chConfig.Peers))
 	assert.Equal(t, 1, chConfig.Policies.QueryChannelConfig.MinResponses)
-	assert.Equal(t, 1, chConfig.Policies.QueryChannelConfig.MaxTargets)
+	assert.Equal(t, 2, chConfig.Policies.QueryChannelConfig.MaxTargets)
 	assert.Equal(t, 1, chConfig.Policies.Discovery.MinResponses)
-	assert.Equal(t, 1, chConfig.Policies.Discovery.MaxTargets)
+	assert.Equal(t, 2, chConfig.Policies.Discovery.MaxTargets)
 
-	chPeers, ok = endpointConfig.ChannelPeers("testXYZchannel")
-	assert.True(t, ok)
-	assert.NotNil(t, chPeers)
+	chPeers = endpointConfig.ChannelPeers("testXYZchannel")
 	assert.Equal(t, 1, len(chPeers))
 
-	chOrderers, ok = endpointConfig.ChannelOrderers("testXYZchannel")
-	assert.True(t, ok)
-	assert.NotNil(t, chOrderers)
+	chOrderers = endpointConfig.ChannelOrderers("testXYZchannel")
 	assert.Equal(t, 1, len(chOrderers))
 
 }
@@ -152,12 +137,10 @@ func TestMissingDiscoveryPolicesInfo(t *testing.T) {
 	assert.NotNil(t, endpointConfig, "expected valid endpointconfig")
 
 	//When channel is not defined it should take values from "_default"
-	defChConfig, ok := endpointConfig.ChannelConfig("test")
-	assert.True(t, ok)
+	defChConfig := endpointConfig.ChannelConfig("test")
 	assert.NotNil(t, defChConfig)
 
-	chConfig, ok := endpointConfig.ChannelConfig("orgchannel")
-	assert.True(t, ok)
+	chConfig := endpointConfig.ChannelConfig("orgchannel")
 	assert.NotNil(t, chConfig)
 
 	// Org channel is missing polices in config (should be equal to default channel)
@@ -187,12 +170,10 @@ func TestMissingPartialChannelPoliciesInfo(t *testing.T) {
 	assert.NotNil(t, endpointConfig, "expected valid endpointconfig")
 
 	//When channel is not defined it should take values from "_default"
-	defChConfig, ok := endpointConfig.ChannelConfig("test")
-	assert.True(t, ok)
+	defChConfig := endpointConfig.ChannelConfig("test")
 	assert.NotNil(t, defChConfig)
 
-	chConfig, ok := endpointConfig.ChannelConfig("mychannel")
-	assert.True(t, ok)
+	chConfig := endpointConfig.ChannelConfig("mychannel")
 	assert.NotNil(t, chConfig)
 
 	// My channel is missing max targets and min responses for discovery policy in config (should be equal to default channel)
@@ -224,13 +205,11 @@ func TestMissingPeersInfo(t *testing.T) {
 	assert.Nil(t, err, "Failed to get endpoint config from backend")
 	assert.NotNil(t, endpointConfig, "expected valid endpointconfig")
 
-	defChConfig, ok := endpointConfig.ChannelConfig("test")
-	assert.True(t, ok)
+	defChConfig := endpointConfig.ChannelConfig("test")
 	assert.NotNil(t, defChConfig)
 
 	//If peers are not defined for channel then peers should be filled in from "_default" channel
-	chConfig, ok := endpointConfig.ChannelConfig("nopeers")
-	assert.True(t, ok)
+	chConfig := endpointConfig.ChannelConfig("nopeers")
 	assert.NotNil(t, chConfig)
 	assert.Equal(t, 1, len(chConfig.Orderers))
 	assert.Equal(t, 1, len(chConfig.Peers))
@@ -251,16 +230,12 @@ func TestMissingPeersInfo(t *testing.T) {
 	assert.Equal(t, defChConfig.Policies.QueryChannelConfig.RetryOpts.MaxBackoff, chConfig.Policies.QueryChannelConfig.RetryOpts.MaxBackoff)
 
 	// Since peers are not defined channel peers should equal peers from "_default"
-	chPeers, ok := endpointConfig.ChannelPeers("nopeers")
-	assert.True(t, ok)
-	assert.NotNil(t, chPeers)
+	chPeers := endpointConfig.ChannelPeers("nopeers")
 	assert.Equal(t, 1, len(chPeers))
 	assert.True(t, strings.Contains(chPeers[0].URL, "peer0.org2.example.com"))
 
 	// Orderer is defined for channel, verify orderer
-	chOrderers, ok := endpointConfig.ChannelOrderers("nopeers")
-	assert.True(t, ok)
-	assert.NotNil(t, chOrderers)
+	chOrderers := endpointConfig.ChannelOrderers("nopeers")
 	assert.Equal(t, 1, len(chOrderers))
 	assert.True(t, strings.Contains(chOrderers[0].URL, "orderer2.example.com"))
 
@@ -276,28 +251,22 @@ func TestMissingOrderersInfo(t *testing.T) {
 	assert.Nil(t, err, "Failed to get endpoint config from backend")
 	assert.NotNil(t, endpointConfig, "expected valid endpointconfig")
 
-	defChConfig, ok := endpointConfig.ChannelConfig("test")
-	assert.True(t, ok)
+	defChConfig := endpointConfig.ChannelConfig("test")
 	assert.NotNil(t, defChConfig)
 
 	//If orderers are not defined for channel then orderers should be filled in from "_default" channel
-	chConfig, ok := endpointConfig.ChannelConfig("noorderers")
-	assert.True(t, ok)
+	chConfig := endpointConfig.ChannelConfig("noorderers")
 	assert.NotNil(t, chConfig)
 	assert.Equal(t, 1, len(chConfig.Orderers))
 	assert.True(t, strings.Contains(chConfig.Orderers[0], "orderer.example.com"))
 	assert.Equal(t, 2, len(chConfig.Peers))
 
 	// Channel peers are defined, verify
-	chPeers, ok := endpointConfig.ChannelPeers("noorderers")
-	assert.True(t, ok)
-	assert.NotNil(t, chPeers)
+	chPeers := endpointConfig.ChannelPeers("noorderers")
 	assert.Equal(t, 2, len(chPeers))
 
 	//Verify channel orderers are from "_default"
-	chOrderers, ok := endpointConfig.ChannelOrderers("noorderers")
-	assert.True(t, ok)
-	assert.NotNil(t, chOrderers)
+	chOrderers := endpointConfig.ChannelOrderers("noorderers")
 	assert.Equal(t, 1, len(chOrderers))
 	assert.True(t, strings.Contains(chOrderers[0].URL, "orderer.example.com"))
 

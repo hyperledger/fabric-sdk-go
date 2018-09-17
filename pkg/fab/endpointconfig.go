@@ -63,10 +63,30 @@ const (
 	defaultFailFast         = false
 	defaultAllowInsecure    = false
 
-	defaultMaxTargets   = 1
+	defaultMaxTargets   = 2
 	defaultMinResponses = 1
 
 	defaultEntity = "_default"
+)
+
+var (
+	defaultChannelPolicies = &ChannelPolicies{
+		QueryChannelConfig: QueryChannelConfigPolicy{
+			MaxTargets:   defaultMaxTargets,
+			MinResponses: defaultMinResponses,
+			RetryOpts:    retry.Opts{},
+		},
+		Discovery: DiscoveryPolicy{
+			MaxTargets:   defaultMaxTargets,
+			MinResponses: defaultMinResponses,
+			RetryOpts:    retry.Opts{},
+		},
+		Selection: SelectionPolicy{
+			SortingStrategy:         BlockHeightPriority,
+			Balancer:                Random,
+			BlockHeightLagThreshold: defaultBlockHeightLagThreshold,
+		},
+	}
 )
 
 //ConfigFromBackend returns endpoint config implementation for given backend
@@ -180,11 +200,7 @@ func (c *EndpointConfig) mappedChannelName(networkConfig *fab.NetworkConfig, cha
 
 	//Return if no channelMatchers are configured
 	if len(c.channelMatchers) == 0 {
-		// try default channel
-		if c.defaultChannel != nil {
-			return defaultEntity
-		}
-		return ""
+		return defaultEntity
 	}
 
 	//loop over channelMatchers to find the matching channel name
@@ -195,57 +211,43 @@ func (c *EndpointConfig) mappedChannelName(networkConfig *fab.NetworkConfig, cha
 		}
 	}
 
-	if c.defaultChannel != nil {
-		return defaultEntity
-	}
-
-	// not match and no default channel, return empty
-	return ""
+	return defaultEntity
 }
 
 // ChannelConfig returns the channel configuration
-func (c *EndpointConfig) ChannelConfig(name string) (*fab.ChannelEndpointConfig, bool) {
+func (c *EndpointConfig) ChannelConfig(name string) *fab.ChannelEndpointConfig {
 
 	// get the mapped channel Name
 	mappedChannelName := c.mappedChannelName(c.networkConfig, name)
-	if mappedChannelName == "" {
-		return nil, false
-	}
-
 	if mappedChannelName == defaultEntity {
-		return c.defaultChannel, true
+		return c.defaultChannel
 	}
 
 	//look up in network config by channelName
 	ch, ok := c.networkConfig.Channels[strings.ToLower(mappedChannelName)]
-	return &ch, ok
+	if !ok {
+		return c.defaultChannel
+	}
+	return &ch
 }
 
 // ChannelPeers returns the channel peers configuration
-func (c *EndpointConfig) ChannelPeers(name string) ([]fab.ChannelPeer, bool) {
+func (c *EndpointConfig) ChannelPeers(name string) []fab.ChannelPeer {
 
 	//get mapped channel name
 	mappedChannelName := c.mappedChannelName(c.networkConfig, name)
-	if mappedChannelName == "" {
-		return nil, false
-	}
 
 	//look up in dictionary
-	peers, ok := c.channelPeersByChannel[strings.ToLower(mappedChannelName)]
-	return peers, ok
+	return c.channelPeersByChannel[strings.ToLower(mappedChannelName)]
 }
 
 // ChannelOrderers returns a list of channel orderers
-func (c *EndpointConfig) ChannelOrderers(name string) ([]fab.OrdererConfig, bool) {
+func (c *EndpointConfig) ChannelOrderers(name string) []fab.OrdererConfig {
 	//get mapped channel name
 	mappedChannelName := c.mappedChannelName(c.networkConfig, name)
-	if mappedChannelName == "" {
-		return nil, false
-	}
 
 	//look up in dictionary
-	orderers, ok := c.channelOrderersByChannel[strings.ToLower(mappedChannelName)]
-	return orderers, ok
+	return c.channelOrderersByChannel[strings.ToLower(mappedChannelName)]
 }
 
 // TLSCACertPool returns the configured cert pool. If a certConfig
@@ -492,11 +494,13 @@ func (c *EndpointConfig) loadDefaultChannel() {
 	if ok {
 		c.defaultChannel = &fab.ChannelEndpointConfig{Peers: defChCfg.Peers, Orderers: defChCfg.Orderers, Policies: defChCfg.Policies}
 		delete(c.networkConfig.Channels, defaultEntity)
+	} else {
+		logger.Debugf("No default config. Returning hard-coded defaults.")
+		c.defaultChannel = &fab.ChannelEndpointConfig{Policies: c.getChannelPolicies(defaultChannelPolicies)}
 	}
 }
 
 func (c *EndpointConfig) loadDefaultConfigItems(configEntity *endpointConfigEntity) error {
-
 	//default orderer config
 	err := c.loadDefaultOrderer(configEntity)
 	if err != nil {
@@ -528,6 +532,8 @@ func (c *EndpointConfig) loadNetworkConfig(configEntity *endpointConfigEntity) e
 	defChNwCfg, ok := configEntity.Channels[defaultEntity]
 	if ok {
 		networkConfig.Channels[defaultEntity] = c.loadChannelEndpointConfig(defChNwCfg, ChannelEndpointConfig{})
+	} else {
+		networkConfig.Channels[defaultEntity] = fab.ChannelEndpointConfig{Policies: c.getChannelPolicies(defaultChannelPolicies)}
 	}
 
 	for chID, chNwCfg := range configEntity.Channels {
@@ -623,26 +629,26 @@ func (c *EndpointConfig) loadChannelEndpointConfig(chNwCfg ChannelEndpointConfig
 	}
 }
 
-func (c *EndpointConfig) getChannelPolicies(chNwCfg ChannelEndpointConfig) fab.ChannelPolicies {
+func (c *EndpointConfig) getChannelPolicies(policies *ChannelPolicies) fab.ChannelPolicies {
 
 	discoveryPolicy := fab.DiscoveryPolicy{
 
-		MaxTargets:   chNwCfg.Policies.Discovery.MaxTargets,
-		MinResponses: chNwCfg.Policies.Discovery.MinResponses,
-		RetryOpts:    chNwCfg.Policies.Discovery.RetryOpts,
+		MaxTargets:   policies.Discovery.MaxTargets,
+		MinResponses: policies.Discovery.MinResponses,
+		RetryOpts:    policies.Discovery.RetryOpts,
 	}
 
 	selectionPolicy := fab.SelectionPolicy{
 
-		SortingStrategy:         fab.SelectionSortingStrategy(chNwCfg.Policies.Selection.SortingStrategy),
-		Balancer:                fab.BalancerType(chNwCfg.Policies.Selection.Balancer),
-		BlockHeightLagThreshold: chNwCfg.Policies.Selection.BlockHeightLagThreshold,
+		SortingStrategy:         fab.SelectionSortingStrategy(policies.Selection.SortingStrategy),
+		Balancer:                fab.BalancerType(policies.Selection.Balancer),
+		BlockHeightLagThreshold: policies.Selection.BlockHeightLagThreshold,
 	}
 
 	channelCfgPolicy := fab.QueryChannelConfigPolicy{
-		MaxTargets:   chNwCfg.Policies.QueryChannelConfig.MaxTargets,
-		MinResponses: chNwCfg.Policies.QueryChannelConfig.MinResponses,
-		RetryOpts:    chNwCfg.Policies.QueryChannelConfig.RetryOpts,
+		MaxTargets:   policies.QueryChannelConfig.MaxTargets,
+		MinResponses: policies.QueryChannelConfig.MinResponses,
+		RetryOpts:    policies.QueryChannelConfig.RetryOpts,
 	}
 
 	return fab.ChannelPolicies{
@@ -654,7 +660,7 @@ func (c *EndpointConfig) getChannelPolicies(chNwCfg ChannelEndpointConfig) fab.C
 
 func (c *EndpointConfig) addMissingChannelPoliciesItems(chNwCfg ChannelEndpointConfig) fab.ChannelPolicies {
 
-	policies := c.getChannelPolicies(chNwCfg)
+	policies := c.getChannelPolicies(&chNwCfg.Policies)
 
 	policies.Discovery = c.addMissingDiscoveryPolicyInfo(policies.Discovery)
 	policies.Selection = c.addMissingSelectionPolicyInfo(policies.Selection)
@@ -913,44 +919,52 @@ func (c *EndpointConfig) loadDefaultChannelPolicies(configEntity *endpointConfig
 	var defaultChPolicies fab.ChannelPolicies
 	defaultChannel, ok := configEntity.Channels[defaultEntity]
 	if !ok {
-		defaultChPolicies = fab.ChannelPolicies{}
+		defaultChPolicies = c.getChannelPolicies(defaultChannelPolicies)
 	} else {
-		defaultChPolicies = c.getChannelPolicies(defaultChannel)
+		defaultChPolicies = c.getChannelPolicies(&defaultChannel.Policies)
 	}
 
-	if defaultChPolicies.Discovery.MaxTargets == 0 {
-		defaultChPolicies.Discovery.MaxTargets = defaultMaxTargets
-	}
-
-	if defaultChPolicies.Discovery.MinResponses == 0 {
-		defaultChPolicies.Discovery.MinResponses = defaultMinResponses
-	}
-
-	if defaultChPolicies.Selection.SortingStrategy == "" {
-		defaultChPolicies.Selection.SortingStrategy = fab.BlockHeightPriority
-	}
-
-	if defaultChPolicies.Selection.Balancer == "" {
-		defaultChPolicies.Selection.Balancer = fab.RoundRobin
-	}
-
-	if defaultChPolicies.Selection.BlockHeightLagThreshold == 0 {
-		defaultChPolicies.Selection.BlockHeightLagThreshold = defaultBlockHeightLagThreshold
-	}
-
-	if defaultChPolicies.QueryChannelConfig.MaxTargets == 0 {
-		defaultChPolicies.QueryChannelConfig.MaxTargets = defaultMaxTargets
-	}
-
-	if defaultChPolicies.QueryChannelConfig.MinResponses == 0 {
-		defaultChPolicies.QueryChannelConfig.MinResponses = defaultMinResponses
-	}
+	c.loadDefaultDiscoveryPolicy(&defaultChPolicies.Discovery)
+	c.loadDefaultSelectionPolicy(&defaultChPolicies.Selection)
+	c.loadDefaultQueryChannelPolicy(&defaultChPolicies.QueryChannelConfig)
 
 	c.defaultChannelPolicies = defaultChPolicies
 
-	// TODO: Should we set missing retry options or leave it to services that consume it
-
 	return nil
+}
+
+func (c *EndpointConfig) loadDefaultDiscoveryPolicy(policy *fab.DiscoveryPolicy) {
+	if policy.MaxTargets == 0 {
+		policy.MaxTargets = defaultMaxTargets
+	}
+
+	if policy.MinResponses == 0 {
+		policy.MinResponses = defaultMinResponses
+	}
+}
+
+func (c *EndpointConfig) loadDefaultSelectionPolicy(policy *fab.SelectionPolicy) {
+	if policy.SortingStrategy == "" {
+		policy.SortingStrategy = fab.BlockHeightPriority
+	}
+
+	if policy.Balancer == "" {
+		policy.Balancer = fab.RoundRobin
+	}
+
+	if policy.BlockHeightLagThreshold == 0 {
+		policy.BlockHeightLagThreshold = defaultBlockHeightLagThreshold
+	}
+}
+
+func (c *EndpointConfig) loadDefaultQueryChannelPolicy(policy *fab.QueryChannelConfigPolicy) {
+	if policy.MaxTargets == 0 {
+		policy.MaxTargets = defaultMaxTargets
+	}
+
+	if policy.MinResponses == 0 {
+		policy.MinResponses = defaultMinResponses
+	}
 }
 
 func (c *EndpointConfig) loadDefaultPeer(configEntity *endpointConfigEntity) error {

@@ -49,11 +49,7 @@ func newFilter(channelID string, ctx contextAPI.Client, peers []fab.Peer, filter
 }
 
 func resolvePeerSorter(channelID string, ctx contextAPI.Client) options.PeerSorter {
-	channelConfig, ok := ctx.EndpointConfig().ChannelConfig(channelID)
-	if !ok {
-		logger.Debugf("Unable to get channel config for channel [%s]. Using block height priority selection sorter by default.", channelID)
-		return blockheightsorter.New()
-	}
+	channelConfig := ctx.EndpointConfig().ChannelConfig(channelID)
 	return resolveSortingStrategy(channelID, channelConfig, resolveBalancer(channelID, channelConfig))
 }
 

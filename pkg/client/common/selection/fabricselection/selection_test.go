@@ -332,11 +332,8 @@ type config struct {
 	peers []fab.ChannelPeer
 }
 
-func (c *config) ChannelPeers(name string) ([]fab.ChannelPeer, bool) {
-	if len(c.peers) == 0 {
-		return nil, false
-	}
-	return c.peers, true
+func (c *config) ChannelPeers(name string) []fab.ChannelPeer {
+	return c.peers
 }
 
 func (c *config) PeerConfig(nameOrURL string) (*fab.PeerConfig, bool) {

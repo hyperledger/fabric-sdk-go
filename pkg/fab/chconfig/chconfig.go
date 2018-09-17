@@ -35,11 +35,6 @@ var logger = logging.NewLogger("fabsdk/fab")
 var overrideRetryHandler retry.Handler
 var versionCapabilityPattern = regexp.MustCompile(`^V(\d+)_(\d+)$`)
 
-const (
-	defaultMinResponses = 1
-	defaultMaxTargets   = 2
-)
-
 // Opts contains options for retrieving channel configuration
 type Opts struct {
 	Orderer      fab.Orderer // if configured, channel config will be retrieved from this orderer
@@ -202,9 +197,9 @@ func (c *ChannelConfig) queryPeers(reqCtx reqContext.Context) (*ChannelCfg, erro
 
 func (c *ChannelConfig) calculateTargetsFromConfig(ctx context.Client) ([]fab.ProposalProcessor, error) {
 	targets := []fab.ProposalProcessor{}
-	chPeers, ok := ctx.EndpointConfig().ChannelPeers(c.channelID)
-	if !ok {
-		return nil, errors.New("read configuration for channel peers failed")
+	chPeers := ctx.EndpointConfig().ChannelPeers(c.channelID)
+	if len(chPeers) == 0 {
+		return nil, errors.Errorf("no channel peers configured for channel [%s]", c.channelID)
 	}
 
 	for _, p := range chPeers {
@@ -241,14 +236,12 @@ func (c *ChannelConfig) resolveOptsFromConfig(ctx context.Client) error {
 		return nil
 	}
 
-	//If missing from opts, check config and update opts from config
-	chSdkCfg, ok := ctx.EndpointConfig().ChannelConfig(c.channelID)
-	if ok {
-		//resolve opts
-		c.resolveMaxResponsesOptsFromConfig(chSdkCfg)
-		c.resolveMinResponsesOptsFromConfig(chSdkCfg)
-		c.resolveRetryOptsFromConfig(chSdkCfg)
-	}
+	chSdkCfg := ctx.EndpointConfig().ChannelConfig(c.channelID)
+
+	//resolve opts
+	c.resolveMaxResponsesOptsFromConfig(chSdkCfg)
+	c.resolveMinResponsesOptsFromConfig(chSdkCfg)
+	c.resolveRetryOptsFromConfig(chSdkCfg)
 
 	//apply default to missing opts
 	c.applyDefaultOpts()
@@ -257,33 +250,25 @@ func (c *ChannelConfig) resolveOptsFromConfig(ctx context.Client) error {
 }
 
 func (c *ChannelConfig) resolveMaxResponsesOptsFromConfig(chSdkCfg *fab.ChannelEndpointConfig) {
-	if c.opts.MaxTargets == 0 && &chSdkCfg.Policies != nil && &chSdkCfg.Policies.QueryChannelConfig != nil {
+	if c.opts.MaxTargets == 0 {
 		c.opts.MaxTargets = chSdkCfg.Policies.QueryChannelConfig.MaxTargets
 	}
 }
 
 func (c *ChannelConfig) resolveMinResponsesOptsFromConfig(chSdkCfg *fab.ChannelEndpointConfig) {
-	if c.opts.MinResponses == 0 && &chSdkCfg.Policies != nil && &chSdkCfg.Policies.QueryChannelConfig != nil {
+	if c.opts.MinResponses == 0 {
 		c.opts.MinResponses = chSdkCfg.Policies.QueryChannelConfig.MinResponses
 	}
 }
 
 func (c *ChannelConfig) resolveRetryOptsFromConfig(chSdkCfg *fab.ChannelEndpointConfig) {
 	if c.opts.RetryOpts.RetryableCodes == nil {
-		if c.opts.RetryOpts.RetryableCodes == nil && &chSdkCfg.Policies != nil && &chSdkCfg.Policies.QueryChannelConfig != nil {
-			c.opts.RetryOpts = chSdkCfg.Policies.QueryChannelConfig.RetryOpts
-		}
+		c.opts.RetryOpts = chSdkCfg.Policies.QueryChannelConfig.RetryOpts
 		c.opts.RetryOpts.RetryableCodes = retry.ChannelConfigRetryableCodes
 	}
 }
 
 func (c *ChannelConfig) applyDefaultOpts() {
-	if c.opts.MaxTargets == 0 {
-		c.opts.MaxTargets = defaultMaxTargets
-	}
-	if c.opts.MinResponses == 0 {
-		c.opts.MinResponses = defaultMinResponses
-	}
 	if c.opts.RetryOpts.Attempts == 0 {
 		c.opts.RetryOpts.Attempts = retry.DefaultAttempts
 	}

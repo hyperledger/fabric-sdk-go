@@ -40,9 +40,9 @@ func WithTargetFilter(filter fab.TargetFilter) Opt {
 // that wraps a given target discovery service and adds endpoint data to each
 // of the discovered peers.
 func NewEndpointDiscoveryWrapper(ctx context.Client, channelID string, target fab.DiscoveryService, opts ...Opt) (*DiscoveryWrapper, error) {
-	chpeers, ok := ctx.EndpointConfig().ChannelPeers(channelID)
-	if !ok {
-		return nil, errors.Errorf("unable to get channel peers for channel [%s]", channelID)
+	chpeers := ctx.EndpointConfig().ChannelPeers(channelID)
+	if len(chpeers) == 0 {
+		return nil, errors.Errorf("no channel peers for channel [%s]", channelID)
 	}
 
 	s := &DiscoveryWrapper{

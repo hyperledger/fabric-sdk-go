@@ -272,15 +272,12 @@ func (s *Service) query(req *discclient.Request, chaincodes []*fab.ChaincodeCall
 
 func (s *Service) getTargets(ctx contextAPI.Client) ([]fab.PeerConfig, error) {
 
-	chpeers, ok := ctx.EndpointConfig().ChannelPeers(s.channelID)
-	if !ok {
-		return nil, errors.Errorf("failed to get peer configs for channel [%s]", s.channelID)
+	chpeers := ctx.EndpointConfig().ChannelPeers(s.channelID)
+	if len(chpeers) == 0 {
+		return nil, errors.Errorf("no channel peers configured for channel [%s]", s.channelID)
 	}
 
-	chConfig, ok := ctx.EndpointConfig().ChannelConfig(s.channelID)
-	if !ok {
-		return nil, errors.Errorf("failed to get channel endpoint config for channel [%s]", s.channelID)
-	}
+	chConfig := ctx.EndpointConfig().ChannelConfig(s.channelID)
 
 	//pick number of peers based on channel policy
 	return random.PickRandomNPeerConfigs(chpeers, chConfig.Policies.Discovery.MaxTargets), nil

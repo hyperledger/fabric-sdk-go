@@ -23,9 +23,9 @@ func NewService(config fab.EndpointConfig, peerCreator peerCreator, channelID st
 	}
 
 	// Use configured channel peers
-	chPeers, ok := config.ChannelPeers(channelID)
-	if !ok {
-		return nil, errors.New("unable to read configuration for channel peers")
+	chPeers := config.ChannelPeers(channelID)
+	if len(chPeers) == 0 {
+		return nil, errors.Errorf("no channel peers configured for channel [%s]", channelID)
 	}
 
 	peers := []fab.Peer{}

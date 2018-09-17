@@ -1146,7 +1146,7 @@ func (rc *Client) requestOrderer(opts *requestOptions, channelID string) (fab.Or
 }
 
 func (rc *Client) ordererConfig(channelID string) (*fab.OrdererConfig, error) {
-	orderers, ok := rc.ctx.EndpointConfig().ChannelOrderers(channelID)
+	orderers := rc.ctx.EndpointConfig().ChannelOrderers(channelID)
 
 	// TODO: Not sure that we should fallback to global orderers section.
 	// For now - not doing so.
@@ -1154,9 +1154,6 @@ func (rc *Client) ordererConfig(channelID string) (*fab.OrdererConfig, error) {
 	//	orderers, err = rc.ctx.Config().OrderersConfig()
 	//}
 
-	if !ok {
-		return nil, errors.New("orderers lookup failed")
-	}
 	if len(orderers) == 0 {
 		return nil, errors.New("no orderers found")
 	}

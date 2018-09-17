@@ -32,6 +32,7 @@ type MockConfig struct {
 	customRandomOrdererCfg *fab.OrdererConfig
 	EvtServiceConfig       fab.EventServiceConfig
 	CustomTLSCACertPool    fab.CertPool
+	chConfig               map[string]*fab.ChannelEndpointConfig
 }
 
 // NewMockCryptoConfig ...
@@ -240,16 +241,36 @@ func (c *MockConfig) NetworkConfig() *fab.NetworkConfig {
 }
 
 // ChannelConfig returns the channel configuration
-// TODO: Return more cases
-func (c *MockConfig) ChannelConfig(name string) (*fab.ChannelEndpointConfig, bool) {
-	return &fab.ChannelEndpointConfig{Policies: fab.ChannelPolicies{QueryChannelConfig: fab.QueryChannelConfigPolicy{}}}, true
+func (c *MockConfig) ChannelConfig(channelID string) *fab.ChannelEndpointConfig {
+	if c.chConfig != nil {
+		config, ok := c.chConfig[channelID]
+		if ok {
+			return config
+		}
+	}
+
+	return &fab.ChannelEndpointConfig{
+		Policies: fab.ChannelPolicies{
+			QueryChannelConfig: fab.QueryChannelConfigPolicy{},
+			Discovery:          fab.DiscoveryPolicy{},
+			Selection:          fab.SelectionPolicy{},
+		},
+	}
+}
+
+// SetCustomChannelConfig sets the config for the given channel
+func (c *MockConfig) SetCustomChannelConfig(channelID string, config *fab.ChannelEndpointConfig) {
+	if c.chConfig == nil {
+		c.chConfig = make(map[string]*fab.ChannelEndpointConfig)
+	}
+	c.chConfig[channelID] = config
 }
 
 // ChannelPeers returns the channel peers configuration
-func (c *MockConfig) ChannelPeers(name string) ([]fab.ChannelPeer, bool) {
+func (c *MockConfig) ChannelPeers(name string) []fab.ChannelPeer {
 
 	if name == "noChannelPeers" {
-		return nil, false
+		return nil
 	}
 
 	peerChCfg := fab.PeerChannelConfig{EndorsingPeer: true, ChaincodeQuery: true, LedgerQuery: true, EventSource: true}
@@ -258,18 +279,18 @@ func (c *MockConfig) ChannelPeers(name string) ([]fab.ChannelPeer, bool) {
 	}
 
 	mockPeer := fab.ChannelPeer{PeerChannelConfig: peerChCfg, NetworkPeer: fab.NetworkPeer{PeerConfig: fab.PeerConfig{URL: "example.com"}}}
-	return []fab.ChannelPeer{mockPeer}, true
+	return []fab.ChannelPeer{mockPeer}
 }
 
 // ChannelOrderers returns a list of channel orderers
-func (c *MockConfig) ChannelOrderers(name string) ([]fab.OrdererConfig, bool) {
+func (c *MockConfig) ChannelOrderers(name string) []fab.OrdererConfig {
 	if name == "Invalid" {
-		return nil, false
+		return nil
 	}
 
 	oConfig, _ := c.OrdererConfig("")
 
-	return []fab.OrdererConfig{*oConfig}, true
+	return []fab.OrdererConfig{*oConfig}
 }
 
 // NetworkPeers returns the mock network peers configuration

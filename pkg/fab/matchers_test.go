@@ -81,8 +81,7 @@ func TestAllOptionsOverride(t *testing.T) {
 	assert.Equal(t, 6, len(ordererConfig.GRPCOptions))
 
 	//Channel Endpoint Config Search Based on Name configured in config
-	channelConfig, ok := config.ChannelConfig("testXYZchannel")
-	assert.True(t, ok, "supposed to find channel config")
+	channelConfig := config.ChannelConfig("testXYZchannel")
 	assert.Equal(t, 1, len(channelConfig.Orderers))
 	assert.Equal(t, 1, len(channelConfig.Peers))
 }
@@ -470,27 +469,22 @@ func TestMatchersIgnoreEndpoint(t *testing.T) {
 }
 
 func testIgnoreEndpointChannelOrderers(t *testing.T, config fab.EndpointConfig) {
-	orderers, ok := config.ChannelOrderers(testChannelID)
-	assert.True(t, ok)
-	assert.NotEmpty(t, orderers)
+	orderers := config.ChannelOrderers(testChannelID)
 	assert.Equal(t, 1, len(orderers))
 	checkOrdererConfigExcluded(orderers, "orderer.exclude.example.com", t)
 }
 
 func testIgnoreEndpointChannelPeers(t *testing.T, config fab.EndpointConfig) {
-	channelPeers, ok := config.ChannelPeers(testChannelID)
-	assert.True(t, ok)
-	assert.NotEmpty(t, channelPeers)
+	channelPeers := config.ChannelPeers(testChannelID)
 	assert.Equal(t, 2, len(channelPeers))
 	checkChannelPeerExcluded(channelPeers, "peer1.org", t)
 }
 
 func testIgnoreEndpointChannelConfig(t *testing.T, config fab.EndpointConfig) {
-	chNwConfig, ok := config.ChannelConfig(testChannelID)
-	assert.True(t, ok)
+	chNwConfig := config.ChannelConfig(testChannelID)
 	assert.NotNil(t, chNwConfig)
 	assert.NotEmpty(t, chNwConfig.Peers)
-	_, ok = chNwConfig.Peers["peer1.org1.example.com"]
+	_, ok := chNwConfig.Peers["peer1.org1.example.com"]
 	assert.False(t, ok, "should not have excluded peer's entry in channel network config")
 	_, ok = chNwConfig.Peers["peer1.org2.example.com"]
 	assert.False(t, ok, "should not have excluded peer's entry in channel network config")
