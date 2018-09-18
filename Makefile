@@ -235,35 +235,39 @@ export DOCKER_COMPOSE_CMD
 export FABRIC_SDKGO_TESTRUN_ID
 
 .PHONY: all
-all: depend-noforce license unit-test integration-test
+all: version depend-noforce license unit-test integration-test
+
+.PHONY: version
+version:
+	@$(TEST_SCRIPTS_PATH)/check_version.sh
 
 .PHONY: depend
-depend:
+depend: version
 	@$(TEST_SCRIPTS_PATH)/dependencies.sh -f
 
 .PHONY: depend-noforce
-depend-noforce:
+depend-noforce: version
 ifeq ($(FABRIC_SDKGO_DEPEND_INSTALL),true)
 	@$(TEST_SCRIPTS_PATH)/dependencies.sh
 endif
 
 .PHONY: checks
-checks: depend-noforce license check-dep lint
+checks: version depend-noforce license check-dep lint
 
 .PHONY: license
-license:
+license: version
 	@$(TEST_SCRIPTS_PATH)/check_license.sh
 
 .PHONY: lint
-lint: populate-noforce
+lint: version populate-noforce
 	@LINT_CHANGED_ONLY=true $(TEST_SCRIPTS_PATH)/check_lint.sh
 
 .PHONY: lint-all
-lint-all: populate-noforce
+lint-all: version populate-noforce
 	@$(TEST_SCRIPTS_PATH)/check_lint.sh
 
 .PHONY: check-dep
-check-dep:
+check-dep: version
 	@dep check -skip-vendor
 
 .PHONY: build-softhsm2-image
