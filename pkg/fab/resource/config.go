@@ -131,6 +131,32 @@ func CreateConfigEnvelope(data []byte) (*common.ConfigEnvelope, error) {
 	return configEnvelope, nil
 }
 
+//CreateConfigUpdateEnvelope creates configuration update envelope proto
+func CreateConfigUpdateEnvelope(data []byte) (*common.ConfigUpdateEnvelope, error) {
+
+	envelope := &common.Envelope{}
+	if err := proto.Unmarshal(data, envelope); err != nil {
+		return nil, errors.Wrap(err, "unmarshal envelope from config block failed")
+	}
+	payload := &common.Payload{}
+	if err := proto.Unmarshal(envelope.Payload, payload); err != nil {
+		return nil, errors.Wrap(err, "unmarshal payload from envelope failed")
+	}
+	channelHeader := &common.ChannelHeader{}
+	if err := proto.Unmarshal(payload.Header.ChannelHeader, channelHeader); err != nil {
+		return nil, errors.Wrap(err, "unmarshal payload from envelope failed")
+	}
+	if common.HeaderType(channelHeader.Type) != common.HeaderType_CONFIG {
+		return nil, errors.New("block must be of type 'CONFIG'")
+	}
+	configEnvelope := &common.ConfigUpdateEnvelope{}
+	if err := proto.Unmarshal(payload.Data, configEnvelope); err != nil {
+		return nil, errors.Wrap(err, "unmarshal config envelope failed")
+	}
+
+	return configEnvelope, nil
+}
+
 // GetLastConfigFromBlock returns the LastConfig data from the given block
 func GetLastConfigFromBlock(block *common.Block) (*common.LastConfig, error) {
 	if block.Metadata == nil {
