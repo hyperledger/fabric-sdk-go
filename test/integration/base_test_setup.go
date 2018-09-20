@@ -187,6 +187,12 @@ func GetConfigOverridesPath(filename string) string {
 	return path.Join(goPath(), "src", metadata.Project, configPath, "overrides", filename)
 }
 
+// GetCryptoConfigPath returns the path to the named crypto-config override fixture file
+func GetCryptoConfigPath(filename string) string {
+	const configPath = "test/fixtures/fabric/v1/crypto-config"
+	return path.Join(goPath(), "src", metadata.Project, configPath, filename)
+}
+
 // goPath returns the current GOPATH. If the system
 // has multiple GOPATHs then the first is used.
 func goPath() string {
