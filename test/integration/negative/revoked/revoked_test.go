@@ -52,23 +52,27 @@ import (
 )
 
 const (
-	org1AdminUser      = "Admin"
-	org2AdminUser      = "Admin"
-	org1User           = "User1"
-	org1               = "Org1"
-	org2               = "Org2"
-	channelID          = "orgchannel"
-	configFilename     = "config_test.yaml"
-	pathRevokeCaRoot   = "peerOrganizations/org1.example.com/ca/"
-	pathParentCert     = "peerOrganizations/org1.example.com/ca/ca.org1.example.com-cert.pem"
-	pathCertToBeRevokd = "peerOrganizations/org1.example.com/peers/peer0.org1.example.com/msp/signcerts/peer0.org1.example.com-cert.pem"
+	org1AdminUser       = "Admin"
+	org2AdminUser       = "Admin"
+	org1User            = "User1"
+	org2User            = "User1"
+	org1                = "Org1"
+	org2                = "Org2"
+	ordererAdminUser    = "Admin"
+	ordererOrgName      = "OrdererOrg"
+	channelID           = "orgchannel"
+	configFilename      = "config_test.yaml"
+	pathRevokeCaRoot    = "peerOrganizations/org1.example.com/ca/"
+	pathParentCert      = "peerOrganizations/org1.example.com/ca/ca.org1.example.com-cert.pem"
+	peerCertToBeRevoked = "peerOrganizations/org1.example.com/peers/peer0.org1.example.com/msp/signcerts/peer0.org1.example.com-cert.pem"
+	userCertToBeRevoked = "peerOrganizations/org1.example.com/users/User1@org1.example.com/msp/signcerts/User1@org1.example.com-cert.pem"
 )
 
 var CRLTestRetryOpts = retry.Opts{
 	Attempts:       20,
 	InitialBackoff: 1 * time.Second,
-	MaxBackoff:     10 * time.Second,
-	BackoffFactor:  2.0,
+	MaxBackoff:     15 * time.Second,
+	BackoffFactor:  1.5,
 	RetryableCodes: retry.TestRetryableCodes,
 }
 
@@ -82,11 +86,17 @@ var msps = []string{"Org1MSP", "Org2MSP"}
 // step 1: generate CRL
 // step 2: update MSP revocation_list in channel config
 // step 3: perform revoke peer test
-func TestPeerRevoke(t *testing.T) {
+func TestPeerAndUserRevoke(t *testing.T) {
 
-	//generate CRL
-	crlBytes, err := generateCRL()
-	require.NoError(t, err, "failed to generate CRL")
+	var err error
+	//generate CRLs for Peer & User
+	crlBytes := make([][]byte, 2)
+	crlBytes[0], err = generateCRL(peerCertToBeRevoked)
+	require.NoError(t, err, "failed to generate CRL for", peerCertToBeRevoked)
+	require.NotEmpty(t, crlBytes, "CRL is empty")
+
+	crlBytes[1], err = generateCRL(userCertToBeRevoked)
+	require.NoError(t, err, "failed to generate CRL for", userCertToBeRevoked)
 	require.NotEmpty(t, crlBytes, "CRL is empty")
 
 	//update revocation list in channel config
@@ -98,12 +108,15 @@ func TestPeerRevoke(t *testing.T) {
 	//test if peer has been revoked
 	testRevokedPeer(t)
 
+	//test if user1 has been revoked
+	testRevokedUser(t)
+
 	//reset revocation list in channel config for other tests
 	updateRevocationList(t, nil, false)
 }
 
 //updateRevocationList update MSP revocation_list in channel config
-func updateRevocationList(t *testing.T, crlBytes []byte, joinCh bool) {
+func updateRevocationList(t *testing.T, crlBytes [][]byte, joinCh bool) {
 
 	sdk, err := fabsdk.New(config.FromFile(integration.GetConfigPath(configFilename)))
 	require.NoError(t, err)
@@ -114,22 +127,14 @@ func updateRevocationList(t *testing.T, crlBytes []byte, joinCh bool) {
 	integration.CleanupUserData(t, sdk)
 	defer integration.CleanupUserData(t, sdk)
 
-	//prepare contexts
-	org1AdminClientContext := sdk.Context(fabsdk.WithUser(org1AdminUser), fabsdk.WithOrg(org1))
-	org2AdminClientContext := sdk.Context(fabsdk.WithUser(org2AdminUser), fabsdk.WithOrg(org2))
-	org1AdminChannelClientContext := sdk.ChannelContext(channelID, fabsdk.WithUser(org1AdminUser), fabsdk.WithOrg(org1))
-
-	org1ResMgmt, err := resmgmt.New(org1AdminClientContext)
-	require.NoError(t, err)
-
 	if joinCh {
 		//join channel
-		org2ResMgmt, err := resmgmt.New(org2AdminClientContext)
-		require.NoError(t, err)
-
-		//join channel
-		joinChannel(t, org1ResMgmt, org2ResMgmt)
+		joinChannel(t, sdk)
 	}
+
+	//prepare contexts
+	org1AdminClientContext := sdk.Context(fabsdk.WithUser(org1AdminUser), fabsdk.WithOrg(org1))
+	org1AdminChannelClientContext := sdk.ChannelContext(channelID, fabsdk.WithUser(org1AdminUser), fabsdk.WithOrg(org1))
 
 	ledgerClient1, err := ledger.New(org1AdminChannelClientContext)
 	require.NoError(t, err)
@@ -138,6 +143,9 @@ func updateRevocationList(t *testing.T, crlBytes []byte, joinCh bool) {
 	require.NoError(t, err)
 
 	org2MspClient, err := mspclient.New(sdk.Context(), mspclient.WithOrg(org2))
+	require.NoError(t, err)
+
+	org1ResMgmt, err := resmgmt.New(org1AdminClientContext)
 	require.NoError(t, err)
 
 	//create read write set for channel config update
@@ -175,7 +183,8 @@ func testRevokedPeer(t *testing.T) {
 	//prepare contexts
 	org1AdminClientContext := sdk1.Context(fabsdk.WithUser(org1AdminUser), fabsdk.WithOrg(org1))
 	org2AdminClientContext := sdk1.Context(fabsdk.WithUser(org2AdminUser), fabsdk.WithOrg(org2))
-	org1ChannelClientContext := sdk1.ChannelContext(channelID, fabsdk.WithUser(org1User), fabsdk.WithOrg(org1))
+	org1UserChannelClientContext := sdk1.ChannelContext(channelID, fabsdk.WithUser(org1User), fabsdk.WithOrg(org1))
+	org2UserChannelClientContext := sdk1.ChannelContext(channelID, fabsdk.WithUser(org2User), fabsdk.WithOrg(org2))
 
 	org1ResMgmt, err := resmgmt.New(org1AdminClientContext)
 	require.NoError(t, err)
@@ -190,11 +199,38 @@ func testRevokedPeer(t *testing.T) {
 	//targets has its certificate revoked
 	loadOrgPeers(t, org1AdminClientContext)
 
-	queryCC(t, org1ChannelClientContext)
+	//query with revoked user
+	queryCC(t, org1UserChannelClientContext, "access denied")
+	//query with valid user
+	queryCC(t, org2UserChannelClientContext, "could not find chaincode with name 'exampleCC'")
+}
+
+//testRevokedUser performs revoke peer test
+func testRevokedUser(t *testing.T) {
+
+	sdk, err := fabsdk.New(config.FromFile(integration.GetConfigPath(configFilename)))
+	require.NoError(t, err)
+	defer sdk.Close()
+
+	//Try User2 whose certs are not revoked, should be able to query channel config
+	user2ChannelContext := sdk.ChannelContext(channelID, fabsdk.WithUser(org2User), fabsdk.WithOrg(org2))
+	ledgerClient, err := ledger.New(user2ChannelContext)
+	require.NoError(t, err)
+	cfg, err := ledgerClient.QueryConfig(ledger.WithTargetEndpoints("peer1.org2.example.com"))
+	require.NoError(t, err)
+	require.NotEmpty(t, cfg)
+
+	//Try User1 whose certs are revoked, shouldn't be able to query channel config
+	user1ChannelContext := sdk.ChannelContext(channelID, fabsdk.WithUser(org1User), fabsdk.WithOrg(org1))
+	ledgerClient, err = ledger.New(user1ChannelContext)
+	require.NoError(t, err)
+	cfg, err = ledgerClient.QueryConfig(ledger.WithTargetEndpoints("peer1.org2.example.com"))
+	require.Error(t, err)
+	require.Empty(t, cfg)
 }
 
 //prepareReadWriteSets prepares read write sets for channel config update
-func prepareReadWriteSets(t *testing.T, crlBytes []byte, ledgerClient *ledger.Client) (*common.ConfigGroup, *common.ConfigGroup) {
+func prepareReadWriteSets(t *testing.T, crlBytes [][]byte, ledgerClient *ledger.Client) (*common.ConfigGroup, *common.ConfigGroup) {
 
 	var readSet, writeSet *common.ConfigGroup
 
@@ -233,7 +269,7 @@ func prepareReadWriteSets(t *testing.T, crlBytes []byte, ledgerClient *ledger.Cl
 
 		if len(crlBytes) > 0 {
 			//append valid crl bytes to existing revocation list
-			fabMspCfg.RevocationList = append(fabMspCfg.RevocationList, crlBytes)
+			fabMspCfg.RevocationList = append(fabMspCfg.RevocationList, crlBytes...)
 		} else {
 			//reset
 			fabMspCfg.RevocationList = nil
@@ -289,8 +325,6 @@ func updateChannelConfig(t *testing.T, readSet *common.ConfigGroup, writeSet *co
 	org2AdminIdenity, err := org2MspClient.GetSigningIdentity(org2AdminUser)
 	require.NoError(t, err, "failed to get org2AdminIdentity")
 
-	require.NoError(t, err, "failed to get a new channel management client for org1Admin")
-
 	//perform save channel for channel config update
 	req := resmgmt.SaveChannelRequest{ChannelID: channelID,
 		ChannelConfig:     reader,
@@ -322,36 +356,87 @@ func createConfigEnvelopeReader(t *testing.T, blockData []byte, configUpdateByte
 	return reader
 }
 
-func joinChannel(t *testing.T, org1ResMgmt, org2ResMgmt *resmgmt.Client) {
+func joinChannel(t *testing.T, sdk *fabsdk.FabricSDK) {
 
-	// Org1 peers join channel
-	if err := org1ResMgmt.JoinChannel("orgchannel", resmgmt.WithRetry(retry.DefaultResMgmtOpts), resmgmt.WithOrdererEndpoint("orderer.example.com")); err != nil {
-		t.Fatalf("Org1 peers failed to JoinChannel: %s", err)
+	joinChannelFunc := func() error {
+
+		org1AdminClientContext := sdk.Context(fabsdk.WithUser(org1AdminUser), fabsdk.WithOrg(org1))
+		org2AdminClientContext := sdk.Context(fabsdk.WithUser(org2AdminUser), fabsdk.WithOrg(org2))
+
+		org1ResMgmt, err := resmgmt.New(org1AdminClientContext)
+		require.NoError(t, err)
+
+		org2ResMgmt, err := resmgmt.New(org2AdminClientContext)
+		require.NoError(t, err)
+
+		// Org1 peers join channel
+		if err := org1ResMgmt.JoinChannel("orgchannel", resmgmt.WithRetry(retry.DefaultResMgmtOpts), resmgmt.WithOrdererEndpoint("orderer.example.com")); err != nil {
+			return err
+		}
+
+		// Org2 peers join channel
+		if err := org2ResMgmt.JoinChannel("orgchannel", resmgmt.WithRetry(retry.DefaultResMgmtOpts), resmgmt.WithOrdererEndpoint("orderer.example.com")); err != nil {
+			return err
+		}
+
+		t.Log("joined channel successfully")
+		return nil
 	}
 
-	// Org2 peers join channel
-	if err := org2ResMgmt.JoinChannel("orgchannel", resmgmt.WithRetry(retry.DefaultResMgmtOpts), resmgmt.WithOrdererEndpoint("orderer.example.com")); err != nil {
-		t.Fatalf("Org2 peers failed to JoinChannel: %s", err)
+	//join channel
+	err := joinChannelFunc()
+	if err == nil {
+		return
 	}
+
+	if !strings.Contains(err.Error(), "genesis block retrieval failed: Orderer Server Status Code: (404) NOT_FOUND.") {
+		t.Fatalf("Failed to join channel, error : %v", err)
+	}
+
+	t.Logf("Failed to join channel due to : %v, \n Now performing save channel with orderer client and retrying", err)
+
+	ordererClientContext := sdk.Context(fabsdk.WithUser(ordererAdminUser), fabsdk.WithOrg(ordererOrgName))
+
+	ordererResMgmt, err := resmgmt.New(ordererClientContext)
+	require.NoError(t, err)
+
+	org1MspClient, err := mspclient.New(sdk.Context(), mspclient.WithOrg(org1))
+	require.NoError(t, err)
+
+	org2MspClient, err := mspclient.New(sdk.Context(), mspclient.WithOrg(org2))
+	require.NoError(t, err)
+
+	org1AdminIdentity, err := org1MspClient.GetSigningIdentity(org1AdminUser)
+	require.NoError(t, err, "failed to get org1AdminIdentity")
+
+	org2AdminIdenity, err := org2MspClient.GetSigningIdentity(org2AdminUser)
+	require.NoError(t, err, "failed to get org2AdminIdentity")
+
+	req := resmgmt.SaveChannelRequest{ChannelID: "orgchannel",
+		ChannelConfigPath: integration.GetChannelConfigPath("orgchannel.tx"),
+		SigningIdentities: []msp2.SigningIdentity{org1AdminIdentity, org2AdminIdenity}}
+	txID, err := ordererResMgmt.SaveChannel(req, resmgmt.WithRetry(retry.DefaultResMgmtOpts), resmgmt.WithOrdererEndpoint("orderer.example.com"))
+	require.Nil(t, err, "error should be nil")
+	require.NotEmpty(t, txID, "transaction ID should be populated")
+
+	//Try again now
+	err = joinChannelFunc()
+	require.NoError(t, err, "failed to join channel...")
 
 }
 
-func queryCC(t *testing.T, org1ChannelClientContext contextAPI.ChannelProvider) {
-	// Org1 user connects to 'orgchannel'
+func queryCC(t *testing.T, org1ChannelClientContext contextAPI.ChannelProvider, expectedMsg string) {
 	chClientOrg1User, err := channel.New(org1ChannelClientContext)
 	if err != nil {
 		t.Fatalf("Failed to create new channel client for Org1 user: %s", err)
 	}
-	// Org1 user queries initial value on both peers
-	// Since one of the peers on channel has certificate revoked, eror is expected here
-	// Error in container is :
-	// .... identity 0 does not satisfy principal:
-	// Could not validate identity against certification chain, err The certificate has been revoked
 	_, err = chClientOrg1User.Query(channel.Request{ChaincodeID: "exampleCC", Fcn: "invoke", Args: integration.ExampleCCDefaultQueryArgs()},
-		channel.WithRetry(retry.DefaultChannelOpts))
-	if err == nil {
-		t.Fatal("Expected error: '....Description: could not find chaincode with name 'exampleCC',,, ")
+		channel.WithRetry(retry.DefaultChannelOpts), channel.WithTargetEndpoints("peer0.org1.example.com"))
+	if err == nil || !strings.Contains(err.Error(), expectedMsg) {
+		t.Fatalf("Expected error: '%s' , but got '%s'", expectedMsg, err.Error())
 	}
+	_, ok := status.FromError(err)
+	assert.True(t, ok, "Expected status error")
 }
 
 func createCC(t *testing.T, org1ResMgmt *resmgmt.Client, org2ResMgmt *resmgmt.Client) {
@@ -385,6 +470,7 @@ func createCC(t *testing.T, org1ResMgmt *resmgmt.Client, org2ResMgmt *resmgmt.Cl
 		},
 		resmgmt.WithTargetEndpoints("peer0.org1.example.com", "peer0.org2.example.com"),
 	)
+
 	require.Errorf(t, err, "Expecting error instantiating CC on peer with revoked certificate")
 	stat, ok := status.FromError(err)
 	require.Truef(t, ok, "Expecting error to be a status error, but got ", err)
@@ -452,14 +538,14 @@ func isChannelConfigUpdated(t *testing.T, client *ledger.Client, config fab.Endp
 				continue
 			}
 			t.Logf("length of revocation list found in peer[%s] is %d", chPeer.URL, len(fabMspCfg.RevocationList))
-			updated = updated && len(fabMspCfg.RevocationList) > 0
+			updated = updated && len(fabMspCfg.RevocationList) > 1
 		}
 	}
 	t.Logf("check result :%v \n\n", updated)
 	return updated
 }
 
-func generateCRL() ([]byte, error) {
+func generateCRL(cerPath string) ([]byte, error) {
 
 	root := integration.GetCryptoConfigPath(pathRevokeCaRoot)
 	var parentKey string
@@ -483,7 +569,7 @@ func generateCRL() ([]byte, error) {
 		return nil, errors.WithMessage(err, "Failed to load cert")
 	}
 
-	certToBeRevoked, err := loadCert(integration.GetCryptoConfigPath(pathCertToBeRevokd))
+	certToBeRevoked, err := loadCert(integration.GetCryptoConfigPath(cerPath))
 	if err != nil {
 		return nil, errors.WithMessage(err, "Failed to load cert")
 	}
