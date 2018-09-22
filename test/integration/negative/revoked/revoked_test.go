@@ -99,8 +99,11 @@ func TestPeerAndUserRevoke(t *testing.T) {
 	require.NoError(t, err, "failed to generate CRL for", userCertToBeRevoked)
 	require.NotEmpty(t, crlBytes, "CRL is empty")
 
+	//join channel and install/instantiate cc needed for later tests
+	joinChannelAndInstallCC(t)
+
 	//update revocation list in channel config
-	updateRevocationList(t, crlBytes, true)
+	updateRevocationList(t, crlBytes)
 
 	//wait for config update
 	waitForConfigUpdate(t)
@@ -112,11 +115,11 @@ func TestPeerAndUserRevoke(t *testing.T) {
 	testRevokedUser(t)
 
 	//reset revocation list in channel config for other tests
-	updateRevocationList(t, nil, false)
+	updateRevocationList(t, nil)
 }
 
-//updateRevocationList update MSP revocation_list in channel config
-func updateRevocationList(t *testing.T, crlBytes [][]byte, joinCh bool) {
+//joinChannelAndInstallCC joins channel and install/instantiate/query 'exampleCC2'
+func joinChannelAndInstallCC(t *testing.T) {
 
 	sdk, err := fabsdk.New(config.FromFile(integration.GetConfigPath(configFilename)))
 	require.NoError(t, err)
@@ -127,10 +130,29 @@ func updateRevocationList(t *testing.T, crlBytes [][]byte, joinCh bool) {
 	integration.CleanupUserData(t, sdk)
 	defer integration.CleanupUserData(t, sdk)
 
-	if joinCh {
-		//join channel
-		joinChannel(t, sdk)
-	}
+	//join channel
+	joinChannel(t, sdk)
+
+	//install & instantiate a chaincode before updating revocation list for later test
+	createCC(t, sdk, "exampleCC2", "github.com/example_cc", "0", true)
+
+	//query that chaincode to make sure everything is fine
+	org2UserChannelClientContext := sdk.ChannelContext(channelID, fabsdk.WithUser(org2User), fabsdk.WithOrg(org2))
+	queryCC(t, org2UserChannelClientContext, "exampleCC2", true, "")
+
+}
+
+//updateRevocationList update MSP revocation_list in channel config
+func updateRevocationList(t *testing.T, crlBytes [][]byte) {
+
+	sdk, err := fabsdk.New(config.FromFile(integration.GetConfigPath(configFilename)))
+	require.NoError(t, err)
+	defer sdk.Close()
+
+	// Delete all private keys from the crypto suite store
+	// and users from the user store at the end
+	integration.CleanupUserData(t, sdk)
+	defer integration.CleanupUserData(t, sdk)
 
 	//prepare contexts
 	org1AdminClientContext := sdk.Context(fabsdk.WithUser(org1AdminUser), fabsdk.WithOrg(org1))
@@ -182,27 +204,24 @@ func testRevokedPeer(t *testing.T) {
 
 	//prepare contexts
 	org1AdminClientContext := sdk1.Context(fabsdk.WithUser(org1AdminUser), fabsdk.WithOrg(org1))
-	org2AdminClientContext := sdk1.Context(fabsdk.WithUser(org2AdminUser), fabsdk.WithOrg(org2))
 	org1UserChannelClientContext := sdk1.ChannelContext(channelID, fabsdk.WithUser(org1User), fabsdk.WithOrg(org1))
 	org2UserChannelClientContext := sdk1.ChannelContext(channelID, fabsdk.WithUser(org2User), fabsdk.WithOrg(org2))
 
-	org1ResMgmt, err := resmgmt.New(org1AdminClientContext)
-	require.NoError(t, err)
-
-	org2ResMgmt, err := resmgmt.New(org2AdminClientContext)
-	require.NoError(t, err)
-
 	// Create chaincode package for example cc
-	createCC(t, org1ResMgmt, org2ResMgmt)
+	createCC(t, sdk1, "exampleCC", "github.com/example_cc", "1", false)
 
 	// Load specific targets for move funds test - one of the
 	//targets has its certificate revoked
 	loadOrgPeers(t, org1AdminClientContext)
 
 	//query with revoked user
-	queryCC(t, org1UserChannelClientContext, "access denied")
+	queryCC(t, org1UserChannelClientContext, "exampleCC", false, "access denied")
 	//query with valid user
-	queryCC(t, org2UserChannelClientContext, "could not find chaincode with name 'exampleCC'")
+	queryCC(t, org2UserChannelClientContext, "exampleCC", false, "could not find chaincode with name 'exampleCC'")
+	//query already instantiated chaincode with revoked user
+	queryCC(t, org1UserChannelClientContext, "exampleCC2", false, "access denied")
+	//query already instantiated chaincode with valid user
+	queryCC(t, org2UserChannelClientContext, "exampleCC2", false, "signature validation failed")
 }
 
 //testRevokedUser performs revoke peer test
@@ -425,26 +444,44 @@ func joinChannel(t *testing.T, sdk *fabsdk.FabricSDK) {
 
 }
 
-func queryCC(t *testing.T, org1ChannelClientContext contextAPI.ChannelProvider, expectedMsg string) {
-	chClientOrg1User, err := channel.New(org1ChannelClientContext)
+func queryCC(t *testing.T, channelClientContext contextAPI.ChannelProvider, ccID string, success bool, expectedMsg string) {
+	chClientOrg1User, err := channel.New(channelClientContext)
 	if err != nil {
 		t.Fatalf("Failed to create new channel client for Org1 user: %s", err)
 	}
-	_, err = chClientOrg1User.Query(channel.Request{ChaincodeID: "exampleCC", Fcn: "invoke", Args: integration.ExampleCCDefaultQueryArgs()},
+	resp, err := chClientOrg1User.Query(channel.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCDefaultQueryArgs()},
 		channel.WithRetry(retry.DefaultChannelOpts), channel.WithTargetEndpoints("peer0.org1.example.com"))
-	if err == nil || !strings.Contains(err.Error(), expectedMsg) {
-		t.Fatalf("Expected error: '%s' , but got '%s'", expectedMsg, err.Error())
+
+	if success {
+		require.NoError(t, err)
+		require.NotEmpty(t, resp.Responses)
+		require.NotEmpty(t, resp.Payload)
+		require.Equal(t, "200", string(resp.Payload))
+	} else {
+		if err == nil || !strings.Contains(err.Error(), expectedMsg) {
+			t.Fatalf("Expected error: '%s' , but got '%s'", expectedMsg, err)
+		}
+		_, ok := status.FromError(err)
+		assert.True(t, ok, "Expected status error")
 	}
-	_, ok := status.FromError(err)
-	assert.True(t, ok, "Expected status error")
 }
 
-func createCC(t *testing.T, org1ResMgmt *resmgmt.Client, org2ResMgmt *resmgmt.Client) {
-	ccPkg, err := packager.NewCCPackage("github.com/example_cc", integration.GetDeployPath())
+func createCC(t *testing.T, sdk1 *fabsdk.FabricSDK, name, path, version string, success bool) {
+
+	org1AdminClientContext := sdk1.Context(fabsdk.WithUser(org1AdminUser), fabsdk.WithOrg(org1))
+	org2AdminClientContext := sdk1.Context(fabsdk.WithUser(org2AdminUser), fabsdk.WithOrg(org2))
+
+	org1ResMgmt, err := resmgmt.New(org1AdminClientContext)
+	require.NoError(t, err)
+
+	org2ResMgmt, err := resmgmt.New(org2AdminClientContext)
+	require.NoError(t, err)
+
+	ccPkg, err := packager.NewCCPackage(path, integration.GetDeployPath())
 	if err != nil {
 		t.Fatal(err)
 	}
-	installCCReq := resmgmt.InstallCCRequest{Name: "exampleCC", Path: "github.com/example_cc", Version: "0", Package: ccPkg}
+	installCCReq := resmgmt.InstallCCRequest{Name: name, Path: path, Version: version, Package: ccPkg}
 	// Install example cc to Org1 peers
 	_, err = org1ResMgmt.InstallCC(installCCReq)
 	if err != nil {
@@ -459,23 +496,28 @@ func createCC(t *testing.T, org1ResMgmt *resmgmt.Client, org2ResMgmt *resmgmt.Cl
 	ccPolicy, err := cauthdsl.FromString("AND ('Org1MSP.member','Org2MSP.member')")
 	require.NoErrorf(t, err, "Error creating cc policy with both orgs to approve")
 	// Org1 resource manager will instantiate 'example_cc' on 'orgchannel'
-	_, err = org1ResMgmt.InstantiateCC(
+	resp, err := org1ResMgmt.InstantiateCC(
 		"orgchannel",
 		resmgmt.InstantiateCCRequest{
-			Name:    "exampleCC",
-			Path:    "github.com/example_cc",
-			Version: "0",
+			Name:    name,
+			Path:    path,
+			Version: version,
 			Args:    integration.ExampleCCInitArgs(),
 			Policy:  ccPolicy,
 		},
 		resmgmt.WithTargetEndpoints("peer0.org1.example.com", "peer0.org2.example.com"),
 	)
 
-	require.Errorf(t, err, "Expecting error instantiating CC on peer with revoked certificate")
-	stat, ok := status.FromError(err)
-	require.Truef(t, ok, "Expecting error to be a status error, but got ", err)
-	require.Equalf(t, stat.Code, int32(status.SignatureVerificationFailed), "Expecting signature verification error due to revoked cert, but got", err)
-	require.Truef(t, strings.Contains(err.Error(), "the creator certificate is not valid"), "Expecting error message to contain 'the creator certificate is not valid' but got", err)
+	if success {
+		require.NoError(t, err)
+		require.NotEmpty(t, resp.TransactionID)
+	} else {
+		require.Errorf(t, err, "Expecting error instantiating CC on peer with revoked certificate")
+		stat, ok := status.FromError(err)
+		require.Truef(t, ok, "Expecting error to be a status error, but got ", err)
+		require.Equalf(t, stat.Code, int32(status.SignatureVerificationFailed), "Expecting signature verification error due to revoked cert, but got", err)
+		require.Truef(t, strings.Contains(err.Error(), "the creator certificate is not valid"), "Expecting error message to contain 'the creator certificate is not valid' but got", err)
+	}
 }
 
 func loadOrgPeers(t *testing.T, ctxProvider contextAPI.ClientProvider) {
