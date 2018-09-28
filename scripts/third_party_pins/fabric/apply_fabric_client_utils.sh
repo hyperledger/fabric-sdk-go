@@ -204,6 +204,8 @@ func timeTrack(start time.Time, msg string) {\
 }\
 
 ' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/\"go.uber.org\/zap\/zapcore/logging\"github.com\/hyperledger\/fabric-sdk-go\/internal\/github.com\/hyperledger\/fabric\/sdkpatch\/logbridge/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/zapcore.DebugLevel/logging.DEBUG/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 
 START_LINE=`grep -n "func loadLib(lib, pin, label string)" "${TMP_PROJECT_PATH}/${FILTER_FILENAME}" | head -n 1 | awk -F':' '{print $1}'`
 for i in {1..97}
@@ -223,6 +225,8 @@ sed -i'' -e 's/= p11lib.VerifyInit(session/= csp.pkcs11Ctx.VerifyInit(session/g'
 sed -i'' -e 's/= p11lib.Verify(session/= csp.pkcs11Ctx.Verify(session/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e 's/= p11lib.SignInit(session/= csp.pkcs11Ctx.SignInit(session/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e 's/= p11lib.Sign(session/= csp.pkcs11Ctx.Sign(session/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/= p11lib.CopyObject(session/= csp.pkcs11Ctx.CopyObject(session/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/= p11lib.DestroyObject(session/= csp.pkcs11Ctx.DestroyObject(session/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e 's/listAttrs(p11lib, session/listAttrs(csp.pkcs11Ctx, session/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e 's/func listAttrs(p11lib \*pkcs11.Ctx,/func listAttrs(p11lib \*sdkp11.ContextHandle,/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e 's/func ecPoint(p11lib \*pkcs11.Ctx,/func ecPoint(p11lib \*sdkp11.ContextHandle,/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
@@ -305,6 +309,8 @@ sed -i'' -e '/"encoding\/hex/ a\
 sed -i'' -e 's/"github.com\/hyperledger\/fabric\/bccsp"/bccsp "github.com\/hyperledger\/fabric-sdk-go\/internal\/github.com\/hyperledger\/fabric\/sdkpatch\/cryptosuitebridge"/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e 's/bccsp.Key/core.Key/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e 's/bccsp.HashOpts/core.HashOpts/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/\"go.uber.org\/zap\/zapcore/logging\"github.com\/hyperledger\/fabric-sdk-go\/internal\/github.com\/hyperledger\/fabric\/sdkpatch\/logbridge/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/zapcore.DebugLevel/logging.DEBUG/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 
 FILTER_FILENAME="msp/msp.go"
 FILTER_FN=

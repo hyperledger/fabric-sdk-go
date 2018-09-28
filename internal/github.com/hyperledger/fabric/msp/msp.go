@@ -207,7 +207,10 @@ const (
 	OTHER                      // MSP is of OTHER TYPE
 
 	// NOTE: as new types are added to this set,
-	// the mspTypes array below must be extended
+	// the mspTypes map below must be extended
 )
 
-var mspTypeStrings []string = []string{"bccsp", "idemix"}
+var mspTypeStrings = map[ProviderType]string{
+	FABRIC: "bccsp",
+	IDEMIX: "idemix",
+}

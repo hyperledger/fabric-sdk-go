@@ -65,6 +65,8 @@ type impl struct {
 
 	pkcs11Ctx  *sdkp11.ContextHandle
 	softVerify bool
+	//Immutable flag makes object immutable
+	immutable bool
 }
 
 // KeyGen generates a key using opts.

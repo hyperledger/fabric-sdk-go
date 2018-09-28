@@ -312,6 +312,22 @@ func (handle *ContextHandle) CreateObject(session pkcs11.SessionHandle, temp []*
 	return handle.ctx.CreateObject(session, temp)
 }
 
+// CopyObject creates a copy of an object.
+func (handle *ContextHandle) CopyObject(sh pkcs11.SessionHandle, o pkcs11.ObjectHandle, temp []*pkcs11.Attribute) (pkcs11.ObjectHandle, error) {
+	handle.lock.RLock()
+	defer handle.lock.RUnlock()
+
+	return handle.ctx.CopyObject(sh, o, temp)
+}
+
+// DestroyObject destroys an object.
+func (handle *ContextHandle) DestroyObject(sh pkcs11.SessionHandle, oh pkcs11.ObjectHandle) error {
+	handle.lock.RLock()
+	defer handle.lock.RUnlock()
+
+	return handle.ctx.DestroyObject(sh, oh)
+}
+
 //FindKeyPairFromSKI finds key pair by SKI
 func (handle *ContextHandle) FindKeyPairFromSKI(session pkcs11.SessionHandle, ski []byte, keyType bool) (*pkcs11.ObjectHandle, error) {
 	handle.lock.RLock()

@@ -73,14 +73,6 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:736952736991249599ad037f945ba3d45f6bc5d72e73d84203560745624552d1"
-  name = "github.com/golang/groupcache"
-  packages = ["lru"]
-  pruneopts = ""
-  revision = "84a468cf14b4376def5d68c722b139b881c450a4"
-
-[[projects]]
-  branch = "master"
   digest = "1:85e195bd952faa2e720f5c371d0993af6d515cfcda3894de9caf5c896165cd8c"
   name = "github.com/golang/mock"
   packages = ["gomock"]
@@ -421,7 +413,6 @@
     "github.com/cloudflare/cfssl/helpers",
     "github.com/cloudflare/cfssl/log",
     "github.com/cloudflare/cfssl/signer",
-    "github.com/golang/groupcache/lru",
     "github.com/golang/mock/gomock",
     "github.com/golang/protobuf/proto",
     "github.com/golang/protobuf/ptypes",
