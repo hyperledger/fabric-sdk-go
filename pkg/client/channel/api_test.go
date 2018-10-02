@@ -99,3 +99,21 @@ func TestTimeoutOptions(t *testing.T) {
 	assert.True(t, opts.Timeouts[fab.Query] == 45*time.Second, "timeout value by type didn't match with one supplied")
 
 }
+
+type mockPeerSorter struct{}
+
+func (s *mockPeerSorter) Sort(peers []fab.Peer) []fab.Peer {
+	return nil
+}
+
+func TestWithPeerSorter(t *testing.T) {
+
+	sorter := mockPeerSorter{}
+
+	opts := requestOptions{}
+	sopt := WithTargetSorter(&sorter)
+	err := sopt(nil, &opts)
+
+	assert.NoError(t, err, "WithPeerSorter should not return error")
+	assert.Equal(t, opts.TargetSorter, &sorter, "sorter option should have been set")
+}

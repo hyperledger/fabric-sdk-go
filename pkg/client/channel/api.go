@@ -113,6 +113,14 @@ func WithTargetFilter(filter fab.TargetFilter) RequestOption {
 	}
 }
 
+// WithTargetSorter specifies a per-request target sorter
+func WithTargetSorter(sorter fab.TargetSorter) RequestOption {
+	return func(ctx context.Client, o *requestOptions) error {
+		o.TargetSorter = sorter
+		return nil
+	}
+}
+
 // WithRetry option to configure retries
 func WithRetry(retryOpt retry.Opts) RequestOption {
 	return func(ctx context.Client, o *requestOptions) error {
