@@ -29,6 +29,55 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 )
 
+// TestPrivateDataPutAndGet tests put and get for private data
+func TestPrivateDataPutAndGet(t *testing.T) {
+	sdk := mainSDK
+
+	orgsContext := setupMultiOrgContext(t, sdk)
+	err := integration.EnsureChannelCreatedAndPeersJoined(t, sdk, orgChannelID, "orgchannel.tx", orgsContext)
+	require.NoError(t, err)
+
+	coll1 := "collection1"
+	ccID := integration.GenerateExamplePvtID(true)
+	collConfig, err := newCollectionConfig(coll1, "OR('Org1MSP.member','Org2MSP.member')", 0, 2, 1000)
+	require.NoError(t, err)
+
+	err = integration.InstallExamplePvtChaincode(orgsContext, ccID)
+	require.NoError(t, err)
+	err = integration.InstantiateExamplePvtChaincode(orgsContext, orgChannelID, ccID, "OR('Org1MSP.member','Org2MSP.member')", collConfig)
+	require.NoError(t, err)
+
+	ctxProvider := sdk.ChannelContext(orgChannelID, fabsdk.WithUser(org1User), fabsdk.WithOrg(org1Name))
+
+	chClient, err := channel.New(ctxProvider)
+	require.NoError(t, err)
+
+	value := "pvtValue"
+
+	response, err := chClient.Execute(
+		channel.Request{
+			ChaincodeID: ccID,
+			Fcn:         "putprivate",
+			Args:        [][]byte{[]byte(coll1), []byte("pvtKet"), []byte(value)},
+		},
+		channel.WithRetry(retry.DefaultChannelOpts),
+	)
+	require.NoError(t, err)
+	require.NotEmptyf(t, response.Responses, "expecting at least one response")
+
+	response, err = chClient.Query(
+		channel.Request{
+			ChaincodeID: ccID,
+			Fcn:         "getprivate",
+			Args:        [][]byte{[]byte(coll1), []byte("pvtKet")},
+		},
+		channel.WithRetry(retry.DefaultChannelOpts),
+	)
+	require.NoError(t, err)
+	t.Logf("Got response payload: %s", string(response.Payload))
+	require.Equal(t, string(response.Payload), value)
+}
+
 // TestPrivateData tests selection of endorsers in the case where the chaincode policy contains a different
 // set of MSPs than that of the collection policy. The chaincode policy is defined as (Org1MSP OR Org2MSP) and the
 // collection policy is defined as (Org2MSP).
