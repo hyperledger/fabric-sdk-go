@@ -74,6 +74,7 @@ for i in "${FILES[@]}"
 do
   if [[ ${i} == "protos/common"* ]]; then
     sed -i'' -e "/proto.RegisterType/s/common/${NAMESPACE_PREFIX}common/g" "${TMP_PROJECT_PATH}/${i}"
+    sed -i'' -e "/proto.RegisterMapType/s/common/${NAMESPACE_PREFIX}common/g" "${TMP_PROJECT_PATH}/${i}"
     sed -i'' -e "/proto.RegisterEnum/s/common/${NAMESPACE_PREFIX}common/g" "${TMP_PROJECT_PATH}/${i}"
   fi
   if [[ ${i} == "protos/ledger/rwset/rwset.pb.go" ]]; then
@@ -98,6 +99,7 @@ do
   fi
   if [[ ${i} == "protos/peer"* ]]; then
     sed -i'' -e "/proto.RegisterType/s/protos/${NAMESPACE_PREFIX}protos/g" "${TMP_PROJECT_PATH}/${i}"
+    sed -i'' -e "/proto.RegisterMapType/s/protos/${NAMESPACE_PREFIX}protos/g" "${TMP_PROJECT_PATH}/${i}"
     sed -i'' -e "/proto.RegisterEnum/s/protos/${NAMESPACE_PREFIX}protos/g" "${TMP_PROJECT_PATH}/${i}"
   fi
 done

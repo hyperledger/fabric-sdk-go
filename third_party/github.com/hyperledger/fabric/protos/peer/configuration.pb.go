@@ -196,7 +196,7 @@ func init() {
 	proto.RegisterType((*AnchorPeer)(nil), "sdk.protos.AnchorPeer")
 	proto.RegisterType((*APIResource)(nil), "sdk.protos.APIResource")
 	proto.RegisterType((*ACLs)(nil), "sdk.protos.ACLs")
-	proto.RegisterMapType((map[string]*APIResource)(nil), "protos.ACLs.AclsEntry")
+	proto.RegisterMapType((map[string]*APIResource)(nil), "sdk.protos.ACLs.AclsEntry")
 }
 
 func init() {
