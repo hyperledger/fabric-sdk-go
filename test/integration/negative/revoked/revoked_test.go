@@ -217,7 +217,7 @@ func testRevokedPeer(t *testing.T) {
 	//query with revoked user
 	queryCC(t, org1UserChannelClientContext, "exampleCC", false, "access denied")
 	//query with valid user
-	queryCC(t, org2UserChannelClientContext, "exampleCC", false, "could not find chaincode with name 'exampleCC'")
+	queryCC(t, org2UserChannelClientContext, "exampleCC", false, "chaincode exampleCC not found")
 	//query already instantiated chaincode with revoked user
 	queryCC(t, org1UserChannelClientContext, "exampleCC2", false, "access denied")
 	//query already instantiated chaincode with valid user

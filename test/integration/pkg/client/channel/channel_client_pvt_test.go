@@ -251,6 +251,7 @@ func TestChannelClientRollsBackPvtDataIfMvccReadConflict(t *testing.T) {
 			Fcn:         "getprivate",
 			Args:        [][]byte{[]byte(coll), []byte(key)},
 		},
+		channel.WithRetry(retry.DefaultChannelOpts),
 	)
 	require.NoErrorf(t, err, "error attempting to read private data")
 

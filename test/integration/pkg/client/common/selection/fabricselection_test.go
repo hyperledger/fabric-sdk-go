@@ -10,6 +10,10 @@ package selection
 
 import (
 	"testing"
+	"time"
+
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 
 	"github.com/stretchr/testify/require"
 
@@ -24,6 +28,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
 	cb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
+	grpcCodes "google.golang.org/grpc/codes"
 )
 
 const (
@@ -48,6 +53,21 @@ var (
 		peer1Org2: "localhost:9051",
 	}
 )
+
+var testRetryOpts = retry.Opts{
+	Attempts:       10,
+	InitialBackoff: 1 * time.Second,
+	MaxBackoff:     15 * time.Second,
+	BackoffFactor:  2,
+	RetryableCodes: map[status.Group][]status.Code{
+		status.GRPCTransportStatus: {
+			status.Code(grpcCodes.Unavailable),
+		},
+		status.DiscoveryServerStatus: {
+			status.QueryEndorsers,
+		},
+	},
+}
 
 func TestFabricSelection(t *testing.T) {
 	sdk, err := fabsdk.New(integration.ConfigBackend,
@@ -304,7 +324,7 @@ func (cp *fabricSelectionChannelProvider) ChannelService(ctx fab.ClientContext, 
 
 	selection, ok := cp.services[channelID]
 	if !ok {
-		selection, err = fabricselection.New(ctx, channelID, discovery)
+		selection, err = fabricselection.New(ctx, channelID, discovery, selectionopts.WithRetryOpts(testRetryOpts))
 		if err != nil {
 			return nil, err
 		}
