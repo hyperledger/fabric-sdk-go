@@ -38,7 +38,8 @@ function recordCacheResult {
 
 function isScriptCurrent {
     declare filesModified=$(git diff --name-only --diff-filter=ACMRTUXBD HEAD | tr '\n' ' ' | xargs)
-    if [[ "${filesModified}" =~ ( |^)(test/scripts/populate-vendor.sh|Gopkg.lock)( |$) ]]; then
+    declare matcher='( |^)(test/scripts/populate-vendor.sh|Gopkg.lock)( |$)'
+    if [[ "${filesModified}" =~ ${matcher} ]]; then
         echo "Vendor script or Gopkg.lock modified - will need to repopulate vendor"
         return 1
     fi
