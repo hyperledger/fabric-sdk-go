@@ -88,7 +88,7 @@ func DistributedSignaturesTests(t *testing.T, examplecc string) {
 }
 
 func e2eCreateAndQueryChannel(t *testing.T, ordererClCtx, org1ClCtx, org2ClCtx *dsClientCtx, channelID, examplecc string) {
-	sigDir, err := ioutil.TempDir(".", channelID)
+	sigDir, err := ioutil.TempDir("", channelID)
 	require.NoError(t, err, "Failed to create temporary directory")
 	defer func() {
 		err = os.RemoveAll(sigDir)
@@ -444,10 +444,10 @@ func generateExternalChConfigSignature(t *testing.T, org, user, chConfigPath, si
 	cmd := exec.Command(path.Join("scripts", "generate_signature.sh"), org, user, chCfgName, sigDir)
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
-	b, err := cmd.Output()
+	_, err := cmd.Output()
 	assert.NoError(t, err, "Failed to create external signature for [%s, %s, %s], script error: [%s]", org, user, chCfgName, stderr.String())
 
-	t.Logf("running generate_signature.sh script output: %s", b)
+	//t.Logf("running generate_signature.sh script output: %s", b)
 }
 
 func loadExternalSignature(t *testing.T, org, chConfigPath, user, sigDir string) *common.ConfigSignature {
@@ -456,7 +456,7 @@ func loadExternalSignature(t *testing.T, org, chConfigPath, user, sigDir string)
 	fName := path.Join(sigDir, fmt.Sprintf("%s_%s_%s_sbytes.txt.sha256", chCfgName, org, user))
 	sig, err := ioutil.ReadFile(fName)
 	require.NoError(t, err, "Failed to read signature data with ioutil.ReadFile()")
-	t.Logf("Signature bytes read for %s, %s, %s: '%s'", org, chCfgName, user, sig)
+	//t.Logf("Signature bytes read for %s, %s, %s: '%s'", org, chCfgName, user, sig)
 
 	fName = path.Join(sigDir, fmt.Sprintf("%s_%s_%s_sHeaderbytes.txt", chCfgName, org, user))
 	sigHeader, err := ioutil.ReadFile(fName)
