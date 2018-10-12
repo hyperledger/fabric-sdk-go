@@ -53,13 +53,64 @@ func TestPrivateDataPutAndGet(t *testing.T) {
 	chClient, err := channel.New(ctxProvider)
 	require.NoError(t, err)
 
-	value := "pvtValue"
+	key1 := "key1"
+	key2 := "key2"
+	key3 := "key3"
+	value1 := "pvtValue1"
+	value2 := "pvtValue2"
+	value3 := "pvtValue3"
 
-	response, err := chClient.Execute(
+	response, err := chClient.Query(
+		channel.Request{
+			ChaincodeID: ccID,
+			Fcn:         "getprivate",
+			Args:        [][]byte{[]byte(coll1), []byte(key1)},
+		},
+		channel.WithRetry(retry.DefaultChannelOpts),
+	)
+	require.NoError(t, err)
+	t.Logf("Got response payload: [%s]", string(response.Payload))
+	require.Nil(t, response.Payload)
+
+	response, err = chClient.Query(
+		channel.Request{
+			ChaincodeID: ccID,
+			Fcn:         "getprivatebyrange",
+			Args:        [][]byte{[]byte(coll1), []byte(key1), []byte(key3)},
+		},
+		channel.WithRetry(retry.DefaultChannelOpts),
+	)
+	require.NoError(t, err)
+	t.Logf("Got response payload: [%s]", string(response.Payload))
+	require.Empty(t, string(response.Payload))
+
+	response, err = chClient.Execute(
 		channel.Request{
 			ChaincodeID: ccID,
 			Fcn:         "putprivate",
-			Args:        [][]byte{[]byte(coll1), []byte("pvtKet"), []byte(value)},
+			Args:        [][]byte{[]byte(coll1), []byte(key1), []byte(value1)},
+		},
+		channel.WithRetry(retry.DefaultChannelOpts),
+	)
+	require.NoError(t, err)
+	require.NotEmptyf(t, response.Responses, "expecting at least one response")
+
+	response, err = chClient.Execute(
+		channel.Request{
+			ChaincodeID: ccID,
+			Fcn:         "putprivate",
+			Args:        [][]byte{[]byte(coll1), []byte(key2), []byte(value2)},
+		},
+		channel.WithRetry(retry.DefaultChannelOpts),
+	)
+	require.NoError(t, err)
+	require.NotEmptyf(t, response.Responses, "expecting at least one response")
+
+	response, err = chClient.Execute(
+		channel.Request{
+			ChaincodeID: ccID,
+			Fcn:         "putprivate",
+			Args:        [][]byte{[]byte(coll1), []byte(key3), []byte(value3)},
 		},
 		channel.WithRetry(retry.TestRetryOpts),
 	)
@@ -70,13 +121,25 @@ func TestPrivateDataPutAndGet(t *testing.T) {
 		channel.Request{
 			ChaincodeID: ccID,
 			Fcn:         "getprivate",
-			Args:        [][]byte{[]byte(coll1), []byte("pvtKet")},
+			Args:        [][]byte{[]byte(coll1), []byte(key1)},
 		},
 		channel.WithRetry(retry.TestRetryOpts),
 	)
 	require.NoError(t, err)
 	t.Logf("Got response payload: %s", string(response.Payload))
-	require.Equal(t, string(response.Payload), value)
+	require.Equal(t, value1, string(response.Payload))
+
+	response, err = chClient.Query(
+		channel.Request{
+			ChaincodeID: ccID,
+			Fcn:         "getprivatebyrange",
+			Args:        [][]byte{[]byte(coll1), []byte(key1), []byte(key3)},
+		},
+		channel.WithRetry(retry.DefaultChannelOpts),
+	)
+	require.NoError(t, err)
+	t.Logf("Got response payload: [%s]", string(response.Payload))
+	require.NotEmpty(t, string(response.Payload))
 }
 
 // TestPrivateData tests selection of endorsers in the case where the chaincode policy contains a different

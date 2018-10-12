@@ -22,16 +22,17 @@ type invokeFunc func(stub shim.ChaincodeStubInterface, args []string) pb.Respons
 type funcMap map[string]invokeFunc
 
 const (
-	getFunc           = "get"
-	putFunc           = "put"
-	delFunc           = "del"
-	putPrivateFunc    = "putprivate"
-	getPrivateFunc    = "getprivate"
-	delPrivateFunc    = "delprivate"
-	putBothFunc       = "putboth"
-	getAndPutBothFunc = "getandputboth"
-	invokeCCFunc      = "invokecc"
-	addToIntFunc      = "addToInt"
+	getFunc               = "get"
+	putFunc               = "put"
+	delFunc               = "del"
+	putPrivateFunc        = "putprivate"
+	getPrivateFunc        = "getprivate"
+	delPrivateFunc        = "delprivate"
+	putBothFunc           = "putboth"
+	getAndPutBothFunc     = "getandputboth"
+	invokeCCFunc          = "invokecc"
+	addToIntFunc          = "addToInt"
+	getPrivateByRangeFunc = "getprivatebyrange"
 )
 
 // ExampleCC example chaincode that puts and gets state and private data
@@ -143,6 +144,32 @@ func (cc *ExampleCC) getPrivate(stub shim.ChaincodeStubInterface, args []string)
 	}
 
 	return shim.Success([]byte(value))
+}
+
+func (cc *ExampleCC) getPrivateByRange(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+	if len(args) != 3 {
+		return shim.Error("Invalid args. Expecting collection and keyFrom, keyTo")
+	}
+
+	coll := args[0]
+	keyFrom := args[1]
+	keyTo := args[2]
+
+	it, err := stub.GetPrivateDataByRange(coll, keyFrom, keyTo)
+	if err != nil {
+		return shim.Error(fmt.Sprintf("Error getting private data by range for collection [%s] and keys [%s to %s]: %s", coll, keyFrom, keyTo, err))
+	}
+
+	kvPair := ""
+	for it.HasNext() {
+		kv, err := it.Next()
+		if err != nil {
+			return shim.Error(fmt.Sprintf("Error getting next value for private data collection [%s]: %s", coll, err))
+		}
+		kvPair += fmt.Sprintf("%s=%s ", kv.Key, kv.Value)
+	}
+
+	return shim.Success([]byte(kvPair))
 }
 
 func (cc *ExampleCC) delPrivate(stub shim.ChaincodeStubInterface, args []string) pb.Response {
@@ -299,6 +326,7 @@ func (cc *ExampleCC) initRegistry() {
 	cc.funcRegistry[getAndPutBothFunc] = cc.getAndPutBoth
 	cc.funcRegistry[invokeCCFunc] = cc.invokeCC
 	cc.funcRegistry[addToIntFunc] = cc.addToInt
+	cc.funcRegistry[getPrivateByRangeFunc] = cc.getPrivateByRange
 }
 
 func (cc *ExampleCC) functions() []string {
