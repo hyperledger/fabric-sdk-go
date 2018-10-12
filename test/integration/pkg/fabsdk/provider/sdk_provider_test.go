@@ -64,7 +64,7 @@ func TestDynamicSelection(t *testing.T) {
 	}
 
 	response, err := chClient.Query(channel.Request{ChaincodeID: chaincodeID, Fcn: "invoke", Args: queryArg},
-		channel.WithRetry(retry.DefaultChannelOpts))
+		channel.WithRetry(retry.TestRetryOpts))
 	if err != nil {
 		t.Fatalf("Failed to query funds: %s", err)
 	}

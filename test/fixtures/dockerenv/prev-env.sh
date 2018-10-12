@@ -8,10 +8,6 @@
 # This file contains environment overrides to enable testing
 # against the latest pre-release target.
 
-# Temporarily override FABRIC-ARCH until latest prev follows new naming conventions.
-#export FABRIC_ARCH="amd64"
-#export FABRIC_ARCH_SEP="-"
-
 export FABRIC_FIXTURE_VERSION="v1.2"
 export FABRIC_CRYPTOCONFIG_VERSION="v1"
 

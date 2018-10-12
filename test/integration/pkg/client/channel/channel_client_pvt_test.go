@@ -14,13 +14,14 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/multi"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/stretchr/testify/require"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
 	cb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
@@ -60,7 +61,7 @@ func TestPrivateDataPutAndGet(t *testing.T) {
 			Fcn:         "putprivate",
 			Args:        [][]byte{[]byte(coll1), []byte("pvtKet"), []byte(value)},
 		},
-		channel.WithRetry(retry.DefaultChannelOpts),
+		channel.WithRetry(retry.TestRetryOpts),
 	)
 	require.NoError(t, err)
 	require.NotEmptyf(t, response.Responses, "expecting at least one response")
@@ -71,7 +72,7 @@ func TestPrivateDataPutAndGet(t *testing.T) {
 			Fcn:         "getprivate",
 			Args:        [][]byte{[]byte(coll1), []byte("pvtKet")},
 		},
-		channel.WithRetry(retry.DefaultChannelOpts),
+		channel.WithRetry(retry.TestRetryOpts),
 	)
 	require.NoError(t, err)
 	t.Logf("Got response payload: %s", string(response.Payload))
@@ -113,7 +114,7 @@ func TestPrivateData(t *testing.T) {
 					{ID: ccID, Collections: []string{coll1}},
 				},
 			},
-			channel.WithRetry(retry.DefaultChannelOpts),
+			channel.WithRetry(retry.TestRetryOpts),
 		)
 		require.NoError(t, err)
 		t.Logf("Got %d response(s)", len(response.Responses))
@@ -127,7 +128,7 @@ func TestPrivateData(t *testing.T) {
 				Fcn:         "putprivate",
 				Args:        [][]byte{[]byte(coll1), []byte("key"), []byte("value")},
 			},
-			channel.WithRetry(retry.DefaultChannelOpts),
+			channel.WithRetry(retry.TestRetryOpts),
 		)
 		require.NoError(t, err)
 		t.Logf("Got %d response(s)", len(response.Responses))
@@ -172,7 +173,7 @@ func TestPrivateDataWithOrgDown(t *testing.T) {
 					{ID: ccID, Collections: []string{coll1}},
 				},
 			},
-			channel.WithRetry(retry.DefaultChannelOpts),
+			channel.WithRetry(retry.TestRetryOpts),
 		)
 		require.Errorf(t, err, "expecting error due to all Org2MSP peers down")
 	})
@@ -184,7 +185,7 @@ func TestPrivateDataWithOrgDown(t *testing.T) {
 				Fcn:         "putprivate",
 				Args:        [][]byte{[]byte(coll1), []byte("key"), []byte("value")},
 			},
-			channel.WithRetry(retry.DefaultChannelOpts),
+			channel.WithRetry(retry.TestRetryOpts),
 		)
 		require.NoError(t, err)
 		t.Logf("Got %d response(s)", len(response.Responses))
@@ -251,7 +252,7 @@ func TestChannelClientRollsBackPvtDataIfMvccReadConflict(t *testing.T) {
 			Fcn:         "getprivate",
 			Args:        [][]byte{[]byte(coll), []byte(key)},
 		},
-		channel.WithRetry(retry.DefaultChannelOpts),
+		channel.WithRetry(retry.TestRetryOpts),
 	)
 	require.NoErrorf(t, err, "error attempting to read private data")
 
