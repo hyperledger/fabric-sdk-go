@@ -18,7 +18,7 @@ USER=$2
 CH_CFG=$3
 echo "CH_CFG is $CH_CFG, ORG is $ORG, USER is $USER"
 KEY_PATH_DIR=${GOPATH}/src/${REPO}/test/fixtures/fabric/v1/crypto-config/peerOrganizations/${ORG}.example.com/users/${USER}\@${ORG}.example.com/msp/keystore
-SIGNATURE_PATH=${GOPATH}/src/${REPO}/test/integration/e2e/orgs/$4
+SIGNATURE_PATH=$4
 cd $KEY_PATH_DIR
 KEY_NAME=$(ls)
 echo "KEY_NAME is $KEY_NAME"
