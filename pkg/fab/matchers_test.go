@@ -202,6 +202,12 @@ func TestURLMapping(t *testing.T) {
 	assert.Equal(t, overridedPeerHostNameOverride, peerConfig.GRPCOptions["ssl-target-name-override"])
 	assert.Equal(t, 6, len(peerConfig.GRPCOptions))
 
+	peerConfig, ok = config.PeerConfig("sample-org0peer1.demo.example.com:4321")
+	assert.True(t, ok, "supposed to find peer config")
+	assert.Equal(t, "xsample-org0peer1.demo.example.com:4321", peerConfig.URL)
+	assert.Equal(t, "xsample-org0peer1.demo.example.com", peerConfig.GRPCOptions["ssl-target-name-override"])
+	assert.Equal(t, 6, len(peerConfig.GRPCOptions))
+
 	//OrdererConfig Search Based on URL configured in config (using $ in entity matchers)
 	ordererConfig, ok = config.OrdererConfig("orderer.exampleY.com:1234")
 	assert.True(t, ok, "supposed to find orderer config")

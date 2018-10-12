@@ -511,7 +511,7 @@ certificateAuthorities:
  # so that properties can be mapped. Regex can be used for this purpose
 # UrlSubstitutionExp can be empty which means the same network hostname will be used
 # UrlSubstitutionExp can be given same as mapped peer url, so that mapped peer url can be used
-# UrlSubstitutionExp can have golang regex matchers like $1.local.example.$2:$3 for pattern
+# UrlSubstitutionExp can have golang regex matchers like ${1}.local.example.${2}:${3} for pattern
  # like peer0.org1.example.com:1234 which converts peer0.org1.example.com to peer0.org1.local.example.com:1234
  # SubstitutionExp for the fields gprcOptions.ssl-target-name-override respectively
 # In any case mappedHost's config will be used, so mapped host cannot be empty, if entityMatchers are used
@@ -543,8 +543,8 @@ entityMatchers:
       mappedHost: local.peer0.org1.example.com
 
     - pattern: (\w+).example4.(\w+):(\d+)
-      urlSubstitutionExp: $1.org1.example.$2:$3
-      sslTargetOverrideUrlSubstitutionExp: $1.org1.example.$2
+      urlSubstitutionExp: ${1}.org1.example.${2}:${3}
+      sslTargetOverrideUrlSubstitutionExp: ${1}.org1.example.${2}
       mappedHost: local.peer0.org1.example.com
 
     - pattern: (\w+).example2.com:(\d+)
@@ -580,8 +580,8 @@ entityMatchers:
       mappedHost: local.orderer.example.com
 
     - pattern: (\w+).example4.(\w+):(\d+)
-      urlSubstitutionExp: $1.example.$2:$3
-      sslTargetOverrideUrlSubstitutionExp: $1.example.$2
+      urlSubstitutionExp: ${1}.example.${2}:${3}
+      sslTargetOverrideUrlSubstitutionExp: ${1}.example.${2}
       mappedHost: local.orderer.example.com
 
     - pattern: (\w+).example5.(\w+)
