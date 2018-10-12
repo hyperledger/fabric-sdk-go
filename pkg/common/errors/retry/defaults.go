@@ -170,6 +170,37 @@ var TestRetryableCodes = map[status.Group][]status.Code{
 	status.TestStatus: {
 		status.GenericTransient,
 	},
+	status.DiscoveryServerStatus: {
+		status.QueryEndorsers,
+	},
+	status.EndorserClientStatus: {
+		status.ConnectionFailed, status.EndorsementMismatch,
+		status.PrematureChaincodeExecution,
+		status.ChaincodeAlreadyLaunching,
+		status.ChaincodeNameNotFound,
+	},
+	status.EndorserServerStatus: {
+		status.Code(common.Status_SERVICE_UNAVAILABLE),
+		status.Code(common.Status_INTERNAL_SERVER_ERROR),
+	},
+	status.OrdererClientStatus: {
+		status.ConnectionFailed,
+	},
+	status.OrdererServerStatus: {
+		status.Code(common.Status_SERVICE_UNAVAILABLE),
+		status.Code(common.Status_INTERNAL_SERVER_ERROR),
+	},
+	status.EventServerStatus: {
+		status.Code(pb.TxValidationCode_DUPLICATE_TXID),
+		status.Code(pb.TxValidationCode_ENDORSEMENT_POLICY_FAILURE),
+		status.Code(pb.TxValidationCode_MVCC_READ_CONFLICT),
+		status.Code(pb.TxValidationCode_PHANTOM_READ_CONFLICT),
+	},
+	// TODO: gRPC introduced retries in v1.8.0. This can be replaced with the
+	// gRPC fail fast option, once available
+	status.GRPCTransportStatus: {
+		status.Code(grpcCodes.Unavailable),
+	},
 }
 
 const (
@@ -178,7 +209,7 @@ const (
 	// TestInitialBackoff default initial backoff
 	TestInitialBackoff = 200 * time.Millisecond
 	// TestMaxBackoff default maximum backoff
-	TestMaxBackoff = 5 * time.Second
+	TestMaxBackoff = 50 * time.Second
 	// TestBackoffFactor default backoff factor
 	TestBackoffFactor = 1.75
 )
