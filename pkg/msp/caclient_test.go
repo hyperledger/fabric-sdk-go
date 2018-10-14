@@ -37,13 +37,13 @@ func TestEnrollAndReenroll(t *testing.T) {
 	orgMSPID := mspIDByOrgName(t, f.endpointConfig, org1)
 
 	// Empty enrollment ID
-	err := f.caClient.Enroll("", "user1")
+	err := f.caClient.Enroll(&api.EnrollmentRequest{Name: "", Secret: "user1"})
 	if err == nil {
 		t.Fatal("Enroll didn't return error")
 	}
 
 	// Empty enrollment secret
-	err = f.caClient.Enroll("enrolledUsername", "")
+	err = f.caClient.Enroll(&api.EnrollmentRequest{Name: "enrolledUsername", Secret: ""})
 	if err == nil {
 		t.Fatal("Enroll didn't return error")
 	}
@@ -54,7 +54,7 @@ func TestEnrollAndReenroll(t *testing.T) {
 	if err != msp.ErrUserNotFound {
 		t.Fatal("Expected to not find user in user store")
 	}
-	err = f.caClient.Enroll(enrollUsername, "enrollmentSecret")
+	err = f.caClient.Enroll(&api.EnrollmentRequest{Name: enrollUsername, Secret: "enrollmentSecret"})
 	if err != nil {
 		t.Fatalf("identityManager Enroll return error %s", err)
 	}
@@ -64,7 +64,7 @@ func TestEnrollAndReenroll(t *testing.T) {
 	}
 
 	// Reenroll with empty user
-	err = f.caClient.Reenroll("")
+	err = f.caClient.Reenroll(&api.ReenrollmentRequest{Name: ""})
 	if err == nil {
 		t.Fatal("Expected error with enpty user")
 	}
@@ -85,7 +85,7 @@ func reenrollWithAppropriateUser(f textFixture, t *testing.T, enrolledUserData *
 	if err != nil {
 		t.Fatalf("newUser return error %s", err)
 	}
-	err = f.caClient.Reenroll(enrolledUser.Identifier().ID)
+	err = f.caClient.Reenroll(&api.ReenrollmentRequest{Name: enrolledUser.Identifier().ID})
 	if err != nil {
 		t.Fatalf("Reenroll return error %s", err)
 	}
@@ -132,7 +132,7 @@ func TestWrongURL(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewidentityManagerClient return error: %s", err)
 	}
-	err = f.caClient.Enroll("enrollmentID", "enrollmentSecret")
+	err = f.caClient.Enroll(&api.EnrollmentRequest{Name: "enrollmentID", Secret: "enrollmentSecret"})
 	if err == nil {
 		t.Fatal("Enroll didn't return error")
 	}

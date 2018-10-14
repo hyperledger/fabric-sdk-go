@@ -105,7 +105,11 @@ func newCAClient(ctx context.Client, orgName string) (mspapi.CAClient, error) {
 
 // enrollmentOptions represent enrollment options
 type enrollmentOptions struct {
-	secret string
+	secret   string
+	profile  string
+	label    string
+	typ      string
+	attrReqs []*AttributeRequest
 }
 
 // EnrollmentOption describes a functional parameter for Enroll
@@ -115,6 +119,38 @@ type EnrollmentOption func(*enrollmentOptions) error
 func WithSecret(secret string) EnrollmentOption {
 	return func(o *enrollmentOptions) error {
 		o.secret = secret
+		return nil
+	}
+}
+
+// WithProfile enrollment option
+func WithProfile(profile string) EnrollmentOption {
+	return func(o *enrollmentOptions) error {
+		o.profile = profile
+		return nil
+	}
+}
+
+// WithType enrollment option
+func WithType(typ string) EnrollmentOption {
+	return func(o *enrollmentOptions) error {
+		o.typ = typ
+		return nil
+	}
+}
+
+// WithLabel enrollment option
+func WithLabel(label string) EnrollmentOption {
+	return func(o *enrollmentOptions) error {
+		o.label = label
+		return nil
+	}
+}
+
+// WithAttributeRequests enrollment option
+func WithAttributeRequests(attrReqs []*AttributeRequest) EnrollmentOption {
+	return func(o *enrollmentOptions) error {
+		o.attrReqs = attrReqs
 		return nil
 	}
 }
@@ -328,7 +364,24 @@ func (c *Client) Enroll(enrollmentID string, opts ...EnrollmentOption) error {
 	if err != nil {
 		return err
 	}
-	return ca.Enroll(enrollmentID, eo.secret)
+
+	req := &mspapi.EnrollmentRequest{
+		Name:    enrollmentID,
+		Secret:  eo.secret,
+		Profile: eo.profile,
+		Type:    eo.typ,
+		Label:   eo.label,
+	}
+
+	if len(eo.attrReqs) > 0 {
+		attrs := make([]*mspapi.AttributeRequest, 0)
+		for _, attr := range eo.attrReqs {
+			attrs = append(attrs, &mspapi.AttributeRequest{Name: attr.Name, Optional: attr.Optional})
+		}
+		req.AttrReqs = attrs
+	}
+
+	return ca.Enroll(req)
 }
 
 // Reenroll reenrolls an enrolled user in order to obtain a new signed X509 certificate
@@ -337,12 +390,33 @@ func (c *Client) Enroll(enrollmentID string, opts ...EnrollmentOption) error {
 //
 //  Returns:
 //  an error if re-enrollment fails
-func (c *Client) Reenroll(enrollmentID string) error {
+func (c *Client) Reenroll(enrollmentID string, opts ...EnrollmentOption) error {
+	eo := enrollmentOptions{}
+	for _, param := range opts {
+		err := param(&eo)
+		if err != nil {
+			return errors.WithMessage(err, "failed to enroll")
+		}
+	}
+
 	ca, err := newCAClient(c.ctx, c.orgName)
 	if err != nil {
 		return err
 	}
-	return ca.Reenroll(enrollmentID)
+
+	req := &mspapi.ReenrollmentRequest{
+		Name:    enrollmentID,
+		Profile: eo.profile,
+		Label:   eo.label,
+	}
+	if len(eo.attrReqs) > 0 {
+		attrs := make([]*mspapi.AttributeRequest, 0)
+		for _, attr := range eo.attrReqs {
+			attrs = append(attrs, &mspapi.AttributeRequest{Name: attr.Name, Optional: attr.Optional})
+		}
+		req.AttrReqs = attrs
+	}
+	return ca.Reenroll(req)
 }
 
 // Register registers a User with the Fabric CA

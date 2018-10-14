@@ -8,7 +8,6 @@ package msp
 
 import (
 	"fmt"
-
 	"strings"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
@@ -95,25 +94,25 @@ func NewCAClient(orgName string, ctx contextApi.Client) (*CAClientImpl, error) {
 //
 // enrollmentID The registered ID to use for enrollment
 // enrollmentSecret The secret associated with the enrollment ID
-func (c *CAClientImpl) Enroll(enrollmentID string, enrollmentSecret string) error {
+func (c *CAClientImpl) Enroll(request *api.EnrollmentRequest) error {
 
 	if c.adapter == nil {
 		return fmt.Errorf("no CAs configured for organization: %s", c.orgName)
 	}
-	if enrollmentID == "" {
+	if request.Name == "" {
 		return errors.New("enrollmentID is required")
 	}
-	if enrollmentSecret == "" {
+	if request.Secret == "" {
 		return errors.New("enrollmentSecret is required")
 	}
 	// TODO add attributes
-	cert, err := c.adapter.Enroll(enrollmentID, enrollmentSecret)
+	cert, err := c.adapter.Enroll(request)
 	if err != nil {
 		return errors.Wrap(err, "enroll failed")
 	}
 	userData := &msp.UserData{
 		MSPID: c.orgMSPID,
-		ID:    enrollmentID,
+		ID:    request.Name,
 		EnrollmentCertificate: cert,
 	}
 	err = c.userStore.Store(userData)
@@ -256,22 +255,22 @@ func (c *CAClientImpl) GetAllIdentities(caname string) ([]*api.IdentityResponse,
 }
 
 // Reenroll an enrolled user in order to obtain a new signed X509 certificate
-func (c *CAClientImpl) Reenroll(enrollmentID string) error {
+func (c *CAClientImpl) Reenroll(request *api.ReenrollmentRequest) error {
 
 	if c.adapter == nil {
 		return fmt.Errorf("no CAs configured for organization: %s", c.orgName)
 	}
-	if enrollmentID == "" {
+	if request.Name == "" {
 		logger.Info("invalid re-enroll request, missing enrollmentID")
 		return errors.New("user name missing")
 	}
 
-	user, err := c.identityManager.GetSigningIdentity(enrollmentID)
+	user, err := c.identityManager.GetSigningIdentity(request.Name)
 	if err != nil {
-		return errors.Wrapf(err, "failed to retrieve user: %s", enrollmentID)
+		return errors.Wrapf(err, "failed to retrieve user: %s", request.Name)
 	}
 
-	cert, err := c.adapter.Reenroll(user.PrivateKey(), user.EnrollmentCertificate())
+	cert, err := c.adapter.Reenroll(user.PrivateKey(), user.EnrollmentCertificate(), request)
 	if err != nil {
 		return errors.Wrap(err, "reenroll failed")
 	}
@@ -362,7 +361,7 @@ func (c *CAClientImpl) getRegistrar(enrollID string, enrollSecret string) (msp.S
 		}
 
 		// Attempt to enroll the registrar
-		err = c.Enroll(enrollID, enrollSecret)
+		err = c.Enroll(&api.EnrollmentRequest{Name: enrollID, Secret: enrollSecret})
 		if err != nil {
 			return nil, err
 		}

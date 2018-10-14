@@ -17,8 +17,8 @@ var (
 
 // CAClient provides management of identities in a Fabric network
 type CAClient interface {
-	Enroll(enrollmentID string, enrollmentSecret string) error
-	Reenroll(enrollmentID string) error
+	Enroll(request *EnrollmentRequest) error
+	Reenroll(request *ReenrollmentRequest) error
 	Register(request *RegistrationRequest) (string, error)
 	Revoke(request *RevocationRequest) (*RevocationResponse, error)
 	CreateIdentity(request *IdentityRequest) (*IdentityResponse, error)
@@ -53,6 +53,38 @@ type RegistrationRequest struct {
 	// a random secret is generated.  In both cases, the secret
 	// is returned from registration.
 	Secret string
+}
+
+// EnrollmentRequest is a request to enroll an identity
+type EnrollmentRequest struct {
+	// The identity name to enroll
+	Name string
+	// The secret returned via Register
+	Secret string
+	// AttrReqs are requests for attributes to add to the certificate.
+	// Each attribute is added only if the requestor owns the attribute.
+	AttrReqs []*AttributeRequest
+	// Profile is the name of the signing profile to use in issuing the X509 certificate
+	Profile string
+	// Label is the label to use in HSM operations
+	Label string
+	// The type of the enrollment request: x509 or idemix
+	// The default is a request for an X509 enrollment certificate
+	Type string
+}
+
+// ReenrollmentRequest is a request to reenroll an identity.
+// This is useful to renew a certificate before it has expired.
+type ReenrollmentRequest struct {
+	// The identity name to enroll
+	Name string
+	// Profile is the name of the signing profile to use in issuing the certificate
+	Profile string
+	// Label is the label to use in HSM operations
+	Label string
+	// AttrReqs are requests for attributes to add to the certificate.
+	// Each attribute is added only if the requestor owns the attribute.
+	AttrReqs []*AttributeRequest
 }
 
 // Attribute defines additional attributes that may be passed along during registration

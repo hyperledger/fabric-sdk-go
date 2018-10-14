@@ -7,14 +7,14 @@ SPDX-License-Identifier: Apache-2.0
 package msp
 
 import (
-	"testing"
-
 	"fmt"
+	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
+	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -104,6 +104,130 @@ func TestRegisterEnroll(t *testing.T) {
 
 	checkCertAttributes(t, si.EnrollmentCertificate(), testAttributes)
 
+}
+
+func TestEnrollWithOptions(t *testing.T) {
+	// Instantiate the SDK
+	sdk, err := fabsdk.New(integration.ConfigBackend)
+	if err != nil {
+		t.Fatalf("SDK init failed: %s", err)
+	}
+	defer sdk.Close()
+
+	// Delete all private keys from the crypto suite store
+	// and users from the user store at the end
+	integration.CleanupUserData(t, sdk)
+	defer integration.CleanupUserData(t, sdk)
+
+	ctxProvider := sdk.Context()
+
+	// Get the Client.
+	// Without WithOrg option, uses default client organization.
+	mspClient, err := msp.New(ctxProvider)
+	if err != nil {
+		t.Fatalf("failed to create CA client: %s", err)
+	}
+
+	// Generate a random user name
+	username := integration.GenerateRandomID()
+
+	testAttributes := []msp.Attribute{
+		{
+			Name:  integration.GenerateRandomID(),
+			Value: fmt.Sprintf("%s:ecert", integration.GenerateRandomID()),
+			ECert: true,
+		},
+		{
+			Name:  integration.GenerateRandomID(),
+			Value: fmt.Sprintf("%s:ecert", integration.GenerateRandomID()),
+			ECert: true,
+		},
+	}
+
+	// Register the new user
+	enrollmentSecret, err := mspClient.Register(&msp.RegistrationRequest{
+		Name:       username,
+		Type:       IdentityTypeUser,
+		Attributes: testAttributes,
+		// Affiliation is mandatory. "org1" and "org2" are hardcoded as CA defaults
+		// See https://github.com/hyperledger/fabric-ca/blob/release/cmd/fabric-ca-server/config.go
+		Affiliation: "org2",
+	})
+	if err != nil {
+		t.Fatalf("Registration failed: %s", err)
+	}
+
+	err = mspClient.Enroll(username, msp.WithSecret(enrollmentSecret), msp.WithType("idemix"))
+	if err == nil {
+		t.Fatal("Enroll should failed: idemix is not supported")
+	}
+
+	attrReqs := []*msp.AttributeRequest{{Name: testAttributes[0].Name, Optional: true}}
+	err = mspClient.Enroll(username, msp.WithSecret(enrollmentSecret), msp.WithAttributeRequests(attrReqs))
+	if err != nil {
+		t.Fatalf("Enroll failed: %s", err)
+	}
+
+	// Get the new user's signing identity
+	si, err := mspClient.GetSigningIdentity(username)
+	if err != nil {
+		t.Fatalf("GetSigningIdentity failed: %s", err)
+	}
+
+	attrs, err := getCertAttributes(si.EnrollmentCertificate())
+	require.NoError(t, err)
+
+	if attrs.Contains(testAttributes[1].Name) {
+		t.Fatalf("attribute '%s' shouldn't be found in in certificate", testAttributes[1].Name)
+	}
+
+	v, ok, err := attrs.Value(testAttributes[0].Name)
+	require.NoError(t, err)
+	require.True(t, ok, "attribute '%s' was not found", testAttributes[0].Name)
+	require.True(t, v == testAttributes[0].Value, "incorrect value for '%s'; expected '%s' but found '%s'", testAttributes[0].Name, testAttributes[0].Value, v)
+}
+
+func TestEnrollWithProfile(t *testing.T) {
+	// Instantiate the SDK
+	sdk, err := fabsdk.New(integration.ConfigBackend)
+	if err != nil {
+		t.Fatalf("SDK init failed: %s", err)
+	}
+	defer sdk.Close()
+
+	// Delete all private keys from the crypto suite store
+	// and users from the user store at the end
+	integration.CleanupUserData(t, sdk)
+	defer integration.CleanupUserData(t, sdk)
+
+	ctxProvider := sdk.Context()
+
+	// Get the Client.
+	// Without WithOrg option, uses default client organization.
+	mspClient, err := msp.New(ctxProvider)
+	if err != nil {
+		t.Fatalf("failed to create CA client: %s", err)
+	}
+
+	// Generate a random user name
+	username := integration.GenerateRandomID()
+
+	// Register the new user
+	enrollmentSecret, err := mspClient.Register(&msp.RegistrationRequest{
+		Name: username,
+		Type: IdentityTypeUser,
+		// Affiliation is mandatory. "org1" and "org2" are hardcoded as CA defaults
+		// See https://github.com/hyperledger/fabric-ca/blob/release/cmd/fabric-ca-server/config.go
+		Affiliation: "org2",
+	})
+	if err != nil {
+		t.Fatalf("Registration failed: %s", err)
+	}
+
+	err = mspClient.Enroll(username, msp.WithSecret(enrollmentSecret), msp.WithProfile("tls"))
+	if err != nil {
+		t.Fatalf("Enroll failed: %s", err)
+	}
 }
 
 func getRegistrarEnrollmentCredentials(t *testing.T, ctxProvider context.ClientProvider) (string, string) {
