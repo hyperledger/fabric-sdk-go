@@ -504,17 +504,17 @@ mock-gen:
 crypto-gen:
 	@echo "Generating crypto directory ..."
 	@$(DOCKER_CMD) run -i \
-		-v $(abspath .):/opt/gopath/src/$(PACKAGE_NAME) -u $(shell id -u):$(shell id -g) \
+		-v /$(abspath .):/opt/gopath/src/$(PACKAGE_NAME) -u $(shell id -u):$(shell id -g) \
 		$(FABRIC_TOOLS_IMAGE):$(FABRIC_TOOLS_TAG) \
-		/bin/bash -c "FABRIC_VERSION_DIR=fabric/$(FABRIC_CRYPTOCONFIG_VER) /opt/gopath/src/${PACKAGE_NAME}/test/scripts/generate_crypto.sh"
+		//bin/bash -c "FABRIC_VERSION_DIR=fabric/$(FABRIC_CRYPTOCONFIG_VER) /opt/gopath/src/${PACKAGE_NAME}/test/scripts/generate_crypto.sh"
 
 .PHONY: channel-config-gen
 channel-config-gen:
 	@echo "Generating test channel configuration transactions and blocks ..."
 	@$(DOCKER_CMD) run -i \
-		-v $(abspath .):/opt/gopath/src/$(PACKAGE_NAME) -u $(shell id -u):$(shell id -g) \
+		-v /$(abspath .):/opt/gopath/src/$(PACKAGE_NAME) -u $(shell id -u):$(shell id -g) \
 		$(FABRIC_TOOLS_IMAGE):$(FABRIC_TOOLS_TAG) \
-		/bin/bash -c "FABRIC_VERSION_DIR=fabric/$(FABRIC_CODELEVEL_VER)/ /opt/gopath/src/${PACKAGE_NAME}/test/scripts/generate_channeltx.sh"
+		//bin/bash -c "FABRIC_VERSION_DIR=fabric/$(FABRIC_CODELEVEL_VER)/ /opt/gopath/src/${PACKAGE_NAME}/test/scripts/generate_channeltx.sh"
 
 .PHONY: channel-config-all-gen
 channel-config-all-gen: channel-config-stable-gen channel-config-prev-gen channel-config-prerelease-gen channel-config-devstable-gen
@@ -523,26 +523,26 @@ channel-config-all-gen: channel-config-stable-gen channel-config-prev-gen channe
 channel-config-stable-gen:
 	@echo "Generating test channel configuration transactions and blocks (code level stable) ..."
 	@$(DOCKER_CMD) run -i \
-		-v $(abspath .):/opt/gopath/src/$(PACKAGE_NAME) -u $(shell id -u):$(shell id -g) \
+		-v /$(abspath .):/opt/gopath/src/$(PACKAGE_NAME) -u $(shell id -u):$(shell id -g) \
 		$(FABRIC_TOOLS_IMAGE):$(FABRIC_TOOLS_STABLE_TAG) \
-		/bin/bash -c "FABRIC_VERSION_DIR=fabric/$(FABRIC_STABLE_CODELEVEL_VER)/ /opt/gopath/src/${PACKAGE_NAME}/test/scripts/generate_channeltx.sh"
+		//bin/bash -c "FABRIC_VERSION_DIR=fabric/$(FABRIC_STABLE_CODELEVEL_VER)/ /opt/gopath/src/${PACKAGE_NAME}/test/scripts/generate_channeltx.sh"
 
 .PHONY: channel-config-prev-gen
 channel-config-prev-gen:
 	@echo "Generating test channel configuration transactions and blocks (code level prev) ..."
 	$(DOCKER_CMD) run -i \
-		-v $(abspath .):/opt/gopath/src/$(PACKAGE_NAME) -u $(shell id -u):$(shell id -g) \
+		-v /$(abspath .):/opt/gopath/src/$(PACKAGE_NAME) -u $(shell id -u):$(shell id -g) \
 		$(FABRIC_TOOLS_IMAGE):$(FABRIC_TOOLS_PREV_TAG) \
-		/bin/bash -c "FABRIC_VERSION_DIR=fabric/$(FABRIC_PREV_CODELEVEL_VER)/ /opt/gopath/src/${PACKAGE_NAME}/test/scripts/generate_channeltx.sh"
+		//bin/bash -c "FABRIC_VERSION_DIR=fabric/$(FABRIC_PREV_CODELEVEL_VER)/ /opt/gopath/src/${PACKAGE_NAME}/test/scripts/generate_channeltx.sh"
 
 .PHONY: channel-config-prerelease-gen
 channel-config-prerelease-gen:
 ifneq ($(FABRIC_PRERELEASE_VERSION),)
 	@echo "Generating test channel configuration transactions and blocks (code level prerelease) ..."
 	$(DOCKER_CMD) run -i \
-		-v $(abspath .):/opt/gopath/src/$(PACKAGE_NAME) -u $(shell id -u):$(shell id -g) \
+		-v /$(abspath .):/opt/gopath/src/$(PACKAGE_NAME) -u $(shell id -u):$(shell id -g) \
 		$(FABRIC_TOOLS_IMAGE):$(FABRIC_TOOLS_PRERELEASE_TAG) \
-		/bin/bash -c "FABRIC_VERSION_DIR=fabric/$(FABRIC_PRERELEASE_CODELEVEL_VER)/ /opt/gopath/src/${PACKAGE_NAME}/test/scripts/generate_channeltx.sh"
+		//bin/bash -c "FABRIC_VERSION_DIR=fabric/$(FABRIC_PRERELEASE_CODELEVEL_VER)/ /opt/gopath/src/${PACKAGE_NAME}/test/scripts/generate_channeltx.sh"
 endif
 
 .PHONY: channel-config-devstable-gen
@@ -551,9 +551,9 @@ ifeq ($(ARCH),x86_64)
 	@echo "Generating test channel configuration transactions and blocks (code level devstable) ..."
 	@$(FABRIC_DEV_REGISTRY_PRE_CMD) && \
 		$(DOCKER_CMD) run -i \
-			-v $(abspath .):/opt/gopath/src/$(PACKAGE_NAME) -u $(shell id -u):$(shell id -g) \
+			-v /$(abspath .):/opt/gopath/src/$(PACKAGE_NAME) -u $(shell id -u):$(shell id -g) \
 			$(FABRIC_DEV_REGISTRY)$(FABRIC_TOOLS_IMAGE):$(FABRIC_TOOLS_DEVSTABLE_TAG) \
-			/bin/bash -c "FABRIC_VERSION_DIR=fabric/$(FABRIC_DEVSTABLE_CODELEVEL_VER)/ /opt/gopath/src/${PACKAGE_NAME}/test/scripts/generate_channeltx.sh"
+			//bin/bash -c "FABRIC_VERSION_DIR=fabric/$(FABRIC_DEVSTABLE_CODELEVEL_VER)/ /opt/gopath/src/${PACKAGE_NAME}/test/scripts/generate_channeltx.sh"
 endif
 
 .PHONY: thirdparty-pin
