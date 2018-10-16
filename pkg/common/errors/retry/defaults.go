@@ -178,6 +178,7 @@ var TestRetryableCodes = map[status.Group][]status.Code{
 		status.PrematureChaincodeExecution,
 		status.ChaincodeAlreadyLaunching,
 		status.ChaincodeNameNotFound,
+		status.Code(pb.TxValidationCode_MVCC_READ_CONFLICT),
 	},
 	status.EndorserServerStatus: {
 		status.Code(common.Status_SERVICE_UNAVAILABLE),

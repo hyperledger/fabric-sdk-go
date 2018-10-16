@@ -335,14 +335,20 @@ func testQuery(t *testing.T, chClient *channel.Client, expected string, ccID, ke
 	for r := 0; r < 10; r++ {
 		response, err := chClient.Query(channel.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs(key)},
 			channel.WithRetry(retry.DefaultChannelOpts))
-		require.NoError(t, err, "failed to invoke example cc")
+		if err == nil {
+			actual := string(response.Payload)
+			if actual == expected {
+				return
+			}
 
-		actual := string(response.Payload)
-		if actual == expected {
-			return
+			t.Logf("On Attempt [%d / %d]: Response didn't match expected value [%s, %s]", r, maxRetries, actual, expected)
+		} else {
+			t.Logf("On Attempt [%d / %d]: failed to invoke example cc '%s' with Args:[%+v], error: %+v", r, maxRetries, ccID, integration.ExampleCCQueryArgs(key), err)
+			if r < 9 {
+				t.Logf("will retry in %v", retrySleep)
+			}
 		}
 
-		t.Logf("On Attempt [%d / %d]: Response didn't match expected value [%s, %s]", r, maxRetries, actual, expected)
 		time.Sleep(retrySleep)
 	}
 
