@@ -133,7 +133,7 @@ tlsConfig.ServerName = serverName\
 
 
 FILTER_FILENAME="lib/identity.go"
-FILTER_FN="newIdentity,Revoke,Post,addTokenAuthHdr,GetECert,Reenroll,Register,GetName,GetAllIdentities,GetIdentity,AddIdentity,ModifyIdentity,RemoveIdentity,Get,Put,Delete,GetStreamResponse,NewIdentity"
+FILTER_FN="newIdentity,Revoke,Post,addTokenAuthHdr,GetECert,Reenroll,Register,GetName,GetAllIdentities,GetIdentity,AddIdentity,ModifyIdentity,RemoveIdentity,Get,Put,Delete,GetStreamResponse,NewIdentity,GetAffiliation,GetAllAffiliations,AddAffiliation,ModifyAffiliation,RemoveAffiliation"
 gofilter
 sed -i'' -e 's/util.GetDefaultBCCSP()/nil/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e '/log "github.com\// a\
