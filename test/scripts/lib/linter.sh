@@ -19,8 +19,8 @@ function runLinter {
 
 function findChangedLinterPkgs {
     findChangedFiles
-
-    if [[ "${CHANGED_FILES[@]}" =~ ( |^)(test/fixtures/|test/metadata/|test/scripts/|Makefile( |$)|Gopkg.lock( |$)) ]]; then
+    declare matcher='( |^)(test/fixtures/|test/metadata/|test/scripts/|Makefile( |$)|Gopkg.lock( |$))'
+    if [[ "${CHANGED_FILES[@]}" =~ ${matcher} ]]; then
         echo "Test scripts, fixtures or metadata changed - running all tests"
     else
         findChangedPackages
