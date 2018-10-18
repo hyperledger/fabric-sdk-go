@@ -258,6 +258,11 @@ func createDSClientCtx(t *testing.T, org string) *dsClientCtx {
 
 	var err error
 	b := getCustomConfigBackend(t, org)
+	if integration.IsLocal() {
+		//If it is a local test then add entity mapping to config backend to parse URLs
+		b = integration.AddLocalEntityMapping(b)
+	}
+
 	// create SDK with dynamic discovery enabled
 	d.sdk, err = fabsdk.New(b, fabsdk.WithServicePkg(&DynDiscoveryProviderFactory{}))
 	require.NoError(t, err, "error creating a new sdk client for %s", org)

@@ -163,10 +163,10 @@ make integration-tests-local
 # which has the Fabric CA server, orderer and peers pointed to localhost
 # It is also possible to run integration tests using go test directly. For example:
 #cd $GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/integration/
-#go -args testLocal=true test
+#go test -args testLocal=true
 
 #cd $GOPATH/src/github.com/hyperledger/fabric-sdk-go/test/integration/orgs
-#go -args testLocal=true test
+#go test -args testLocal=true 
 
 # You should review test/scripts/integration.sh for options and details.
 # Note: you should generally prefer the scripted version to setup parameters for you.
