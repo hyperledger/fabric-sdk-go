@@ -52,10 +52,12 @@ const (
 	defaultCacheSweepInterval             = time.Second * 15
 
 	defaultResolverStrategy                 = fab.PreferOrgStrategy
+	defaultMinBlockHeightResolverMode       = fab.ResolveByThreshold
 	defaultBalancer                         = fab.Random
 	defaultBlockHeightLagThreshold          = 5
 	defaultReconnectBlockHeightLagThreshold = 10
-	defaultPeerMonitorPeriod                = 0 // Disabled
+	defaultPeerMonitor                      = "" // The peer monitor will be enabled if necessary
+	defaultPeerMonitorPeriod                = 5 * time.Second
 
 	//default grpc opts
 	defaultKeepAliveTime    = 0
@@ -89,7 +91,9 @@ var (
 		},
 		EventService: EventServicePolicy{
 			ResolverStrategy:                 string(fab.PreferOrgStrategy),
+			MinBlockHeightResolverMode:       string(defaultMinBlockHeightResolverMode),
 			Balancer:                         Random,
+			PeerMonitor:                      defaultPeerMonitor,
 			PeerMonitorPeriod:                defaultPeerMonitorPeriod,
 			BlockHeightLagThreshold:          defaultBlockHeightLagThreshold,
 			ReconnectBlockHeightLagThreshold: defaultReconnectBlockHeightLagThreshold,
@@ -401,7 +405,6 @@ func (c *EndpointConfig) loadEndpointConfiguration() error {
 	err = c.backend.UnmarshalKey(
 		"channels", &endpointConfigEntity.Channels,
 		lookup.WithUnmarshalHookFunction(peerChannelConfigHookFunc()),
-		lookup.WithUnmarshalHookFunction(eventChannelConfigHookFunc()),
 	)
 	logger.Debugf("channels are: %+v", endpointConfigEntity.Channels)
 	if err != nil {
@@ -660,8 +663,10 @@ func (c *EndpointConfig) getChannelPolicies(policies *ChannelPolicies) fab.Chann
 
 	eventServicePolicy := fab.EventServicePolicy{
 		ResolverStrategy:                 fab.ResolverStrategy(policies.EventService.ResolverStrategy),
+		MinBlockHeightResolverMode:       fab.MinBlockHeightResolverMode(policies.EventService.MinBlockHeightResolverMode),
 		Balancer:                         fab.BalancerType(policies.EventService.Balancer),
 		BlockHeightLagThreshold:          policies.EventService.BlockHeightLagThreshold,
+		PeerMonitor:                      fab.EnabledDisabled(policies.EventService.PeerMonitor),
 		ReconnectBlockHeightLagThreshold: policies.EventService.ReconnectBlockHeightLagThreshold,
 		PeerMonitorPeriod:                policies.EventService.PeerMonitorPeriod,
 	}
@@ -681,6 +686,7 @@ func (c *EndpointConfig) addMissingChannelPoliciesItems(chNwCfg ChannelEndpointC
 	policies.Discovery = c.addMissingDiscoveryPolicyInfo(policies.Discovery)
 	policies.Selection = c.addMissingSelectionPolicyInfo(policies.Selection)
 	policies.QueryChannelConfig = c.addMissingQueryChannelConfigPolicyInfo(policies.QueryChannelConfig)
+	policies.EventService = c.addMissingEventServicePolicyInfo(policies.EventService)
 
 	return policies
 }
@@ -735,6 +741,32 @@ func (c *EndpointConfig) addMissingQueryChannelConfigPolicyInfo(policy fab.Query
 		policy.RetryOpts = c.defaultChannelPolicies.QueryChannelConfig.RetryOpts
 	} else {
 		policy.RetryOpts = addMissingRetryOpts(policy.RetryOpts, c.defaultChannelPolicies.QueryChannelConfig.RetryOpts)
+	}
+
+	return policy
+}
+
+func (c *EndpointConfig) addMissingEventServicePolicyInfo(policy fab.EventServicePolicy) fab.EventServicePolicy {
+	if policy.Balancer == "" {
+		policy.Balancer = c.defaultChannelPolicies.EventService.Balancer
+	}
+	if policy.BlockHeightLagThreshold == 0 {
+		policy.BlockHeightLagThreshold = c.defaultChannelPolicies.EventService.BlockHeightLagThreshold
+	}
+	if policy.ResolverStrategy == "" {
+		policy.ResolverStrategy = c.defaultChannelPolicies.EventService.ResolverStrategy
+	}
+	if policy.MinBlockHeightResolverMode == "" {
+		policy.MinBlockHeightResolverMode = c.defaultChannelPolicies.EventService.MinBlockHeightResolverMode
+	}
+	if policy.PeerMonitor == "" {
+		policy.PeerMonitor = c.defaultChannelPolicies.EventService.PeerMonitor
+	}
+	if policy.ReconnectBlockHeightLagThreshold == 0 {
+		policy.ReconnectBlockHeightLagThreshold = c.defaultChannelPolicies.EventService.ReconnectBlockHeightLagThreshold
+	}
+	if policy.PeerMonitorPeriod == 0 {
+		policy.PeerMonitorPeriod = c.defaultChannelPolicies.EventService.PeerMonitorPeriod
 	}
 
 	return policy
@@ -987,6 +1019,10 @@ func (c *EndpointConfig) loadDefaultQueryChannelPolicy(policy *fab.QueryChannelC
 func (c *EndpointConfig) loadDefaultEventServicePolicy(policy *fab.EventServicePolicy) {
 	if policy.ResolverStrategy == "" {
 		policy.ResolverStrategy = defaultResolverStrategy
+	}
+
+	if policy.MinBlockHeightResolverMode == "" {
+		policy.MinBlockHeightResolverMode = defaultMinBlockHeightResolverMode
 	}
 
 	if policy.Balancer == "" {
@@ -1726,23 +1762,6 @@ func peerChannelConfigHookFunc() mapstructure.DecodeHookFunc {
 			}
 		}
 
-		return data, nil
-	}
-}
-
-func eventChannelConfigHookFunc() mapstructure.DecodeHookFunc {
-	return func(f reflect.Type, t reflect.Type, data interface{}) (interface{}, error) {
-		if t == reflect.TypeOf(EventServicePolicy{}) {
-			dataMap, ok := data.(map[string]interface{})
-			if ok {
-				setDefault(dataMap, "blockheightlagthreshold", defaultBlockHeightLagThreshold)
-				setDefault(dataMap, "reconnectblockheightlagthreshold", defaultReconnectBlockHeightLagThreshold)
-				setDefault(dataMap, "peermonitorperiod", defaultPeerMonitorPeriod)
-				setDefault(dataMap, "resolverstrategy", string(fab.PreferOrgStrategy))
-				setDefault(dataMap, "balancer", Random)
-				return dataMap, nil
-			}
-		}
 		return data, nil
 	}
 }

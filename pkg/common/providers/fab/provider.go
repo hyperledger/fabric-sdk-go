@@ -107,24 +107,6 @@ type EndpointConfig interface {
 	CryptoConfigPath() string
 }
 
-// ResolverStrategy is the peer resolver type
-type ResolverStrategy string
-
-const (
-	// BalancedStrategy is a peer resolver strategy that chooses peers based on a configured load balancer
-	BalancedStrategy ResolverStrategy = "Balanced"
-
-	// MinBlockHeightStrategy is a peer resolver strategy that chooses the best peer according to a block height lag threshold.
-	// The maximum block height of all peers is determined and the peers whose block heights are under the maximum height but above
-	// a provided "lag" threshold are load balanced. The other peers are not considered.
-	MinBlockHeightStrategy ResolverStrategy = "MinBlockHeight"
-
-	// PreferOrgStrategy is a peer resolver strategy that determines which peers are suitable based on block height lag threshold,
-	// although will prefer the peers in the current org (as long as their block height is above a configured threshold).
-	// If none of the peers from the current org are suitable then a peer from another org is chosen.
-	PreferOrgStrategy ResolverStrategy = "PreferOrg"
-)
-
 // TimeoutType enumerates the different types of outgoing connections
 type TimeoutType int
 

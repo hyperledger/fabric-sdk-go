@@ -14,6 +14,11 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/peerresolver"
 )
 
+const (
+	defaultBlockHeightLagThreshold          = 5
+	defaultReconnectBlockHeightLagThreshold = 10
+)
+
 type params struct {
 	blockHeightLagThreshold          int
 	reconnectBlockHeightLagThreshold int
@@ -25,8 +30,8 @@ func defaultParams(context context.Client, channelID string) *params {
 	policy := context.EndpointConfig().ChannelConfig(channelID).Policies.EventService
 
 	return &params{
-		blockHeightLagThreshold:          policy.BlockHeightLagThreshold,
-		reconnectBlockHeightLagThreshold: policy.ReconnectBlockHeightLagThreshold,
+		blockHeightLagThreshold:          getBlockHeightLagThreshold(policy),
+		reconnectBlockHeightLagThreshold: getReconnectBlockHeightLagThreshold(policy),
 		loadBalancePolicy:                peerresolver.GetBalancer(policy),
 	}
 }
@@ -89,4 +94,37 @@ func (p *params) SetSnapshot(value fab.EventSnapshot) error {
 	logger.Debugf("SetSnapshot.FromBlock: %d", value)
 	p.minBlockHeight = value.LastBlockReceived() + 1
 	return nil
+}
+
+func getBlockHeightLagThreshold(policy fab.EventServicePolicy) int {
+	var threshold int
+
+	switch policy.MinBlockHeightResolverMode {
+	case fab.ResolveLatest:
+		threshold = 0
+	case fab.ResolveByThreshold:
+		threshold = policy.BlockHeightLagThreshold
+		if threshold <= 0 {
+			logger.Warnf("Invalid BlockHeightLagThreshold: %d. Using default: %d", threshold, defaultBlockHeightLagThreshold)
+			threshold = defaultBlockHeightLagThreshold
+		}
+	default:
+		logger.Warnf("Invalid MinBlockHeightResolverMode: [%s]. Using default: [%s]", policy.MinBlockHeightResolverMode, fab.ResolveByThreshold)
+		threshold = policy.BlockHeightLagThreshold
+		if threshold <= 0 {
+			logger.Warnf("Invalid BlockHeightLagThreshold: %d. Using default: %d", threshold, defaultBlockHeightLagThreshold)
+			threshold = defaultBlockHeightLagThreshold
+		}
+	}
+
+	return threshold
+}
+
+func getReconnectBlockHeightLagThreshold(policy fab.EventServicePolicy) int {
+	threshold := policy.ReconnectBlockHeightLagThreshold
+	if threshold <= 0 {
+		logger.Warnf("Invalid ReconnectBlockHeightLagThreshold: %d. Using default: %d", threshold, defaultReconnectBlockHeightLagThreshold)
+		threshold = defaultReconnectBlockHeightLagThreshold
+	}
+	return threshold
 }

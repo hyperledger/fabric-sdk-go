@@ -127,8 +127,10 @@ type SelectionPolicy struct {
 // EventServicePolicy specifies the policy for the event service
 type EventServicePolicy struct {
 	ResolverStrategy                 string
+	MinBlockHeightResolverMode       string
 	Balancer                         BalancerType
 	BlockHeightLagThreshold          int
+	PeerMonitor                      string
 	ReconnectBlockHeightLagThreshold int
 	PeerMonitorPeriod                time.Duration
 }

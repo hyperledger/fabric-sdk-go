@@ -21,6 +21,7 @@ import (
 	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var (
@@ -434,4 +435,74 @@ func disconnect(state string, errch chan error) {
 	} else {
 		errch <- nil
 	}
+}
+
+func TestOpts(t *testing.T) {
+	channelID := "testchannel"
+
+	config := &fabmocks.MockConfig{}
+	context := fabmocks.NewMockContext(
+		mspmocks.NewMockSigningIdentity("user1", "Org1MSP"),
+	)
+	context.SetEndpointConfig(config)
+
+	t.Run("Default", func(t *testing.T) {
+		config.SetCustomChannelConfig(channelID, &fab.ChannelEndpointConfig{
+			Policies: fab.ChannelPolicies{
+				EventService: fab.EventServicePolicy{},
+			},
+		})
+
+		params := defaultParams(context, channelID)
+		require.NotNil(t, params)
+		assert.Equal(t, defaultPeerMonitorPeriod, params.peerMonitorPeriod)
+		require.NotNil(t, params.peerResolverProvider)
+	})
+
+	t.Run("MinBlockStrategy", func(t *testing.T) {
+		config.SetCustomChannelConfig(channelID, &fab.ChannelEndpointConfig{
+			Policies: fab.ChannelPolicies{
+				EventService: fab.EventServicePolicy{
+					ResolverStrategy:  fab.MinBlockHeightStrategy,
+					PeerMonitorPeriod: 7 * time.Second,
+				},
+			},
+		})
+
+		params := defaultParams(context, channelID)
+		require.NotNil(t, params)
+		assert.Equal(t, 7*time.Second, params.peerMonitorPeriod)
+		require.NotNil(t, params.peerResolverProvider)
+	})
+
+	t.Run("PeerMonitor Off", func(t *testing.T) {
+		config.SetCustomChannelConfig(channelID, &fab.ChannelEndpointConfig{
+			Policies: fab.ChannelPolicies{
+				EventService: fab.EventServicePolicy{
+					ResolverStrategy: fab.PreferOrgStrategy,
+					PeerMonitor:      fab.Disabled,
+				},
+			},
+		})
+
+		params := defaultParams(context, channelID)
+		require.NotNil(t, params)
+		assert.Equal(t, 0*time.Second, params.peerMonitorPeriod, "Expecting peer monitor to be disabled")
+		require.NotNil(t, params.peerResolverProvider)
+	})
+
+	t.Run("Balanced Strategy", func(t *testing.T) {
+		config.SetCustomChannelConfig(channelID, &fab.ChannelEndpointConfig{
+			Policies: fab.ChannelPolicies{
+				EventService: fab.EventServicePolicy{
+					ResolverStrategy: fab.BalancedStrategy,
+				},
+			},
+		})
+
+		params := defaultParams(context, channelID)
+		require.NotNil(t, params)
+		assert.Equalf(t, 0*time.Second, params.peerMonitorPeriod, "Expecting peer monitor to be disabled for Balance strategy")
+		require.NotNil(t, params.peerResolverProvider)
+	})
 }

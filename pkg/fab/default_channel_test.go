@@ -135,7 +135,7 @@ func TestDefaultChannelWithNoDefaultChannelConfiguredAndWithMatchers(t *testing.
 
 }
 
-func TestMissingDiscoveryPolicesInfo(t *testing.T) {
+func TestMissingPolicesInfo(t *testing.T) {
 
 	// Default channel and no channel matchers test
 	defaultChannelBackend, err := config.FromFile(configEmbeddedUsersTestFilePath)()
@@ -166,6 +166,24 @@ func TestMissingDiscoveryPolicesInfo(t *testing.T) {
 	assert.Equal(t, defChConfig.Policies.QueryChannelConfig.RetryOpts.InitialBackoff, chConfig.Policies.QueryChannelConfig.RetryOpts.InitialBackoff)
 	assert.Equal(t, defChConfig.Policies.QueryChannelConfig.RetryOpts.BackoffFactor, chConfig.Policies.QueryChannelConfig.RetryOpts.BackoffFactor)
 	assert.Equal(t, defChConfig.Policies.QueryChannelConfig.RetryOpts.MaxBackoff, chConfig.Policies.QueryChannelConfig.RetryOpts.MaxBackoff)
+
+	assert.Equal(t, defChConfig.Policies.EventService.Balancer, chConfig.Policies.EventService.Balancer)
+	assert.Equal(t, defChConfig.Policies.EventService.MinBlockHeightResolverMode, chConfig.Policies.EventService.MinBlockHeightResolverMode)
+	assert.Equal(t, defChConfig.Policies.EventService.BlockHeightLagThreshold, chConfig.Policies.EventService.BlockHeightLagThreshold)
+	assert.Equal(t, defChConfig.Policies.EventService.PeerMonitorPeriod, chConfig.Policies.EventService.PeerMonitorPeriod)
+	assert.Equal(t, defChConfig.Policies.EventService.PeerMonitor, chConfig.Policies.EventService.PeerMonitor)
+	assert.Equal(t, defChConfig.Policies.EventService.ReconnectBlockHeightLagThreshold, chConfig.Policies.EventService.ReconnectBlockHeightLagThreshold)
+	assert.Equal(t, defChConfig.Policies.EventService.ResolverStrategy, chConfig.Policies.EventService.ResolverStrategy)
+
+	chConfig = endpointConfig.ChannelConfig("mychannel")
+	assert.NotNil(t, chConfig)
+
+	assert.Equal(t, fab.ResolveLatest, chConfig.Policies.EventService.MinBlockHeightResolverMode)
+	assert.Equal(t, fab.Disabled, chConfig.Policies.EventService.PeerMonitor)
+	assert.Equal(t, defChConfig.Policies.EventService.Balancer, chConfig.Policies.EventService.Balancer)
+	assert.Equal(t, defChConfig.Policies.EventService.PeerMonitorPeriod, chConfig.Policies.EventService.PeerMonitorPeriod)
+	assert.Equal(t, defChConfig.Policies.EventService.ReconnectBlockHeightLagThreshold, chConfig.Policies.EventService.ReconnectBlockHeightLagThreshold)
+	assert.Equal(t, defChConfig.Policies.EventService.ResolverStrategy, chConfig.Policies.EventService.ResolverStrategy)
 }
 
 func TestMissingPartialChannelPoliciesInfo(t *testing.T) {

@@ -19,6 +19,10 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/peerresolver/preferorg"
 )
 
+const (
+	defaultPeerMonitorPeriod = 5 * time.Second
+)
+
 type params struct {
 	peerMonitorPeriod    time.Duration
 	peerResolverProvider peerresolver.Provider
@@ -27,8 +31,19 @@ type params struct {
 func defaultParams(context context.Client, channelID string) *params {
 	policy := context.EndpointConfig().ChannelConfig(channelID).Policies.EventService
 
+	peerMonitorPeriod := policy.PeerMonitorPeriod
+
+	// Set the peer monitor period to 0 (disabled) if explicitly configured to be disabled or
+	// if the resolver is Balanced (since there's no need for a peer monitor for Balanced strategy)
+	if policy.PeerMonitor == fab.Disabled || policy.ResolverStrategy == fab.BalancedStrategy {
+		peerMonitorPeriod = 0
+	} else if peerMonitorPeriod <= 0 {
+		logger.Warnf("Invalid PeerMonitorPeriod: %s. Using default: %s.", peerMonitorPeriod, defaultPeerMonitorPeriod)
+		peerMonitorPeriod = defaultPeerMonitorPeriod
+	}
+
 	return &params{
-		peerMonitorPeriod:    policy.PeerMonitorPeriod,
+		peerMonitorPeriod:    peerMonitorPeriod,
 		peerResolverProvider: getPeerResolver(policy),
 	}
 }

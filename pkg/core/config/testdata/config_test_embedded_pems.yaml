@@ -147,13 +147,13 @@ channels:
         # [Optional] blockHeightLagThreshold sets the block height lag threshold. This value is used for choosing a peer
         # to connect to. If a peer is lagging behind the most up-to-date peer by more than the given number of
         # blocks then it will be excluded from selection.
-        # If set to 0 then only the most up-to-date peers are considered.
+        # If set to -2 then only the most up-to-date peers are considered.
         # If set to -1 then all peers (regardless of block height) are considered for selection.
         # Default: 5
         blockHeightLagThreshold: 3
         # [Optional] reconnectBlockHeightLagThreshold - if >0 then the event client will disconnect from the peer if the peer's
         # block height falls behind the specified number of blocks and will reconnect to a better performing peer.
-        # If set to 0 then this feature is disabled.
+        # If set to -1 then this feature is disabled.
         # Default: 10
         # NOTES:
         #   - peerMonitorPeriod must be >0 to enable this feature
@@ -225,8 +225,26 @@ channels:
           attempts: 4
           #[Optional] the maximum back off interval for any retry attempt
           maxBackoff: 8s
-          #[Optional] he factor by which the initial back off period is exponentially incremented
+          #[Optional] the factor by which the initial back off period is exponentially incremented
           backoffFactor: 8.0
+
+      eventService:
+        # [Optional] minBlockHeightResolverMode specifies the behaviour of the MinBlockHeight resolver strategy.
+        # Note that this parameter is applicable only when resolverStrategy is set to MinBlockHeight or PreferOrg.
+        # Possible values: [ResolveByThreshold (default), ResolveLatest]
+        #
+        # ResolveByThreshold:
+        #   Chooses peers based on block height lag threshold.
+        # ResolveLatest:
+        #   Chooses only the peers with the most up-to-date block height.
+        minBlockHeightResolverMode: ResolveLatest
+
+        # [Optional] peerMonitor indicates whether or not a peer monitor should be enabled in order to monitor
+        # the block height of the connected peer. In the case of MinBlockHeight and PreferOrg strategy, the event client
+        # will disconnect from the peer if its block height falls below the specified threshold.
+        # Possible values: [Enabled, Disabled]
+        # Default: Enabled for MinBlockHeight and PreferOrg strategy; Disabled for Balanced strategy
+        peerMonitor: Disabled
 
   # multi-org test channel
   orgchannel:

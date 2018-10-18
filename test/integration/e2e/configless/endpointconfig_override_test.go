@@ -100,6 +100,13 @@ var (
 						BackoffFactor:  2.0,
 					},
 				},
+				EventService: fab.EventServicePolicy{
+					ResolverStrategy:                 fab.MinBlockHeightStrategy,
+					MinBlockHeightResolverMode:       fab.ResolveByThreshold,
+					BlockHeightLagThreshold:          5,
+					ReconnectBlockHeightLagThreshold: 10,
+					PeerMonitorPeriod:                5 * time.Second,
+				},
 			},
 		},
 		"orgchannel": {

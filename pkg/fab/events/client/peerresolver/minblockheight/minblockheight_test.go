@@ -128,3 +128,45 @@ func TestShouldDisconnect(t *testing.T) {
 	disconnect = resolver.ShouldDisconnect(peers, p3)
 	assert.Falsef(t, disconnect, "expecting peer NOT to be disconnected since the peer's block height is under the reconnectBlockHeightThreshold")
 }
+
+func TestOpts(t *testing.T) {
+	channelID := "testchannel"
+
+	config := &mocks.MockConfig{}
+	context := mocks.NewMockContext(
+		mockmsp.NewMockSigningIdentity("user1", "Org1MSP"),
+	)
+	context.SetEndpointConfig(config)
+
+	t.Run("Default", func(t *testing.T) {
+		config.SetCustomChannelConfig(channelID, &fab.ChannelEndpointConfig{
+			Policies: fab.ChannelPolicies{
+				EventService: fab.EventServicePolicy{},
+			},
+		})
+
+		params := defaultParams(context, channelID)
+		require.NotNil(t, params)
+		require.NotNil(t, params.loadBalancePolicy)
+		assert.Equal(t, defaultBlockHeightLagThreshold, params.blockHeightLagThreshold)
+		assert.Equal(t, defaultReconnectBlockHeightLagThreshold, params.reconnectBlockHeightLagThreshold)
+	})
+
+	t.Run("ResolveLatest", func(t *testing.T) {
+		config.SetCustomChannelConfig(channelID, &fab.ChannelEndpointConfig{
+			Policies: fab.ChannelPolicies{
+				EventService: fab.EventServicePolicy{
+					MinBlockHeightResolverMode:       fab.ResolveLatest,
+					ReconnectBlockHeightLagThreshold: 9,
+				},
+			},
+		})
+
+		params := defaultParams(context, channelID)
+		require.NotNil(t, params)
+		require.NotNil(t, params.loadBalancePolicy)
+		assert.Equal(t, 0, params.blockHeightLagThreshold)
+		assert.Equal(t, 9, params.reconnectBlockHeightLagThreshold)
+	})
+
+}
