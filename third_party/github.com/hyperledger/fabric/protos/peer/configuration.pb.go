@@ -151,7 +151,7 @@ func (m *APIResource) GetPolicyRef() string {
 	return ""
 }
 
-// ACLs provides mappings for resources in a channel. APIResource encpasulates
+// ACLs provides mappings for resources in a channel. APIResource encapsulates
 // reference to a policy used to determine ACL for the resource
 type ACLs struct {
 	Acls                 map[string]*APIResource `protobuf:"bytes,1,rep,name=acls" json:"acls,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
@@ -196,7 +196,7 @@ func init() {
 	proto.RegisterType((*AnchorPeer)(nil), "sdk.protos.AnchorPeer")
 	proto.RegisterType((*APIResource)(nil), "sdk.protos.APIResource")
 	proto.RegisterType((*ACLs)(nil), "sdk.protos.ACLs")
-	proto.RegisterMapType((map[string]*APIResource)(nil), "protos.ACLs.AclsEntry")
+	proto.RegisterMapType((map[string]*APIResource)(nil), "sdk.protos.ACLs.AclsEntry")
 }
 
 func init() {

@@ -349,9 +349,9 @@ type customMockConfig struct {
 	called   bool
 }
 
-func (c *customMockConfig) ChannelConfig(name string) (*fab.ChannelEndpointConfig, bool) {
+func (c *customMockConfig) ChannelConfig(name string) *fab.ChannelEndpointConfig {
 	c.called = true
-	return c.chConfig, true
+	return c.chConfig
 }
 
 //customRetryHandler is wrapper around retry handler which keeps count of attempts for unit-testing

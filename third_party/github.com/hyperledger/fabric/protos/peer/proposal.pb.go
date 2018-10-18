@@ -371,7 +371,7 @@ func init() {
 	proto.RegisterType((*Proposal)(nil), "sdk.protos.Proposal")
 	proto.RegisterType((*ChaincodeHeaderExtension)(nil), "sdk.protos.ChaincodeHeaderExtension")
 	proto.RegisterType((*ChaincodeProposalPayload)(nil), "sdk.protos.ChaincodeProposalPayload")
-	proto.RegisterMapType((map[string][]byte)(nil), "protos.ChaincodeProposalPayload.TransientMapEntry")
+	proto.RegisterMapType((map[string][]byte)(nil), "sdk.protos.ChaincodeProposalPayload.TransientMapEntry")
 	proto.RegisterType((*ChaincodeAction)(nil), "sdk.protos.ChaincodeAction")
 }
 

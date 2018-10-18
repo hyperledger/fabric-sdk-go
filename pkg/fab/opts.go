@@ -29,7 +29,6 @@ type EndpointConfigOptions struct {
 	channelPeers
 	channelOrderers
 	tlsCACertPool
-	eventServiceConfig
 	tlsClientCerts
 	cryptoConfigPath
 }
@@ -75,27 +74,22 @@ type networkPeers interface {
 
 // channelConfig interface allows to uniquely override EndpointConfig interface's ChannelConfig() function
 type channelConfig interface {
-	ChannelConfig(name string) (*fab.ChannelEndpointConfig, bool)
+	ChannelConfig(name string) *fab.ChannelEndpointConfig
 }
 
 // channelPeers interface allows to uniquely override EndpointConfig interface's ChannelPeers() function
 type channelPeers interface {
-	ChannelPeers(name string) ([]fab.ChannelPeer, bool)
+	ChannelPeers(name string) []fab.ChannelPeer
 }
 
 // channelOrderers interface allows to uniquely override EndpointConfig interface's ChannelOrderers() function
 type channelOrderers interface {
-	ChannelOrderers(name string) ([]fab.OrdererConfig, bool)
+	ChannelOrderers(name string) []fab.OrdererConfig
 }
 
 // tlsCACertPool interface allows to uniquely override EndpointConfig interface's TLSCACertPool() function
 type tlsCACertPool interface {
 	TLSCACertPool() fab.CertPool
-}
-
-// eventServiceType interface allows to uniquely override EndpointConfig interface's EventServiceConfig() function
-type eventServiceConfig interface {
-	EventServiceConfig() fab.EventServiceConfig
 }
 
 // tlsClientCerts interface allows to uniquely override EndpointConfig interface's TLSClientCerts() function
@@ -140,7 +134,6 @@ func UpdateMissingOptsWithDefaultConfig(c *EndpointConfigOptions, d fab.Endpoint
 	s.set(c.channelPeers, nil, func() { c.channelPeers = d })
 	s.set(c.channelOrderers, nil, func() { c.channelOrderers = d })
 	s.set(c.tlsCACertPool, nil, func() { c.tlsCACertPool = d })
-	s.set(c.eventServiceConfig, nil, func() { c.eventServiceConfig = d })
 	s.set(c.tlsClientCerts, nil, func() { c.tlsClientCerts = d })
 	s.set(c.cryptoConfigPath, nil, func() { c.cryptoConfigPath = d })
 
@@ -151,7 +144,7 @@ func UpdateMissingOptsWithDefaultConfig(c *EndpointConfigOptions, d fab.Endpoint
 // (ie EndpointConfig interface not fully overridden)
 func IsEndpointConfigFullyOverridden(c *EndpointConfigOptions) bool {
 	return !anyNil(c.timeout, c.orderersConfig, c.ordererConfig, c.peersConfig, c.peerConfig, c.networkConfig,
-		c.networkPeers, c.channelConfig, c.channelPeers, c.channelOrderers, c.tlsCACertPool, c.eventServiceConfig, c.tlsClientCerts, c.cryptoConfigPath)
+		c.networkPeers, c.channelConfig, c.channelPeers, c.channelOrderers, c.tlsCACertPool, c.tlsClientCerts, c.cryptoConfigPath)
 }
 
 // will override EndpointConfig interface with functions provided by o (option)
@@ -169,7 +162,6 @@ func setEndpointConfigWithOptionInterface(c *EndpointConfigOptions, o interface{
 	s.set(c.channelPeers, func() bool { _, ok := o.(channelPeers); return ok }, func() { c.channelPeers = o.(channelPeers) })
 	s.set(c.channelOrderers, func() bool { _, ok := o.(channelOrderers); return ok }, func() { c.channelOrderers = o.(channelOrderers) })
 	s.set(c.tlsCACertPool, func() bool { _, ok := o.(tlsCACertPool); return ok }, func() { c.tlsCACertPool = o.(tlsCACertPool) })
-	s.set(c.eventServiceConfig, func() bool { _, ok := o.(eventServiceConfig); return ok }, func() { c.eventServiceConfig = o.(eventServiceConfig) })
 	s.set(c.tlsClientCerts, func() bool { _, ok := o.(tlsClientCerts); return ok }, func() { c.tlsClientCerts = o.(tlsClientCerts) })
 	s.set(c.cryptoConfigPath, func() bool { _, ok := o.(cryptoConfigPath); return ok }, func() { c.cryptoConfigPath = o.(cryptoConfigPath) })
 

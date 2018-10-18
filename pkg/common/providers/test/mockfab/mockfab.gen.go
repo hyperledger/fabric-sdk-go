@@ -38,11 +38,10 @@ func (m *MockEndpointConfig) EXPECT() *MockEndpointConfigMockRecorder {
 }
 
 // ChannelConfig mocks base method
-func (m *MockEndpointConfig) ChannelConfig(arg0 string) (*fab.ChannelEndpointConfig, bool) {
+func (m *MockEndpointConfig) ChannelConfig(arg0 string) *fab.ChannelEndpointConfig {
 	ret := m.ctrl.Call(m, "ChannelConfig", arg0)
 	ret0, _ := ret[0].(*fab.ChannelEndpointConfig)
-	ret1, _ := ret[1].(bool)
-	return ret0, ret1
+	return ret0
 }
 
 // ChannelConfig indicates an expected call of ChannelConfig
@@ -51,11 +50,10 @@ func (mr *MockEndpointConfigMockRecorder) ChannelConfig(arg0 interface{}) *gomoc
 }
 
 // ChannelOrderers mocks base method
-func (m *MockEndpointConfig) ChannelOrderers(arg0 string) ([]fab.OrdererConfig, bool) {
+func (m *MockEndpointConfig) ChannelOrderers(arg0 string) []fab.OrdererConfig {
 	ret := m.ctrl.Call(m, "ChannelOrderers", arg0)
 	ret0, _ := ret[0].([]fab.OrdererConfig)
-	ret1, _ := ret[1].(bool)
-	return ret0, ret1
+	return ret0
 }
 
 // ChannelOrderers indicates an expected call of ChannelOrderers
@@ -64,11 +62,10 @@ func (mr *MockEndpointConfigMockRecorder) ChannelOrderers(arg0 interface{}) *gom
 }
 
 // ChannelPeers mocks base method
-func (m *MockEndpointConfig) ChannelPeers(arg0 string) ([]fab.ChannelPeer, bool) {
+func (m *MockEndpointConfig) ChannelPeers(arg0 string) []fab.ChannelPeer {
 	ret := m.ctrl.Call(m, "ChannelPeers", arg0)
 	ret0, _ := ret[0].([]fab.ChannelPeer)
-	ret1, _ := ret[1].(bool)
-	return ret0, ret1
+	return ret0
 }
 
 // ChannelPeers indicates an expected call of ChannelPeers
@@ -86,18 +83,6 @@ func (m *MockEndpointConfig) CryptoConfigPath() string {
 // CryptoConfigPath indicates an expected call of CryptoConfigPath
 func (mr *MockEndpointConfigMockRecorder) CryptoConfigPath() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CryptoConfigPath", reflect.TypeOf((*MockEndpointConfig)(nil).CryptoConfigPath))
-}
-
-// EventServiceConfig mocks base method
-func (m *MockEndpointConfig) EventServiceConfig() fab.EventServiceConfig {
-	ret := m.ctrl.Call(m, "EventServiceConfig")
-	ret0, _ := ret[0].(fab.EventServiceConfig)
-	return ret0
-}
-
-// EventServiceConfig indicates an expected call of EventServiceConfig
-func (mr *MockEndpointConfigMockRecorder) EventServiceConfig() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EventServiceConfig", reflect.TypeOf((*MockEndpointConfig)(nil).EventServiceConfig))
 }
 
 // NetworkConfig mocks base method

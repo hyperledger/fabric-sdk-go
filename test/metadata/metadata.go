@@ -8,7 +8,7 @@ SPDX-License-Identifier: Apache-2.0
 package metadata
 
 // ChannelConfigPath is the relative path to the generated channel artifacts directory
-var ChannelConfigPath = "test/fixtures/fabric/v1.2/channel"
+var ChannelConfigPath = "test/fixtures/fabric/v1.3/channel"
 
 // CryptoConfigPath is the relative path to the generated crypto config directory
 var CryptoConfigPath = "test/fixtures/fabric/v1/crypto-config"

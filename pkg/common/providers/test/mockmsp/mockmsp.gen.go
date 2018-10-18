@@ -145,6 +145,23 @@ func (m *MockIdentityManager) EXPECT() *MockIdentityManagerMockRecorder {
 	return m.recorder
 }
 
+// CreateSigningIdentity mocks base method
+func (m *MockIdentityManager) CreateSigningIdentity(arg0 ...msp.SigningIdentityOption) (msp.SigningIdentity, error) {
+	varargs := []interface{}{}
+	for _, a := range arg0 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "CreateSigningIdentity", varargs...)
+	ret0, _ := ret[0].(msp.SigningIdentity)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateSigningIdentity indicates an expected call of CreateSigningIdentity
+func (mr *MockIdentityManagerMockRecorder) CreateSigningIdentity(arg0 ...interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateSigningIdentity", reflect.TypeOf((*MockIdentityManager)(nil).CreateSigningIdentity), arg0...)
+}
+
 // GetSigningIdentity mocks base method
 func (m *MockIdentityManager) GetSigningIdentity(arg0 string) (msp.SigningIdentity, error) {
 	ret := m.ctrl.Call(m, "GetSigningIdentity", arg0)

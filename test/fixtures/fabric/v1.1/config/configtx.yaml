@@ -31,6 +31,7 @@ Profiles:
                 Organizations:
                     - *org1
                     - *org2
+
     OneOrgChannel:
         Consortium: SampleConsortium
         Application:
@@ -39,7 +40,18 @@ Profiles:
             - *org1
             Capabilities:
                 <<: *ApplicationCapabilities
+
     TwoOrgsChannel:
+        Consortium: SampleConsortium
+        Application:
+            <<: *ApplicationDefaults
+            Organizations:
+                - *org1
+                - *org2
+            Capabilities:
+                <<: *ApplicationCapabilities
+
+    DsChannel:
         Consortium: SampleConsortium
         Application:
             <<: *ApplicationDefaults

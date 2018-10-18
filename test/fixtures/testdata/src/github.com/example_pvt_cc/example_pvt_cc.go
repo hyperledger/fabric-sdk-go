@@ -9,6 +9,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/hyperledger/fabric/core/chaincode/shim"
@@ -21,15 +22,17 @@ type invokeFunc func(stub shim.ChaincodeStubInterface, args []string) pb.Respons
 type funcMap map[string]invokeFunc
 
 const (
-	getFunc           = "get"
-	putFunc           = "put"
-	delFunc           = "del"
-	putPrivateFunc    = "putprivate"
-	getPrivateFunc    = "getprivate"
-	delPrivateFunc    = "delprivate"
-	putBothFunc       = "putboth"
-	getAndPutBothFunc = "getandputboth"
-	invokeCCFunc      = "invokecc"
+	getFunc               = "get"
+	putFunc               = "put"
+	delFunc               = "del"
+	putPrivateFunc        = "putprivate"
+	getPrivateFunc        = "getprivate"
+	delPrivateFunc        = "delprivate"
+	putBothFunc           = "putboth"
+	getAndPutBothFunc     = "getandputboth"
+	invokeCCFunc          = "invokecc"
+	addToIntFunc          = "addToInt"
+	getPrivateByRangeFunc = "getprivatebyrange"
 )
 
 // ExampleCC example chaincode that puts and gets state and private data
@@ -143,6 +146,32 @@ func (cc *ExampleCC) getPrivate(stub shim.ChaincodeStubInterface, args []string)
 	return shim.Success([]byte(value))
 }
 
+func (cc *ExampleCC) getPrivateByRange(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+	if len(args) != 3 {
+		return shim.Error("Invalid args. Expecting collection and keyFrom, keyTo")
+	}
+
+	coll := args[0]
+	keyFrom := args[1]
+	keyTo := args[2]
+
+	it, err := stub.GetPrivateDataByRange(coll, keyFrom, keyTo)
+	if err != nil {
+		return shim.Error(fmt.Sprintf("Error getting private data by range for collection [%s] and keys [%s to %s]: %s", coll, keyFrom, keyTo, err))
+	}
+
+	kvPair := ""
+	for it.HasNext() {
+		kv, err := it.Next()
+		if err != nil {
+			return shim.Error(fmt.Sprintf("Error getting next value for private data collection [%s]: %s", coll, err))
+		}
+		kvPair += fmt.Sprintf("%s=%s ", kv.Key, kv.Value)
+	}
+
+	return shim.Success([]byte(kvPair))
+}
+
 func (cc *ExampleCC) delPrivate(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	if len(args) != 2 {
 		return shim.Error("Invalid args. Expecting collection and key")
@@ -216,6 +245,43 @@ func (cc *ExampleCC) getAndPutBoth(stub shim.ChaincodeStubInterface, args []stri
 	return shim.Success(nil)
 }
 
+// Adds a given int amount to the value stored in the given private collection's key, storing the result using the same key.
+// If the given key does not already exist then it will be added and stored with the given amount.
+func (cc *ExampleCC) addToInt(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+	if len(args) != 3 {
+		return shim.Error("Invalid args. Expecting collection, key, amountToAdd")
+	}
+
+	coll := args[0]
+	key := args[1]
+	amountToAdd, err := strconv.Atoi(args[2])
+	if err != nil {
+		return shim.Error("Invalid arg: amountToAdd is not an int")
+	}
+
+	oldValue, err := stub.GetPrivateData(coll, key)
+	if err != nil {
+		return shim.Error(fmt.Sprintf("Error getting private data for collection [%s] and key [%s]: %s", coll, key, err))
+	}
+
+	var oldValueInt int
+	if oldValue != nil {
+		oldValueInt, err = strconv.Atoi(string(oldValue))
+		if err != nil {
+			return shim.Error(fmt.Sprintf("Error parsing existing amount [%s]: %s", string(oldValue), err))
+		}
+	} else {
+		oldValueInt = 0
+	}
+
+	newValueInt := oldValueInt + amountToAdd
+	if err := stub.PutPrivateData(coll, key, []byte(strconv.Itoa(newValueInt))); err != nil {
+		return shim.Error(fmt.Sprintf("Error storing new sum [%s] to key [%s] in private collection [%s]: %s", newValueInt, key, coll, err))
+	}
+
+	return shim.Success(nil)
+}
+
 type argStruct struct {
 	Args []string `json:"Args"`
 }
@@ -259,6 +325,8 @@ func (cc *ExampleCC) initRegistry() {
 	cc.funcRegistry[putBothFunc] = cc.putBoth
 	cc.funcRegistry[getAndPutBothFunc] = cc.getAndPutBoth
 	cc.funcRegistry[invokeCCFunc] = cc.invokeCC
+	cc.funcRegistry[addToIntFunc] = cc.addToInt
+	cc.funcRegistry[getPrivateByRangeFunc] = cc.getPrivateByRange
 }
 
 func (cc *ExampleCC) functions() []string {

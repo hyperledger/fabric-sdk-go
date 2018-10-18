@@ -44,7 +44,7 @@ func queryCCUsingTargetFilter(t *testing.T, client *channel.Client) []byte {
 	discoveryFilter := &mockDiscoveryFilter{called: false}
 
 	response, err := client.Query(
-		channel.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()},
+		channel.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCDefaultQueryArgs()},
 		channel.WithTargetFilter(discoveryFilter),
 		channel.WithRetry(retry.DefaultChannelOpts))
 	if err != nil {

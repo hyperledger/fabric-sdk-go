@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	clientmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/mocks"
@@ -64,7 +65,7 @@ func TestDiscoveryProvider(t *testing.T) {
 	expectedNumPeers := len(peers)
 
 	discoveryService, err := NewEndpointDiscoveryWrapper(ctx, "testchannel", clientmocks.NewDiscoveryService(peers...))
-	assert.NoError(t, err, "error creating discovery wrapper")
+	require.NoError(t, err, "error creating discovery wrapper")
 
 	peers, err = discoveryService.GetPeers()
 	if err != nil {
@@ -126,16 +127,21 @@ func newMockConfig(channelPeers ...fab.ChannelPeer) *mockConfig {
 	}
 }
 
-func (c *mockConfig) ChannelPeers(name string) ([]fab.ChannelPeer, bool) {
+func (c *mockConfig) ChannelPeers(name string) []fab.ChannelPeer {
 	test.Logf("mockConfig.ChannelPeers [%#v]", c.channelPeers)
-	return c.channelPeers, true
+	return c.channelPeers
 }
 
 func newMockContext() *fabmocks.MockContext {
 	ctx := fabmocks.NewMockContext(
 		mspmocks.NewMockSigningIdentity("user1", "Org1MSP"),
 	)
-	ctx.SetEndpointConfig(newMockConfig())
+
+	chPeer := fab.ChannelPeer{}
+	chPeer.URL = p2.URL()
+	chPeer.EventSource = true
+
+	ctx.SetEndpointConfig(newMockConfig(chPeer))
 	return ctx
 }
 

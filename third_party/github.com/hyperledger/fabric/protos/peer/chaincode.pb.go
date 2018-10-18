@@ -416,7 +416,7 @@ func (m *LifecycleEvent) GetChaincodeName() string {
 func init() {
 	proto.RegisterType((*ChaincodeID)(nil), "sdk.protos.ChaincodeID")
 	proto.RegisterType((*ChaincodeInput)(nil), "sdk.protos.ChaincodeInput")
-	proto.RegisterMapType((map[string][]byte)(nil), "protos.ChaincodeInput.DecorationsEntry")
+	proto.RegisterMapType((map[string][]byte)(nil), "sdk.protos.ChaincodeInput.DecorationsEntry")
 	proto.RegisterType((*ChaincodeSpec)(nil), "sdk.protos.ChaincodeSpec")
 	proto.RegisterType((*ChaincodeDeploymentSpec)(nil), "sdk.protos.ChaincodeDeploymentSpec")
 	proto.RegisterType((*ChaincodeInvocationSpec)(nil), "sdk.protos.ChaincodeInvocationSpec")

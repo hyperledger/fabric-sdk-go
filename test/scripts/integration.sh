@@ -18,12 +18,13 @@
 
 set -e
 
+
 GO_CMD="${GO_CMD:-go}"
 GOPATH="${GOPATH:-$HOME/go}"
 FABRIC_SDKGO_CODELEVEL_TAG="${FABRIC_SDKGO_CODELEVEL_TAG:-stable}"
 FABRIC_SDKGO_TESTRUN_ID="${FABRIC_SDKGO_TESTRUN_ID:-${RANDOM}}"
 FABRIC_CRYPTOCONFIG_VERSION="${FABRIC_CRYPTOCONFIG_VERSION:-v1}"
-FABRIC_FIXTURE_VERSION="${FABRIC_FIXTURE_VERSION:-v1.2}"
+FABRIC_FIXTURE_VERSION="${FABRIC_FIXTURE_VERSION:-v1.3}"
 CONFIG_FILE="${CONFIG_FILE:-config_test.yaml}"
 TEST_LOCAL="${TEST_LOCAL:-false}"
 TEST_CHANGED_ONLY="${TEST_CHANGED_ONLY:-false}"
@@ -53,10 +54,10 @@ fi
 # Reduce tests to changed packages.
 if [ "${TEST_CHANGED_ONLY}" = true ]; then
     # findChangedFiles assumes that the working directory contains the repo; so change to the repo directory.
-    PWD=$(pwd)
+    PWD_ORIG=$(pwd)
     cd "${GOPATH}/src/${REPO}"
     findChangedFiles
-    cd ${PWD}
+    cd ${PWD_ORIG}
 
     if [[ "${CHANGED_FILES[@]}" =~ ( |^)(test/fixtures/|test/metadata/|test/scripts/|Makefile( |$)|Gopkg.lock( |$)|ci.properties( |$)) ]]; then
         echo "Test scripts, fixtures or metadata changed - running all tests"

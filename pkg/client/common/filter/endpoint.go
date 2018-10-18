@@ -29,12 +29,7 @@ const (
 func NewEndpointFilter(ctx context.Channel, et EndpointType) *EndpointFilter {
 
 	// Retrieve channel peers
-	chPeers, ok := ctx.EndpointConfig().ChannelPeers(ctx.ChannelID())
-	if !ok {
-		// Setting channel peers to empty due to config error, should not happen
-		chPeers = []fab.ChannelPeer{}
-	}
-
+	chPeers := ctx.EndpointConfig().ChannelPeers(ctx.ChannelID())
 	return &EndpointFilter{endpointType: et, ctx: ctx, chPeers: chPeers}
 
 }

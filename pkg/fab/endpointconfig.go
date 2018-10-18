@@ -11,12 +11,8 @@ import (
 	"crypto/x509"
 	"reflect"
 	"regexp"
-	"strconv"
 	"strings"
 	"time"
-
-	"github.com/mitchellh/mapstructure"
-	"github.com/pkg/errors"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/multi"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
@@ -29,6 +25,8 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/lookup"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/pkg/util/pathvar"
+	"github.com/mitchellh/mapstructure"
+	"github.com/pkg/errors"
 )
 
 var logger = logging.NewLogger("fabsdk/fab")
@@ -53,8 +51,11 @@ const (
 	defaultSelectionRefreshInterval       = time.Second * 5
 	defaultCacheSweepInterval             = time.Second * 15
 
-	defaultBlockHeightLagThreshold  = 5
-	defaultBlockHeightMonitorPeriod = 5 * time.Second
+	defaultResolverStrategy                 = fab.PreferOrgStrategy
+	defaultBalancer                         = fab.Random
+	defaultBlockHeightLagThreshold          = 5
+	defaultReconnectBlockHeightLagThreshold = 10
+	defaultPeerMonitorPeriod                = 0 // Disabled
 
 	//default grpc opts
 	defaultKeepAliveTime    = 0
@@ -63,10 +64,37 @@ const (
 	defaultFailFast         = false
 	defaultAllowInsecure    = false
 
-	defaultMaxTargets   = 1
+	defaultMaxTargets   = 2
 	defaultMinResponses = 1
 
 	defaultEntity = "_default"
+)
+
+var (
+	defaultChannelPolicies = &ChannelPolicies{
+		QueryChannelConfig: QueryChannelConfigPolicy{
+			MaxTargets:   defaultMaxTargets,
+			MinResponses: defaultMinResponses,
+			RetryOpts:    retry.Opts{},
+		},
+		Discovery: DiscoveryPolicy{
+			MaxTargets:   defaultMaxTargets,
+			MinResponses: defaultMinResponses,
+			RetryOpts:    retry.Opts{},
+		},
+		Selection: SelectionPolicy{
+			SortingStrategy:         BlockHeightPriority,
+			Balancer:                Random,
+			BlockHeightLagThreshold: defaultBlockHeightLagThreshold,
+		},
+		EventService: EventServicePolicy{
+			ResolverStrategy:                 string(fab.PreferOrgStrategy),
+			Balancer:                         Random,
+			PeerMonitorPeriod:                defaultPeerMonitorPeriod,
+			BlockHeightLagThreshold:          defaultBlockHeightLagThreshold,
+			ReconnectBlockHeightLagThreshold: defaultReconnectBlockHeightLagThreshold,
+		},
+	}
 )
 
 //ConfigFromBackend returns endpoint config implementation for given backend
@@ -180,11 +208,7 @@ func (c *EndpointConfig) mappedChannelName(networkConfig *fab.NetworkConfig, cha
 
 	//Return if no channelMatchers are configured
 	if len(c.channelMatchers) == 0 {
-		// try default channel
-		if c.defaultChannel != nil {
-			return defaultEntity
-		}
-		return ""
+		return defaultEntity
 	}
 
 	//loop over channelMatchers to find the matching channel name
@@ -195,68 +219,49 @@ func (c *EndpointConfig) mappedChannelName(networkConfig *fab.NetworkConfig, cha
 		}
 	}
 
-	if c.defaultChannel != nil {
-		return defaultEntity
-	}
-
-	// not match and no default channel, return empty
-	return ""
+	return defaultEntity
 }
 
 // ChannelConfig returns the channel configuration
-func (c *EndpointConfig) ChannelConfig(name string) (*fab.ChannelEndpointConfig, bool) {
+func (c *EndpointConfig) ChannelConfig(name string) *fab.ChannelEndpointConfig {
 
 	// get the mapped channel Name
 	mappedChannelName := c.mappedChannelName(c.networkConfig, name)
-	if mappedChannelName == "" {
-		return nil, false
-	}
-
 	if mappedChannelName == defaultEntity {
-		return c.defaultChannel, true
+		return c.defaultChannel
 	}
 
 	//look up in network config by channelName
 	ch, ok := c.networkConfig.Channels[strings.ToLower(mappedChannelName)]
-	return &ch, ok
+	if !ok {
+		return c.defaultChannel
+	}
+	return &ch
 }
 
 // ChannelPeers returns the channel peers configuration
-func (c *EndpointConfig) ChannelPeers(name string) ([]fab.ChannelPeer, bool) {
+func (c *EndpointConfig) ChannelPeers(name string) []fab.ChannelPeer {
 
 	//get mapped channel name
 	mappedChannelName := c.mappedChannelName(c.networkConfig, name)
-	if mappedChannelName == "" {
-		return nil, false
-	}
 
 	//look up in dictionary
-	peers, ok := c.channelPeersByChannel[strings.ToLower(mappedChannelName)]
-	return peers, ok
+	return c.channelPeersByChannel[strings.ToLower(mappedChannelName)]
 }
 
 // ChannelOrderers returns a list of channel orderers
-func (c *EndpointConfig) ChannelOrderers(name string) ([]fab.OrdererConfig, bool) {
+func (c *EndpointConfig) ChannelOrderers(name string) []fab.OrdererConfig {
 	//get mapped channel name
 	mappedChannelName := c.mappedChannelName(c.networkConfig, name)
-	if mappedChannelName == "" {
-		return nil, false
-	}
 
 	//look up in dictionary
-	orderers, ok := c.channelOrderersByChannel[strings.ToLower(mappedChannelName)]
-	return orderers, ok
+	return c.channelOrderersByChannel[strings.ToLower(mappedChannelName)]
 }
 
 // TLSCACertPool returns the configured cert pool. If a certConfig
 // is provided, the certificate is added to the pool
 func (c *EndpointConfig) TLSCACertPool() fab.CertPool {
 	return c.tlsCertPool
-}
-
-// EventServiceConfig returns the event service config
-func (c *EndpointConfig) EventServiceConfig() fab.EventServiceConfig {
-	return &EventServiceConfig{backend: c.backend}
 }
 
 // TLSClientCerts loads the client's certs for mutual TLS
@@ -393,7 +398,11 @@ func (c *EndpointConfig) loadEndpointConfiguration() error {
 		return errors.WithMessage(err, "failed to parse 'client' config item to endpointConfigEntity.Client type")
 	}
 
-	err = c.backend.UnmarshalKey("channels", &endpointConfigEntity.Channels, lookup.WithUnmarshalHookFunction(peerChannelConfigHookFunc()))
+	err = c.backend.UnmarshalKey(
+		"channels", &endpointConfigEntity.Channels,
+		lookup.WithUnmarshalHookFunction(peerChannelConfigHookFunc()),
+		lookup.WithUnmarshalHookFunction(eventChannelConfigHookFunc()),
+	)
 	logger.Debugf("channels are: %+v", endpointConfigEntity.Channels)
 	if err != nil {
 		return errors.WithMessage(err, "failed to parse 'channels' config item to endpointConfigEntity.Channels type")
@@ -492,11 +501,13 @@ func (c *EndpointConfig) loadDefaultChannel() {
 	if ok {
 		c.defaultChannel = &fab.ChannelEndpointConfig{Peers: defChCfg.Peers, Orderers: defChCfg.Orderers, Policies: defChCfg.Policies}
 		delete(c.networkConfig.Channels, defaultEntity)
+	} else {
+		logger.Debugf("No default config. Returning hard-coded defaults.")
+		c.defaultChannel = &fab.ChannelEndpointConfig{Policies: c.getChannelPolicies(defaultChannelPolicies)}
 	}
 }
 
 func (c *EndpointConfig) loadDefaultConfigItems(configEntity *endpointConfigEntity) error {
-
 	//default orderer config
 	err := c.loadDefaultOrderer(configEntity)
 	if err != nil {
@@ -528,6 +539,8 @@ func (c *EndpointConfig) loadNetworkConfig(configEntity *endpointConfigEntity) e
 	defChNwCfg, ok := configEntity.Channels[defaultEntity]
 	if ok {
 		networkConfig.Channels[defaultEntity] = c.loadChannelEndpointConfig(defChNwCfg, ChannelEndpointConfig{})
+	} else {
+		networkConfig.Channels[defaultEntity] = fab.ChannelEndpointConfig{Policies: c.getChannelPolicies(defaultChannelPolicies)}
 	}
 
 	for chID, chNwCfg := range configEntity.Channels {
@@ -623,29 +636,50 @@ func (c *EndpointConfig) loadChannelEndpointConfig(chNwCfg ChannelEndpointConfig
 	}
 }
 
-func (c *EndpointConfig) getChannelPolicies(chNwCfg ChannelEndpointConfig) fab.ChannelPolicies {
+func (c *EndpointConfig) getChannelPolicies(policies *ChannelPolicies) fab.ChannelPolicies {
 
 	discoveryPolicy := fab.DiscoveryPolicy{
 
-		MaxTargets:   chNwCfg.Policies.Discovery.MaxTargets,
-		MinResponses: chNwCfg.Policies.Discovery.MinResponses,
-		RetryOpts:    chNwCfg.Policies.Discovery.RetryOpts,
+		MaxTargets:   policies.Discovery.MaxTargets,
+		MinResponses: policies.Discovery.MinResponses,
+		RetryOpts:    policies.Discovery.RetryOpts,
+	}
+
+	selectionPolicy := fab.SelectionPolicy{
+
+		SortingStrategy:         fab.SelectionSortingStrategy(policies.Selection.SortingStrategy),
+		Balancer:                fab.BalancerType(policies.Selection.Balancer),
+		BlockHeightLagThreshold: policies.Selection.BlockHeightLagThreshold,
 	}
 
 	channelCfgPolicy := fab.QueryChannelConfigPolicy{
-		MaxTargets:   chNwCfg.Policies.QueryChannelConfig.MaxTargets,
-		MinResponses: chNwCfg.Policies.QueryChannelConfig.MinResponses,
-		RetryOpts:    chNwCfg.Policies.QueryChannelConfig.RetryOpts,
+		MaxTargets:   policies.QueryChannelConfig.MaxTargets,
+		MinResponses: policies.QueryChannelConfig.MinResponses,
+		RetryOpts:    policies.QueryChannelConfig.RetryOpts,
 	}
 
-	return fab.ChannelPolicies{Discovery: discoveryPolicy, QueryChannelConfig: channelCfgPolicy}
+	eventServicePolicy := fab.EventServicePolicy{
+		ResolverStrategy:                 fab.ResolverStrategy(policies.EventService.ResolverStrategy),
+		Balancer:                         fab.BalancerType(policies.EventService.Balancer),
+		BlockHeightLagThreshold:          policies.EventService.BlockHeightLagThreshold,
+		ReconnectBlockHeightLagThreshold: policies.EventService.ReconnectBlockHeightLagThreshold,
+		PeerMonitorPeriod:                policies.EventService.PeerMonitorPeriod,
+	}
+
+	return fab.ChannelPolicies{
+		Discovery:          discoveryPolicy,
+		Selection:          selectionPolicy,
+		QueryChannelConfig: channelCfgPolicy,
+		EventService:       eventServicePolicy,
+	}
 }
 
 func (c *EndpointConfig) addMissingChannelPoliciesItems(chNwCfg ChannelEndpointConfig) fab.ChannelPolicies {
 
-	policies := c.getChannelPolicies(chNwCfg)
+	policies := c.getChannelPolicies(&chNwCfg.Policies)
 
 	policies.Discovery = c.addMissingDiscoveryPolicyInfo(policies.Discovery)
+	policies.Selection = c.addMissingSelectionPolicyInfo(policies.Selection)
 	policies.QueryChannelConfig = c.addMissingQueryChannelConfigPolicyInfo(policies.QueryChannelConfig)
 
 	return policies
@@ -665,6 +699,23 @@ func (c *EndpointConfig) addMissingDiscoveryPolicyInfo(policy fab.DiscoveryPolic
 		policy.RetryOpts = c.defaultChannelPolicies.Discovery.RetryOpts
 	} else {
 		policy.RetryOpts = addMissingRetryOpts(policy.RetryOpts, c.defaultChannelPolicies.Discovery.RetryOpts)
+	}
+
+	return policy
+}
+
+func (c *EndpointConfig) addMissingSelectionPolicyInfo(policy fab.SelectionPolicy) fab.SelectionPolicy {
+
+	if policy.SortingStrategy == "" {
+		policy.SortingStrategy = c.defaultChannelPolicies.Selection.SortingStrategy
+	}
+
+	if policy.Balancer == "" {
+		policy.Balancer = c.defaultChannelPolicies.Selection.Balancer
+	}
+
+	if policy.BlockHeightLagThreshold == 0 {
+		policy.BlockHeightLagThreshold = defaultBlockHeightLagThreshold
 	}
 
 	return policy
@@ -884,32 +935,75 @@ func (c *EndpointConfig) loadDefaultChannelPolicies(configEntity *endpointConfig
 	var defaultChPolicies fab.ChannelPolicies
 	defaultChannel, ok := configEntity.Channels[defaultEntity]
 	if !ok {
-		defaultChPolicies = fab.ChannelPolicies{}
+		defaultChPolicies = c.getChannelPolicies(defaultChannelPolicies)
 	} else {
-		defaultChPolicies = c.getChannelPolicies(defaultChannel)
+		defaultChPolicies = c.getChannelPolicies(&defaultChannel.Policies)
 	}
 
-	if defaultChPolicies.Discovery.MaxTargets == 0 {
-		defaultChPolicies.Discovery.MaxTargets = defaultMaxTargets
-	}
-
-	if defaultChPolicies.Discovery.MinResponses == 0 {
-		defaultChPolicies.Discovery.MinResponses = defaultMinResponses
-	}
-
-	if defaultChPolicies.QueryChannelConfig.MaxTargets == 0 {
-		defaultChPolicies.QueryChannelConfig.MaxTargets = defaultMaxTargets
-	}
-
-	if defaultChPolicies.QueryChannelConfig.MinResponses == 0 {
-		defaultChPolicies.QueryChannelConfig.MinResponses = defaultMinResponses
-	}
+	c.loadDefaultDiscoveryPolicy(&defaultChPolicies.Discovery)
+	c.loadDefaultSelectionPolicy(&defaultChPolicies.Selection)
+	c.loadDefaultQueryChannelPolicy(&defaultChPolicies.QueryChannelConfig)
+	c.loadDefaultEventServicePolicy(&defaultChPolicies.EventService)
 
 	c.defaultChannelPolicies = defaultChPolicies
 
-	// TODO: Should we set missing retry options or leave it to services that consume it
-
 	return nil
+}
+
+func (c *EndpointConfig) loadDefaultDiscoveryPolicy(policy *fab.DiscoveryPolicy) {
+	if policy.MaxTargets == 0 {
+		policy.MaxTargets = defaultMaxTargets
+	}
+
+	if policy.MinResponses == 0 {
+		policy.MinResponses = defaultMinResponses
+	}
+}
+
+func (c *EndpointConfig) loadDefaultSelectionPolicy(policy *fab.SelectionPolicy) {
+	if policy.SortingStrategy == "" {
+		policy.SortingStrategy = fab.BlockHeightPriority
+	}
+
+	if policy.Balancer == "" {
+		policy.Balancer = fab.RoundRobin
+	}
+
+	if policy.BlockHeightLagThreshold == 0 {
+		policy.BlockHeightLagThreshold = defaultBlockHeightLagThreshold
+	}
+}
+
+func (c *EndpointConfig) loadDefaultQueryChannelPolicy(policy *fab.QueryChannelConfigPolicy) {
+	if policy.MaxTargets == 0 {
+		policy.MaxTargets = defaultMaxTargets
+	}
+
+	if policy.MinResponses == 0 {
+		policy.MinResponses = defaultMinResponses
+	}
+}
+
+func (c *EndpointConfig) loadDefaultEventServicePolicy(policy *fab.EventServicePolicy) {
+	if policy.ResolverStrategy == "" {
+		policy.ResolverStrategy = defaultResolverStrategy
+	}
+
+	if policy.Balancer == "" {
+		policy.Balancer = defaultBalancer
+	}
+
+	if policy.BlockHeightLagThreshold == 0 {
+		policy.BlockHeightLagThreshold = defaultBlockHeightLagThreshold
+	}
+
+	if policy.ReconnectBlockHeightLagThreshold == 0 {
+		policy.ReconnectBlockHeightLagThreshold = defaultReconnectBlockHeightLagThreshold
+	}
+
+	if policy.PeerMonitorPeriod == 0 {
+		policy.PeerMonitorPeriod = defaultPeerMonitorPeriod
+	}
 }
 
 func (c *EndpointConfig) loadDefaultPeer(configEntity *endpointConfigEntity) error {
@@ -1611,48 +1705,6 @@ func (c *EndpointConfig) regexMatchAndReplace(regex *regexp.Regexp, src, repl st
 	return repl
 }
 
-// EventServiceConfig contains config options for the event service
-type EventServiceConfig struct {
-	backend *lookup.ConfigLookup
-}
-
-// BlockHeightLagThreshold returns the block height lag threshold. This value is used for choosing a peer
-// to connect to. If a peer is lagging behind the most up-to-date peer by more than the given number of
-// blocks then it will be excluded from selection.
-// If set to 0 then only the most up-to-date peers are considered.
-// If set to -1 then all peers (regardless of block height) are considered for selection.
-func (c *EventServiceConfig) BlockHeightLagThreshold() int {
-	lagThresholdStr := c.backend.GetString("client.eventService.blockHeightLagThreshold")
-	if lagThresholdStr == "" {
-		return defaultBlockHeightLagThreshold
-	}
-	lagThreshold, err := strconv.Atoi(lagThresholdStr)
-	if err != nil {
-		logger.Warnf("Invalid numeric value for client.eventService.blockHeightLagThreshold. Setting to default value of %d", defaultBlockHeightLagThreshold)
-		return defaultBlockHeightLagThreshold
-	}
-	return lagThreshold
-}
-
-// ReconnectBlockHeightLagThreshold - if >0 then the event client will disconnect from the peer if the peer's
-// block height falls behind the specified number of blocks and will reconnect to a better performing peer.
-// If set to 0 then this feature is disabled.
-// NOTE: Setting this value too low may cause the event client to disconnect/reconnect too frequently, thereby
-// affecting performance.
-func (c *EventServiceConfig) ReconnectBlockHeightLagThreshold() int {
-	return c.backend.GetInt("client.eventService.reconnectBlockHeightLagThreshold")
-}
-
-// BlockHeightMonitorPeriod is the period in which the connected peer's block height is monitored. Note that this
-// value is only relevant if reconnectBlockHeightLagThreshold >0.
-func (c *EventServiceConfig) BlockHeightMonitorPeriod() time.Duration {
-	period := c.backend.GetDuration("client.eventService.blockHeightMonitorPeriod")
-	if period == 0 {
-		return defaultBlockHeightMonitorPeriod
-	}
-	return period
-}
-
 //peerChannelConfigHookFunc returns hook function for unmarshalling 'fab.PeerChannelConfig'
 // Rule : default set to 'true' if not provided in config
 func peerChannelConfigHookFunc() mapstructure.DecodeHookFunc {
@@ -1678,8 +1730,25 @@ func peerChannelConfigHookFunc() mapstructure.DecodeHookFunc {
 	}
 }
 
+func eventChannelConfigHookFunc() mapstructure.DecodeHookFunc {
+	return func(f reflect.Type, t reflect.Type, data interface{}) (interface{}, error) {
+		if t == reflect.TypeOf(EventServicePolicy{}) {
+			dataMap, ok := data.(map[string]interface{})
+			if ok {
+				setDefault(dataMap, "blockheightlagthreshold", defaultBlockHeightLagThreshold)
+				setDefault(dataMap, "reconnectblockheightlagthreshold", defaultReconnectBlockHeightLagThreshold)
+				setDefault(dataMap, "peermonitorperiod", defaultPeerMonitorPeriod)
+				setDefault(dataMap, "resolverstrategy", string(fab.PreferOrgStrategy))
+				setDefault(dataMap, "balancer", Random)
+				return dataMap, nil
+			}
+		}
+		return data, nil
+	}
+}
+
 //setDefault sets default value provided to map if given key not found
-func setDefault(dataMap map[string]interface{}, key string, defaultVal bool) {
+func setDefault(dataMap map[string]interface{}, key string, defaultVal interface{}) {
 	_, ok := dataMap[key]
 	if !ok {
 		dataMap[key] = defaultVal

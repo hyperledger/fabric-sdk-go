@@ -111,6 +111,9 @@ func getEndorsers(requestContext *RequestContext, clientContext *ClientContext, 
 	if requestContext.SelectionFilter != nil {
 		selectionOpts = append(selectionOpts, selectopts.WithPeerFilter(requestContext.SelectionFilter))
 	}
+	if requestContext.PeerSorter != nil {
+		selectionOpts = append(selectionOpts, selectopts.WithPeerSorter(requestContext.PeerSorter))
+	}
 
 	ccCalls := newInvocationChain(requestContext)
 	peers, err := clientContext.Selection.GetEndorsersForChaincode(newInvocationChain(requestContext), selectionOpts...)

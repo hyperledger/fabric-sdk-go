@@ -10,24 +10,26 @@ import (
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/lbp"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/peerresolver"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/peerresolver/balanced"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/peerresolver/minblockheight"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/peerresolver/preferorg"
 )
 
 type params struct {
-	loadBalancePolicy                lbp.LoadBalancePolicy
-	minBlockHeight                   uint64
-	blockHeightMonitorPeriod         time.Duration
-	blockHeightLagThreshold          int
-	reconnectBlockHeightLagThreshold int
+	peerMonitorPeriod    time.Duration
+	peerResolverProvider peerresolver.Provider
 }
 
-func defaultParams(config fab.EventServiceConfig) *params {
+func defaultParams(context context.Client, channelID string) *params {
+	policy := context.EndpointConfig().ChannelConfig(channelID).Policies.EventService
+
 	return &params{
-		loadBalancePolicy:                lbp.NewRoundRobin(),
-		blockHeightMonitorPeriod:         config.BlockHeightMonitorPeriod(),
-		blockHeightLagThreshold:          config.BlockHeightLagThreshold(),
-		reconnectBlockHeightLagThreshold: config.ReconnectBlockHeightLagThreshold(),
+		peerMonitorPeriod:    policy.PeerMonitorPeriod,
+		peerResolverProvider: getPeerResolver(policy),
 	}
 }
 
@@ -41,37 +43,21 @@ func WithLoadBalancePolicy(value lbp.LoadBalancePolicy) options.Opt {
 	}
 }
 
-// WithBlockHeightLagThreshold sets the block height lag threshold. If a peer is lagging behind
-// the most up-to-date peer by more than the given number of blocks then it will be excluded.
-// If set to 0 then only the most up-to-date peers are considered.
-// If set to -1 then all peers (regardless of block height) are considered for selection.
-func WithBlockHeightLagThreshold(value int) options.Opt {
+// WithPeerMonitorPeriod is the period with which the connected peer is monitored
+// to see whether or not it should be disconnected.
+func WithPeerMonitorPeriod(value time.Duration) options.Opt {
 	return func(p options.Params) {
-		if setter, ok := p.(blockHeightLagThresholdSetter); ok {
-			setter.SetBlockHeightLagThreshold(value)
+		if setter, ok := p.(peerMonitorPeriodSetter); ok {
+			setter.SetPeerMonitorPeriod(value)
 		}
 	}
 }
 
-// WithReconnectBlockHeightThreshold indicates that the event client is to disconnect from the peer if the peer's
-// block height falls too far behind the other peers. If the connected peer lags more than the given number of blocks
-// then the client will disconnect from that peer and reconnect to another peer at a more acceptable block height.
-// If set to 0 then this feature is disabled.
-// NOTE: Setting this value too low may cause the event client to disconnect/reconnect too frequently, thereby affecting
-// performance.
-func WithReconnectBlockHeightThreshold(value int) options.Opt {
+// WithPeerResolver sets the peer resolver that chooses the peer from a discovered list of peers.
+func WithPeerResolver(value peerresolver.Provider) options.Opt {
 	return func(p options.Params) {
-		if setter, ok := p.(reconnectBlockHeightLagThresholdSetter); ok {
-			setter.SetReconnectBlockHeightLagThreshold(value)
-		}
-	}
-}
-
-// WithBlockHeightMonitorPeriod is the period in which the connected peer's block height is monitored.
-func WithBlockHeightMonitorPeriod(value time.Duration) options.Opt {
-	return func(p options.Params) {
-		if setter, ok := p.(blockHeightMonitorPeriodSetter); ok {
-			setter.SetBlockHeightMonitorPeriod(value)
+		if setter, ok := p.(peerResolverSetter); ok {
+			setter.SetPeerResolver(value)
 		}
 	}
 }
@@ -80,45 +66,37 @@ type loadBalancePolicySetter interface {
 	SetLoadBalancePolicy(value lbp.LoadBalancePolicy)
 }
 
-func (p *params) SetLoadBalancePolicy(value lbp.LoadBalancePolicy) {
-	logger.Debugf("LoadBalancePolicy: %#v", value)
-	p.loadBalancePolicy = value
+type peerMonitorPeriodSetter interface {
+	SetPeerMonitorPeriod(value time.Duration)
 }
 
-type blockHeightLagThresholdSetter interface {
-	SetBlockHeightLagThreshold(value int)
+func (p *params) SetPeerMonitorPeriod(value time.Duration) {
+	logger.Debugf("PeerMonitorPeriod: %s", value)
+	p.peerMonitorPeriod = value
 }
 
-func (p *params) SetBlockHeightLagThreshold(value int) {
-	logger.Debugf("BlockHeightLagThreshold: %d", value)
-	p.blockHeightLagThreshold = value
+type peerResolverSetter interface {
+	SetPeerResolver(value peerresolver.Provider)
 }
 
-type reconnectBlockHeightLagThresholdSetter interface {
-	SetReconnectBlockHeightLagThreshold(value int)
+func (p *params) SetPeerResolver(value peerresolver.Provider) {
+	logger.Debugf("PeerResolver: %#v", value)
+	p.peerResolverProvider = value
 }
 
-func (p *params) SetReconnectBlockHeightLagThreshold(value int) {
-	logger.Debugf("ReconnectBlockHeightLagThreshold: %d", value)
-	p.reconnectBlockHeightLagThreshold = value
-}
-
-type blockHeightMonitorPeriodSetter interface {
-	SetBlockHeightMonitorPeriod(value time.Duration)
-}
-
-func (p *params) SetBlockHeightMonitorPeriod(value time.Duration) {
-	logger.Debugf("BlockHeightMonitorPeriod: %s", value)
-	p.blockHeightMonitorPeriod = value
-}
-
-func (p *params) SetFromBlock(value uint64) {
-	logger.Debugf("FromBlock: %d", value)
-	p.minBlockHeight = value + 1
-}
-
-func (p *params) SetSnapshot(value fab.EventSnapshot) error {
-	logger.Debugf("SetSnapshot.FromBlock: %d", value)
-	p.minBlockHeight = value.LastBlockReceived() + 1
-	return nil
+func getPeerResolver(policy fab.EventServicePolicy) peerresolver.Provider {
+	switch policy.ResolverStrategy {
+	case fab.PreferOrgStrategy:
+		logger.Debugf("Using prefer-org peer resolver")
+		return preferorg.NewResolver()
+	case fab.MinBlockHeightStrategy:
+		logger.Debugf("Using min-block-height peer resolver")
+		return minblockheight.NewResolver()
+	case fab.BalancedStrategy:
+		logger.Debugf("Using balanced peer resolver")
+		return balanced.NewResolver()
+	default:
+		logger.Debugf("Resolver strategy not specified. Using prefer-org peer resolver.")
+		return preferorg.NewResolver()
+	}
 }

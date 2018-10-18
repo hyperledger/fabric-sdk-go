@@ -31,14 +31,19 @@ func (f *ProviderFactory) CreateUserStore(config msp.IdentityConfig) (msp.UserSt
 
 	stateStorePath := config.Client().CredentialStore.Path
 
-	stateStore, err := kvs.New(&kvs.FileKeyValueStoreOptions{Path: stateStorePath})
-	if err != nil {
-		return nil, errors.WithMessage(err, "CreateNewFileKeyValueStore failed")
-	}
+	var userStore msp.UserStore
 
-	userStore, err := mspimpl.NewCertFileUserStore1(stateStore)
-	if err != nil {
-		return nil, errors.Wrapf(err, "creating a user store failed")
+	if stateStorePath == "" {
+		userStore = mspimpl.NewMemoryUserStore()
+	} else {
+		stateStore, err := kvs.New(&kvs.FileKeyValueStoreOptions{Path: stateStorePath})
+		if err != nil {
+			return nil, errors.WithMessage(err, "CreateNewFileKeyValueStore failed")
+		}
+		userStore, err = mspimpl.NewCertFileUserStore1(stateStore)
+		if err != nil {
+			return nil, errors.Wrapf(err, "creating a user store failed")
+		}
 	}
 
 	return userStore, nil

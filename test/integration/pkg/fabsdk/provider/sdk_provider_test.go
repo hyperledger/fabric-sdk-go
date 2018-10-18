@@ -30,6 +30,10 @@ func TestDynamicSelection(t *testing.T) {
 
 	// Using shared SDK instance to increase test speed.
 	testSetup := mainTestSetup
+	aKey := integration.GetKeyName(t)
+	bKey := integration.GetKeyName(t)
+	moveTxArg := integration.ExampleCCTxArgs(aKey, bKey, "1")
+	queryArg := integration.ExampleCCQueryArgs(bKey)
 
 	// Create SDK setup for channel client with dynamic selection
 	sdk, err := fabsdk.New(integration.ConfigBackend,
@@ -46,39 +50,36 @@ func TestDynamicSelection(t *testing.T) {
 
 	chaincodeID := integration.GenerateExampleID(false)
 	err = integration.PrepareExampleCC(sdk, fabsdk.WithUser("Admin"), testSetup.OrgID, chaincodeID)
-	require.Nil(t, err, "InstallAndInstantiateExampleCC return error")
+	require.NoError(t, err, "InstallAndInstantiateExampleCC returned error")
 
 	//prepare contexts
 	org1ChannelClientContext := sdk.ChannelContext(testSetup.ChannelID, fabsdk.WithUser(org1User), fabsdk.WithOrg(org1Name))
 
-	chClient, err := channel.New(org1ChannelClientContext)
-	if err != nil {
-		t.Fatalf("Failed to create new channel client: %s", err)
-	}
+	//Reset example cc keys
+	integration.ResetKeys(t, org1ChannelClientContext, chaincodeID, "200", aKey, bKey)
 
-	response, err := chClient.Query(channel.Request{ChaincodeID: chaincodeID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()},
-		channel.WithRetry(retry.DefaultChannelOpts))
-	if err != nil {
-		t.Fatalf("Failed to query funds: %s", err)
-	}
+	chClient, err := channel.New(org1ChannelClientContext)
+	require.NoError(t, err, "Failed to create new channel client")
+
+	response, err := chClient.Query(channel.Request{ChaincodeID: chaincodeID, Fcn: "invoke", Args: queryArg},
+		channel.WithRetry(retry.TestRetryOpts))
+	require.NoError(t, err, "Failed to query funds, ccID: %s, queryArgs: [%+v]", chaincodeID, queryArg)
 	value := response.Payload
 
 	// Move funds
-	response, err = chClient.Execute(channel.Request{ChaincodeID: chaincodeID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()},
+	response, err = chClient.Execute(channel.Request{ChaincodeID: chaincodeID, Fcn: "invoke", Args: moveTxArg},
 		channel.WithRetry(retry.DefaultChannelOpts))
-	if err != nil {
-		t.Fatalf("Failed to move funds: %s", err)
-	}
+	require.NoError(t, err, "Failed to move funds, ccID: %s, queryArgs:[%+v]", chaincodeID, moveTxArg)
 
 	valueInt, _ := strconv.Atoi(string(value))
-	verifyValue(t, chClient, valueInt+1, chaincodeID)
+	verifyValue(t, chClient, queryArg, valueInt+1, chaincodeID)
 }
 
-func verifyValue(t *testing.T, chClient *channel.Client, expectedValue int, ccID string) {
+func verifyValue(t *testing.T, chClient *channel.Client, queryArg [][]byte, expectedValue int, ccID string) {
 	req := channel.Request{
 		ChaincodeID: ccID,
 		Fcn:         "invoke",
-		Args:        integration.ExampleCCQueryArgs(),
+		Args:        queryArg,
 	}
 
 	_, err := retry.NewInvoker(retry.New(retry.TestRetryOpts)).Invoke(

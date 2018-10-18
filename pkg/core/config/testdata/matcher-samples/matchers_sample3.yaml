@@ -13,7 +13,7 @@
  # so that properties can be mapped. Regex can be used for this purpose
 # UrlSubstitutionExp can be empty which means the same network hostname will be used
 # UrlSubstitutionExp can be given same as mapped peer url, so that mapped peer url can be used
-# UrlSubstitutionExp can have golang regex matchers like $1.local.example.$2:$3 for pattern
+# UrlSubstitutionExp can have golang regex matchers like ${1}.local.example.${2}:${3} for pattern
  # like peer0.org1.example.com:1234 which converts peer0.org1.example.com to peer0.org1.local.example.com:1234
 # sslTargetOverrideUrlSubstitutionExp follow in the same lines as
  # SubstitutionExp for the fields gprcOptions.ssl-target-name-override respectively
@@ -26,9 +26,14 @@ entityMatchers:
       mappedHost: peer0.org1.example.com
 
     - pattern: (\w+).exampleY.(\w+):(\d+)
-      urlSubstitutionExp: $1.org1.example.$2:8888
-      sslTargetOverrideUrlSubstitutionExp: $1.org1.override.$2
-      mappedHost: $1.org1.example.$2
+      urlSubstitutionExp: ${1}.org1.example.${2}:8888
+      sslTargetOverrideUrlSubstitutionExp: ${1}.org1.override.${2}
+      mappedHost: ${1}.org1.example.${2}
+
+    - pattern: sample-org(\d)peer1.demo.example.com:(\d+)
+      urlSubstitutionExp: xsample-org${1}peer1.demo.example.com:${2}
+      sslTargetOverrideUrlSubstitutionExp: xsample-org${1}peer1.demo.example.com
+      mappedHost: peer1.org${1}.example.com
 
   orderer:
     - pattern: (\w+).exampleX.(\w+):(\d+)
@@ -37,12 +42,12 @@ entityMatchers:
       mappedHost: orderer.example.com
 
     - pattern: (\w+).exampleY.(\w+):(\d+)
-      urlSubstitutionExp: $1.example.$2:8888
-      sslTargetOverrideUrlSubstitutionExp: $1.override.$2
-      mappedHost: $1.example.$2
+      urlSubstitutionExp: ${1}.example.${2}:8888
+      sslTargetOverrideUrlSubstitutionExp: ${1}.override.${2}
+      mappedHost: ${1}.example.${2}
 
   certificateAuthority:
     - pattern: (\w+).org1.example.(\w+)
-      urlSubstitutionExp: https://$1.org1.example.$2:8888
-      sslTargetOverrideUrlSubstitutionExp: $1.override.example.$2
-      mappedHost: $1.org1.example.$2
+      urlSubstitutionExp: https://${1}.org1.example.${2}:8888
+      sslTargetOverrideUrlSubstitutionExp: ${1}.override.example.${2}
+      mappedHost: ${1}.org1.example.${2}

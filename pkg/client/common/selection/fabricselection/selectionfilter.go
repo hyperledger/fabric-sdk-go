@@ -8,8 +8,13 @@ package fabricselection
 
 import (
 	"context"
+	"sort"
+
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/sorter/balancedsorter"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/sorter/blockheightsorter"
 
 	discclient "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/discovery/client"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/balancer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/options"
 	contextAPI "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
@@ -19,62 +24,128 @@ type selectionFilter struct {
 	ctx    contextAPI.Client
 	peers  []fab.Peer
 	filter options.PeerFilter
+	sorter options.PeerSorter
 }
 
-func newFilter(ctx contextAPI.Client, filter options.PeerFilter, peers []fab.Peer) *selectionFilter {
+var noFilter = func(fab.Peer) bool {
+	return true
+}
+
+func newFilter(channelID string, ctx contextAPI.Client, peers []fab.Peer, filter options.PeerFilter, sorter options.PeerSorter) *selectionFilter {
+	if filter == nil {
+		filter = noFilter
+	}
+
+	if sorter == nil {
+		sorter = resolvePeerSorter(channelID, ctx)
+	}
+
 	return &selectionFilter{
 		ctx:    ctx,
 		peers:  peers,
 		filter: filter,
+		sorter: sorter,
 	}
 }
 
-func (s *selectionFilter) Exclude(endpoint discclient.Peer) bool {
-	logger.Debugf("Calling peer filter on endpoint [%s]", endpoint.AliveMessage.GetAliveMsg().Membership.Endpoint)
+func resolvePeerSorter(channelID string, ctx contextAPI.Client) options.PeerSorter {
+	channelConfig := ctx.EndpointConfig().ChannelConfig(channelID)
+	return resolveSortingStrategy(channelID, channelConfig, resolveBalancer(channelID, channelConfig))
+}
 
-	peer := asPeerValue(s.ctx, &endpoint)
+func resolveSortingStrategy(channelID string, channelConfig *fab.ChannelEndpointConfig, balancer balancer.Balancer) options.PeerSorter {
+	switch channelConfig.Policies.Selection.SortingStrategy {
+	case fab.Balanced:
+		logger.Debugf("Using balanced selection sorter for channel [%s]", channelID)
+		return balancedsorter.New(balancedsorter.WithBalancer(balancer))
+	default:
+		logger.Debugf("Using block height priority selection sorter for channel [%s]", channelID)
+		return blockheightsorter.New(blockheightsorter.WithBalancer(balancer))
+	}
+}
 
+func resolveBalancer(channelID string, channelConfig *fab.ChannelEndpointConfig) balancer.Balancer {
+	switch channelConfig.Policies.Selection.Balancer {
+	case fab.Random:
+		logger.Debugf("Using random selection balancer for channel [%s]", channelID)
+		return balancer.Random()
+	default:
+		logger.Debugf("Using round-robin selection balancer for channel [%s]", channelID)
+		return balancer.RoundRobin()
+	}
+}
+
+func (s *selectionFilter) Filter(endorsers discclient.Endorsers) discclient.Endorsers {
+
+	// Convert the endorsers to peers
+	peers := s.asPeerValues(endorsers)
+
+	// Sort the peers in alphabetical order so that they are always presented to the balancer in the same order
+	peers = s.sortByURL(peers)
+
+	// Filter out the peers that weren't included in the list of discovered peers
+	discoveredPeers := s.filterDiscovered(peers)
+
+	// Apply the peer filter (if any)
+	filteredPeers := s.filterPeers(discoveredPeers)
+
+	// Apply the peer sorter (if any)
+	sortedPeers := s.sortPeers(filteredPeers)
+
+	// Convert the filtered peers to endorsers
+	return s.asEndorsers(endorsers, sortedPeers)
+}
+
+func (s *selectionFilter) sortPeers(peers []fab.Peer) []fab.Peer {
+	if s.sorter == nil {
+		return peers
+	}
+
+	logger.Debugf("Sorting peers")
+	return s.sorter(peers)
+}
+
+func (s *selectionFilter) filterPeers(peers []fab.Peer) []fab.Peer {
+	if s.filter == nil {
+		return peers
+	}
+
+	var filteredPeers []fab.Peer
+	for _, peer := range peers {
+		// Apply the PeerFilter (if any)
+		if s.filter(peer) {
+			logger.Debugf("Including peer [%s] since it was included by the peer filter", peer.URL())
+			filteredPeers = append(filteredPeers, peer)
+		} else {
+			logger.Debugf("Excluding peer [%s] since it was excluded by the peer filter", peer.URL())
+		}
+	}
+	return filteredPeers
+}
+
+func (s *selectionFilter) filterDiscovered(peers []fab.Peer) []fab.Peer {
 	// The peer must be included in the set of peers returned from fab.DiscoveryService.
 	// (Note that DiscoveryService may return a filtered set of peers, depending on how the
 	// SDK was configured, so we need to exclude those peers from selection.)
-	if !containsPeer(s.peers, peer) {
-		logger.Debugf("Excluding peer [%s] since it isn't in the set of peers returned by the discovery service", peer.URL())
-		return true
+	var discoveryPeers []fab.Peer
+	for _, peer := range peers {
+		if containsPeer(s.peers, peer) {
+			logger.Debugf("Including peer [%s] since it is in the set of peers returned by the discovery service", peer.URL())
+			discoveryPeers = append(discoveryPeers, peer)
+		} else {
+			logger.Debugf("Excluding peer [%s] since it isn't in the set of peers returned by the discovery service", peer.URL())
+		}
 	}
-
-	// Apply the PeerFilter (if any)
-	if s.filter != nil && !s.filter(peer) {
-		logger.Debugf("Excluding peer [%s] since it was excluded by the peer filter", peer.URL())
-		return true
-	}
-
-	return false
-}
-
-type prioritySelector struct {
-	ctx      contextAPI.Client
-	selector options.PrioritySelector
-}
-
-func newSelector(ctx contextAPI.Client, selector options.PrioritySelector) discclient.PrioritySelector {
-	if selector != nil {
-		return &prioritySelector{ctx: ctx, selector: selector}
-	}
-	return discclient.PrioritiesByHeight
-}
-
-func (s *prioritySelector) Compare(endpoint1, endpoint2 discclient.Peer) discclient.Priority {
-	logger.Debugf("Calling priority selector on endpoint1 [%s] and endpoint2 [%s]", endpoint1.AliveMessage.GetAliveMsg().Membership.Endpoint, endpoint2.AliveMessage.GetAliveMsg().Membership.Endpoint)
-	return discclient.Priority(s.selector(asPeerValue(s.ctx, &endpoint1), asPeerValue(s.ctx, &endpoint2)))
+	return discoveryPeers
 }
 
 // asPeerValue converts the discovery endpoint into a light-weight peer value (i.e. without the GRPC config)
 // so that it may used by a peer filter
-func asPeerValue(ctx contextAPI.Client, endpoint *discclient.Peer) fab.Peer {
+func (s *selectionFilter) asPeerValue(endpoint *discclient.Peer) fab.Peer {
 	url := endpoint.AliveMessage.GetAliveMsg().GetMembership().Endpoint
 
 	// Get the mapped URL of the peer
-	peerConfig, found := ctx.EndpointConfig().PeerConfig(url)
+	peerConfig, found := s.ctx.EndpointConfig().PeerConfig(url)
 	if found {
 		url = peerConfig.URL
 	} else {
@@ -86,6 +157,48 @@ func asPeerValue(ctx contextAPI.Client, endpoint *discclient.Peer) fab.Peer {
 		url:         url,
 		blockHeight: endpoint.StateInfoMessage.GetStateInfo().GetProperties().LedgerHeight,
 	}
+}
+
+func (s *selectionFilter) asPeerValues(endorsers discclient.Endorsers) []fab.Peer {
+	var peers []fab.Peer
+	for _, endorser := range endorsers {
+		peer := s.asPeerValue(endorser)
+		logger.Debugf("Adding peer [%s]", peer.URL())
+		peers = append(peers, peer)
+	}
+	return peers
+}
+
+func (s *selectionFilter) sortByURL(peers []fab.Peer) []fab.Peer {
+	sort.Sort(&peerSorter{
+		peers: peers,
+	})
+	return peers
+}
+
+func (s *selectionFilter) asEndorsers(allEndorsers discclient.Endorsers, filteredPeers []fab.Peer) discclient.Endorsers {
+	var filteredEndorsers discclient.Endorsers
+	for _, peer := range filteredPeers {
+		endorser, found := s.asEndorser(allEndorsers, peer)
+		if !found {
+			// This should never happen since the peer was composed from the initial list of endorsers
+			logger.Warnf("Endorser [%s] not found. Endorser will be excluded.", peer.URL())
+			continue
+		}
+		logger.Debugf("Adding endorser [%s]", peer.URL())
+		filteredEndorsers = append(filteredEndorsers, endorser)
+	}
+	return filteredEndorsers
+}
+
+func (s *selectionFilter) asEndorser(endorsers discclient.Endorsers, peer fab.Peer) (*discclient.Peer, bool) {
+	for _, endorser := range endorsers {
+		url := s.asPeerValue(endorser).URL()
+		if peer.URL() == url {
+			return endorser, true
+		}
+	}
+	return nil, false
 }
 
 func containsPeer(peers []fab.Peer, peer fab.Peer) bool {
@@ -117,4 +230,22 @@ func (p *peerEndpointValue) BlockHeight() uint64 {
 
 func (p *peerEndpointValue) ProcessTransactionProposal(context.Context, fab.ProcessProposalRequest) (*fab.TransactionProposalResponse, error) {
 	panic("not implemented")
+}
+
+type peers []fab.Peer
+
+type peerSorter struct {
+	peers
+}
+
+func (es *peerSorter) Len() int {
+	return len(es.peers)
+}
+
+func (es *peerSorter) Less(i, j int) bool {
+	return es.peers[i].URL() < es.peers[j].URL()
+}
+
+func (es *peerSorter) Swap(i, j int) {
+	es.peers[i], es.peers[j] = es.peers[j], es.peers[i]
 }

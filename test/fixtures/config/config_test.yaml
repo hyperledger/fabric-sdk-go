@@ -39,30 +39,6 @@ client:
 #        # to prevent re-selecting them in subsequent retries.
 #        # This interval will define how long a peer is greylisted
 #        greylistExpiry: 10s
-  eventService:
-
-    # blockHeightLagThreshold sets the block height lag threshold. This value is used for choosing a peer
-    # to connect to. If a peer is lagging behind the most up-to-date peer by more than the given number of
-    # blocks then it will be excluded from selection.
-    # If set to 0 then only the most up-to-date peers are considered.
-    # If set to -1 then all peers (regardless of block height) are considered for selection.
-    # Default: 5
-    blockHeightLagThreshold: 2
-
-    # reconnectBlockHeightLagThreshold - if >0 then the event client will disconnect from the peer if the peer's
-    # block height falls behind the specified number of blocks and will reconnect to a better performing peer.
-    # If set to 0 then this feature is disabled.
-    # Default: 0 (disabled)
-    # NOTES:
-    #   - This feature should only be enabled when using deliver events, otherwise events may be lost during reconnect
-    #   - Setting this value too low may cause the event client to disconnect/reconnect too frequently, thereby
-    #     affecting performance.
-    reconnectBlockHeightLagThreshold: 2
-
-    # blockHeightMonitorPeriod is the period in which the connected peer's block height is monitored. Note that this
-    # value is only relevant if reconnectBlockHeightLagThreshold >0.
-    # Default: 5s
-    blockHeightMonitorPeriod: 3s
 
     # the below timeouts are commented out to use the default values that are found in
     # "pkg/fab/endpointconfig.go"
@@ -179,6 +155,18 @@ channels:
           maxBackoff: 5s
           #[Optional] he factor by which the initial back off period is exponentially incremented
           backoffFactor: 2.0
+      #[Optional] options for selection service
+      selection:
+        #[Optional] endorser selection sorting strategy. Possible values: [BlockHeightPriority,Balanced]
+        SortingStrategy: BlockHeightPriority
+        #[Optional] load-balancer type. Possible values: [RoundRobin,Random]
+        Balancer: RoundRobin
+        #[Optional] the number of blocks from the highest block number of a group of peers that a peer
+        #can lag behind and still be considered to be up-to-date. These peers will be sorted using the
+        #given Balancer. If a peer's block height falls behind this threshold then it will be demoted
+        #to a lower priority list of peers which will be sorted according to block height.
+        #Note: This property only applies to BlockHeightPriority sorter.
+        BlockHeightLagThreshold: 5
       #[Optional] options for retrieving channel configuration blocks
       queryChannelConfig:
         #[Optional] min number of success responses (from targets/peers)
@@ -195,6 +183,45 @@ channels:
           maxBackoff: 5s
           #[Optional] he factor by which the initial back off period is exponentially incremented
           backoffFactor: 2.0
+      #[Optional] options for the event service
+      eventService:
+        # [Optional] resolverStrategy specifies the peer resolver strategy to use when connecting to a peer
+        # Possible values: [PreferOrg (default), MinBlockHeight, Balanced]
+        #
+        # PreferOrg:
+        #   Determines which peers are suitable based on block height lag threshold, although will prefer the peers in the
+        #   current org (as long as their block height is above a configured threshold). If none of the peers from the current org
+        #   are suitable then a peer from another org is chosen.
+        # MinBlockHeight:
+        #   Chooses the best peer according to a block height lag threshold. The maximum block height of all peers is
+        #   determined and the peers whose block heights are under the maximum height but above a provided "lag" threshold are load
+        #   balanced. The other peers are not considered.
+        # Balanced:
+        #   Chooses peers using the configured balancer.
+        resolverStrategy: PreferOrg
+        # [Optional] balancer is the balancer to use when choosing a peer to connect to
+        # Possible values: [Random (default), RoundRobin]
+        balancer: RoundRobin
+        # [Optional] blockHeightLagThreshold sets the block height lag threshold. This value is used for choosing a peer
+        # to connect to. If a peer is lagging behind the most up-to-date peer by more than the given number of
+        # blocks then it will be excluded from selection.
+        # If set to 0 then only the most up-to-date peers are considered.
+        # If set to -1 then all peers (regardless of block height) are considered for selection.
+        # Default: 5
+        blockHeightLagThreshold: 2
+        # [Optional] reconnectBlockHeightLagThreshold - if >0 then the event client will disconnect from the peer if the peer's
+        # block height falls behind the specified number of blocks and will reconnect to a better performing peer.
+        # If set to 0 then this feature is disabled.
+        # Default: 10
+        # NOTES:
+        #   - peerMonitorPeriod must be >0 to enable this feature
+        #   - Setting this value too low may cause the event client to disconnect/reconnect too frequently, thereby
+        #     affecting performance.
+        reconnectBlockHeightLagThreshold: 5
+        # [Optional] peerMonitorPeriod is the period in which the connected peer is monitored to see if
+        # the event client should disconnect from it and reconnect to another peer.
+        # Default: 0 (disabled)
+        peerMonitorPeriod: 3s
 
   # Mychannel overrides initialBackoff for discovery
   mychannel:
@@ -432,7 +459,7 @@ certificateAuthorities:
  # so that properties can be mapped. Regex can be used for this purpose
 # UrlSubstitutionExp can be empty which means the same network hostname will be used
 # UrlSubstitutionExp can be given same as mapped peer url, so that mapped peer url can be used
-# UrlSubstitutionExp can have golang regex matchers like $1.local.example.$2:$3 for pattern
+# UrlSubstitutionExp can have golang regex matchers like ${1}.local.example.${2}:${3} for pattern
  # like peer0.org1.example.com:1234 which converts peer0.org1.example.com to peer0.org1.local.example.com:1234
 # sslTargetOverrideUrlSubstitutionExp follow in the same lines as
  # SubstitutionExp for the fields gprcOptions.ssl-target-name-override respectively
@@ -441,13 +468,13 @@ certificateAuthorities:
 #entityMatchers:
 #  peer:
 #    - pattern: (\w+).org1.example.com:(\d+)
-#      urlSubstitutionExp: $1.org1.example.com:$2
-#      sslTargetOverrideUrlSubstitutionExp: $1.org1.example.com
+#      urlSubstitutionExp: ${1}.org1.example.com:${2}
+#      sslTargetOverrideUrlSubstitutionExp: ${1}.org1.example.com
 #      mappedHost: peer0.org1.example.com
 #
 #    - pattern: (\w+).org2.example.com:(\d+)
-#      urlSubstitutionExp: $1.org2.example.com:$2
-#      sslTargetOverrideUrlSubstitutionExp: $1.org2.example.com
+#      urlSubstitutionExp: ${1}.org2.example.com:${2}
+#      sslTargetOverrideUrlSubstitutionExp: ${1}.org2.example.com
 #      mappedHost: peer0.org2.example.com
 
 #    - pattern: (\w+).org1.example.(\w+)
@@ -461,8 +488,8 @@ certificateAuthorities:
 #      mappedHost: peer0.org2.example.com
 #
 #    - pattern: (\w+).example1.(\w+):(\d+)
-#      urlSubstitutionExp: $1.org1.example.$2:$3
-#      sslTargetOverrideUrlSubstitutionExp: $1.org1.example.$2
+#      urlSubstitutionExp: ${1}.org1.example.${2}:${3}
+#      sslTargetOverrideUrlSubstitutionExp: ${1}.org1.example.${2}
 #      mappedHost: peer0.org1.example.com
 #
 #    - pattern: (\w+).org1.example.(\w+):(\d+)
@@ -487,8 +514,8 @@ certificateAuthorities:
 #      mappedHost: orderer.example.com
 #
 #    - pattern: (\w+).example4.(\w+):(\d+)
-#      urlSubstitutionExp: $1.example.$2:$3
-#      sslTargetOverrideUrlSubstitutionExp: $1.example.$2
+#      urlSubstitutionExp: ${1}.example.${2}:${3}
+#      sslTargetOverrideUrlSubstitutionExp: ${1}.example.${2}
 #      mappedHost: orderer.example.com
 #
 #  certificateAuthority:

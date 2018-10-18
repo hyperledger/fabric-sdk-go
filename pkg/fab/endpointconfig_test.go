@@ -125,19 +125,14 @@ func TestCAConfigFailsByNetworkConfig(t *testing.T) {
 }
 
 func checkCAConfigFailsByNetworkConfig(sampleEndpointConfig *EndpointConfig, t *testing.T) {
-	//Testing ChannelConfig failure scenario
-	chConfig, ok := sampleEndpointConfig.ChannelConfig("invalid")
-	if chConfig != nil || ok {
-		t.Fatal("Testing ChannelConfig supposed to fail")
-	}
 	//Testing ChannelPeers failure scenario
-	cpConfigs, ok := sampleEndpointConfig.ChannelPeers("invalid")
-	if cpConfigs != nil || ok {
+	cpConfigs := sampleEndpointConfig.ChannelPeers("invalid")
+	if len(cpConfigs) > 0 {
 		t.Fatal("Testing ChannelPeeers supposed to fail")
 	}
 	//Testing ChannelOrderers failure scenario
-	coConfigs, ok := sampleEndpointConfig.ChannelOrderers("invalid")
-	if coConfigs != nil || ok {
+	coConfigs := sampleEndpointConfig.ChannelOrderers("invalid")
+	if len(coConfigs) > 0 {
 		t.Fatal("Testing ChannelOrderers supposed to fail")
 	}
 }
@@ -197,15 +192,9 @@ func TestEventServiceConfig(t *testing.T) {
 	customBackend.KeyValueMap["client.eventService.type"] = "deliver"
 	customBackend.KeyValueMap["client.eventService.blockHeightLagThreshold"] = "4"
 	customBackend.KeyValueMap["client.eventService.reconnectBlockHeightLagThreshold"] = "7"
-	customBackend.KeyValueMap["client.eventService.blockHeightMonitorPeriod"] = "7s"
-
-	endpointConfig, err := ConfigFromBackend(customBackend)
-	require.NoError(t, err)
-
-	eventServiceConfig := endpointConfig.EventServiceConfig()
-	assert.Equalf(t, 4, eventServiceConfig.BlockHeightLagThreshold(), "invalid value for blockHeightLagThreshold")
-	assert.Equalf(t, 7, eventServiceConfig.ReconnectBlockHeightLagThreshold(), "invalid value for reconnectBlockHeightLagThreshold")
-	assert.Equalf(t, 7*time.Second, eventServiceConfig.BlockHeightMonitorPeriod(), "invalid value for blockHeightMonitorPeriod")
+	customBackend.KeyValueMap["client.eventService.peerMonitorPeriod"] = "7s"
+	customBackend.KeyValueMap["client.eventService.resolverStrategy"] = "Balanced"
+	customBackend.KeyValueMap["client.eventService.balancer"] = "RoundRobin"
 }
 
 func checkTimeouts(endpointConfig fab.EndpointConfig, t *testing.T, errStr string) {
@@ -349,11 +338,7 @@ func TestChannelOrderers(t *testing.T) {
 		t.Fatal("Failed to get endpoint config from backend")
 	}
 
-	orderers, ok := endpointConfig.ChannelOrderers("mychannel")
-	if orderers == nil || !ok {
-		t.Fatal("Testing ChannelOrderers failed")
-	}
-
+	orderers := endpointConfig.ChannelOrderers("mychannel")
 	if len(orderers) != 1 {
 		t.Fatalf("Expecting one channel orderer got %d", len(orderers))
 	}
@@ -495,13 +480,10 @@ func testCommonConfigChannel(t *testing.T, expectedConfigName string, fetchedCon
 		t.Fatal("Failed to get endpoint config from backend")
 	}
 
-	expectedConfig, ok := endpointConfig.ChannelConfig(expectedConfigName)
-	assert.True(t, ok)
+	expectedConfig = endpointConfig.ChannelConfig(expectedConfigName)
+	fetchedConfig = endpointConfig.ChannelConfig(fetchedConfigName)
 
-	fetchedConfig, ok = endpointConfig.ChannelConfig(fetchedConfigName)
-	assert.True(t, ok)
-
-	return expectedConfig, fetchedConfig
+	return
 }
 
 func deepEquals(n, n2 interface{}) bool {
@@ -1104,12 +1086,25 @@ func TestPeerChannelConfig(t *testing.T) {
 	assert.NotNil(t, networkConfig)
 	//Test if channels config are working as expected, with time values parsed properly
 	assert.True(t, len(networkConfig.Channels) == 3)
-	assert.True(t, len(networkConfig.Channels["mychannel"].Peers) == 1)
-	assert.True(t, networkConfig.Channels["mychannel"].Policies.QueryChannelConfig.MinResponses == 1)
-	assert.True(t, networkConfig.Channels["mychannel"].Policies.QueryChannelConfig.MaxTargets == 1)
-	assert.True(t, networkConfig.Channels["mychannel"].Policies.QueryChannelConfig.RetryOpts.MaxBackoff.String() == (5*time.Second).String())
-	assert.True(t, networkConfig.Channels["mychannel"].Policies.QueryChannelConfig.RetryOpts.InitialBackoff.String() == (500*time.Millisecond).String())
-	assert.True(t, networkConfig.Channels["mychannel"].Policies.QueryChannelConfig.RetryOpts.BackoffFactor == 2.0)
+
+	channelConfig, ok := networkConfig.Channels["mychannel"]
+	require.True(t, ok)
+
+	assert.True(t, len(channelConfig.Peers) == 1)
+
+	qccPolicies := channelConfig.Policies.QueryChannelConfig
+	assert.True(t, qccPolicies.MinResponses == 1)
+	assert.True(t, qccPolicies.MaxTargets == 1)
+	assert.True(t, qccPolicies.RetryOpts.MaxBackoff.String() == (5*time.Second).String())
+	assert.True(t, qccPolicies.RetryOpts.InitialBackoff.String() == (500*time.Millisecond).String())
+	assert.True(t, qccPolicies.RetryOpts.BackoffFactor == 2.0)
+
+	eventPolicies := channelConfig.Policies.EventService
+	assert.Equalf(t, fab.MinBlockHeightStrategy, eventPolicies.ResolverStrategy, "Unexpected value for ResolverStrategy")
+	assert.Equal(t, fab.RoundRobin, eventPolicies.Balancer, "Unexpected value for Balancer")
+	assert.Equal(t, 4, eventPolicies.BlockHeightLagThreshold, "Unexpected value for BlockHeightLagThreshold")
+	assert.Equal(t, 8, eventPolicies.ReconnectBlockHeightLagThreshold, "Unexpected value for ReconnectBlockHeightLagThreshold")
+	assert.Equal(t, 6*time.Second, eventPolicies.PeerMonitorPeriod, "Unexpected value for PeerMonitorPeriod")
 
 	//Test if custom hook for (default=true) func is working
 	assert.True(t, len(networkConfig.Channels[orgChannelID].Peers) == 2)
@@ -1365,8 +1360,7 @@ func TestEntityMatchers(t *testing.T) {
 	assert.True(t, ok, "supposed to find orderer config")
 	assert.NotNil(t, ordererConfig, "supposed to find orderer config")
 
-	channelConfig, ok := endpointConfig.ChannelConfig("samplexyzchannel")
-	assert.True(t, ok, "supposed to find channel config")
+	channelConfig := endpointConfig.ChannelConfig("samplexyzchannel")
 	assert.NotNil(t, channelConfig, "supposed to find channel config")
 }
 

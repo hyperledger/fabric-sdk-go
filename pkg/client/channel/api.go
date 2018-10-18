@@ -23,6 +23,7 @@ import (
 type requestOptions struct {
 	Targets       []fab.Peer // targets
 	TargetFilter  fab.TargetFilter
+	TargetSorter  fab.TargetSorter
 	Retry         retry.Opts
 	BeforeRetry   retry.BeforeRetryHandler
 	Timeouts      map[fab.TimeoutType]time.Duration //timeout options for channel client operations
@@ -108,6 +109,14 @@ func WithTargetEndpoints(keys ...string) RequestOption {
 func WithTargetFilter(filter fab.TargetFilter) RequestOption {
 	return func(ctx context.Client, o *requestOptions) error {
 		o.TargetFilter = filter
+		return nil
+	}
+}
+
+// WithTargetSorter specifies a per-request target sorter
+func WithTargetSorter(sorter fab.TargetSorter) RequestOption {
+	return func(ctx context.Client, o *requestOptions) error {
+		o.TargetSorter = sorter
 		return nil
 	}
 }

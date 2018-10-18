@@ -22,6 +22,7 @@ import (
 var logger = logging.NewLogger("fabsdk/core")
 var ctxCache *lazycache.Cache
 var once sync.Once
+var errSlotIDChanged = fmt.Errorf("slot id changed")
 
 //LoadPKCS11ContextHandle loads PKCS11 context handler instance from underlying cache
 func LoadPKCS11ContextHandle(lib, label, pin string, opts ...Options) (*ContextHandle, error) {
@@ -58,14 +59,20 @@ func LoadContextAndLogin(lib, pin, label string) (*ContextHandle, error) {
 
 //ContextHandle encapsulate basic pkcs11.Ctx operations and manages sessions
 type ContextHandle struct {
-	ctx      *pkcs11.Ctx
-	slot     uint
-	pin      string
-	lib      string
-	label    string
-	sessions chan pkcs11.SessionHandle
-	opts     ctxOpts
-	lock     sync.RWMutex
+	ctx                *pkcs11.Ctx
+	slot               uint
+	pin                string
+	lib                string
+	label              string
+	sessions           chan pkcs11.SessionHandle
+	opts               ctxOpts
+	reloadNotification chan struct{}
+	lock               sync.RWMutex
+}
+
+// NotifyCtxReload registers a channel to get notification when underlying pkcs11.Ctx is recreated
+func (handle *ContextHandle) NotifyCtxReload(ch chan struct{}) {
+	handle.reloadNotification = ch
 }
 
 //OpenSession opens a session between an application and a token.
@@ -185,6 +192,79 @@ func (handle *ContextHandle) GenerateKeyPair(session pkcs11.SessionHandle, m []*
 	return handle.ctx.GenerateKeyPair(session, m, public, private)
 }
 
+//GenerateKey generates a secret key, creating a new key object.
+func (handle *ContextHandle) GenerateKey(session pkcs11.SessionHandle, m []*pkcs11.Mechanism, temp []*pkcs11.Attribute) (pkcs11.ObjectHandle, error) {
+
+	handle.lock.RLock()
+	defer handle.lock.RUnlock()
+
+	return handle.ctx.GenerateKey(session, m, temp)
+}
+
+// FindObjectsInit initializes a search for token and session objects that match a template.
+func (handle *ContextHandle) FindObjectsInit(session pkcs11.SessionHandle, temp []*pkcs11.Attribute) error {
+
+	handle.lock.RLock()
+	defer handle.lock.RUnlock()
+
+	return handle.ctx.FindObjectsInit(session, temp)
+}
+
+// FindObjects continues a search for token and session objects that match a template, obtaining additional object
+// handles. The returned boolean indicates if the list would have been larger than max.
+func (handle *ContextHandle) FindObjects(session pkcs11.SessionHandle, max int) ([]pkcs11.ObjectHandle, bool, error) {
+
+	handle.lock.RLock()
+	defer handle.lock.RUnlock()
+
+	return handle.ctx.FindObjects(session, max)
+}
+
+//FindObjectsFinal finishes a search for token and session objects.
+func (handle *ContextHandle) FindObjectsFinal(session pkcs11.SessionHandle) error {
+
+	handle.lock.RLock()
+	defer handle.lock.RUnlock()
+
+	return handle.ctx.FindObjectsFinal(session)
+}
+
+//Encrypt encrypts single-part data.
+func (handle *ContextHandle) Encrypt(session pkcs11.SessionHandle, message []byte) ([]byte, error) {
+
+	handle.lock.RLock()
+	defer handle.lock.RUnlock()
+
+	return handle.ctx.Encrypt(session, message)
+}
+
+//EncryptInit initializes an encryption operation.
+func (handle *ContextHandle) EncryptInit(session pkcs11.SessionHandle, m []*pkcs11.Mechanism, o pkcs11.ObjectHandle) error {
+
+	handle.lock.RLock()
+	defer handle.lock.RUnlock()
+
+	return handle.ctx.EncryptInit(session, m, o)
+}
+
+//DecryptInit initializes a decryption operation.
+func (handle *ContextHandle) DecryptInit(session pkcs11.SessionHandle, m []*pkcs11.Mechanism, o pkcs11.ObjectHandle) error {
+
+	handle.lock.RLock()
+	defer handle.lock.RUnlock()
+
+	return handle.ctx.DecryptInit(session, m, o)
+}
+
+//Decrypt decrypts encrypted data in a single part.
+func (handle *ContextHandle) Decrypt(session pkcs11.SessionHandle, cypher []byte) ([]byte, error) {
+
+	handle.lock.RLock()
+	defer handle.lock.RUnlock()
+
+	return handle.ctx.Decrypt(session, cypher)
+}
+
 // SignInit initializes a signature (private key encryption)
 // operation, where the signature is (will be) an appendix to
 // the data, and plaintext cannot be recovered from the signature.
@@ -232,6 +312,22 @@ func (handle *ContextHandle) CreateObject(session pkcs11.SessionHandle, temp []*
 	return handle.ctx.CreateObject(session, temp)
 }
 
+// CopyObject creates a copy of an object.
+func (handle *ContextHandle) CopyObject(sh pkcs11.SessionHandle, o pkcs11.ObjectHandle, temp []*pkcs11.Attribute) (pkcs11.ObjectHandle, error) {
+	handle.lock.RLock()
+	defer handle.lock.RUnlock()
+
+	return handle.ctx.CopyObject(sh, o, temp)
+}
+
+// DestroyObject destroys an object.
+func (handle *ContextHandle) DestroyObject(sh pkcs11.SessionHandle, oh pkcs11.ObjectHandle) error {
+	handle.lock.RLock()
+	defer handle.lock.RUnlock()
+
+	return handle.ctx.DestroyObject(sh, oh)
+}
+
 //FindKeyPairFromSKI finds key pair by SKI
 func (handle *ContextHandle) FindKeyPairFromSKI(session pkcs11.SessionHandle, ski []byte, keyType bool) (*pkcs11.ObjectHandle, error) {
 	handle.lock.RLock()
@@ -246,14 +342,12 @@ func (handle *ContextHandle) FindKeyPairFromSKI(session pkcs11.SessionHandle, sk
 func (handle *ContextHandle) validateSession(currentSession pkcs11.SessionHandle) pkcs11.SessionHandle {
 
 	handle.lock.RLock()
-	_, e := handle.ctx.GetSessionInfo(currentSession)
 
-	if e == nil {
-		_, e = handle.ctx.GetOperationState(currentSession)
-	}
+	e := handle.detectErrorCondition(currentSession)
 
 	switch e {
-	case pkcs11.Error(pkcs11.CKR_OBJECT_HANDLE_INVALID),
+	case errSlotIDChanged,
+		pkcs11.Error(pkcs11.CKR_OBJECT_HANDLE_INVALID),
 		pkcs11.Error(pkcs11.CKR_SESSION_HANDLE_INVALID),
 		pkcs11.Error(pkcs11.CKR_SESSION_CLOSED),
 		pkcs11.Error(pkcs11.CKR_TOKEN_NOT_PRESENT),
@@ -261,7 +355,7 @@ func (handle *ContextHandle) validateSession(currentSession pkcs11.SessionHandle
 		pkcs11.Error(pkcs11.CKR_GENERAL_ERROR),
 		pkcs11.Error(pkcs11.CKR_USER_NOT_LOGGED_IN):
 
-		logger.Warnf("Found error condition [%s], attempting to recreate session and re-login....", e)
+		logger.Warnf("Found error condition [%s], attempting to recreate pkcs11 context and re-login....", e)
 
 		handle.lock.RUnlock()
 		handle.lock.Lock()
@@ -272,15 +366,15 @@ func (handle *ContextHandle) validateSession(currentSession pkcs11.SessionHandle
 		//create new context
 		newCtx := handle.createNewPKCS11Ctx()
 		if newCtx == nil {
-			logger.Warn("Failed to recreate new context for given library")
-			return currentSession
+			logger.Warn("Failed to recreate new pkcs11 context for given library")
+			return 0
 		}
 
 		//find slot
 		slot, found := handle.findSlot(newCtx)
 		if !found {
 			logger.Warnf("Unable to find slot for label :%s", handle.label)
-			return currentSession
+			return 0
 		}
 		logger.Debug("got the slot ", slot)
 
@@ -288,6 +382,7 @@ func (handle *ContextHandle) validateSession(currentSession pkcs11.SessionHandle
 		newSession, err := createNewSession(newCtx, slot)
 		if err != nil {
 			logger.Fatalf("OpenSession [%s]\n", err)
+			return 0
 		}
 		logger.Debugf("Recreated new pkcs11 session %+v on slot %d\n", newSession, slot)
 
@@ -295,8 +390,10 @@ func (handle *ContextHandle) validateSession(currentSession pkcs11.SessionHandle
 		err = newCtx.Login(newSession, pkcs11.CKU_USER, handle.pin)
 		if err != nil && err != pkcs11.Error(pkcs11.CKR_USER_ALREADY_LOGGED_IN) {
 			logger.Warnf("Unable to login with new session :%s", newSession)
-			return currentSession
+			return 0
 		}
+
+		handle.sendNotification()
 
 		handle.ctx = newCtx
 		handle.slot = slot
@@ -314,6 +411,36 @@ func (handle *ContextHandle) validateSession(currentSession pkcs11.SessionHandle
 		handle.lock.RUnlock()
 		// default should be a valid session or valid error, return session as it is
 		return currentSession
+	}
+}
+
+//detectErrorCondition checks if given session handle has errors
+func (handle *ContextHandle) detectErrorCondition(currentSession pkcs11.SessionHandle) error {
+	var e error
+	slot, ok := handle.findSlot(handle.ctx)
+	if !ok || slot != handle.slot {
+		e = errSlotIDChanged
+	}
+
+	if e == nil {
+		_, e = handle.ctx.GetSessionInfo(currentSession)
+		if e == nil {
+			_, e = handle.ctx.GetOperationState(currentSession)
+		}
+	}
+
+	return e
+}
+
+//sendNotification sends ctx reload notificatin if channel available
+func (handle *ContextHandle) sendNotification() {
+	if handle.reloadNotification != nil {
+		select {
+		case handle.reloadNotification <- struct{}{}:
+			logger.Info("Notification sent for recreated pkcs11 ctx")
+		default:
+			logger.Warn("Unable to send notification for recreated pkcs11 ctx")
+		}
 	}
 }
 

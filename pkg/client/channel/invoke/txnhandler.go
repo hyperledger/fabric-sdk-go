@@ -85,6 +85,9 @@ func (h *ProposalProcessorHandler) Handle(requestContext *RequestContext, client
 		if requestContext.SelectionFilter != nil {
 			selectionOpts = append(selectionOpts, selectopts.WithPeerFilter(requestContext.SelectionFilter))
 		}
+		if requestContext.PeerSorter != nil {
+			selectionOpts = append(selectionOpts, selectopts.WithPeerSorter(requestContext.PeerSorter))
+		}
 
 		endorsers, err := clientContext.Selection.GetEndorsersForChaincode(newInvocationChain(requestContext), selectionOpts...)
 		if err != nil {

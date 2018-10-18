@@ -26,6 +26,7 @@ type CCFilter func(ccID string) bool
 type Opts struct {
 	Targets       []fab.Peer // targets
 	TargetFilter  fab.TargetFilter
+	TargetSorter  fab.TargetSorter
 	Retry         retry.Opts
 	BeforeRetry   retry.BeforeRetryHandler
 	Timeouts      map[fab.TimeoutType]time.Duration
@@ -85,4 +86,5 @@ type RequestContext struct {
 	RetryHandler    retry.Handler
 	Ctx             reqContext.Context
 	SelectionFilter selectopts.PeerFilter
+	PeerSorter      selectopts.PeerSorter
 }

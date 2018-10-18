@@ -11,6 +11,8 @@ Please review third_party pinning scripts and patches for more details.
 package ledger
 
 import (
+	"fmt"
+
 	"github.com/golang/protobuf/proto"
 	commonledger "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/ledger"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
@@ -23,6 +25,7 @@ import (
 type Initializer struct {
 	StateListeners                []StateListener
 	DeployedChaincodeInfoProvider DeployedChaincodeInfoProvider
+	MembershipInfoProvider        MembershipInfoProvider
 }
 
 // PeerLedgerProvider provides handle to ledger instances
@@ -124,15 +127,30 @@ type QueryExecutor interface {
 	GetStateMetadata(namespace, key string) (map[string][]byte, error)
 	// GetStateMultipleKeys gets the values for multiple keys in a single call
 	GetStateMultipleKeys(namespace string, keys []string) ([][]byte, error)
+	// GetStateRangeScanIteratorWithMetadata returns an iterator that contains all the key-values between given key ranges.
+	// startKey is included in the results and endKey is excluded. An empty startKey refers to the first available key
+	// and an empty endKey refers to the last available key. For scanning all the keys, both the startKey and the endKey
+	// can be supplied as empty strings. However, a full scan should be used judiciously for performance reasons.
+	// metadata is a map of additional query parameters
+	// The returned ResultsIterator contains results of type *KV which is defined in protos/ledger/queryresult.
+	GetStateRangeScanIteratorWithMetadata(namespace string, startKey, endKey string, metadata map[string]interface{}) (QueryResultsIterator, error)
 	// ExecuteQuery executes the given query and returns an iterator that contains results of type specific to the underlying data store.
 	// Only used for state databases that support query
 	// For a chaincode, the namespace corresponds to the chaincodeId
 	// The returned ResultsIterator contains results of type *KV which is defined in protos/ledger/queryresult.
 	ExecuteQuery(namespace, query string) (commonledger.ResultsIterator, error)
+	// ExecuteQueryWithMetadata executes the given query and returns an iterator that contains results of type specific to the underlying data store.
+	// metadata is a map of additional query parameters
+	// Only used for state databases that support query
+	// For a chaincode, the namespace corresponds to the chaincodeId
+	// The returned ResultsIterator contains results of type *KV which is defined in protos/ledger/queryresult.
+	ExecuteQueryWithMetadata(namespace, query string, metadata map[string]interface{}) (QueryResultsIterator, error)
 	// GetPrivateData gets the value of a private data item identified by a tuple <namespace, collection, key>
 	GetPrivateData(namespace, collection, key string) ([]byte, error)
 	// GetPrivateDataMetadata gets the metadata of a private data item identified by a tuple <namespace, collection, key>
 	GetPrivateDataMetadata(namespace, collection, key string) (map[string][]byte, error)
+	// GetPrivateDataMetadataByHash gets the metadata of a private data item identified by a tuple <namespace, collection, keyhash>
+	GetPrivateDataMetadataByHash(namespace, collection string, keyhash []byte) (map[string][]byte, error)
 	// GetPrivateDataMultipleKeys gets the values for the multiple private data items in a single call
 	GetPrivateDataMultipleKeys(namespace, collection string, keys []string) ([][]byte, error)
 	// GetPrivateDataRangeScanIterator returns an iterator that contains all the key-values between given key ranges.
@@ -196,6 +214,13 @@ type TxSimulator interface {
 	GetTxSimulationResults() (*TxSimulationResults, error)
 }
 
+// QueryResultsIterator - an iterator for query result set
+type QueryResultsIterator interface {
+	commonledger.ResultsIterator
+	// GetBookmarkAndClose returns a paging bookmark and releases resources occupied by the iterator
+	GetBookmarkAndClose() string
+}
+
 // TxPvtData encapsulates the transaction number and pvt write-set for a transaction
 type TxPvtData struct {
 	SeqInBlock uint64
@@ -207,10 +232,14 @@ type TxPvtData struct {
 // to the ledger at the commit of the corresponding block
 type MissingPrivateData struct {
 	TxId       string
-	SeqInBlock int
+	SeqInBlock uint64
 	Namespace  string
 	Collection string
-	Eligible   bool
+	IsEligible bool
+}
+
+type MissingPrivateDataList struct {
+	List []*MissingPrivateData
 }
 
 // BlockAndPvtData encapsulates the block and a map that contains the tuples <seqInBlock, *TxPvtData>
@@ -218,13 +247,17 @@ type MissingPrivateData struct {
 type BlockAndPvtData struct {
 	Block        *common.Block
 	BlockPvtData map[uint64]*TxPvtData
-	Missing      []*MissingPrivateData
+	Missing      *MissingPrivateDataList
 }
 
 // BlockPvtData contains the private data for a block
 type BlockPvtData struct {
 	BlockNum  uint64
 	WriteSets map[uint64]*TxPvtData
+}
+
+func (missing *MissingPrivateDataList) Add(txId string, txNum uint64, ns, coll string, isEligible bool) {
+	missing.List = append(missing.List, &MissingPrivateData{txId, txNum, ns, coll, isEligible})
 }
 
 // PvtCollFilter represents the set of the collection names (as keys of the map with value 'true')
@@ -348,13 +381,30 @@ type MissingBlockPvtdataInfo map[uint64][]*MissingCollectionPvtDataInfo
 
 // MissingCollectionPvtDataInfo includes the name of the chaincode and collection for which private data is missing
 type MissingCollectionPvtDataInfo struct {
-	ChaincodeName, CollectionName string
+	Namespace, Collection string
 }
 
 // CollectionConfigInfo encapsulates a collection config for a chaincode and its committing block number
 type CollectionConfigInfo struct {
 	CollectionConfig   *common.CollectionConfigPackage
 	CommittingBlockNum uint64
+}
+
+func (missingPvtDataInfo MissingPvtDataInfo) Add(blkNum, txNum uint64, ns, coll string) {
+	missingBlockPvtDataInfo, ok := missingPvtDataInfo[blkNum]
+	if !ok {
+		missingBlockPvtDataInfo = make(MissingBlockPvtdataInfo)
+		missingPvtDataInfo[blkNum] = missingBlockPvtDataInfo
+	}
+
+	if _, ok := missingBlockPvtDataInfo[txNum]; !ok {
+		missingBlockPvtDataInfo[txNum] = []*MissingCollectionPvtDataInfo{}
+	}
+
+	missingBlockPvtDataInfo[txNum] = append(missingBlockPvtDataInfo[txNum],
+		&MissingCollectionPvtDataInfo{
+			Namespace:  ns,
+			Collection: coll})
 }
 
 // ErrCollectionConfigNotYetAvailable is an error which is returned from the function
@@ -374,6 +424,26 @@ type NotFoundInIndexErr string
 
 func (NotFoundInIndexErr) Error() string {
 	return "Entry not found in index"
+}
+
+// CollConfigNotDefinedError is returned whenever an operation
+// is requested on a collection whose config has not been defined
+type CollConfigNotDefinedError struct {
+	Ns string
+}
+
+func (e *CollConfigNotDefinedError) Error() string {
+	return fmt.Sprintf("collection config not defined for chaincode [%s], pass the collection configuration upon chaincode definition/instantiation", e.Ns)
+}
+
+// InvalidCollNameError is returned whenever an operation
+// is requested on a collection whose name is invalid
+type InvalidCollNameError struct {
+	Ns, Coll string
+}
+
+func (e *InvalidCollNameError) Error() string {
+	return fmt.Sprintf("collection [%s] not defined in the collection config for chaincode [%s]", e.Coll, e.Ns)
 }
 
 // PvtdataHashMismatch is used when the hash of private write-set
@@ -416,6 +486,13 @@ type ChaincodeLifecycleDetails struct {
 	HashChanged        bool     // true, if the chaincode code package is changed
 	CollectionsUpdated []string // names of the collections that are either added or updated
 	CollectionsRemoved []string // names of the collections that are removed
+}
+
+// MembershipInfoProvider is a dependency that is used by ledger to determine whether the current peer is
+// a member of a collection. Gossip module is expected to provide the dependency to ledger
+type MembershipInfoProvider interface {
+	// AmMemberOf checks whether the current peer is a member of the given collection
+	AmMemberOf(channelName string, collectionPolicyConfig *common.CollectionPolicyConfig) (bool, error)
 }
 
 //go:generate counterfeiter -o mock/deployed_ccinfo_provider.go -fake-name DeployedChaincodeInfoProvider . DeployedChaincodeInfoProvider

@@ -30,8 +30,8 @@ type MockConfig struct {
 	customPeerCfg          *fab.PeerConfig
 	customOrdererCfg       *fab.OrdererConfig
 	customRandomOrdererCfg *fab.OrdererConfig
-	EvtServiceConfig       fab.EventServiceConfig
 	CustomTLSCACertPool    fab.CertPool
+	chConfig               map[string]*fab.ChannelEndpointConfig
 }
 
 // NewMockCryptoConfig ...
@@ -240,16 +240,37 @@ func (c *MockConfig) NetworkConfig() *fab.NetworkConfig {
 }
 
 // ChannelConfig returns the channel configuration
-// TODO: Return more cases
-func (c *MockConfig) ChannelConfig(name string) (*fab.ChannelEndpointConfig, bool) {
-	return &fab.ChannelEndpointConfig{Policies: fab.ChannelPolicies{QueryChannelConfig: fab.QueryChannelConfigPolicy{}}}, true
+func (c *MockConfig) ChannelConfig(channelID string) *fab.ChannelEndpointConfig {
+	if c.chConfig != nil {
+		config, ok := c.chConfig[channelID]
+		if ok {
+			return config
+		}
+	}
+
+	return &fab.ChannelEndpointConfig{
+		Policies: fab.ChannelPolicies{
+			QueryChannelConfig: fab.QueryChannelConfigPolicy{},
+			Discovery:          fab.DiscoveryPolicy{},
+			Selection:          fab.SelectionPolicy{},
+			EventService:       fab.EventServicePolicy{},
+		},
+	}
+}
+
+// SetCustomChannelConfig sets the config for the given channel
+func (c *MockConfig) SetCustomChannelConfig(channelID string, config *fab.ChannelEndpointConfig) {
+	if c.chConfig == nil {
+		c.chConfig = make(map[string]*fab.ChannelEndpointConfig)
+	}
+	c.chConfig[channelID] = config
 }
 
 // ChannelPeers returns the channel peers configuration
-func (c *MockConfig) ChannelPeers(name string) ([]fab.ChannelPeer, bool) {
+func (c *MockConfig) ChannelPeers(name string) []fab.ChannelPeer {
 
 	if name == "noChannelPeers" {
-		return nil, false
+		return nil
 	}
 
 	peerChCfg := fab.PeerChannelConfig{EndorsingPeer: true, ChaincodeQuery: true, LedgerQuery: true, EventSource: true}
@@ -258,18 +279,18 @@ func (c *MockConfig) ChannelPeers(name string) ([]fab.ChannelPeer, bool) {
 	}
 
 	mockPeer := fab.ChannelPeer{PeerChannelConfig: peerChCfg, NetworkPeer: fab.NetworkPeer{PeerConfig: fab.PeerConfig{URL: "example.com"}}}
-	return []fab.ChannelPeer{mockPeer}, true
+	return []fab.ChannelPeer{mockPeer}
 }
 
 // ChannelOrderers returns a list of channel orderers
-func (c *MockConfig) ChannelOrderers(name string) ([]fab.OrdererConfig, bool) {
+func (c *MockConfig) ChannelOrderers(name string) []fab.OrdererConfig {
 	if name == "Invalid" {
-		return nil, false
+		return nil
 	}
 
 	oConfig, _ := c.OrdererConfig("")
 
-	return []fab.OrdererConfig{*oConfig}, true
+	return []fab.OrdererConfig{*oConfig}
 }
 
 // NetworkPeers returns the mock network peers configuration
@@ -307,14 +328,6 @@ func (c *MockConfig) TLSClientCerts() []tls.Certificate {
 	return nil
 }
 
-// EventServiceConfig returns the type of event service client to use
-func (c *MockConfig) EventServiceConfig() fab.EventServiceConfig {
-	if c.EvtServiceConfig != nil {
-		return c.EvtServiceConfig
-	}
-	return &MockEventServiceConfig{}
-}
-
 // Lookup gets the Value from config file by Key
 func (c *MockConfig) Lookup(key string) (interface{}, bool) {
 	if key == "invalid" {
@@ -325,27 +338,4 @@ func (c *MockConfig) Lookup(key string) (interface{}, bool) {
 		return nil, false
 	}
 	return value, true
-}
-
-// MockEventServiceConfig contains configuration options for the event service
-type MockEventServiceConfig struct {
-	LagThreshold          int
-	ReconnectLagThreshold int
-	HeightMonitorPeriod   time.Duration
-}
-
-// BlockHeightLagThreshold returns the block height lag threshold.
-func (c *MockEventServiceConfig) BlockHeightLagThreshold() int {
-	return c.LagThreshold
-}
-
-// ReconnectBlockHeightLagThreshold sets the ReconnectBlockHeightLagThreshold.
-func (c *MockEventServiceConfig) ReconnectBlockHeightLagThreshold() int {
-	return c.ReconnectLagThreshold
-}
-
-// BlockHeightMonitorPeriod is the period in which the connected peer's block height is monitored. Note that this
-// value is only relevant if reconnectBlockHeightLagThreshold >0.
-func (c *MockEventServiceConfig) BlockHeightMonitorPeriod() time.Duration {
-	return c.HeightMonitorPeriod
 }

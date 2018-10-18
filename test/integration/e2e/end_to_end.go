@@ -170,7 +170,7 @@ func verifyFundsIsMoved(t *testing.T, client *channel.Client, value []byte, ccEv
 }
 
 func executeCC(t *testing.T, client *channel.Client) {
-	_, err := client.Execute(channel.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCTxArgs()},
+	_, err := client.Execute(channel.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCDefaultTxArgs()},
 		channel.WithRetry(retry.DefaultChannelOpts))
 	if err != nil {
 		t.Fatalf("Failed to move funds: %s", err)
@@ -178,7 +178,7 @@ func executeCC(t *testing.T, client *channel.Client) {
 }
 
 func queryCC(t *testing.T, client *channel.Client, targetEndpoints ...string) []byte {
-	response, err := client.Query(channel.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCQueryArgs()},
+	response, err := client.Query(channel.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCDefaultQueryArgs()},
 		channel.WithRetry(retry.DefaultChannelOpts),
 		channel.WithTargetEndpoints(targetEndpoints...),
 	)

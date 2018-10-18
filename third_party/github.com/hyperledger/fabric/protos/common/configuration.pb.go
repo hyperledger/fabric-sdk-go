@@ -292,7 +292,7 @@ func init() {
 	proto.RegisterType((*OrdererAddresses)(nil), "sdk.common.OrdererAddresses")
 	proto.RegisterType((*Consortium)(nil), "sdk.common.Consortium")
 	proto.RegisterType((*Capabilities)(nil), "sdk.common.Capabilities")
-	proto.RegisterMapType((map[string]*Capability)(nil), "common.Capabilities.CapabilitiesEntry")
+	proto.RegisterMapType((map[string]*Capability)(nil), "sdk.common.Capabilities.CapabilitiesEntry")
 	proto.RegisterType((*Capability)(nil), "sdk.common.Capability")
 }
 

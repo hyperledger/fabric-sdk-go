@@ -12,6 +12,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	mspclient "github.com/hyperledger/fabric-sdk-go/pkg/client/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
@@ -40,8 +41,10 @@ func GenerateRandomID() string {
 func randomString(strlen int) string {
 	const chars = "abcdefghijklmnopqrstuvwxyz0123456789"
 	result := make([]byte, strlen)
+	seed := rand.NewSource(time.Now().UnixNano())
+	rnd := rand.New(seed)
 	for i := 0; i < strlen; i++ {
-		result[i] = chars[rand.Intn(len(chars))]
+		result[i] = chars[rnd.Intn(len(chars))]
 	}
 	return string(result)
 }

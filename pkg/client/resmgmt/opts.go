@@ -8,12 +8,14 @@ package resmgmt
 
 import (
 	reqContext "context"
+	"io"
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/comm"
+	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	"github.com/pkg/errors"
 )
 
@@ -68,7 +70,7 @@ func WithTargetFilter(targetFilter fab.TargetFilter) RequestOption {
 	}
 }
 
-//WithTimeout encapsulates key value pairs of timeout type, timeout duration to Options
+// WithTimeout encapsulates key value pairs of timeout type, timeout duration to Options
 //if not provided, default timeout configuration from config will be used
 func WithTimeout(timeoutType fab.TimeoutType, timeout time.Duration) RequestOption {
 	return func(ctx context.Client, o *requestOptions) error {
@@ -106,6 +108,29 @@ func WithOrderer(orderer fab.Orderer) RequestOption {
 	return func(ctx context.Client, opts *requestOptions) error {
 		opts.Orderer = orderer
 		return nil
+	}
+}
+
+// WithConfigSignatures allows to provide pre defined signatures for resmgmt client's SaveChannel call
+func WithConfigSignatures(signatures ...*common.ConfigSignature) RequestOption {
+	return func(ctx context.Client, opts *requestOptions) error {
+		opts.Signatures = signatures
+		return nil
+	}
+}
+
+// withConfigSignature allows to provide a pre defined signature reader for resmgmt client's SaveChannel call
+//  The r reader must provide marshaled ConfigSignature content built using either one of the following calls:
+// * CreateConfigSignature call for a signature created internally by the SDK
+// * CreateConfigSignatureData call with signingBytes used for creating a signature by external tool (ex: Openssl)
+//
+// Note: call this function for as many times as there are signatures required for the channel update.
+// This option appends 1 ConfigSignature read from r to requestOptions.Signatures.
+//
+// Note : function not exported for now TODO: double check how to export this
+func withConfigSignature(r io.Reader) RequestOption { // nolint
+	return func(ctx context.Client, opts *requestOptions) error {
+		return createConfigSignatureOption(r, opts)
 	}
 }
 

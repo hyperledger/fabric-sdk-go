@@ -46,10 +46,10 @@ PKGS=($(${GO_CMD} list ${REPO}/test/integration/... 2> /dev/null | \
 # Reduce tests to changed packages.
 if [ "${TEST_CHANGED_ONLY}" = true ]; then
     # findChangedFiles assumes that the working directory contains the repo; so change to the repo directory.
-    PWD=$(pwd)
+    PWD_ORIG=$(pwd)
     cd "${GOPATH}/src/${REPO}"
     findChangedFiles
-    cd ${PWD}
+    cd ${PWD_ORIG}
 
     if [[ "${CHANGED_FILES[@]}" =~ ( |^)(test/fixtures/|test/metadata/|test/scripts/|Makefile( |$)|Gopkg.lock( |$)|ci.properties( |$)) ]]; then
         echo "Test scripts, fixtures or metadata changed - running all tests"
@@ -78,7 +78,7 @@ if [ ${#PKGS[@]} -eq 0 ]; then
     exit 0
 fi
 
-workingDir=$(pwd)
+workingDir=${GOPATH}/src/${REPO}
 declare -a PRIVATE_KEYS=($(find ${workingDir}/test/fixtures/fabric/${FABRIC_CRYPTOCONFIG_VERSION} | grep '/users/' | grep '_sk$' | tr '\n' ' '))
 PRIVATE_KEYS+=($(find ${workingDir}/test/fixtures/fabric/${FABRIC_CRYPTOCONFIG_VERSION} | grep 'User1@tls.example.com' | grep '.key$' | tr '\n' ' '))
 

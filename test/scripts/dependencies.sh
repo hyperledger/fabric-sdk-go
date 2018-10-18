@@ -101,7 +101,8 @@ function installGoPkg {
 
 function isScriptCurrent {
     declare filesModified=$(git diff --name-only --diff-filter=ACMRTUXBD HEAD | tr '\n' ' ' | xargs)
-    if [[ "${filesModified}" =~ ( |^)(test/scripts/dependencies.sh)( |$) ]]; then
+    declare matcher='( |^)(test/scripts/dependencies.sh)( |$)'
+    if [[ "${filesModified}" =~ ${matcher} ]]; then
         echo "Dependencies script modified - will need to install dependencies"
         return 1
     fi

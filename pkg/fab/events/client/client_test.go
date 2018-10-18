@@ -15,25 +15,24 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
-
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
-	"github.com/hyperledger/fabric-sdk-go/pkg/util/test"
-	"github.com/stretchr/testify/assert"
-
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/dispatcher"
 	clientmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/mocks"
 	mockconn "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/mocks"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/peerresolver/preferpeer"
 	esdispatcher "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/service/dispatcher"
 	servicemocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/service/mocks"
 	fabmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
+	"github.com/hyperledger/fabric-sdk-go/pkg/util/test"
 	cb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 	"github.com/pkg/errors"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -1411,10 +1410,22 @@ func TestDisconnectIfBlockHeightLags(t *testing.T) {
 
 	channelID := "mychannel"
 
+	ctx := fabmocks.NewMockContext(
+		mspmocks.NewMockSigningIdentity("user1", "Org1MSP"),
+	)
+
+	ctx.SetEndpointConfig(clientmocks.NewMockConfig(channelID,
+		fab.EventServicePolicy{
+			ResolverStrategy:                 fab.MinBlockHeightStrategy,
+			Balancer:                         fab.RoundRobin,
+			BlockHeightLagThreshold:          2,
+			ReconnectBlockHeightLagThreshold: 3,
+			PeerMonitorPeriod:                250 * time.Millisecond,
+		},
+	))
+
 	eventClient, _, err := newClientWithMockConnAndOpts(
-		fabmocks.NewMockContext(
-			mspmocks.NewMockSigningIdentity("user1", "Org1MSP"),
-		),
+		ctx,
 		fabmocks.NewMockChannelCfg(channelID),
 		clientmocks.NewDiscoveryService(p1, p2, p3),
 		connectionProvider, filteredClientProvider,
@@ -1424,9 +1435,6 @@ func TestDisconnectIfBlockHeightLags(t *testing.T) {
 			WithTimeBetweenConnectAttempts(time.Millisecond),
 			WithConnectionEvent(connectch),
 			WithResponseTimeout(2 * time.Second),
-			dispatcher.WithBlockHeightLagThreshold(2),
-			dispatcher.WithReconnectBlockHeightThreshold(3),
-			dispatcher.WithBlockHeightMonitorPeriod(250 * time.Millisecond),
 		},
 	)
 	if err != nil {
@@ -1446,8 +1454,6 @@ func TestDisconnectIfBlockHeightLags(t *testing.T) {
 	conn.Ledger().NewFilteredBlock(channelID, servicemocks.NewFilteredTx("tx4", pb.TxValidationCode_VALID))
 	conn.Ledger().NewFilteredBlock(channelID, servicemocks.NewFilteredTx("tx5", pb.TxValidationCode_VALID))
 
-	time.Sleep(time.Second)
-
 	// Set the block height of another peer to be greater than the disconnect threshold
 	// so that the event client can reconnect to another peer
 	p2.SetBlockHeight(9)
@@ -1455,6 +1461,166 @@ func TestDisconnectIfBlockHeightLags(t *testing.T) {
 	select {
 	case outcome := <-outcomech:
 		assert.Equal(t, mockconn.ReconnectedOutcome, outcome)
+	case <-time.After(3 * time.Second):
+		t.Fatal("Timed out waiting for reconnect")
+	}
+}
+
+// TestPreferLocalOrgConnection tests the scenario where an org wishes to connect to it's own peers
+// if they are above the block height lag threshold but, if they fall below the threshold, the
+// connection should be made to another org's peer. Once the local org's peers have caught up in
+// block height, the connection to the local peer should be re-established.
+func TestPreferLocalOrgConnection(t *testing.T) {
+	channelID := "testchannel"
+	org1MSP := "Org1MSP"
+	org2MSP := "Org2MSP"
+	blockHeightLagThreshold := 2
+
+	p1O1 := clientmocks.NewMockStatefulPeer("p1_o1", "peer1.org1.com:7051", clientmocks.WithMSP(org1MSP), clientmocks.WithBlockHeight(4))
+	p2O1 := clientmocks.NewMockStatefulPeer("p2_o1", "peer2.org1.com:7051", clientmocks.WithMSP(org1MSP), clientmocks.WithBlockHeight(3))
+	p1O2 := clientmocks.NewMockStatefulPeer("p1_o2", "peer1.org2.com:7051", clientmocks.WithMSP(org2MSP), clientmocks.WithBlockHeight(10))
+	p2O2 := clientmocks.NewMockStatefulPeer("p2_o2", "peer1.org2.com:7051", clientmocks.WithMSP(org2MSP), clientmocks.WithBlockHeight(11))
+
+	connectch := make(chan *dispatcher.ConnectionEvent)
+
+	conn := clientmocks.NewMockConnection(
+		clientmocks.WithLedger(servicemocks.NewMockLedger(servicemocks.FilteredBlockEventFactory, sourceURL)),
+	)
+	connectionProvider := clientmocks.NewProviderFactory().Provider(conn)
+
+	ctx := fabmocks.NewMockContext(
+		mspmocks.NewMockSigningIdentity("user1", "Org1MSP"),
+	)
+	ctx.SetEndpointConfig(clientmocks.NewMockConfig(channelID,
+		fab.EventServicePolicy{
+			ResolverStrategy:                 fab.PreferOrgStrategy,
+			Balancer:                         fab.RoundRobin,
+			BlockHeightLagThreshold:          blockHeightLagThreshold,
+			ReconnectBlockHeightLagThreshold: 3,
+			PeerMonitorPeriod:                250 * time.Millisecond,
+		},
+	))
+
+	eventClient, _, err := newClientWithMockConnAndOpts(
+		ctx,
+		fabmocks.NewMockChannelCfg(channelID),
+		clientmocks.NewDiscoveryService(p1O1, p2O1, p1O2, p2O2),
+		connectionProvider, filteredClientProvider,
+		[]options.Opt{
+			esdispatcher.WithEventConsumerTimeout(3 * time.Second),
+			WithMaxConnectAttempts(1),
+			WithTimeBetweenConnectAttempts(time.Millisecond),
+			WithConnectionEvent(connectch),
+			WithResponseTimeout(2 * time.Second),
+		},
+	)
+	require.NoErrorf(t, err, "error creating channel event client")
+	err = eventClient.Connect()
+	require.NoErrorf(t, err, "errorconnecting channel event client")
+	defer eventClient.Close()
+
+	connectedPeer := eventClient.Dispatcher().(*dispatcher.Dispatcher).ConnectedPeer()
+	assert.Equal(t, org2MSP, connectedPeer.MSPID())
+
+	outcomech := make(chan mockconn.Outcome)
+	go listenConnection(connectch, outcomech)
+
+	conn.Ledger().NewFilteredBlock(channelID, servicemocks.NewFilteredTx("tx1", pb.TxValidationCode_VALID))
+	conn.Ledger().NewFilteredBlock(channelID, servicemocks.NewFilteredTx("tx2", pb.TxValidationCode_VALID))
+	conn.Ledger().NewFilteredBlock(channelID, servicemocks.NewFilteredTx("tx3", pb.TxValidationCode_VALID))
+	conn.Ledger().NewFilteredBlock(channelID, servicemocks.NewFilteredTx("tx4", pb.TxValidationCode_VALID))
+	conn.Ledger().NewFilteredBlock(channelID, servicemocks.NewFilteredTx("tx5", pb.TxValidationCode_VALID))
+
+	// Set the block height of the local peer to be greater than the disconnect threshold
+	// so that the event client can reconnect to the local peer
+	p2O1.SetBlockHeight(9)
+
+	select {
+	case outcome := <-outcomech:
+		assert.Equal(t, mockconn.ReconnectedOutcome, outcome)
+		connectedPeer := eventClient.Dispatcher().(*dispatcher.Dispatcher).ConnectedPeer()
+		assert.Equal(t, org1MSP, connectedPeer.MSPID())
+	case <-time.After(3 * time.Second):
+		t.Fatal("Timed out waiting for reconnect")
+	}
+}
+
+// TestPreferLocalPeersConnection tests the scenario where an org wishes to connect to one of a list of preferred peers
+// if they are above the block height lag threshold but, if they fall below the threshold, the
+// connection should be made to another peer. Once the preferred peers have caught up in
+// block height, the connection to one of the preferred peers should be re-established.
+func TestPreferLocalPeersConnection(t *testing.T) {
+	channelID := "testchannel"
+	org1MSP := "Org1MSP"
+	org2MSP := "Org2MSP"
+	blockHeightLagThreshold := 2
+
+	p1O1 := clientmocks.NewMockStatefulPeer("p1_o1", "peer1.org1.com:7051", clientmocks.WithMSP(org1MSP), clientmocks.WithBlockHeight(4))
+	p2O1 := clientmocks.NewMockStatefulPeer("p2_o1", "peer2.org1.com:7051", clientmocks.WithMSP(org1MSP), clientmocks.WithBlockHeight(3))
+	p1O2 := clientmocks.NewMockStatefulPeer("p1_o2", "peer1.org2.com:7051", clientmocks.WithMSP(org2MSP), clientmocks.WithBlockHeight(10))
+	p2O2 := clientmocks.NewMockStatefulPeer("p2_o2", "peer1.org2.com:7051", clientmocks.WithMSP(org2MSP), clientmocks.WithBlockHeight(11))
+
+	connectch := make(chan *dispatcher.ConnectionEvent)
+
+	conn := clientmocks.NewMockConnection(
+		clientmocks.WithLedger(servicemocks.NewMockLedger(servicemocks.FilteredBlockEventFactory, sourceURL)),
+	)
+	connectionProvider := clientmocks.NewProviderFactory().Provider(conn)
+
+	ctx := fabmocks.NewMockContext(
+		mspmocks.NewMockSigningIdentity("user1", "Org1MSP"),
+	)
+
+	ctx.SetEndpointConfig(clientmocks.NewMockConfig(channelID,
+		fab.EventServicePolicy{
+			ResolverStrategy:                 fab.PreferOrgStrategy,
+			Balancer:                         fab.RoundRobin,
+			BlockHeightLagThreshold:          blockHeightLagThreshold,
+			ReconnectBlockHeightLagThreshold: 3,
+			PeerMonitorPeriod:                250 * time.Millisecond,
+		},
+	))
+
+	eventClient, _, err := newClientWithMockConnAndOpts(
+		ctx,
+		fabmocks.NewMockChannelCfg(channelID),
+		clientmocks.NewDiscoveryService(p1O1, p2O1, p1O2, p2O2),
+		connectionProvider, filteredClientProvider,
+		[]options.Opt{
+			esdispatcher.WithEventConsumerTimeout(3 * time.Second),
+			WithMaxConnectAttempts(1),
+			WithTimeBetweenConnectAttempts(time.Millisecond),
+			WithConnectionEvent(connectch),
+			WithResponseTimeout(2 * time.Second),
+			dispatcher.WithPeerResolver(preferpeer.NewResolver(p1O1.URL(), p2O1.URL())),
+		},
+	)
+	require.NoErrorf(t, err, "error creating channel event client")
+	err = eventClient.Connect()
+	require.NoErrorf(t, err, "errorconnecting channel event client")
+	defer eventClient.Close()
+
+	connectedPeer := eventClient.Dispatcher().(*dispatcher.Dispatcher).ConnectedPeer()
+	assert.Equal(t, org2MSP, connectedPeer.MSPID())
+
+	outcomech := make(chan mockconn.Outcome)
+	go listenConnection(connectch, outcomech)
+
+	conn.Ledger().NewFilteredBlock(channelID, servicemocks.NewFilteredTx("tx1", pb.TxValidationCode_VALID))
+	conn.Ledger().NewFilteredBlock(channelID, servicemocks.NewFilteredTx("tx2", pb.TxValidationCode_VALID))
+	conn.Ledger().NewFilteredBlock(channelID, servicemocks.NewFilteredTx("tx3", pb.TxValidationCode_VALID))
+	conn.Ledger().NewFilteredBlock(channelID, servicemocks.NewFilteredTx("tx4", pb.TxValidationCode_VALID))
+	conn.Ledger().NewFilteredBlock(channelID, servicemocks.NewFilteredTx("tx5", pb.TxValidationCode_VALID))
+
+	// Set the block height of the local peer to be greater than the disconnect threshold
+	// so that the event client can reconnect to the local peer
+	p2O1.SetBlockHeight(9)
+
+	select {
+	case outcome := <-outcomech:
+		assert.Equal(t, mockconn.ReconnectedOutcome, outcome)
+		connectedPeer := eventClient.Dispatcher().(*dispatcher.Dispatcher).ConnectedPeer()
+		assert.Equal(t, org1MSP, connectedPeer.MSPID())
 	case <-time.After(3 * time.Second):
 		t.Fatal("Timed out waiting for reconnect")
 	}
