@@ -172,6 +172,7 @@ var TestRetryableCodes = map[status.Group][]status.Code{
 	},
 	status.DiscoveryServerStatus: {
 		status.QueryEndorsers,
+		status.Code(pb.TxValidationCode_MVCC_READ_CONFLICT),
 	},
 	status.EndorserClientStatus: {
 		status.ConnectionFailed, status.EndorsementMismatch,
@@ -183,6 +184,7 @@ var TestRetryableCodes = map[status.Group][]status.Code{
 	status.EndorserServerStatus: {
 		status.Code(common.Status_SERVICE_UNAVAILABLE),
 		status.Code(common.Status_INTERNAL_SERVER_ERROR),
+		status.Code(pb.TxValidationCode_MVCC_READ_CONFLICT),
 	},
 	status.OrdererClientStatus: {
 		status.ConnectionFailed,
