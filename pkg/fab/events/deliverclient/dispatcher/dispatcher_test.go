@@ -21,6 +21,7 @@ import (
 	fabmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
 	"github.com/pkg/errors"
+	"github.com/stretchr/testify/assert"
 )
 
 var (
@@ -205,6 +206,16 @@ func TestBlockEvents(t *testing.T) {
 	ledger.NewBlock(channelID)
 
 	checkBlockEvents(eventch, t)
+
+	lastBlockReceived := dispatcher.LastBlockNum()
+	assert.Equal(t, uint64(0), lastBlockReceived)
+
+	ledger.NewBlock(channelID)
+
+	checkBlockEvents(eventch, t)
+
+	lastBlockReceived = dispatcher.LastBlockNum()
+	assert.Equal(t, uint64(1), lastBlockReceived)
 
 	// Unregister block events
 	dispatcherEventch <- esdispatcher.NewUnregisterEvent(reg)

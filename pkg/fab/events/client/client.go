@@ -38,7 +38,7 @@ const (
 // chaincode, and transaction status events. Client also monitors the connection to the
 // event server and attempts to reconnect if the connection is closed.
 type Client struct {
-	eventservice.Service
+	*eventservice.Service
 	params
 	sync.RWMutex
 	connEvent       chan *dispatcher.ConnectionEvent
@@ -57,7 +57,7 @@ func New(dispatcher eventservice.Dispatcher, opts ...options.Opt) *Client {
 	options.Apply(params, opts)
 
 	return &Client{
-		Service:         *eventservice.New(dispatcher, opts...),
+		Service:         eventservice.New(dispatcher, opts...),
 		params:          *params,
 		connectionState: int32(Disconnected),
 	}

@@ -54,7 +54,7 @@ var deliverFilteredProvider = func(context fabcontext.Client, chConfig fab.Chann
 
 // Client connects to a peer and receives channel events, such as bock, filtered block, chaincode, and transaction status events.
 type Client struct {
-	client.Client
+	*client.Client
 	params
 }
 
@@ -81,7 +81,7 @@ func New(context fabcontext.Client, chConfig fab.ChannelCfg, discoveryService fa
 	}
 
 	client := &Client{
-		Client: *client.New(dispatcher, opts...),
+		Client: client.New(dispatcher, opts...),
 		params: *params,
 	}
 

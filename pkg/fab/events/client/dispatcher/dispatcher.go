@@ -28,7 +28,7 @@ var logger = logging.NewLogger("fabsdk/fab")
 // in order to avoid any race conditions and to ensure that events are processed in the order that they are received.
 // This avoids the need for synchronization.
 type Dispatcher struct {
-	esdispatcher.Dispatcher
+	*esdispatcher.Dispatcher
 	params
 	context                context.Client
 	chConfig               fab.ChannelCfg
@@ -48,7 +48,7 @@ func New(context context.Client, chConfig fab.ChannelCfg, discoveryService fab.D
 	options.Apply(params, opts)
 
 	dispatcher := &Dispatcher{
-		Dispatcher:         *esdispatcher.New(opts...),
+		Dispatcher:         esdispatcher.New(opts...),
 		params:             *params,
 		context:            context,
 		chConfig:           chConfig,

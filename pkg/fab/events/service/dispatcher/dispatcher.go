@@ -157,6 +157,7 @@ func (ed *Dispatcher) updateLastBlockNum(blockNum uint64) error {
 	lastBlockNum := atomic.LoadUint64(&ed.lastBlockNum)
 	if lastBlockNum == math.MaxUint64 || blockNum > lastBlockNum {
 		atomic.StoreUint64(&ed.lastBlockNum, blockNum)
+		logger.Debugf("Updated last block received to %d", blockNum)
 		return nil
 	}
 	return errors.Errorf("Expecting a block number greater than %d but received block number %d", lastBlockNum, blockNum)
