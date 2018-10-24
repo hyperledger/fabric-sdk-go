@@ -66,3 +66,28 @@ func (mgr *MockCAClient) ModifyIdentity(request *api.IdentityRequest) (*api.Iden
 func (mgr *MockCAClient) RemoveIdentity(request *api.RemoveIdentityRequest) (*api.IdentityResponse, error) {
 	return nil, errors.New("not implemented")
 }
+
+// AddAffiliation add affiliation
+func (mgr *MockCAClient) AddAffiliation(request *api.AffiliationRequest) (*api.AffiliationResponse, error) {
+	return nil, errors.New("not implemented")
+}
+
+// GetAllAffiliations get all affiliations
+func (mgr *MockCAClient) GetAllAffiliations(caname string) (*api.AffiliationResponse, error) {
+	return nil, errors.New("not implemented")
+}
+
+// GetAffiliation get an affiliation
+func (mgr *MockCAClient) GetAffiliation(affiliation, caname string) (*api.AffiliationResponse, error) {
+	return nil, errors.New("not implemented")
+}
+
+// ModifyAffiliation update an affiliation
+func (mgr *MockCAClient) ModifyAffiliation(request *api.ModifyAffiliationRequest) (*api.AffiliationResponse, error) {
+	return nil, errors.New("not implemented")
+}
+
+// RemoveAffiliation remove an affiliation
+func (mgr *MockCAClient) RemoveAffiliation(request *api.AffiliationRequest) (*api.AffiliationResponse, error) {
+	return nil, errors.New("not implemented")
+}

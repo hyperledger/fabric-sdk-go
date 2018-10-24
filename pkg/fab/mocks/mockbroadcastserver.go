@@ -39,17 +39,17 @@ var broadcastResponseError = &po.BroadcastResponse{Status: common.Status_INTERNA
 // MockBroadcastServer mock broadcast server
 type MockBroadcastServer struct {
 	DeliverError                 error
-	BroadcastInternalServerError bool
-	DeliverResponse              *po.DeliverResponse
 	BroadcastError               error
-	BroadcastCustomResponse      *po.BroadcastResponse
 	Creds                        credentials.TransportCredentials
+	blkNum                       uint64
+	DeliverResponse              *po.DeliverResponse
+	BroadcastCustomResponse      *po.BroadcastResponse
 	srv                          *grpc.Server
 	wg                           sync.WaitGroup
+	BroadcastInternalServerError bool
 	// Use the MockBroadCastServer with either a common.Block or a pb.FilteredBlock channel (do not set both)
 	Deliveries         chan *common.Block
 	FilteredDeliveries chan *pb.FilteredBlock
-	blkNum             uint64
 	// mutexes to ensure parallel channel deliveries are sent in sequence
 	delMtx         sync.Mutex
 	filteredDelMtx sync.Mutex

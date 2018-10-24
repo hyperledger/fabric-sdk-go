@@ -338,6 +338,163 @@ func (c *fabricCAAdapter) GetAllIdentities(key core.Key, cert []byte, caname str
 	return getIdentityResponses(c.caClient.Config.CAName, identities), nil
 }
 
+// GetAffiliation returns information about the requested affiliation
+func (c *fabricCAAdapter) GetAffiliation(key core.Key, cert []byte, affiliation, caname string) (*api.AffiliationResponse, error) {
+	logger.Debugf("Retrieving affiliation [%s]", affiliation)
+
+	registrar, err := c.newIdentity(key, cert)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create CA signing identity")
+	}
+
+	r, err := registrar.GetAffiliation(affiliation, caname)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get affiliation")
+	}
+
+	resp := &api.AffiliationResponse{CAName: r.CAName, AffiliationInfo: api.AffiliationInfo{}}
+	err = fillAffiliationInfo(&resp.AffiliationInfo, r.Name, r.Affiliations, r.Identities)
+
+	return resp, err
+}
+
+// GetAllAffiliations returns all affiliations that the caller is authorized to see
+func (c *fabricCAAdapter) GetAllAffiliations(key core.Key, cert []byte, caname string) (*api.AffiliationResponse, error) {
+	logger.Debugf("Retrieving all affiliations")
+
+	registrar, err := c.newIdentity(key, cert)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create CA signing identity")
+	}
+
+	r, err := registrar.GetAllAffiliations(caname)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get affiliations")
+	}
+
+	resp := &api.AffiliationResponse{CAName: r.CAName, AffiliationInfo: api.AffiliationInfo{}}
+	err = fillAffiliationInfo(&resp.AffiliationInfo, r.Name, r.Affiliations, r.Identities)
+
+	return resp, err
+}
+
+// AddAffiliation add new affiliation
+func (c *fabricCAAdapter) AddAffiliation(key core.Key, cert []byte, request *api.AffiliationRequest) (*api.AffiliationResponse, error) {
+	logger.Debugf("Add affiliation [%s]", request.Name)
+
+	req := caapi.AddAffiliationRequest{
+		CAName: request.CAName,
+		Name:   request.Name,
+		Force:  request.Force,
+	}
+
+	registrar, err := c.newIdentity(key, cert)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create CA signing identity")
+	}
+
+	r, err := registrar.AddAffiliation(&req)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to add affiliation")
+	}
+
+	resp := &api.AffiliationResponse{CAName: r.CAName, AffiliationInfo: api.AffiliationInfo{}}
+	err = fillAffiliationInfo(&resp.AffiliationInfo, r.Name, r.Affiliations, r.Identities)
+
+	return resp, err
+}
+
+// ModifyAffiliation renames an existing affiliation on the server
+func (c *fabricCAAdapter) ModifyAffiliation(key core.Key, cert []byte, request *api.ModifyAffiliationRequest) (*api.AffiliationResponse, error) {
+	logger.Debugf("Updating affiliation [%s => %s]", request.Name, request.NewName)
+
+	req := caapi.ModifyAffiliationRequest{
+		CAName:  request.CAName,
+		Name:    request.Name,
+		NewName: request.NewName,
+		Force:   request.Force,
+	}
+
+	registrar, err := c.newIdentity(key, cert)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create CA signing identity")
+	}
+
+	r, err := registrar.ModifyAffiliation(&req)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to modify affiliation")
+	}
+
+	resp := &api.AffiliationResponse{CAName: r.CAName, AffiliationInfo: api.AffiliationInfo{}}
+	err = fillAffiliationInfo(&resp.AffiliationInfo, r.Name, r.Affiliations, r.Identities)
+
+	return resp, err
+}
+
+// RemoveAffiliation removes an existing affiliation from the server
+func (c *fabricCAAdapter) RemoveAffiliation(key core.Key, cert []byte, request *api.AffiliationRequest) (*api.AffiliationResponse, error) {
+	logger.Debugf("Removing affiliation [%s]", request.Name)
+
+	// Create remove request
+	req := caapi.RemoveAffiliationRequest{
+		CAName: request.CAName,
+		Name:   request.Name,
+		Force:  request.Force,
+	}
+
+	registrar, err := c.newIdentity(key, cert)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create CA signing identity")
+	}
+
+	r, err := registrar.RemoveAffiliation(&req)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to remove affiliation")
+	}
+
+	resp := &api.AffiliationResponse{CAName: r.CAName, AffiliationInfo: api.AffiliationInfo{}}
+	err = fillAffiliationInfo(&resp.AffiliationInfo, r.Name, r.Affiliations, r.Identities)
+
+	return resp, err
+}
+
+func fillAffiliationInfo(info *api.AffiliationInfo, name string, affiliations []caapi.AffiliationInfo, identities []caapi.IdentityInfo) error {
+	info.Name = name
+
+	// Add identities which have this affiliation
+	idents := []api.IdentityInfo{}
+	for _, identity := range identities {
+		idents = append(idents, api.IdentityInfo{ID: identity.ID, Type: identity.Type, Affiliation: identity.Affiliation, Attributes: getAllAttributes(identity.Attributes), MaxEnrollments: identity.MaxEnrollments})
+	}
+	if len(idents) > 0 {
+		info.Identities = idents
+	}
+
+	// Create child affiliations (if any)
+	children := []api.AffiliationInfo{}
+	for _, aff := range affiliations {
+		childAff := api.AffiliationInfo{Name: aff.Name}
+		err := fillAffiliationInfo(&childAff, aff.Name, aff.Affiliations, aff.Identities)
+		if err != nil {
+			return err
+		}
+		children = append(children, childAff)
+	}
+	if len(children) > 0 {
+		info.Affiliations = children
+	}
+	return nil
+}
+
+func getAllAttributes(attrs []caapi.Attribute) []api.Attribute {
+	attriburtes := []api.Attribute{}
+	for _, attr := range attrs {
+		attriburtes = append(attriburtes, api.Attribute{Name: attr.Name, Value: attr.Value, ECert: attr.ECert})
+	}
+
+	return attriburtes
+}
+
 func (c *fabricCAAdapter) newIdentity(key core.Key, cert []byte) (*calib.Identity, error) {
 	x509Cred := x509.NewCredential(key, cert, c.caClient)
 

@@ -136,3 +136,47 @@ type RemoveIdentityRequest struct {
 	// Name of the CA
 	CAName string
 }
+
+// AffiliationRequest represents the request to add/remove affiliation to the fabric-ca-server
+type AffiliationRequest struct {
+	// Name of the affiliation
+	Name string
+
+	// Creates parent affiliations if they do not exist
+	Force bool
+
+	// Name of the CA
+	CAName string
+}
+
+// ModifyAffiliationRequest represents the request to modify an existing affiliation on the
+// fabric-ca-server
+type ModifyAffiliationRequest struct {
+	AffiliationRequest
+
+	// New name of the affiliation
+	NewName string
+}
+
+// AffiliationResponse contains the response for get, add, modify, and remove an affiliation
+type AffiliationResponse struct {
+	AffiliationInfo
+	CAName string
+}
+
+// AffiliationInfo contains the affiliation name, child affiliation info, and identities
+// associated with this affiliation.
+type AffiliationInfo struct {
+	Name         string
+	Affiliations []AffiliationInfo
+	Identities   []IdentityInfo
+}
+
+// IdentityInfo contains information about an identity
+type IdentityInfo struct {
+	ID             string
+	Type           string
+	Affiliation    string
+	Attributes     []Attribute
+	MaxEnrollments int
+}

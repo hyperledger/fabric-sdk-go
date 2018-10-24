@@ -547,6 +547,124 @@ func TestInterfaces(t *testing.T) {
 	}
 }
 
+func TestAddAffiliation(t *testing.T) {
+	f := textFixture{}
+	f.setup()
+	defer f.close()
+
+	// Add with nil request
+	_, err := f.caClient.AddAffiliation(nil)
+	if err == nil {
+		t.Fatal("Expected error with nil request")
+	}
+
+	// Add without required parameters
+	_, err = f.caClient.AddAffiliation(&api.AffiliationRequest{})
+	if err == nil || !strings.Contains(err.Error(), "Name is required") {
+		t.Fatal("Expected error due to missing required parameter")
+	}
+
+	resp, err := f.caClient.AddAffiliation(&api.AffiliationRequest{Name: "test1.com", Force: true})
+	if err != nil {
+		t.Fatalf("Add affiliation return error %s", err)
+	}
+
+	if resp.Name != "test1.com" {
+		t.Fatalf("add affiliation returned wrong value %s", resp.Name)
+	}
+}
+
+func TestModifyAffiliation(t *testing.T) {
+	f := textFixture{}
+	f.setup()
+	defer f.close()
+
+	// Modify with nil request
+	_, err := f.caClient.ModifyAffiliation(nil)
+	if err == nil {
+		t.Fatal("Expected error with nil request")
+	}
+
+	// Modify without required parameters
+	_, err = f.caClient.ModifyAffiliation(&api.ModifyAffiliationRequest{})
+	if err == nil || !strings.Contains(err.Error(), "Name and NewName are required") {
+		t.Fatal("Expected error due to missing required parameters")
+	}
+
+	resp, err := f.caClient.ModifyAffiliation(&api.ModifyAffiliationRequest{NewName: "test1new.com", AffiliationRequest: api.AffiliationRequest{Name: "123"}})
+	if err != nil {
+		t.Fatalf("Modify affiliation return error %s", err)
+	}
+
+	if resp.Name != "test1new.com" {
+		t.Fatalf("Modify affiliation returned wrong value %s", resp.Name)
+	}
+}
+
+func TestRemoveAffiliation(t *testing.T) {
+	f := textFixture{}
+	f.setup()
+	defer f.close()
+
+	// Remove with nil request
+	_, err := f.caClient.RemoveAffiliation(nil)
+	if err == nil {
+		t.Fatal("Expected error with nil request")
+	}
+
+	// Remove without required parameters
+	_, err = f.caClient.RemoveAffiliation(&api.AffiliationRequest{})
+	if err == nil || !strings.Contains(err.Error(), "Name is required") {
+		t.Fatal("Expected error due to missing required parameters")
+	}
+
+	resp, err := f.caClient.RemoveAffiliation(&api.AffiliationRequest{Name: "123"})
+	if err != nil {
+		t.Fatalf("Remove affiliation return error %s", err)
+	}
+
+	if resp.Name != "test1.com" {
+		t.Fatalf("Remove affiliation returned wrong value %s", resp.Name)
+	}
+}
+
+func TestGetAffiliation(t *testing.T) {
+	f := textFixture{}
+	f.setup()
+	defer f.close()
+
+	// Get without required parameter
+	_, err := f.caClient.GetAffiliation("", "")
+	if err == nil || !strings.Contains(err.Error(), "affiliation is required") {
+		t.Fatal("Expected error due to missing required parameter")
+	}
+
+	// Get affiliation with valid request
+	resp, err := f.caClient.GetAffiliation("123", "")
+	if err != nil {
+		t.Fatalf("Get affiliation return error %s", err)
+	}
+
+	if resp == nil {
+		t.Fatal("Get affiliation response is nil")
+	}
+}
+
+func TestGetAllAffiliations(t *testing.T) {
+	f := textFixture{}
+	f.setup()
+	defer f.close()
+
+	response, err := f.caClient.GetAllAffiliations("")
+	if err != nil {
+		t.Fatalf("Get affiliations return error %s", err)
+	}
+
+	if len(response.Affiliations) != 1 {
+		t.Fatalf("expecting %d, got %d response", 1, len(response.Affiliations))
+	}
+}
+
 func getCustomBackend(configPath string) ([]core.ConfigBackend, error) {
 
 	configBackends, err := config.FromFile(configPath)()

@@ -441,3 +441,163 @@ func (c *Client) prepareOptsFromOptions(ctx context.Client, options ...RequestOp
 	}
 	return opts, nil
 }
+
+// GetAffiliation returns information about the requested affiliation
+func (c *Client) GetAffiliation(affiliation string, options ...RequestOption) (*AffiliationResponse, error) {
+	// Read request options
+	opts, err := c.prepareOptsFromOptions(c.ctx, options...)
+	if err != nil {
+		return nil, err
+	}
+
+	ca, err := newCAClient(c.ctx, c.orgName)
+	if err != nil {
+		return nil, err
+	}
+
+	r, err := ca.GetAffiliation(affiliation, opts.CA)
+	if err != nil {
+		return nil, err
+	}
+
+	resp := &AffiliationResponse{CAName: r.CAName, AffiliationInfo: AffiliationInfo{}}
+	err = fillAffiliationInfo(&resp.AffiliationInfo, r.Name, r.Affiliations, r.Identities)
+
+	return resp, err
+}
+
+// GetAllAffiliations returns all affiliations that the caller is authorized to see
+func (c *Client) GetAllAffiliations(options ...RequestOption) (*AffiliationResponse, error) {
+	// Read request options
+	opts, err := c.prepareOptsFromOptions(c.ctx, options...)
+	if err != nil {
+		return nil, err
+	}
+
+	ca, err := newCAClient(c.ctx, c.orgName)
+	if err != nil {
+		return nil, err
+	}
+
+	r, err := ca.GetAllAffiliations(opts.CA)
+	if err != nil {
+		return nil, err
+	}
+
+	resp := &AffiliationResponse{CAName: r.CAName, AffiliationInfo: AffiliationInfo{}}
+	err = fillAffiliationInfo(&resp.AffiliationInfo, r.Name, r.Affiliations, r.Identities)
+
+	return resp, err
+}
+
+// AddAffiliation adds a new affiliation to the server
+func (c *Client) AddAffiliation(request *AffiliationRequest) (*AffiliationResponse, error) {
+	ca, err := newCAClient(c.ctx, c.orgName)
+	if err != nil {
+		return nil, err
+	}
+
+	req := &mspapi.AffiliationRequest{
+		Name:   request.Name,
+		Force:  request.Force,
+		CAName: request.CAName,
+	}
+
+	r, err := ca.AddAffiliation(req)
+	if err != nil {
+		return nil, err
+	}
+
+	resp := &AffiliationResponse{CAName: r.CAName, AffiliationInfo: AffiliationInfo{}}
+	err = fillAffiliationInfo(&resp.AffiliationInfo, r.Name, r.Affiliations, r.Identities)
+
+	return resp, err
+}
+
+// ModifyAffiliation renames an existing affiliation on the server
+func (c *Client) ModifyAffiliation(request *ModifyAffiliationRequest) (*AffiliationResponse, error) {
+	ca, err := newCAClient(c.ctx, c.orgName)
+	if err != nil {
+		return nil, err
+	}
+
+	req := &mspapi.ModifyAffiliationRequest{
+		NewName: request.NewName,
+		AffiliationRequest: mspapi.AffiliationRequest{
+			Name:   request.Name,
+			Force:  request.Force,
+			CAName: request.CAName,
+		},
+	}
+
+	r, err := ca.ModifyAffiliation(req)
+	if err != nil {
+		return nil, err
+	}
+
+	resp := &AffiliationResponse{CAName: r.CAName, AffiliationInfo: AffiliationInfo{}}
+	err = fillAffiliationInfo(&resp.AffiliationInfo, r.Name, r.Affiliations, r.Identities)
+
+	return resp, err
+}
+
+// RemoveAffiliation removes an existing affiliation from the server
+func (c *Client) RemoveAffiliation(request *AffiliationRequest) (*AffiliationResponse, error) {
+	ca, err := newCAClient(c.ctx, c.orgName)
+	if err != nil {
+		return nil, err
+	}
+
+	req := &mspapi.AffiliationRequest{
+		Name:   request.Name,
+		Force:  request.Force,
+		CAName: request.CAName,
+	}
+
+	r, err := ca.RemoveAffiliation(req)
+	if err != nil {
+		return nil, err
+	}
+
+	resp := &AffiliationResponse{CAName: r.CAName, AffiliationInfo: AffiliationInfo{}}
+	err = fillAffiliationInfo(&resp.AffiliationInfo, r.Name, r.Affiliations, r.Identities)
+
+	return resp, err
+}
+
+func fillAffiliationInfo(info *AffiliationInfo, name string, affiliations []mspapi.AffiliationInfo, identities []mspapi.IdentityInfo) error {
+	info.Name = name
+
+	// Add identities which have this affiliation
+	idents := []IdentityInfo{}
+	for _, identity := range identities {
+		idents = append(idents, IdentityInfo{ID: identity.ID, Type: identity.Type, Affiliation: identity.Affiliation, Attributes: getAllAttributes(identity.Attributes), MaxEnrollments: identity.MaxEnrollments})
+	}
+	if len(idents) > 0 {
+		info.Identities = idents
+	}
+
+	// Create child affiliations (if any)
+	children := []AffiliationInfo{}
+	for _, aff := range affiliations {
+		childAff := AffiliationInfo{Name: aff.Name}
+		err := fillAffiliationInfo(&childAff, aff.Name, aff.Affiliations, aff.Identities)
+		if err != nil {
+			return err
+		}
+		children = append(children, childAff)
+	}
+	if len(children) > 0 {
+		info.Affiliations = children
+	}
+	return nil
+}
+
+func getAllAttributes(attrs []mspapi.Attribute) []Attribute {
+	attriburtes := []Attribute{}
+	for _, attr := range attrs {
+		attriburtes = append(attriburtes, Attribute{Name: attr.Name, Value: attr.Value, ECert: attr.ECert})
+	}
+
+	return attriburtes
+}

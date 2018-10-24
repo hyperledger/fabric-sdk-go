@@ -12,19 +12,15 @@ import (
 	"time"
 
 	cfsslapi "github.com/cloudflare/cfssl/api"
-
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/api"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/util"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 )
 
-var logger = logging.NewLogger("fabsdk/msp")
-
 // Matching key-cert pair. On enroll, the key will be
 // imported into the key store, and the cert will be
 // returned to the caller.
-
 const privateKey = `-----BEGIN PRIVATE KEY-----
 MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgp4qKKB0WCEfx7XiB
 5Ul+GpjM1P5rqc6RhjD5OkTgl5OhRANCAATyFT0voXX7cA4PPtNstWleaTpwjvbS
@@ -45,6 +41,8 @@ mvoEKwaToscEu43ZXSj5fTVJornjxDUtMAoGCCqGSM49BAMCA0cAMEQCID+dZ7H5
 AiaiI2BjxnL3/TetJ8iFJYZyWvK//an13WV/AiARBJd/pI5A7KZgQxJhXmmR8bie
 XdsmTcdRvJ3TS/6HCA==
 -----END CERTIFICATE-----`
+
+var logger = logging.NewLogger("fabsdk/msp")
 
 // The enrollment response from the server
 type enrollmentResponseNet struct {
@@ -88,6 +86,8 @@ func (s *MockFabricCAServer) Start(lis net.Listener, cryptoSuite core.CryptoSuit
 	http.HandleFunc("/revoke", s.revoke)
 	http.HandleFunc("/identities", s.identities)
 	http.HandleFunc("/identities/123", s.identity)
+	http.HandleFunc("/affiliations", s.affiliations)
+	http.HandleFunc("/affiliations/123", s.affiliation)
 
 	server := &http.Server{
 		Addr:      addr,
@@ -156,20 +156,20 @@ func fillCAInfo(info *serverInfoResponseNet) {
 // Register user
 func (s *MockFabricCAServer) identity(w http.ResponseWriter, req *http.Request) {
 	switch req.Method {
-	case "GET":
+	case http.MethodGet:
 		// Serve the resource.
 		resp := &api.GetIDResponse{ID: "123", Affiliation: "org2",
 			Attributes: []api.Attribute{{Name: "attName1", Value: "attValue1"}, {Name: "attName2", Value: "attValue2"}}}
 		if err := cfsslapi.SendResponse(w, resp); err != nil {
 			logger.Error(err)
 		}
-	case "PUT":
+	case http.MethodPut:
 		// Update an existing record.
 		resp := &api.IdentityResponse{ID: "123", Affiliation: "org2", Secret: "new-top-secret"}
 		if err := cfsslapi.SendResponse(w, resp); err != nil {
 			logger.Error(err)
 		}
-	case "DELETE":
+	case http.MethodDelete:
 		// Remove the record.
 		resp := &api.IdentityResponse{ID: "123"}
 		if err := cfsslapi.SendResponse(w, resp); err != nil {
@@ -185,13 +185,13 @@ func (s *MockFabricCAServer) identity(w http.ResponseWriter, req *http.Request) 
 // Handler for creating an identity and retrieving all identities
 func (s *MockFabricCAServer) identities(w http.ResponseWriter, req *http.Request) {
 	switch req.Method {
-	case "POST":
+	case http.MethodPost:
 		// Create a new record.
 		resp := &api.IdentityResponse{ID: "123", Affiliation: "org2", Secret: "top-secret"}
 		if err := cfsslapi.SendResponse(w, resp); err != nil {
 			logger.Error(err)
 		}
-	case "GET":
+	case http.MethodGet:
 		// Serve the resource.
 		resp := &api.GetAllIDsResponse{Identities: []api.IdentityInfo{{ID: "123", Affiliation: "org2"},
 			{ID: "abc", Affiliation: "org2", Attributes: []api.Attribute{{Name: "attName1", Value: "attValue1"}}}}}
@@ -203,4 +203,53 @@ func (s *MockFabricCAServer) identities(w http.ResponseWriter, req *http.Request
 		logger.Error("Request method not supported ")
 	}
 
+}
+
+func (s *MockFabricCAServer) affiliations(w http.ResponseWriter, req *http.Request) {
+	switch req.Method {
+	case http.MethodPost:
+		resp := &api.AffiliationResponse{AffiliationInfo: api.AffiliationInfo{Name: "test1.com"}}
+		if err := cfsslapi.SendResponse(w, resp); err != nil {
+			logger.Error(err)
+		}
+
+	case http.MethodGet:
+		affs := []api.AffiliationInfo{
+			{
+				Name: "com",
+				Affiliations: []api.AffiliationInfo{
+					{
+						Name: "test1.com",
+					},
+				},
+			},
+		}
+
+		resp := &api.AffiliationResponse{AffiliationInfo: api.AffiliationInfo{Name: "", Affiliations: affs}}
+		if err := cfsslapi.SendResponse(w, resp); err != nil {
+			logger.Error(err)
+		}
+	}
+}
+
+func (s *MockFabricCAServer) affiliation(w http.ResponseWriter, req *http.Request) {
+	switch req.Method {
+	case http.MethodGet:
+		resp := &api.AffiliationResponse{AffiliationInfo: api.AffiliationInfo{Name: "test1.com"}}
+		if err := cfsslapi.SendResponse(w, resp); err != nil {
+			logger.Error(err)
+		}
+
+	case http.MethodPut:
+		resp := &api.AffiliationResponse{AffiliationInfo: api.AffiliationInfo{Name: "test1new.com"}}
+		if err := cfsslapi.SendResponse(w, resp); err != nil {
+			logger.Error(err)
+		}
+
+	case http.MethodDelete:
+		resp := &api.AffiliationResponse{AffiliationInfo: api.AffiliationInfo{Name: "test1.com"}}
+		if err := cfsslapi.SendResponse(w, resp); err != nil {
+			logger.Error(err)
+		}
+	}
 }

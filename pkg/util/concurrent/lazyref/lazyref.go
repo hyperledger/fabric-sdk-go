@@ -73,14 +73,14 @@ const (
 // is not called every time the value is refreshed with the periodic refresh feature.)
 type Reference struct {
 	params
-	wg                sync.WaitGroup
 	expirationHandler expirationHandler
 	initializer       InitializerWithData
 	ref               unsafe.Pointer
 	lastTimeAccessed  unsafe.Pointer
+	lock              sync.RWMutex
+	wg                sync.WaitGroup
 	closed            bool
 	running           bool
-	lock              sync.RWMutex
 	closech           chan bool
 }
 
