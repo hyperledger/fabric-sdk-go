@@ -9,12 +9,14 @@ SPDX-License-Identifier: Apache-2.0
 package channel
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 	"sync"
 	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/multi"
 	"github.com/stretchr/testify/assert"
@@ -309,18 +311,34 @@ func TestChannelClientRollsBackPvtDataIfMvccReadConflict(t *testing.T) {
 	require.Truef(t, len(errs) > 0 && strings.Contains(errs[0].Error(), "MVCC_READ_CONFLICT"), "could not reproduce MVCC_READ_CONFLICT")
 
 	// read current value of private data collection
-	resp, err := chClient.Query(
-		channel.Request{
-			ChaincodeID: ccID,
-			Fcn:         "getprivate",
-			Args:        [][]byte{[]byte(coll), []byte(key)},
+	//resp, err := chClient.Query(
+	//	channel.Request{
+	//		ChaincodeID: ccID,
+	//		Fcn:         "getprivate",
+	//		Args:        [][]byte{[]byte(coll), []byte(key)},
+	//	},
+	//	channel.WithRetry(retry.TestRetryOpts),
+	//)
+	resp, err := retry.NewInvoker(retry.New(retry.TestRetryOpts)).Invoke(
+		func() (interface{}, error) {
+			b, e := chClient.Query(
+				channel.Request{
+					ChaincodeID: ccID,
+					Fcn:         "getprivate",
+					Args:        [][]byte{[]byte(coll), []byte(key)},
+				},
+				channel.WithRetry(retry.TestRetryOpts),
+			)
+			if e != nil || strings.TrimSpace(string(b.Payload)) == "" {
+				return nil, status.New(status.TestStatus, status.GenericTransient.ToInt32(), fmt.Sprintf("getprivate data returned error: %v", e), nil)
+			}
+			return b, e
 		},
-		channel.WithRetry(retry.TestRetryOpts),
 	)
 	require.NoErrorf(t, err, "error attempting to read private data")
-	require.NotEmptyf(t, resp.Payload, "reading private data returned empty response")
+	require.NotEmptyf(t, strings.TrimSpace(string(resp.(channel.Response).Payload)), "reading private data returned empty response")
 
-	actual, err := strconv.Atoi(string(resp.Payload))
+	actual, err := strconv.Atoi(string(resp.(channel.Response).Payload))
 	require.NoError(t, err)
 
 	assert.Truef(t, actual == expected, "Private data not rolled back during MVCC_READ_CONFLICT")

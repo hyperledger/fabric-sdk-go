@@ -273,13 +273,27 @@ func checkLedgerInfo(ledgerClient *ledger.Client, t *testing.T, ledgerInfoBefore
 		t.Fatal("Block size did not increase after transaction")
 	}
 	// Test Query Block by Hash - retrieve current block by number
-	block, err := ledgerClient.QueryBlock(ledgerInfoAfter.BCI.Height-1, ledger.WithTargets(orgTestPeer0.(fab.Peer), orgTestPeer1.(fab.Peer)), ledger.WithMinTargets(2))
+	//block, err := ledgerClient.QueryBlock(ledgerInfoAfter.BCI.Height-1, ledger.WithTargets(orgTestPeer0.(fab.Peer), orgTestPeer1.(fab.Peer)), ledger.WithMinTargets(2))
+	// invoke QueryBlock in retryable mode to ensure all peers have responded
+	block, err := retry.NewInvoker(retry.New(retry.TestRetryOpts)).Invoke(
+		func() (interface{}, error) {
+			b, e := ledgerClient.QueryBlock(ledgerInfoAfter.BCI.Height-1, ledger.WithTargets(orgTestPeer0.(fab.Peer), orgTestPeer1.(fab.Peer)), ledger.WithMinTargets(2))
+			if e != nil {
+				// return a retryable code if # of responses is less than the # of targets sent (in this case 2 responses needed)
+				if strings.Contains(e.Error(), "is less than MinTargets") {
+					return nil, status.New(status.TestStatus, status.GenericTransient.ToInt32(), fmt.Sprintf("QueryBlock returned error: %v", e), nil)
+				}
+			}
+			return b, e
+		},
+	)
 	if err != nil {
 		t.Fatalf("QueryBlock return error: %s", err)
 	}
 	if block == nil {
 		t.Fatal("Block info not available")
 	}
+
 	// Get transaction info
 	transactionInfo, err := ledgerClient.QueryTransaction(transactionID, ledger.WithTargets(orgTestPeer0.(fab.Peer), orgTestPeer1.(fab.Peer)), ledger.WithMinTargets(2))
 	if err != nil {

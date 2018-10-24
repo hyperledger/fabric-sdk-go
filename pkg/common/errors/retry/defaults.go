@@ -133,6 +133,7 @@ var ChannelClientRetryableCodes = map[status.Group][]status.Code{
 	status.EndorserClientStatus: {
 		status.ConnectionFailed, status.EndorsementMismatch,
 		status.PrematureChaincodeExecution,
+		status.Code(pb.TxValidationCode_MVCC_READ_CONFLICT),
 		status.ChaincodeAlreadyLaunching,
 		status.ChaincodeNameNotFound,
 	},

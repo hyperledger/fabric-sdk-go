@@ -9,6 +9,7 @@ package ledger
 import (
 	"fmt"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
@@ -149,11 +150,21 @@ func changeBlockState(t *testing.T, client *channel.Client, queryArg [][]byte, m
 		Fcn:         "invoke",
 		Args:        queryArg,
 	}
-	resp, err := client.Query(req, channel.WithRetry(retry.DefaultChannelOpts))
+	//resp, err := client.Query(req, channel.WithRetry(retry.DefaultChannelOpts))
+	resp, err := retry.NewInvoker(retry.New(retry.TestRetryOpts)).Invoke(
+		func() (interface{}, error) {
+			response, err := client.Query(req, channel.WithRetry(retry.DefaultChannelOpts))
+
+			if err != nil && strings.Contains(err.Error(), "Nil amount") {
+				return nil, status.New(status.TestStatus, status.GenericTransient.ToInt32(), "query funds failed", nil)
+			}
+			return response, nil
+		},
+	)
 	if err != nil {
 		return "", 0, errors.WithMessage(err, "query funds failed")
 	}
-	value := resp.Payload
+	value := resp.(channel.Response).Payload
 
 	// Start transaction that will change block state
 	txID, err := moveFundsAndGetTxID(t, client, moveArg, chaincodeID)

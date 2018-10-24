@@ -13,6 +13,8 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/ledger"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	providersFab "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab"
@@ -41,6 +43,39 @@ func TestLedgerClientQueries(t *testing.T) {
 		t.Fatalf("QueryInfo return error: %s", err)
 	}
 
+	testPeerConfig(ledgerInfo, t)
+
+	// Same query with target
+	target := testSetup.Targets[0]
+	//ledgerInfoFromTarget, err := client.QueryInfo(ledger.WithTargetEndpoints(target))
+	ledgerInfoFromTarget, err := retry.NewInvoker(retry.New(retry.TestRetryOpts)).Invoke(
+		func() (interface{}, error) {
+			response, e := client.QueryInfo(ledger.WithTargetEndpoints(target))
+
+			if err != nil && (strings.Contains(e.Error(), "QueryInfo failed") || strings.Contains(e.Error(), "Number of responses")) {
+				return nil, status.New(status.TestStatus, status.GenericTransient.ToInt32(), "query funds failed", nil)
+			}
+			if !proto.Equal(response.BCI, ledgerInfo.BCI) {
+				return nil, status.New(status.TestStatus, status.GenericTransient.ToInt32(), "results mismatch between default and target peers", nil)
+			}
+			return response, nil
+		},
+	)
+	if err != nil {
+		t.Fatalf("QueryInfo return error: %s", err)
+	}
+
+	if !proto.Equal(ledgerInfoFromTarget.(*providersFab.BlockchainInfoResponse).BCI, ledgerInfo.BCI) {
+		t.Fatal("Expecting same result from default peer and target peer")
+	}
+
+	testQueryBlockNumberByHash(client, ledgerInfo, t)
+
+	testQueryBlockNumber(client, t, 0)
+
+}
+func testPeerConfig(ledgerInfo *providersFab.BlockchainInfoResponse, t *testing.T) {
+	sdk := mainSDK
 	configBackend, err := sdk.Config()
 	if err != nil {
 		t.Fatalf("failed to get config backend, error: %s", err)
@@ -59,22 +94,6 @@ func TestLedgerClientQueries(t *testing.T) {
 	if !strings.Contains(ledgerInfo.Endorser, expectedPeerConfig1.URL) && !strings.Contains(ledgerInfo.Endorser, expectedPeerConfig2.URL) {
 		t.Fatalf("Expecting %s or %s, got %s", expectedPeerConfig1.URL, expectedPeerConfig2.URL, ledgerInfo.Endorser)
 	}
-
-	// Same query with target
-	target := testSetup.Targets[0]
-	ledgerInfoFromTarget, err := client.QueryInfo(ledger.WithTargetEndpoints(target))
-	if err != nil {
-		t.Fatalf("QueryInfo return error: %s", err)
-	}
-
-	if !proto.Equal(ledgerInfoFromTarget.BCI, ledgerInfo.BCI) {
-		t.Fatal("Expecting same result from default peer and target peer")
-	}
-
-	testQueryBlockNumberByHash(client, ledgerInfo, t)
-
-	testQueryBlockNumber(client, t, 0)
-
 }
 
 func testQueryBlockNumberByHash(client *ledger.Client, ledgerInfo *providersFab.BlockchainInfoResponse, t *testing.T) {

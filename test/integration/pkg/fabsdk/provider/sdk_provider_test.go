@@ -9,6 +9,7 @@ package provider
 import (
 	"fmt"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
@@ -61,13 +62,26 @@ func TestDynamicSelection(t *testing.T) {
 	chClient, err := channel.New(org1ChannelClientContext)
 	require.NoError(t, err, "Failed to create new channel client")
 
-	response, err := chClient.Query(channel.Request{ChaincodeID: chaincodeID, Fcn: "invoke", Args: queryArg},
-		channel.WithRetry(retry.TestRetryOpts))
+	//response, err := chClient.Query(channel.Request{ChaincodeID: chaincodeID, Fcn: "invoke", Args: queryArg},
+	//	channel.WithRetry(retry.TestRetryOpts))
+	response, err := retry.NewInvoker(retry.New(retry.TestRetryOpts)).Invoke(
+		func() (interface{}, error) {
+			b, e := chClient.Query(channel.Request{ChaincodeID: chaincodeID, Fcn: "invoke", Args: queryArg},
+				channel.WithRetry(retry.TestRetryOpts))
+			if e != nil {
+				// return a retryable code if key/value query is nil (ie not propagated to all peers yet)
+				if strings.Contains(e.Error(), "Nil amount for") {
+					return nil, status.New(status.TestStatus, status.GenericTransient.ToInt32(), fmt.Sprintf("QueryBlock returned error: %v", e), nil)
+				}
+			}
+			return b, e
+		},
+	)
 	require.NoError(t, err, "Failed to query funds, ccID: %s, queryArgs: [%+v]", chaincodeID, queryArg)
-	value := response.Payload
+	value := response.(channel.Response).Payload
 
 	// Move funds
-	response, err = chClient.Execute(channel.Request{ChaincodeID: chaincodeID, Fcn: "invoke", Args: moveTxArg},
+	_, err = chClient.Execute(channel.Request{ChaincodeID: chaincodeID, Fcn: "invoke", Args: moveTxArg},
 		channel.WithRetry(retry.DefaultChannelOpts))
 	require.NoError(t, err, "Failed to move funds, ccID: %s, queryArgs:[%+v]", chaincodeID, moveTxArg)
 
