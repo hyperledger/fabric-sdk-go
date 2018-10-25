@@ -665,6 +665,21 @@ func TestGetAllAffiliations(t *testing.T) {
 	}
 }
 
+func TestGetCAInfo(t *testing.T) {
+	f := textFixture{}
+	f.setup()
+	defer f.close()
+
+	resp, err := f.caClient.GetCAInfo()
+	if err != nil {
+		t.Fatalf("Get CA info return error %s", err)
+	}
+
+	if resp.CAName != "123" {
+		t.Fatalf("expecting 123, got %s", resp.CAName)
+	}
+}
+
 func getCustomBackend(configPath string) ([]core.ConfigBackend, error) {
 
 	configBackends, err := config.FromFile(configPath)()

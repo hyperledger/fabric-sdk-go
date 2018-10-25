@@ -21,6 +21,7 @@ type CAClient interface {
 	Reenroll(enrollmentID string) error
 	Register(request *RegistrationRequest) (string, error)
 	Revoke(request *RevocationRequest) (*RevocationResponse, error)
+	GetCAInfo() (*GetCAInfoResponse, error)
 	CreateIdentity(request *IdentityRequest) (*IdentityResponse, error)
 	GetIdentity(id, caname string) (*IdentityResponse, error)
 	ModifyIdentity(request *IdentityRequest) (*IdentityResponse, error)
@@ -205,4 +206,19 @@ type IdentityInfo struct {
 	Affiliation    string
 	Attributes     []Attribute
 	MaxEnrollments int
+}
+
+// GetCAInfoResponse is the response from the GetCAInfo call
+type GetCAInfoResponse struct {
+	// CAName is the name of the CA
+	CAName string
+	// CAChain is the PEM-encoded bytes of the fabric-ca-server's CA chain.
+	// The 1st element of the chain is the root CA cert
+	CAChain []byte
+	// Idemix issuer public key of the CA
+	IssuerPublicKey []byte
+	// Idemix issuer revocation public key of the CA
+	IssuerRevocationPublicKey []byte
+	// Version of the server
+	Version string
 }

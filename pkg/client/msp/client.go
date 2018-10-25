@@ -30,6 +30,7 @@ import (
 // Client enables access to Client services
 type Client struct {
 	orgName string
+	caName  string
 	ctx     context.Client
 }
 
@@ -85,8 +86,14 @@ func New(clientProvider context.ClientProvider, opts ...ClientOption) (*Client, 
 	if msp.orgName == "" {
 		return nil, errors.New("organization is not provided")
 	}
+
+	caConfig, ok := ctx.IdentityConfig().CAConfig(msp.orgName)
+	if ok {
+		msp.caName = caConfig.CAName
+	}
+
 	networkConfig := ctx.EndpointConfig().NetworkConfig()
-	_, ok := networkConfig.Organizations[strings.ToLower(msp.orgName)]
+	_, ok = networkConfig.Organizations[strings.ToLower(msp.orgName)]
 	if !ok {
 		return nil, fmt.Errorf("non-existent organization: '%s'", msp.orgName)
 	}
@@ -404,6 +411,21 @@ func (c *Client) Revoke(request *RevocationRequest) (*RevocationResponse, error)
 		RevokedCerts: revokedCerts,
 		CRL:          resp.CRL,
 	}, nil
+}
+
+// GetCAInfo returns generic CA information
+func (c *Client) GetCAInfo() (*GetCAInfoResponse, error) {
+	ca, err := newCAClient(c.ctx, c.orgName)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := ca.GetCAInfo()
+	if err != nil {
+		return nil, err
+	}
+
+	return &GetCAInfoResponse{CAName: resp.CAName, CAChain: resp.CAChain[:], IssuerPublicKey: resp.IssuerPublicKey[:], IssuerRevocationPublicKey: resp.IssuerRevocationPublicKey[:], Version: resp.Version}, nil
 }
 
 // GetSigningIdentity returns signing identity for id

@@ -154,6 +154,29 @@ func (c *fabricCAAdapter) Revoke(key core.Key, cert []byte, request *api.Revocat
 	}, nil
 }
 
+// GetCAInfo returns generic CA information
+func (c *fabricCAAdapter) GetCAInfo(caname string) (*api.GetCAInfoResponse, error) {
+	logger.Debugf("Get CA info [%s]", caname)
+
+	req := &caapi.GetCAInfoRequest{CAName: caname}
+	resp, err := c.caClient.GetCAInfo(req)
+	if err != nil {
+		return nil, errors.WithMessage(err, "GetCAInfo failed")
+	}
+
+	return getCAInfoResponse(resp), nil
+}
+
+func getCAInfoResponse(response *calib.GetCAInfoResponse) *api.GetCAInfoResponse {
+	return &api.GetCAInfoResponse{
+		CAName:                    response.CAName,
+		CAChain:                   response.CAChain[:],
+		IssuerPublicKey:           response.IssuerPublicKey[:],
+		IssuerRevocationPublicKey: response.IssuerRevocationPublicKey[:],
+		Version:                   response.Version,
+	}
+}
+
 // CreateIdentity creates new identity
 // key: registrar private key
 // cert: registrar enrollment certificate

@@ -23,6 +23,7 @@ var logger = logging.NewLogger("fabsdk/msp")
 // CAClientImpl implements api/msp/CAClient
 type CAClientImpl struct {
 	orgName         string
+	caName          string // Currently, an organization can be associated with only one CA
 	orgMSPID        string
 	cryptoSuite     core.CryptoSuite
 	identityManager msp.IdentityManager
@@ -77,6 +78,7 @@ func NewCAClient(orgName string, ctx contextApi.Client) (*CAClientImpl, error) {
 
 	mgr := &CAClientImpl{
 		orgName:         orgName,
+		caName:          caName,
 		orgMSPID:        orgConfig.MSPID,
 		cryptoSuite:     ctx.CryptoSuite(),
 		identityManager: identityManager,
@@ -343,6 +345,15 @@ func (c *CAClientImpl) Revoke(request *api.RevocationRequest) (*api.RevocationRe
 		return nil, errors.Wrap(err, "failed to revoke")
 	}
 	return resp, nil
+}
+
+// GetCAInfo returns generic CA information
+func (c *CAClientImpl) GetCAInfo() (*api.GetCAInfoResponse, error) {
+	if c.adapter == nil {
+		return nil, fmt.Errorf("no CAs configured for organization: %s", c.orgName)
+	}
+
+	return c.adapter.GetCAInfo(c.caName)
 }
 
 // GetAffiliation returns information about the requested affiliation

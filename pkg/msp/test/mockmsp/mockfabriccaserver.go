@@ -13,6 +13,7 @@ import (
 
 	cfsslapi "github.com/cloudflare/cfssl/api"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/api"
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/lib"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/util"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
@@ -88,6 +89,7 @@ func (s *MockFabricCAServer) Start(lis net.Listener, cryptoSuite core.CryptoSuit
 	http.HandleFunc("/identities/123", s.identity)
 	http.HandleFunc("/affiliations", s.affiliations)
 	http.HandleFunc("/affiliations/123", s.affiliation)
+	http.HandleFunc("/cainfo", s.cainfo)
 
 	server := &http.Server{
 		Addr:      addr,
@@ -248,6 +250,16 @@ func (s *MockFabricCAServer) affiliation(w http.ResponseWriter, req *http.Reques
 
 	case http.MethodDelete:
 		resp := &api.AffiliationResponse{AffiliationInfo: api.AffiliationInfo{Name: "test1.com"}}
+		if err := cfsslapi.SendResponse(w, resp); err != nil {
+			logger.Error(err)
+		}
+	}
+}
+
+func (s *MockFabricCAServer) cainfo(w http.ResponseWriter, req *http.Request) {
+	switch req.Method {
+	case http.MethodPost:
+		resp := &lib.GetCAInfoResponse{CAName: "123", CAChain: []byte{}}
 		if err := cfsslapi.SendResponse(w, resp); err != nil {
 			logger.Error(err)
 		}

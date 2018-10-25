@@ -157,6 +157,33 @@ func (c *Client) initHTTPClient(serverName string) error {
 	return nil
 }
 
+// GetCAInfo returns generic CA information
+func (c *Client) GetCAInfo(req *api.GetCAInfoRequest) (*GetCAInfoResponse, error) {
+	err := c.Init()
+	if err != nil {
+		return nil, err
+	}
+	body, err := util.Marshal(req, "GetCAInfo")
+	if err != nil {
+		return nil, err
+	}
+	cainforeq, err := c.newPost("cainfo", body)
+	if err != nil {
+		return nil, err
+	}
+	netSI := &common.CAInfoResponseNet{}
+	err = c.SendReq(cainforeq, netSI)
+	if err != nil {
+		return nil, err
+	}
+	localSI := &GetCAInfoResponse{}
+	err = c.net2LocalCAInfo(netSI, localSI)
+	if err != nil {
+		return nil, err
+	}
+	return localSI, nil
+}
+
 // GenCSR generates a CSR (Certificate Signing Request)
 func (c *Client) GenCSR(req *api.CSRInfo, id string) ([]byte, core.Key, error) {
 	log.Debugf("GenCSR %+v", req)

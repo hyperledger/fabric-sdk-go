@@ -91,3 +91,8 @@ func (mgr *MockCAClient) ModifyAffiliation(request *api.ModifyAffiliationRequest
 func (mgr *MockCAClient) RemoveAffiliation(request *api.AffiliationRequest) (*api.AffiliationResponse, error) {
 	return nil, errors.New("not implemented")
 }
+
+// GetCAInfo returns generic CA information
+func (mgr *MockCAClient) GetCAInfo() (*api.GetCAInfoResponse, error) {
+	return nil, errors.New("not implemented")
+}
