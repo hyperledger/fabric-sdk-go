@@ -21,6 +21,22 @@ import (
 )
 
 const configTestFilePath = "../config/testdata/config_test.yaml"
+const configEmptyTestFilePath = "../config/testdata/viper-test.yaml"
+
+func TestEmptyTestFile(t *testing.T) {
+	backend, err := config.FromFile(configEmptyTestFilePath)()
+	assert.Nil(t, err, "Failed to read from empty config")
+
+	cryptoConfig := ConfigFromBackend(backend[0]).(*Config)
+
+	// Test for defaults
+	assert.Equal(t, true, cryptoConfig.IsSecurityEnabled())
+	assert.Equal(t, "SHA2", cryptoConfig.SecurityAlgorithm())
+	assert.Equal(t, 256, cryptoConfig.SecurityLevel())
+	// Note that we transform to lower case in SecurityProvider()
+	assert.Equal(t, "sw", cryptoConfig.SecurityProvider())
+	assert.Equal(t, true, cryptoConfig.SoftVerify())
+}
 
 func TestCAConfigKeyStorePath(t *testing.T) {
 	backend, err := config.FromFile(configTestFilePath)()

@@ -14,6 +14,15 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/lookup"
 	"github.com/hyperledger/fabric-sdk-go/pkg/util/pathvar"
+	"github.com/spf13/cast"
+)
+
+const (
+	defEnabled       = true
+	defHashAlgorithm = "SHA2"
+	defLevel         = 256
+	defProvider      = "SW"
+	defSoftVerify    = true
 )
 
 //ConfigFromBackend returns CryptoSuite config implementation for given backend
@@ -26,29 +35,49 @@ type Config struct {
 	backend *lookup.ConfigLookup
 }
 
-// IsSecurityEnabled config used enable and diable security in cryptosuite
+// IsSecurityEnabled config used enable and disable security in cryptosuite
 func (c *Config) IsSecurityEnabled() bool {
-	return c.backend.GetBool("client.BCCSP.security.enabled")
+	val, ok := c.backend.Lookup("client.BCCSP.security.enabled")
+	if !ok {
+		return defEnabled
+	}
+	return cast.ToBool(val)
 }
 
 // SecurityAlgorithm returns cryptoSuite config hash algorithm
 func (c *Config) SecurityAlgorithm() string {
-	return c.backend.GetString("client.BCCSP.security.hashAlgorithm")
+	val, ok := c.backend.Lookup("client.BCCSP.security.hashAlgorithm")
+	if !ok {
+		return defHashAlgorithm
+	}
+	return cast.ToString(val)
 }
 
 // SecurityLevel returns cryptSuite config security level
 func (c *Config) SecurityLevel() int {
-	return c.backend.GetInt("client.BCCSP.security.level")
+	val, ok := c.backend.Lookup("client.BCCSP.security.level")
+	if !ok {
+		return defLevel
+	}
+	return cast.ToInt(val)
 }
 
 //SecurityProvider provider SW or PKCS11
 func (c *Config) SecurityProvider() string {
-	return c.backend.GetLowerString("client.BCCSP.security.default.provider")
+	val, ok := c.backend.Lookup("client.BCCSP.security.default.provider")
+	if !ok {
+		return strings.ToLower(defProvider)
+	}
+	return strings.ToLower(cast.ToString(val))
 }
 
 //SoftVerify flag
 func (c *Config) SoftVerify() bool {
-	return c.backend.GetBool("client.BCCSP.security.softVerify")
+	val, ok := c.backend.Lookup("client.BCCSP.security.softVerify")
+	if !ok {
+		return defSoftVerify
+	}
+	return cast.ToBool(val)
 }
 
 //SecurityProviderLibPath will be set only if provider is PKCS11

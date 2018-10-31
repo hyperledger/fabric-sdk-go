@@ -18,6 +18,7 @@ import (
 	mockapisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/test/mocksdkapi"
 	"github.com/hyperledger/fabric-sdk-go/pkg/msp"
 	"github.com/pkg/errors"
+	"github.com/stretchr/testify/assert"
 )
 
 const (
@@ -266,11 +267,9 @@ func TestWithConfigFailure(t *testing.T) {
 	}
 }
 
-func TestBadConfigFile(t *testing.T) {
+func TestEmptyConfigFile(t *testing.T) {
 	_, err := New(configImpl.FromFile("../../pkg/core/config/testdata/viper-test.yaml"))
-	if err == nil {
-		t.Fatal("Expected error from New with bad config file")
-	}
+	assert.Nil(t, err, "New with empty config file should not have failed")
 }
 
 func TestWithConfigEndpoint(t *testing.T) {
