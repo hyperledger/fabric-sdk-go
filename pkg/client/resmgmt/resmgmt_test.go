@@ -460,6 +460,24 @@ func TestQueryInstantiatedChaincodes(t *testing.T) {
 	}
 }
 
+func TestQueryCollectionsConfig(t *testing.T) {
+	rc := setupDefaultResMgmtClient(t)
+
+	_, err := rc.QueryCollectionsConfig("mychannel", "mychaincode")
+	if err == nil {
+		t.Fatal("QueryInstalledChaincodes: peer cannot be nil")
+	}
+
+	peer := &fcmocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil, MockMSP: "Org1MSP", Status: http.StatusOK}
+	coll, err := rc.QueryCollectionsConfig("mychannel", "mychaincode", WithTargets(peer))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(coll.Config) != 0 {
+		t.Fatalf("There is no collection configuration on peer")
+	}
+}
+
 func TestQueryChannels(t *testing.T) {
 
 	rc := setupDefaultResMgmtClient(t)
