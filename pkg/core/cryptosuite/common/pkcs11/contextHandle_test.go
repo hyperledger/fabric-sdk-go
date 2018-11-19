@@ -14,7 +14,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/miekg/pkcs11"
+	mPkcs11 "github.com/miekg/pkcs11"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -89,7 +89,7 @@ func TestContextHandleFeatures(t *testing.T) {
 	assert.Equal(t, 4, len(handle.sessions))
 
 	//reset session pool after test
-	handle.sessions = make(chan pkcs11.SessionHandle, handle.opts.sessionCacheSize)
+	handle.sessions = make(chan mPkcs11.SessionHandle, handle.opts.sessionCacheSize)
 
 	//force reload
 	handle, err = ReloadPKCS11ContextHandle(lib, label, pin)
@@ -156,7 +156,7 @@ func TestMultipleContextHandleInstances(t *testing.T) {
 		assert.Equal(t, 4, len(handle.sessions))
 
 		//reset session pool after test
-		handle.sessions = make(chan pkcs11.SessionHandle, handle.opts.sessionCacheSize)
+		handle.sessions = make(chan mPkcs11.SessionHandle, handle.opts.sessionCacheSize)
 	}
 
 	handle1, err := LoadPKCS11ContextHandle(lib, label, pin)
@@ -228,7 +228,7 @@ func TestContextHandleInstance(t *testing.T) {
 
 		//Open session should fail it is destroyed by previous instance
 		err = handle1.ctx.CloseAllSessions(handle.slot)
-		assert.Error(t, err, pkcs11.CKR_CRYPTOKI_NOT_INITIALIZED)
+		assert.Error(t, err, mPkcs11.CKR_CRYPTOKI_NOT_INITIALIZED)
 	})
 
 }
@@ -266,11 +266,11 @@ func TestContextHandleOpts(t *testing.T) {
 
 	//session3 should be closed
 	_, e = handle.ctx.GetSessionInfo(session3)
-	assert.Equal(t, pkcs11.Error(pkcs11.CKR_SESSION_HANDLE_INVALID), e)
+	assert.Equal(t, mPkcs11.Error(mPkcs11.CKR_SESSION_HANDLE_INVALID), e)
 
 	//session4 should be closed
 	_, e = handle.ctx.GetSessionInfo(session4)
-	assert.Equal(t, pkcs11.Error(pkcs11.CKR_SESSION_HANDLE_INVALID), e)
+	assert.Equal(t, mPkcs11.Error(mPkcs11.CKR_SESSION_HANDLE_INVALID), e)
 
 }
 
@@ -331,17 +331,17 @@ func TestContextRefreshOnInvalidSession(t *testing.T) {
 
 	assert.True(t, receivedNotification)
 	//reset session pool after test
-	handle.sessions = make(chan pkcs11.SessionHandle, handle.opts.sessionCacheSize)
+	handle.sessions = make(chan mPkcs11.SessionHandle, handle.opts.sessionCacheSize)
 }
 
 func TestSessionsFromDifferentPKCS11Ctx(t *testing.T) {
 
 	//Testing if session created by a ctx can be validated by of some other ctx created using same lib/label/pin
-	ctxAndSession := func(label string) (*pkcs11.Ctx, pkcs11.SessionHandle) {
-		ctx := pkcs11.New(lib)
+	ctxAndSession := func(label string) (*mPkcs11.Ctx, mPkcs11.SessionHandle) {
+		ctx := mPkcs11.New(lib)
 		assert.NotNil(t, ctx)
 		err := ctx.Initialize()
-		assert.False(t, err != nil && err != pkcs11.Error(pkcs11.CKR_CRYPTOKI_ALREADY_INITIALIZED))
+		assert.False(t, err != nil && err != mPkcs11.Error(mPkcs11.CKR_CRYPTOKI_ALREADY_INITIALIZED))
 
 		var found bool
 		var slot uint
