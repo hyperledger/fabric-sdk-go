@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package channel
 
 import (
+	"fmt"
 	"strings"
 	"sync"
 	"testing"
@@ -267,14 +268,22 @@ func TestCCToCC(t *testing.T) {
 				),
 			),
 		)
-		_, err = chClient.InvokeHandler(
-			handler,
-			channel.Request{
-				ChaincodeID: cc1ID,
-				Fcn:         "invokecc",
-				Args:        [][]byte{[]byte(cc2ID), []byte(`{"Args":["invoke","set","x1","y1"]}`)},
+		_, err = retry.NewInvoker(retry.New(retry.TestRetryOpts)).Invoke(
+			func() (interface{}, error) {
+				b, e := chClient.InvokeHandler(
+					handler,
+					channel.Request{
+						ChaincodeID: cc1ID,
+						Fcn:         "invokecc",
+						Args:        [][]byte{[]byte(cc2ID), []byte(`{"Args":["invoke","set","x1","y1"]}`)},
+					},
+					channel.WithRetry(retry.DefaultChannelOpts),
+				)
+				if e != nil && strings.Contains(e.Error(), "500") {
+					return nil, status.New(status.TestStatus, status.GenericTransient.ToInt32(), fmt.Sprintf("invokecc with policy returned unexpected error: %v", e), nil)
+				}
+				return b, e
 			},
-			channel.WithRetry(retry.DefaultChannelOpts),
 		)
 		require.Errorf(t, err, "expecting transaction to fail due to endorsement policy not being satisfied")
 		stat, ok := status.FromError(err)
