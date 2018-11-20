@@ -84,6 +84,7 @@ You need:
 - Docker
 - Docker Compose
 - Git
+- libtool
 
 ### Gerrit Git repository
 
