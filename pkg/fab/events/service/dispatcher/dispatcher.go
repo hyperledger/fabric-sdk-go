@@ -42,9 +42,10 @@ type HandlerRegistry map[reflect.Type]Handler
 // and events originating from the channel event service. All events are processed in a single Go routine
 // in order to avoid any race conditions and to ensure that events are processed in the order in which they are received.
 // This also avoids the need for synchronization.
+// The lastBlockNum member MUST be first to ensure it stays 64-bit aligned on 32-bit machines.
 type Dispatcher struct {
+	lastBlockNum uint64 // Must be first, do not move
 	params
-	lastBlockNum               uint64
 	updateLastBlockInfoOnly    bool
 	state                      int32
 	eventch                    chan interface{}
