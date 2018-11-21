@@ -25,8 +25,9 @@ import (
 var logger = logging.NewLogger("fabsdk/fab")
 
 const (
-	lscc           = "lscc"
-	lsccChaincodes = "getchaincodes"
+	lscc                  = "lscc"
+	lsccChaincodes        = "getchaincodes"
+	lsccCollectionsConfig = "getcollectionsconfig"
 )
 
 // Ledger is a client that provides access to the underlying ledger of a channel.
@@ -207,6 +208,32 @@ func createChaincodeQueryResponse(tpr *fab.TransactionProposalResponse) (*pb.Cha
 	return &response, nil
 }
 
+// QueryCollectionsConfig queries the collections config for a chaincode on this channel.
+func (c *Ledger) QueryCollectionsConfig(reqCtx reqContext.Context, chaincodeName string, targets []fab.ProposalProcessor, verifier ResponseVerifier) ([]*common.CollectionConfigPackage, error) {
+	cir := createCollectionsConfigInvokeRequest(chaincodeName)
+	tprs, errs := queryChaincode(reqCtx, c.chName, cir, targets, verifier)
+
+	responses := []*common.CollectionConfigPackage{}
+	for _, tpr := range tprs {
+		r, err := createCollectionsConfigQueryResponse(tpr)
+		if err != nil {
+			errs = multi.Append(errs, errors.WithMessage(err, "From target: "+tpr.Endorser))
+		} else {
+			responses = append(responses, r)
+		}
+	}
+	return responses, errs
+}
+
+func createCollectionsConfigQueryResponse(tpr *fab.TransactionProposalResponse) (*common.CollectionConfigPackage, error) {
+	response := common.CollectionConfigPackage{}
+	err := proto.Unmarshal(tpr.ProposalResponse.GetResponse().Payload, &response)
+	if err != nil {
+		return nil, errors.Wrap(err, "unmarshal of transaction proposal response failed")
+	}
+	return &response, nil
+}
+
 // QueryConfigBlock returns the current configuration block for the specified channel. If the
 // peer doesn't belong to the channel, return error
 func (c *Ledger) QueryConfigBlock(reqCtx reqContext.Context, targets []fab.ProposalProcessor, verifier ResponseVerifier) (*common.Block, error) {
@@ -270,6 +297,15 @@ func createChaincodeInvokeRequest() fab.ChaincodeInvokeRequest {
 	cir := fab.ChaincodeInvokeRequest{
 		ChaincodeID: lscc,
 		Fcn:         lsccChaincodes,
+	}
+	return cir
+}
+
+func createCollectionsConfigInvokeRequest(chaincodeName string) fab.ChaincodeInvokeRequest {
+	cir := fab.ChaincodeInvokeRequest{
+		ChaincodeID: lscc,
+		Fcn:         lsccCollectionsConfig,
+		Args:        [][]byte{[]byte(chaincodeName)},
 	}
 	return cir
 }

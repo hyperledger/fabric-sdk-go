@@ -574,27 +574,12 @@ func (rc *Client) QueryInstantiatedChaincodes(channelID string, options ...Reque
 	if len(opts.Targets) >= 1 {
 		target = opts.Targets[0]
 	} else {
-		// discover peers on this channel
-		discovery, err := chCtx.ChannelService().Discovery()
-		if err != nil {
-			return nil, errors.WithMessage(err, "failed to get discovery service")
-		}
-		// default filter will be applied (if any)
-		targets, err2 := rc.getDefaultTargets(discovery)
-		if err2 != nil {
-			return nil, errors.WithMessage(err2, "failed to get default target for query instantiated chaincodes")
-		}
-
-		// Filter by MSP since the LSCC only allows local calls
-		targets = filterTargets(targets, &mspFilter{mspID: chCtx.Identifier().MSPID})
-
-		if len(targets) == 0 {
-			return nil, errors.Errorf("no targets in MSP [%s]", chCtx.Identifier().MSPID)
-		}
-
 		// select random channel peer
-		randomNumber := rand.Intn(len(targets))
-		target = targets[randomNumber]
+		var err error
+		target, err = rc.selectRandomChannelPeer(chCtx)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	l, err := channel.NewLedger(channelID)
@@ -619,6 +604,90 @@ func (rc *Client) QueryInstantiatedChaincodes(channelID string, options ...Reque
 	}
 
 	return responses[0], nil
+}
+
+// QueryCollectionsConfig queries the collections config on a peer for specific channel. If peer is not specified in options it will query random peer on this channel.
+// Parameters:
+// channel is mandatory channel name
+// chaincode is mandatory chaincode name
+// options hold optional request options
+//
+// Returns:
+// list of collections config
+func (rc *Client) QueryCollectionsConfig(channelID string, chaincodeName string, options ...RequestOption) (*common.CollectionConfigPackage, error) {
+	opts, err := rc.prepareRequestOpts(options...)
+	if err != nil {
+		return nil, err
+	}
+
+	chCtx, err := contextImpl.NewChannel(
+		func() (context.Client, error) {
+			return rc.ctx, nil
+		},
+		channelID,
+	)
+	if err != nil {
+		return nil, errors.WithMessage(err, "failed to create channel context")
+	}
+
+	var target fab.ProposalProcessor
+	if len(opts.Targets) >= 1 {
+		target = opts.Targets[0]
+	} else {
+		// select random channel peer
+		var err error
+		target, err = rc.selectRandomChannelPeer(chCtx)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	l, err := channel.NewLedger(channelID)
+	if err != nil {
+		return nil, err
+	}
+
+	reqCtx, cancel := rc.createRequestContext(opts, fab.PeerResponse)
+	defer cancel()
+
+	// Channel service membership is required to verify signature
+	channelService := chCtx.ChannelService()
+
+	membership, err := channelService.Membership()
+	if err != nil {
+		return nil, errors.WithMessage(err, "membership creation failed")
+	}
+
+	responses, err := l.QueryCollectionsConfig(reqCtx, chaincodeName, []fab.ProposalProcessor{target}, &verifier.Signature{Membership: membership})
+	if err != nil {
+		return nil, err
+	}
+
+	return responses[0], nil
+}
+
+func (rc *Client) selectRandomChannelPeer(ctx context.Channel) (fab.ProposalProcessor, error) {
+	// discover peers on this channel
+	discovery, err := ctx.ChannelService().Discovery()
+	if err != nil {
+		return nil, errors.WithMessage(err, "failed to get discovery service")
+	}
+	// default filter will be applied (if any)
+	targets, err2 := rc.getDefaultTargets(discovery)
+	if err2 != nil {
+		return nil, errors.WithMessage(err2, "failed to get default target for query instantiated chaincodes")
+	}
+
+	// Filter by MSP since the LSCC only allows local calls
+	targets = filterTargets(targets, &mspFilter{mspID: ctx.Identifier().MSPID})
+
+	if len(targets) == 0 {
+		return nil, errors.Errorf("no targets in MSP [%s]", ctx.Identifier().MSPID)
+	}
+
+	// select random channel peer
+	randomNumber := rand.Intn(len(targets))
+	return targets[randomNumber], nil
 }
 
 // QueryChannels queries the names of all the channels that a peer has joined.
