@@ -44,16 +44,28 @@ func newFabricCAAdapter(orgName string, cryptoSuite core.CryptoSuite, config msp
 }
 
 // Enroll handles enrollment.
-func (c *fabricCAAdapter) Enroll(enrollmentID string, enrollmentSecret string) ([]byte, error) {
+func (c *fabricCAAdapter) Enroll(request *api.EnrollmentRequest) ([]byte, error) {
 
-	logger.Debugf("Enrolling user [%s]", enrollmentID)
+	logger.Debugf("Enrolling user [%s]", request.Name)
 
 	// TODO add attributes
 	careq := &caapi.EnrollmentRequest{
-		CAName: c.caClient.Config.CAName,
-		Name:   enrollmentID,
-		Secret: enrollmentSecret,
+		CAName:  c.caClient.Config.CAName,
+		Name:    request.Name,
+		Secret:  request.Secret,
+		Profile: request.Profile,
+		Type:    request.Type,
+		Label:   request.Label,
 	}
+
+	if len(request.AttrReqs) > 0 {
+		attrs := make([]*caapi.AttributeRequest, len(request.AttrReqs))
+		for i, a := range request.AttrReqs {
+			attrs[i] = &caapi.AttributeRequest{Name: a.Name, Optional: a.Optional}
+		}
+		careq.AttrReqs = attrs
+	}
+
 	caresp, err := c.caClient.Enroll(careq)
 	if err != nil {
 		return nil, errors.WithMessage(err, "enroll failed")
@@ -62,13 +74,23 @@ func (c *fabricCAAdapter) Enroll(enrollmentID string, enrollmentSecret string) (
 }
 
 // Reenroll handles re-enrollment
-func (c *fabricCAAdapter) Reenroll(key core.Key, cert []byte) ([]byte, error) {
+func (c *fabricCAAdapter) Reenroll(key core.Key, cert []byte, request *api.ReenrollmentRequest) ([]byte, error) {
 
 	logger.Debugf("Re Enrolling user with provided key/cert pair for CA [%s]", c.caClient.Config.CAName)
 
 	careq := &caapi.ReenrollmentRequest{
-		CAName: c.caClient.Config.CAName,
+		CAName:  c.caClient.Config.CAName,
+		Profile: request.Profile,
+		Label:   request.Label,
 	}
+	if len(request.AttrReqs) > 0 {
+		attrs := make([]*caapi.AttributeRequest, len(request.AttrReqs))
+		for i, a := range request.AttrReqs {
+			attrs[i] = &caapi.AttributeRequest{Name: a.Name, Optional: a.Optional}
+		}
+		careq.AttrReqs = attrs
+	}
+
 	caidentity, err := c.newIdentity(key, cert)
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to create CA signing identity")

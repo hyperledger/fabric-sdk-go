@@ -7,33 +7,20 @@ SPDX-License-Identifier: Apache-2.0
 package msp
 
 import (
-	"testing"
-
 	"crypto/x509"
 	"encoding/pem"
+	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/attrmgr"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/msp"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 )
 
-func checkCertAttributes(t *testing.T, certBytes []byte, expected []msp.Attribute) { // nolint: deadcode
-	decoded, _ := pem.Decode(certBytes)
-	if decoded == nil {
-		t.Fatal("Failed cert decoding")
-	}
-	cert, err := x509.ParseCertificate(decoded.Bytes)
-	if err != nil {
-		t.Fatalf("failed to parse certificate: %s", err)
-	}
-	if cert == nil {
-		t.Fatalf("failed to parse certificate: %s", err)
-	}
-	mgr := attrmgr.New()
-	attrs, err := mgr.GetAttributesFromCert(cert)
-	if err != nil {
-		t.Fatalf("Failed to GetAttributesFromCert: %s", err)
-	}
+// nolint: deadcode
+func checkCertAttributes(t *testing.T, certBytes []byte, expected []msp.Attribute) {
+	attrs, err := getCertAttributes(certBytes)
+	require.NoError(t, err)
 	for _, a := range expected {
 		v, ok, err := attrs.Value(a.Name)
 		require.NoError(t, err)
@@ -41,4 +28,25 @@ func checkCertAttributes(t *testing.T, certBytes []byte, expected []msp.Attribut
 		require.True(t, ok, "attribute '%s' was not found", a.Name)
 		require.True(t, v == a.Value, "incorrect value for '%s'; expected '%s' but found '%s'", a.Name, a.Value, v)
 	}
+}
+
+func getCertAttributes(certBytes []byte) (*attrmgr.Attributes, error) {
+	decoded, _ := pem.Decode(certBytes)
+	if decoded == nil {
+		return nil, errors.New("Failed cert decoding")
+	}
+	cert, err := x509.ParseCertificate(decoded.Bytes)
+	if err != nil {
+		return nil, errors.Errorf("failed to parse certificate: %s", err)
+	}
+	if cert == nil {
+		return nil, errors.Errorf("failed to parse certificate: %s", err)
+	}
+	mgr := attrmgr.New()
+	attrs, err := mgr.GetAttributesFromCert(cert)
+	if err != nil {
+		return nil, errors.Errorf("Failed to GetAttributesFromCert: %s", err)
+	}
+
+	return attrs, nil
 }
