@@ -120,6 +120,18 @@ func getConfigBackend(t *testing.T) core.ConfigProvider {
 		peer1 := networkConfig.Peers["peer0.org1.example.com"]
 		peer1.TLSCACerts.Path = expiredCertPath
 		networkConfig.Peers["peer0.org1.example.com"] = peer1
+
+		// This must be modified because the ca certificate for all nodes exists in tls.Config.RootCAs,
+		// so if only one peer's certificate is configured as an expired certificate and the other peer's certificate is correct,
+		// then the tls handshake phase is still Can be successful.
+		// The reason why it failed in the past is
+		// because the resmgmt.WithOrdererEndpoint function is not called in the JoinChannel method
+		// to configure the orderer.
+		// Now it is changed to fallback to global orderers section, so it can succeed.
+		peer2 := networkConfig.Peers["peer1.org1.example.com"]
+		peer2.TLSCACerts.Path = expiredCertPath
+		networkConfig.Peers["peer1.org1.example.com"] = peer2
+
 		backendMap["peers"] = networkConfig.Peers
 
 		backends := append([]core.ConfigBackend{}, &mocks.MockConfigBackend{KeyValueMap: backendMap})
