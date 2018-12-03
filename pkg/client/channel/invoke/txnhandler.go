@@ -202,7 +202,7 @@ func (c *CommitTxHandler) Handle(requestContext *RequestContext, clientContext *
 	}
 }
 
-//NewQueryHandler returns query handler with EndorseTxHandler & EndorsementValidationHandler Chained
+//NewQueryHandler returns query handler with chain of ProposalProcessorHandler, EndorsementHandler, EndorsementValidationHandler and SignatureValidationHandler
 func NewQueryHandler(next ...Handler) Handler {
 	return NewProposalProcessorHandler(
 		NewEndorsementHandler(
@@ -213,7 +213,7 @@ func NewQueryHandler(next ...Handler) Handler {
 	)
 }
 
-//NewExecuteHandler returns query handler with EndorseTxHandler, EndorsementValidationHandler & CommitTxHandler Chained
+//NewExecuteHandler returns execute handler with chain of SelectAndEndorseHandler, EndorsementValidationHandler, SignatureValidationHandler and CommitHandler
 func NewExecuteHandler(next ...Handler) Handler {
 	return NewSelectAndEndorseHandler(
 		NewEndorsementValidationHandler(
