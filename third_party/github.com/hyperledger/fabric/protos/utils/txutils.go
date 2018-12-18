@@ -17,6 +17,34 @@ import (
 	"github.com/pkg/errors"
 )
 
+// GetPayloads gets the underlying payload objects in a TransactionAction
+func GetPayloads(txActions *peer.TransactionAction) (*peer.ChaincodeActionPayload, *peer.ChaincodeAction, error) {
+	// TODO: pass in the tx type (in what follows we're assuming the
+	// type is ENDORSER_TRANSACTION)
+	ccPayload, err := GetChaincodeActionPayload(txActions.Payload)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if ccPayload.Action == nil || ccPayload.Action.ProposalResponsePayload == nil {
+		return nil, nil, errors.New("no payload in ChaincodeActionPayload")
+	}
+	pRespPayload, err := GetProposalResponsePayload(ccPayload.Action.ProposalResponsePayload)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if pRespPayload.Extension == nil {
+		return nil, nil, errors.New("response payload is missing extension")
+	}
+
+	respPayload, err := GetChaincodeAction(pRespPayload.Extension)
+	if err != nil {
+		return ccPayload, nil, err
+	}
+	return ccPayload, respPayload, nil
+}
+
 // GetEnvelopeFromBlock gets an envelope from a block's Data field.
 func GetEnvelopeFromBlock(data []byte) (*common.Envelope, error) {
 	// Block always begins with an envelope
