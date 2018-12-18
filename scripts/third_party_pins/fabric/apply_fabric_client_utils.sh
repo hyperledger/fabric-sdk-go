@@ -43,7 +43,6 @@ declare -a PKGS=(
     "core/ledger/util"
 
     "msp"
-    "msp/cache"
 
     "discovery/client"
     "gossip/util"
@@ -129,7 +128,6 @@ declare -a FILES=(
     "msp/mspmgrimpl.go"
     "msp/mspimplsetup.go"
     "msp/mspimplvalidate.go"
-    "msp/cache/cache.go"
 
     "discovery/client/api.go"
     "discovery/client/client.go"
