@@ -1107,7 +1107,7 @@ func TestPeerChannelConfig(t *testing.T) {
 	assert.Equal(t, 6*time.Second, eventPolicies.PeerMonitorPeriod, "Unexpected value for PeerMonitorPeriod")
 
 	//Test if custom hook for (default=true) func is working
-	assert.True(t, len(networkConfig.Channels[orgChannelID].Peers) == 2)
+	assert.True(t, len(networkConfig.Channels[orgChannelID].Peers) == 3)
 	//test orgchannel peer1 (EndorsingPeer should be true as set, remaining should be default = true)
 	orgChannelPeer1 := networkConfig.Channels[orgChannelID].Peers["peer0.org1.example.com"]
 	assert.True(t, orgChannelPeer1.EndorsingPeer)
@@ -1115,13 +1115,19 @@ func TestPeerChannelConfig(t *testing.T) {
 	assert.True(t, orgChannelPeer1.EventSource)
 	assert.True(t, orgChannelPeer1.ChaincodeQuery)
 
-	//test orgchannel peer1 (EndorsingPeer should be false as set, remaining should be default = true)
+	//test orgchannel peer2 (EndorsingPeer should be false as set, remaining should be default = true)
 	orgChannelPeer2 := networkConfig.Channels[orgChannelID].Peers["peer0.org2.example.com"]
 	assert.False(t, orgChannelPeer2.EndorsingPeer)
 	assert.True(t, orgChannelPeer2.LedgerQuery)
 	assert.True(t, orgChannelPeer2.EventSource)
 	assert.True(t, orgChannelPeer2.ChaincodeQuery)
 
+	//test orgchannel peer3 (All should be true)
+	orgChannelPeer3 := networkConfig.Channels[orgChannelID].Peers["peer0.org3.example.com"]
+	assert.True(t, orgChannelPeer3.EndorsingPeer)
+	assert.True(t, orgChannelPeer3.LedgerQuery)
+	assert.True(t, orgChannelPeer3.EventSource)
+	assert.True(t, orgChannelPeer3.ChaincodeQuery)
 }
 
 func TestEndpointConfigWithMultipleBackends(t *testing.T) {
@@ -1281,6 +1287,7 @@ func tamperPeerChannelConfig(backend *mocks.MockConfigBackend) {
 		"peers": map[string]interface{}{
 			"peer0.org1.example.com": map[string]interface{}{"endorsingpeer": true},
 			"peer0.org2.example.com": map[string]interface{}{"endorsingpeer": false},
+			"peer0.org3.example.com": nil,
 		},
 	}
 	(channelsMap.(map[string]interface{}))[orgChannelID] = orgChannel

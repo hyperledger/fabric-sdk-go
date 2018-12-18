@@ -1749,7 +1749,22 @@ func peerChannelConfigHookFunc() mapstructure.DecodeHookFunc {
 		t reflect.Type,
 		data interface{}) (interface{}, error) {
 
-		//If target is of type 'fab.PeerChannelConfig', then only hook should work
+		//Run through each PeerChannelConfig, create empty config map if value is nil
+		if t == reflect.TypeOf(map[string]PeerChannelConfig{}) {
+			dataMap, ok := data.(map[string]interface{})
+			if ok {
+				for k, v := range dataMap {
+					if v == nil {
+						// Make an empty map. It will be filled in with defaults
+						// in other hook below
+						dataMap[k] = make(map[string]interface{})
+					}
+				}
+				return dataMap, nil
+			}
+		}
+
+		//If target is of type 'fab.PeerChannelConfig', fill in defaults if not already specified
 		if t == reflect.TypeOf(PeerChannelConfig{}) {
 			dataMap, ok := data.(map[string]interface{})
 			if ok {
