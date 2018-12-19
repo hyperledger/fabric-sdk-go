@@ -72,7 +72,7 @@ sed -i'' -e 's/"github.com\/hyperledger\/fabric\/bccsp\/factory"/factory "github
 sed -i'' -e 's/&bccsp.SHA256Opts{}/factory.GetSHA256Opts()/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 
 FILTER_FILENAME="protos/utils/txutils.go"
-FILTER_FN="GetBytesProposalPayloadForTx,GetEnvelopeFromBlock"
+FILTER_FN="GetBytesProposalPayloadForTx,GetEnvelopeFromBlock,GetPayloads"
 gofilter
 
 FILTER_FILENAME="core/common/ccprovider/ccprovider.go"
