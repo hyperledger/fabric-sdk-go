@@ -48,9 +48,10 @@ var (
 )
 
 const (
-	networkCfg  = "../../../test/fixtures/config/config_test.yaml"
-	configPath  = "../../core/config/testdata/config_test.yaml"
-	testAddress = "127.0.0.1:0"
+	networkCfg               = "../../../test/fixtures/config/config_test.yaml"
+	networkCfgWithoutOrderer = "../../../test/fixtures/config/config_test_without_orderer.yaml"
+	configPath               = "../../core/config/testdata/config_test.yaml"
+	testAddress              = "127.0.0.1:0"
 )
 
 func withLocalContextProvider(provider context.LocalProvider) ClientOption {
@@ -1039,6 +1040,20 @@ func getNetworkConfig(t *testing.T) fab.EndpointConfig {
 	return config
 }
 
+func getNetworkConfigWithoutOrderer(t *testing.T) fab.EndpointConfig {
+	configBackend, err := configImpl.FromFile(networkCfgWithoutOrderer)()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	config, err := fabImpl.ConfigFromBackend(configBackend...)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return config
+}
+
 func TestSaveChannelSuccess(t *testing.T) {
 
 	mb := fcmocks.MockBroadcastServer{}
@@ -1121,11 +1136,9 @@ func TestSaveChannelSuccess(t *testing.T) {
 func TestSaveChannelFailure(t *testing.T) {
 
 	// Set up context with error in create channel
-	user := mspmocks.NewMockSigningIdentity("test", "test")
-	errCtx := fcmocks.NewMockContext(user)
-	network := getNetworkConfig(t)
-	errCtx.SetEndpointConfig(network)
+	network := getNetworkConfigWithoutOrderer(t)
 	fabCtx := setupTestContext("user", "Org1Msp1")
+	fabCtx.SetEndpointConfig(network)
 
 	cc, err := New(createClientContext(fabCtx))
 	if err != nil {

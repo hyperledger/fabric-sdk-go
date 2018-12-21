@@ -1216,13 +1216,12 @@ func (rc *Client) requestOrderer(opts *requestOptions, channelID string) (fab.Or
 
 func (rc *Client) ordererConfig(channelID string) (*fab.OrdererConfig, error) {
 	orderers := rc.ctx.EndpointConfig().ChannelOrderers(channelID)
+	if len(orderers) > 0 {
+		randomNumber := rand.Intn(len(orderers))
+		return &orderers[randomNumber], nil
+	}
 
-	// TODO: Not sure that we should fallback to global orderers section.
-	// For now - not doing so.
-	//if err != nil || len(orderers) == 0 {
-	//	orderers, err = rc.ctx.Config().OrderersConfig()
-	//}
-
+	orderers = rc.ctx.EndpointConfig().OrderersConfig()
 	if len(orderers) == 0 {
 		return nil, errors.New("no orderers found")
 	}
