@@ -45,7 +45,6 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-
 	"golang.org/x/crypto/ocsp"
 )
 
@@ -136,8 +135,10 @@ func Marshal(from interface{}, what string) ([]byte, error) {
 //    which is the body of an HTTP request, though could be any arbitrary bytes.
 // @param cert The pem-encoded certificate
 // @param key The pem-encoded key
+// @param method http method of the request
+// @param uri URI of the request
 // @param body The body of an HTTP request
-func CreateToken(csp core.CryptoSuite, cert []byte, key core.Key, body []byte) (string, error) {
+func CreateToken(csp core.CryptoSuite, cert []byte, key core.Key, method, uri string, body []byte) (string, error) {
 	x509Cert, err := GetX509CertificateFromPEM(cert)
 	if err != nil {
 		return "", err
@@ -156,7 +157,7 @@ func CreateToken(csp core.CryptoSuite, cert []byte, key core.Key, body []byte) (
 			}
 	*/
 	case *ecdsa.PublicKey:
-		token, err = GenECDSAToken(csp, cert, key, body)
+		token, err = GenECDSAToken(csp, cert, key, method, uri, body)
 		if err != nil {
 			return "", err
 		}
@@ -190,14 +191,18 @@ func GenRSAToken(csp core.CryptoSuite, cert []byte, key []byte, body []byte) (st
 */
 
 //GenECDSAToken signs the http body and cert with ECDSA using EC private key
-func GenECDSAToken(csp core.CryptoSuite, cert []byte, key core.Key, body []byte) (string, error) {
+func GenECDSAToken(csp core.CryptoSuite, cert []byte, key core.Key, method, uri string, body []byte) (string, error) {
 	b64body := B64Encode(body)
 	b64cert := B64Encode(cert)
-	bodyAndcert := b64body + "." + b64cert
+	payload := b64body + "." + b64cert
 
-	digest, digestError := csp.Hash([]byte(bodyAndcert), factory.GetSHAOpts())
+	return genECDSAToken(csp, key, b64cert, payload)
+}
+
+func genECDSAToken(csp core.CryptoSuite, key core.Key, b64cert, payload string) (string, error) {
+	digest, digestError := csp.Hash([]byte(payload), factory.GetSHAOpts())
 	if digestError != nil {
-		return "", errors.WithMessage(digestError, fmt.Sprintf("Hash failed on '%s'", bodyAndcert))
+		return "", errors.WithMessage(digestError, fmt.Sprintf("Hash failed on '%s'", payload))
 	}
 
 	ecSignature, err := csp.Sign(key, digest, nil)

@@ -290,7 +290,7 @@ FILTER_FILENAME="util/util.go"
 FILTER_FN="ReadFile,HTTPRequestToString,HTTPResponseToString"
 FILTER_FN+=",GetX509CertificateFromPEM,GetSerialAsHex,GetEnrollmentIDFromPEM"
 FILTER_FN+=",MakeFileAbs,Marshal,StructToString,LoadX509KeyPair,CreateToken"
-FILTER_FN+=",GenECDSAToken,GetEnrollmentIDFromX509Certificate,B64Encode,B64Decode"
+FILTER_FN+=",GenECDSAToken,genECDSAToken,GetEnrollmentIDFromX509Certificate,B64Encode,B64Decode"
 FILTER_FN+=",GetMaskedURL,WriteFile,FileExists"
 gofilter
 sed -i'' -e '/log "golang.org\/x/ a\
@@ -302,6 +302,9 @@ factory "github.com\/hyperledger\/fabric-sdk-go\/internal\/github.com\/hyperledg
 sed -i'' -e 's/bccsp.BCCSP/core.CryptoSuite/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e 's/bccsp.Key/core.Key/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e 's/&bccsp.SHAOpts{}/factory.GetSHAOpts()/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+# TODO: The appropriate token mechanism should be selected based on the CA version.
+sed -i'' -e 's/payload := method + "." + b64uri + "." + b64body + "." + b64cert/payload := b64body + "." + b64cert/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e '/b64uri :=/d' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 
 FILTER_FILENAME="lib/serverrevoke.go"
 FILTER_FN=

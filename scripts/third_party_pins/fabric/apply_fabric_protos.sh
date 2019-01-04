@@ -25,6 +25,8 @@ declare -a PKGS=(
     "protos/ledger/rwset"
     "protos/ledger/rwset/kvrwset"
     "protos/orderer"
+
+    "protos/token"
 )
 
 declare -a FILES=(
@@ -34,6 +36,7 @@ declare -a FILES=(
     "protos/common/ledger.pb.go"
     "protos/common/policies.pb.go"
     "protos/common/collection.pb.go"
+    "protos/common/signed_data.go"
 
     "protos/peer/chaincode.pb.go"
     "protos/peer/chaincode_event.pb.go"
@@ -54,6 +57,10 @@ declare -a FILES=(
     "protos/ledger/rwset/kvrwset/kv_rwset.pb.go"
 
     "protos/orderer/configuration.pb.go"
+
+    "protos/token/expectations.pb.go"
+    "protos/token/prover.pb.go"
+    "protos/token/transaction.pb.go"
 )
 
 # Create directory structure for packages

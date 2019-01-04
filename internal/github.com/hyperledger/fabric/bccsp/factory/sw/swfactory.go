@@ -54,8 +54,10 @@ func (f *SWFactory) Get(swOpts *SwOpts) (bccsp.BCCSP, error) {
 			return nil, errors.Wrapf(err, "Failed to initialize software key store")
 		}
 		ks = fks
+	} else if swOpts.InmemKeystore != nil {
+		ks = sw.NewInMemoryKeyStore()
 	} else {
-		// Default to DummyKeystore
+		// Default to ephemeral key store
 		ks = sw.NewDummyKeyStore()
 	}
 
@@ -72,6 +74,7 @@ type SwOpts struct {
 	Ephemeral     bool               `mapstructure:"tempkeys,omitempty" json:"tempkeys,omitempty"`
 	FileKeystore  *FileKeystoreOpts  `mapstructure:"filekeystore,omitempty" json:"filekeystore,omitempty" yaml:"FileKeyStore"`
 	DummyKeystore *DummyKeystoreOpts `mapstructure:"dummykeystore,omitempty" json:"dummykeystore,omitempty"`
+	InmemKeystore *InmemKeystoreOpts `mapstructure:"inmemkeystore,omitempty" json:"inmemkeystore,omitempty"`
 }
 
 // Pluggable Keystores, could add JKS, P12, etc..
@@ -80,3 +83,6 @@ type FileKeystoreOpts struct {
 }
 
 type DummyKeystoreOpts struct{}
+
+// InmemKeystoreOpts - empty, as there is no config for the in-memory keystore
+type InmemKeystoreOpts struct{}

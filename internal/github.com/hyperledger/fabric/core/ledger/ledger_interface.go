@@ -15,6 +15,7 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	commonledger "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/ledger"
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/metrics"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/ledger/rwset"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/ledger/rwset/kvrwset"
@@ -26,11 +27,12 @@ type Initializer struct {
 	StateListeners                []StateListener
 	DeployedChaincodeInfoProvider DeployedChaincodeInfoProvider
 	MembershipInfoProvider        MembershipInfoProvider
+	MetricsProvider               metrics.Provider
 }
 
 // PeerLedgerProvider provides handle to ledger instances
 type PeerLedgerProvider interface {
-	Initialize(initializer *Initializer)
+	Initialize(initializer *Initializer) error
 	// Create creates a new ledger with the given genesis block.
 	// This function guarantees that the creation of ledger and committing the genesis block would an atomic action
 	// The chain id retrieved from the genesis block is treated as a ledger id
@@ -89,11 +91,11 @@ type PeerLedger interface {
 	Prune(policy commonledger.PrunePolicy) error
 	// GetConfigHistoryRetriever returns the ConfigHistoryRetriever
 	GetConfigHistoryRetriever() (ConfigHistoryRetriever, error)
-	// CommitPvtData commits the private data corresponding to already committed block
+	// CommitPvtDataOfOldBlocks commits the private data corresponding to already committed block
 	// If hashes for some of the private data supplied in this function does not match
 	// the corresponding hash present in the block, the unmatched private data is not
 	// committed and instead the mismatch inforation is returned back
-	CommitPvtData(blockPvtData []*BlockPvtData) ([]*PvtdataHashMismatch, error)
+	CommitPvtDataOfOldBlocks(blockPvtData []*BlockPvtData) ([]*PvtdataHashMismatch, error)
 	// GetMissingPvtDataTracker return the MissingPvtDataTracker
 	GetMissingPvtDataTracker() (MissingPvtDataTracker, error)
 }
@@ -227,37 +229,40 @@ type TxPvtData struct {
 	WriteSet   *rwset.TxPvtReadWriteSet
 }
 
-// MissingPrivateData represents a private RWSet
-// that isn't present among the private data passed
-// to the ledger at the commit of the corresponding block
-type MissingPrivateData struct {
-	TxId       string
-	SeqInBlock uint64
+// TxPvtDataMap is a map from txNum to the pvtData
+type TxPvtDataMap map[uint64]*TxPvtData
+
+// MissingPvtData contains a namespace and collection for
+// which the pvtData is not present. It also denotes
+// whether the missing pvtData is eligible (i.e., whether
+// the peer is member of the [namespace, collection]
+type MissingPvtData struct {
 	Namespace  string
 	Collection string
 	IsEligible bool
 }
 
-type MissingPrivateDataList struct {
-	List []*MissingPrivateData
-}
+// TxMissingPvtDataMap is a map from txNum to the list of
+// missing pvtData
+type TxMissingPvtDataMap map[uint64][]*MissingPvtData
 
 // BlockAndPvtData encapsulates the block and a map that contains the tuples <seqInBlock, *TxPvtData>
 // The map is expected to contain the entries only for the transactions that has associated pvt data
 type BlockAndPvtData struct {
-	Block        *common.Block
-	BlockPvtData map[uint64]*TxPvtData
-	Missing      *MissingPrivateDataList
+	Block          *common.Block
+	PvtData        TxPvtDataMap
+	MissingPvtData TxMissingPvtDataMap
 }
 
 // BlockPvtData contains the private data for a block
 type BlockPvtData struct {
 	BlockNum  uint64
-	WriteSets map[uint64]*TxPvtData
+	WriteSets TxPvtDataMap
 }
 
-func (missing *MissingPrivateDataList) Add(txId string, txNum uint64, ns, coll string, isEligible bool) {
-	missing.List = append(missing.List, &MissingPrivateData{txId, txNum, ns, coll, isEligible})
+// Add adds a given missing private data in the MissingPrivateDataList
+func (txMissingPvtData TxMissingPvtDataMap) Add(txNum uint64, ns, coll string, isEligible bool) {
+	txMissingPvtData[txNum] = append(txMissingPvtData[txNum], &MissingPvtData{ns, coll, isEligible})
 }
 
 // PvtCollFilter represents the set of the collection names (as keys of the map with value 'true')
@@ -390,6 +395,7 @@ type CollectionConfigInfo struct {
 	CommittingBlockNum uint64
 }
 
+// Add adds a missing data entry to the MissingPvtDataInfo Map
 func (missingPvtDataInfo MissingPvtDataInfo) Add(blkNum, txNum uint64, ns, coll string) {
 	missingBlockPvtDataInfo, ok := missingPvtDataInfo[blkNum]
 	if !ok {
@@ -450,9 +456,9 @@ func (e *InvalidCollNameError) Error() string {
 // does not match the corresponding hash present in the block
 // See function `PeerLedger.CommitPvtData` for the usages
 type PvtdataHashMismatch struct {
-	BlockNum, TxNum               uint64
-	ChaincodeName, CollectionName string
-	ExpectedHash                  []byte
+	BlockNum, TxNum       uint64
+	Namespace, Collection string
+	ExpectedHash          []byte
 }
 
 // DeployedChaincodeInfoProvider is a dependency that is used by ledger to build collection config history
@@ -496,3 +502,4 @@ type MembershipInfoProvider interface {
 }
 
 //go:generate counterfeiter -o mock/deployed_ccinfo_provider.go -fake-name DeployedChaincodeInfoProvider . DeployedChaincodeInfoProvider
+//go:generate counterfeiter -o mock/membership_info_provider.go -fake-name MembershipInfoProvider . MembershipInfoProvider

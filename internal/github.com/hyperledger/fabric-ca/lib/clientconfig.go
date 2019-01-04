@@ -39,4 +39,7 @@ type ClientConfig struct {
 	CAName     string           `help:"Name of CA"`
 	CSP        core.CryptoSuite `mapstructure:"bccsp" hide:"true"`
 	ServerName string           `help:"CA server name to be used in case of host name override"`
+
+	Debug    bool   `opt:"d" help:"Enable debug level logging" hide:"true"`
+	LogLevel string `help:"Set logging level (info, warning, debug, error, fatal, critical)"`
 }

@@ -22,7 +22,6 @@ package ccprovider
 
 import (
 	"github.com/golang/protobuf/proto"
-
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
 

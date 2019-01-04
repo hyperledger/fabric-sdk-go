@@ -21,25 +21,23 @@ package sw
 
 import (
 	"bytes"
-	"io/ioutil"
-	"os"
-	"sync"
-
-	"errors"
-	"strings"
-
 	"crypto/ecdsa"
 	"crypto/rsa"
 	"encoding/hex"
+	"errors"
 	"fmt"
+	"io/ioutil"
+	"os"
 	"path/filepath"
+	"strings"
+	"sync"
 
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/utils"
 )
 
 // NewFileBasedKeyStore instantiated a file-based key store at a given position.
-// The key store can be encrypted if a non-empty password is specifiec.
+// The key store can be encrypted if a non-empty password is specified.
 // It can be also be set as read only. In this case, any store operation
 // will be forbidden
 func NewFileBasedKeyStore(pwd []byte, path string, readOnly bool) (bccsp.KeyStore, error) {

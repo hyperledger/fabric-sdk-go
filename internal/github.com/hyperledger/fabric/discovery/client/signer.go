@@ -12,9 +12,10 @@ package discovery
 
 import (
 	"encoding/hex"
+	"fmt"
 	"sync"
 
-	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/util"
+	factory "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/sdkpatch/cryptosuitebridge"
 )
 
 // MemoizeSigner signs messages with the same signature
@@ -97,5 +98,13 @@ func (ms *MemoizeSigner) evictFromMemory() {
 
 // msgDigest returns a digest of a given message
 func msgDigest(msg []byte) string {
-	return hex.EncodeToString(util.ComputeSHA256(msg))
+	return hex.EncodeToString(computeSHA256(msg))
+}
+
+func computeSHA256(data []byte) (hash []byte) {
+	hash, err := factory.GetDefault().Hash(data, factory.GetSHA256Opts())
+	if err != nil {
+		panic(fmt.Errorf("Failed computing SHA256 on [% x]", data))
+	}
+	return
 }

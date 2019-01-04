@@ -21,12 +21,11 @@ Please review third_party pinning scripts and patches for more details.
 package sw
 
 import (
-	"errors"
-	"fmt"
-
 	"crypto/ecdsa"
 	"crypto/rsa"
 	"crypto/x509"
+	"errors"
+	"fmt"
 	"reflect"
 
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp"
@@ -153,11 +152,11 @@ func (ki *x509PublicKeyImportOptsKeyImporter) KeyImport(raw interface{}, opts bc
 
 	switch pk.(type) {
 	case *ecdsa.PublicKey:
-		return ki.bccsp.keyImporters[reflect.TypeOf(&bccsp.ECDSAGoPublicKeyImportOpts{})].KeyImport(
+		return ki.bccsp.KeyImporters[reflect.TypeOf(&bccsp.ECDSAGoPublicKeyImportOpts{})].KeyImport(
 			pk,
 			&bccsp.ECDSAGoPublicKeyImportOpts{Temporary: opts.Ephemeral()})
 	case *rsa.PublicKey:
-		return ki.bccsp.keyImporters[reflect.TypeOf(&bccsp.RSAGoPublicKeyImportOpts{})].KeyImport(
+		return ki.bccsp.KeyImporters[reflect.TypeOf(&bccsp.RSAGoPublicKeyImportOpts{})].KeyImport(
 			pk,
 			&bccsp.RSAGoPublicKeyImportOpts{Temporary: opts.Ephemeral()})
 	default:
