@@ -28,8 +28,8 @@ func newUser(userData *msp.UserData, cryptoSuite core.CryptoSuite) (*User, error
 		return nil, errors.WithMessage(err, "cryptoSuite GetKey failed")
 	}
 	u := &User{
-		id:    userData.ID,
-		mspID: userData.MSPID,
+		id:                    userData.ID,
+		mspID:                 userData.MSPID,
 		enrollmentCertificate: userData.EnrollmentCertificate,
 		privateKey:            pk,
 	}
@@ -96,7 +96,7 @@ func (mgr *IdentityManager) CreateSigningIdentity(opts ...msp.SigningIdentityOpt
 		}
 	}
 	return &User{
-		mspID: mgr.orgMSPID,
+		mspID:                 mgr.orgMSPID,
 		enrollmentCertificate: opt.Cert,
 		privateKey:            privateKey,
 	}, nil
@@ -142,8 +142,8 @@ func (mgr *IdentityManager) GetUser(username string) (*User, error) { //nolint
 			return nil, errors.New("MSP ID config read failed")
 		}
 		u = &User{
-			id:    username,
-			mspID: mspID,
+			id:                    username,
+			mspID:                 mspID,
 			enrollmentCertificate: certBytes,
 			privateKey:            privateKey,
 		}

@@ -357,7 +357,7 @@ func generateSelfSignedCert(t *testing.T, now time.Time) string {
 		ExtKeyUsage:           testExtKeyUsage,
 		UnknownExtKeyUsage:    testUnknownExtKeyUsage,
 		BasicConstraintsValid: true,
-		IsCA: true,
+		IsCA:                  true,
 	}
 	certRaw, err := x509.CreateCertificate(rand.Reader, &template, &template, &k.PublicKey, k)
 	assert.NoError(t, err)

@@ -568,11 +568,11 @@ func (c *EndpointConfig) loadNetworkConfig(configEntity *endpointConfigEntity) e
 		}
 
 		networkConfig.Organizations[orgName] = fab.OrganizationConfig{
-			MSPID:      orgConfig.MSPID,
-			CryptoPath: orgConfig.CryptoPath,
-			Peers:      orgConfig.Peers,
+			MSPID:                  orgConfig.MSPID,
+			CryptoPath:             orgConfig.CryptoPath,
+			Peers:                  orgConfig.Peers,
 			CertificateAuthorities: orgConfig.CertificateAuthorities,
-			Users: tlsKeyCertPairs,
+			Users:                  tlsKeyCertPairs,
 		}
 
 	}

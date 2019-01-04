@@ -148,8 +148,8 @@ func prepareForEnroll(t *testing.T, mc *apimocks.MockCAClient, cs core.CryptoSui
 		// Save the "new" cert to user store
 		// This is done by IdentityManagement.Enroll()
 		user := &msp.UserData{
-			MSPID: userToEnrollMSPID,
-			ID:    userToEnroll,
+			MSPID:                 userToEnrollMSPID,
+			ID:                    userToEnroll,
 			EnrollmentCertificate: []byte(generatedCertBytes),
 		}
 		err = enrollmentTestUserStore.Store(user)

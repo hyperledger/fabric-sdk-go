@@ -141,15 +141,15 @@ var (
 	}
 	orgsConfig = map[string]fab.OrganizationConfig{
 		"org1": {
-			MSPID:      "Org1MSP",
-			CryptoPath: "peerOrganizations/org1.example.com/users/{username}@org1.example.com/msp",
-			Peers:      []string{"peer0.org1.example.com"},
+			MSPID:                  "Org1MSP",
+			CryptoPath:             "peerOrganizations/org1.example.com/users/{username}@org1.example.com/msp",
+			Peers:                  []string{"peer0.org1.example.com"},
 			CertificateAuthorities: []string{"ca.org1.example.com"},
 		},
 		"org2": {
-			MSPID:      "Org2MSP",
-			CryptoPath: "peerOrganizations/org1.example.com/users/{username}@org2.example.com/msp",
-			Peers:      []string{"peer0.org2.example.com"},
+			MSPID:                  "Org2MSP",
+			CryptoPath:             "peerOrganizations/org1.example.com/users/{username}@org2.example.com/msp",
+			Peers:                  []string{"peer0.org2.example.com"},
 			CertificateAuthorities: []string{"ca.org2.example.com"},
 		},
 		"ordererorg": {

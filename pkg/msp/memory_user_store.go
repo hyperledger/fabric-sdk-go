@@ -34,8 +34,8 @@ func (s *MemoryUserStore) Load(id msp.IdentityIdentifier) (*msp.UserData, error)
 		return nil, msp.ErrUserNotFound
 	}
 	userData := msp.UserData{
-		ID:    id.ID,
-		MSPID: id.MSPID,
+		ID:                    id.ID,
+		MSPID:                 id.MSPID,
 		EnrollmentCertificate: cert,
 	}
 	return &userData, nil

@@ -130,8 +130,8 @@ func enrollUser1(cryptoSuite core.CryptoSuite, t *testing.T, mspID string, testU
 		t.Fatalf("ImportBCCSPKeyFromPEMBytes failed [%s]", err)
 	}
 	user1 := &msp.UserData{
-		MSPID: mspID,
-		ID:    testUsername,
+		MSPID:                 mspID,
+		ID:                    testUsername,
 		EnrollmentCertificate: []byte(testCert),
 	}
 	err = userStore.Store(user1)

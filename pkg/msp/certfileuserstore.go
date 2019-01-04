@@ -59,8 +59,8 @@ func (s *CertFileUserStore) Load(key msp.IdentityIdentifier) (*msp.UserData, err
 		return nil, errors.New("user is not of proper type")
 	}
 	userData := &msp.UserData{
-		MSPID: key.MSPID,
-		ID:    key.ID,
+		MSPID:                 key.MSPID,
+		ID:                    key.ID,
 		EnrollmentCertificate: certBytes,
 	}
 	return userData, nil

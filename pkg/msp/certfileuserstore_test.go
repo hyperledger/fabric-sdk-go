@@ -63,13 +63,13 @@ func TestStore(t *testing.T) {
 	cleanupTestPath(t, storePath)
 
 	user1 := &msp.UserData{
-		MSPID: "Org1",
-		ID:    "user1",
+		MSPID:                 "Org1",
+		ID:                    "user1",
 		EnrollmentCertificate: []byte(testCert1),
 	}
 	user2 := &msp.UserData{
-		MSPID: "Org2",
-		ID:    "user2",
+		MSPID:                 "Org2",
+		ID:                    "user2",
 		EnrollmentCertificate: []byte(testCert2),
 	}
 

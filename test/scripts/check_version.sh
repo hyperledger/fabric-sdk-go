@@ -98,6 +98,6 @@ function isGoVersionValid {
 }
 
 if ! isGoVersionValid; then
-    echo "You should install go ${GO_MIN_VER} to ${GO_MAX_VER} to build and run hyperledger fabric sdk/tools"
+    echo "You should install go ${GO_MIN_VER} to ${GO_MAX_VER} to run hyperledger fabric sdk tests"
     exit 1
 fi
