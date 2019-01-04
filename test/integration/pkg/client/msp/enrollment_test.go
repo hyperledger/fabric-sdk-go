@@ -128,6 +128,16 @@ func TestEnrollWithOptions(t *testing.T) {
 		t.Fatalf("failed to create CA client: %s", err)
 	}
 
+	// As this integration test spawns a fresh CA instance,
+	// we have to enroll the CA registrar first. Otherwise,
+	// CA operations that require the registrar's identity
+	// will be rejected by the CA.
+	registrarEnrollID, registrarEnrollSecret := getRegistrarEnrollmentCredentials(t, ctxProvider)
+	err = mspClient.Enroll(registrarEnrollID, msp.WithSecret(registrarEnrollSecret))
+	if err != nil {
+		t.Fatalf("Enroll failed: %s", err)
+	}
+
 	// Generate a random user name
 	username := integration.GenerateRandomID()
 
@@ -207,6 +217,16 @@ func TestEnrollWithProfile(t *testing.T) {
 	mspClient, err := msp.New(ctxProvider)
 	if err != nil {
 		t.Fatalf("failed to create CA client: %s", err)
+	}
+
+	// As this integration test spawns a fresh CA instance,
+	// we have to enroll the CA registrar first. Otherwise,
+	// CA operations that require the registrar's identity
+	// will be rejected by the CA.
+	registrarEnrollID, registrarEnrollSecret := getRegistrarEnrollmentCredentials(t, ctxProvider)
+	err = mspClient.Enroll(registrarEnrollID, msp.WithSecret(registrarEnrollSecret))
+	if err != nil {
+		t.Fatalf("Enroll failed: %s", err)
 	}
 
 	// Generate a random user name
