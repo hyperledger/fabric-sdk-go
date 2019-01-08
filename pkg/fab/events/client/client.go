@@ -363,13 +363,7 @@ func (c *Client) mustSetConnectionState(newState ConnectionState) {
 
 func (c *Client) monitorConnection() {
 	logger.Debug("Monitoring connection")
-	for {
-		event, ok := <-c.connEvent
-		if !ok {
-			logger.Debugln("Connection has closed.")
-			break
-		}
-
+	for event := range c.connEvent {
 		if c.Stopped() {
 			logger.Debugln("Event client has been stopped.")
 			break
@@ -382,6 +376,12 @@ func (c *Client) monitorConnection() {
 		} else if c.reconn {
 			logger.Warnf("Event client has disconnected. Details: %s", event.Err)
 			if c.setConnectionState(Connected, Disconnected) {
+				if event.Err.IsFatal() {
+					logger.Warnf("Reconnect is not possible due to fatal error. Terminating: %s", event.Err)
+					go c.Close()
+					break
+				}
+
 				logger.Warn("Attempting to reconnect...")
 				go c.reconnect()
 			} else if c.setConnectionState(Connecting, Disconnected) {

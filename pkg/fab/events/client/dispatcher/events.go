@@ -34,14 +34,40 @@ func NewConnectedEvent() *ConnectedEvent {
 	return &ConnectedEvent{}
 }
 
+// DisconnectedError is the error that is associated with the disconnect.
+type DisconnectedError interface {
+	error
+
+	// IsFatal returns true if the error is fatal, meaning that a reconnect attempt would not succeed
+	IsFatal() bool
+}
+
+type disconnectedError struct {
+	cause error
+	fatal bool
+}
+
+func (e *disconnectedError) Error() string {
+	return e.cause.Error()
+}
+
+func (e *disconnectedError) IsFatal() bool {
+	return e.fatal
+}
+
 // DisconnectedEvent indicates that the client has disconnected from the server
 type DisconnectedEvent struct {
-	Err error
+	Err DisconnectedError
 }
 
 // NewDisconnectedEvent creates a new DisconnectedEvent
-func NewDisconnectedEvent(err error) *DisconnectedEvent {
-	return &DisconnectedEvent{Err: err}
+func NewDisconnectedEvent(cause error) *DisconnectedEvent {
+	return &DisconnectedEvent{Err: &disconnectedError{cause: cause}}
+}
+
+// NewFatalDisconnectedEvent creates a new DisconnectedEvent which indicates that a reconnect is not possible
+func NewFatalDisconnectedEvent(cause error) *DisconnectedEvent {
+	return &DisconnectedEvent{Err: &disconnectedError{cause: cause, fatal: true}}
 }
 
 // ConnectEvent is a request to connect to the server
@@ -72,10 +98,10 @@ func NewDisconnectEvent(errch chan<- error) *DisconnectEvent {
 // the disconnect error.
 type ConnectionEvent struct {
 	Connected bool
-	Err       error
+	Err       DisconnectedError
 }
 
 // NewConnectionEvent returns a new ConnectionEvent
-func NewConnectionEvent(connected bool, err error) *ConnectionEvent {
+func NewConnectionEvent(connected bool, err DisconnectedError) *ConnectionEvent {
 	return &ConnectionEvent{Connected: connected, Err: err}
 }

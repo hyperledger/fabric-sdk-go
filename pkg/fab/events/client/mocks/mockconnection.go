@@ -59,11 +59,16 @@ const (
 	ClosedOutcome Outcome = "closed"
 	// TimedOutOutcome means that the client timed out
 	TimedOutOutcome Outcome = "timeout"
-	// ConnectedOutcome means that the client connect
+	// ConnectedOutcome means that the client connected
 	ConnectedOutcome Outcome = "connected"
 	// ErrorOutcome means that the operation resulted in an error
 	ErrorOutcome Outcome = "error"
 )
+
+// ConnFactory creates mock connections
+var ConnFactory = func(opts ...Opt) Connection {
+	return NewMockConnection(opts...)
+}
 
 // Connection extends Connection and adds functions
 // to allow simulating certain situations
@@ -219,10 +224,10 @@ func (cp *ProviderFactory) Provider(conn Connection) api.ConnectionProvider {
 // to return a connection, what authorization to give the connection, etc.
 func (cp *ProviderFactory) FlakeyProvider(connAttemptResults ConnectAttemptResults, opts ...Opt) api.ConnectionProvider {
 	var connectAttempt Attempt
-	return func(context.Client, fab.ChannelCfg, fab.Peer) (api.Connection, error) {
+	return func(ctx context.Client, cfg fab.ChannelCfg, peer fab.Peer) (api.Connection, error) {
 		connectAttempt++
 
-		_, ok := connAttemptResults[connectAttempt]
+		result, ok := connAttemptResults[connectAttempt]
 		if !ok {
 			return nil, errors.New("simulating failed connection attempt")
 		}
@@ -230,30 +235,21 @@ func (cp *ProviderFactory) FlakeyProvider(connAttemptResults ConnectAttemptResul
 		cp.mtx.Lock()
 		defer cp.mtx.Unlock()
 
-		copts := &Opts{}
-		for _, opt := range opts {
-			opt(copts)
-		}
-		factory := copts.Factory
-		if factory == nil {
-			cp.connection = NewMockConnection(opts...)
-		} else {
-			cp.connection = factory(opts...)
-		}
+		cp.connection = result.ConnFactory(opts...)
 
 		return cp.connection, nil
 	}
 }
 
-// ConnectResult contains the data to use for the N'th connection attempt
+// ConnectResult contains the connection factory to use for the N'th connection attempt
 type ConnectResult struct {
-	Attempt Attempt
-	Result  Result
+	Attempt     Attempt
+	ConnFactory ConnectionFactory
 }
 
 // NewConnectResult returns a new ConnectResult
-func NewConnectResult(attempt Attempt, result Result) ConnectResult {
-	return ConnectResult{Attempt: attempt, Result: result}
+func NewConnectResult(attempt Attempt, connFactory ConnectionFactory) ConnectResult {
+	return ConnectResult{Attempt: attempt, ConnFactory: connFactory}
 }
 
 // ConnectAttemptResults maps a connection attempt to a connection result
@@ -321,12 +317,5 @@ func WithResults(funcResults ...*OperationResult) Opt {
 		for _, fr := range funcResults {
 			opts.Operations[fr.Operation] = ResultDesc{Result: fr.Result, ErrMsg: fr.ErrMessage}
 		}
-	}
-}
-
-// WithFactory specifies the connection factory for creating new mock connections
-func WithFactory(factory ConnectionFactory) Opt {
-	return func(opts *Opts) {
-		opts.Factory = factory
 	}
 }

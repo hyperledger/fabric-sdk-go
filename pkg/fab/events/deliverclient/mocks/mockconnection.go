@@ -26,6 +26,11 @@ const (
 	ForbiddenResult clientmocks.Result = "forbidden"
 )
 
+// ConnFactory is a connection factory that creates mock Deliver connections
+var ConnFactory = func(opts ...clientmocks.Opt) clientmocks.Connection {
+	return NewConnection(opts...)
+}
+
 // MockConnection is a fake connection used for unit testing
 type MockConnection struct {
 	clientmocks.MockConnection

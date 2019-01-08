@@ -104,12 +104,19 @@ func (ed *Dispatcher) handleDeliverResponseStatus(evt *pb.DeliverResponse_Status
 		logger.Warnf("Error disconnecting: %s", err)
 	}
 
-	ed.Dispatcher.HandleDisconnectedEvent(&clientdisp.DisconnectedEvent{
-		Err: errors.Errorf("got error status from deliver server: %s", evt.Status),
-	})
+	ed.Dispatcher.HandleDisconnectedEvent(disconnectedEventFromStatus(evt.Status))
 }
 
 func (ed *Dispatcher) registerHandlers() {
 	ed.RegisterHandler(&SeekEvent{}, ed.handleSeekEvent)
 	ed.RegisterHandler(&connection.Event{}, ed.handleEvent)
+}
+
+func disconnectedEventFromStatus(status cb.Status) *clientdisp.DisconnectedEvent {
+	err := errors.Errorf("got error status from deliver server: %s", status)
+
+	if status == cb.Status_FORBIDDEN {
+		return clientdisp.NewFatalDisconnectedEvent(err)
+	}
+	return clientdisp.NewDisconnectedEvent(err)
 }
