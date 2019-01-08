@@ -324,9 +324,9 @@ func (m *PlainTokenExpectation) GetOutputs() []*PlainOutput {
 }
 
 func init() {
-	proto.RegisterType((*TokenExpectation)(nil), "protos.TokenExpectation")
-	proto.RegisterType((*PlainExpectation)(nil), "protos.PlainExpectation")
-	proto.RegisterType((*PlainTokenExpectation)(nil), "protos.PlainTokenExpectation")
+	proto.RegisterType((*TokenExpectation)(nil), "sdk.protos.TokenExpectation")
+	proto.RegisterType((*PlainExpectation)(nil), "sdk.protos.PlainExpectation")
+	proto.RegisterType((*PlainTokenExpectation)(nil), "sdk.protos.PlainTokenExpectation")
 }
 
 func init() {

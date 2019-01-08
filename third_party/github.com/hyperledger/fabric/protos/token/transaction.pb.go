@@ -767,15 +767,15 @@ func (m *PlainDelegatedOutput) GetQuantity() uint64 {
 }
 
 func init() {
-	proto.RegisterType((*TokenTransaction)(nil), "TokenTransaction")
-	proto.RegisterType((*PlainTokenAction)(nil), "PlainTokenAction")
-	proto.RegisterType((*PlainImport)(nil), "PlainImport")
-	proto.RegisterType((*PlainTransfer)(nil), "PlainTransfer")
-	proto.RegisterType((*PlainApprove)(nil), "PlainApprove")
-	proto.RegisterType((*PlainTransferFrom)(nil), "PlainTransferFrom")
-	proto.RegisterType((*PlainOutput)(nil), "PlainOutput")
-	proto.RegisterType((*InputId)(nil), "InputId")
-	proto.RegisterType((*PlainDelegatedOutput)(nil), "PlainDelegatedOutput")
+	proto.RegisterType((*TokenTransaction)(nil), "sdk.TokenTransaction")
+	proto.RegisterType((*PlainTokenAction)(nil), "sdk.PlainTokenAction")
+	proto.RegisterType((*PlainImport)(nil), "sdk.PlainImport")
+	proto.RegisterType((*PlainTransfer)(nil), "sdk.PlainTransfer")
+	proto.RegisterType((*PlainApprove)(nil), "sdk.PlainApprove")
+	proto.RegisterType((*PlainTransferFrom)(nil), "sdk.PlainTransferFrom")
+	proto.RegisterType((*PlainOutput)(nil), "sdk.PlainOutput")
+	proto.RegisterType((*InputId)(nil), "sdk.InputId")
+	proto.RegisterType((*PlainDelegatedOutput)(nil), "sdk.PlainDelegatedOutput")
 }
 
 func init() {

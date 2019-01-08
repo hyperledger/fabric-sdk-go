@@ -109,6 +109,18 @@ do
     sed -i'' -e "/proto.RegisterMapType/s/protos/${NAMESPACE_PREFIX}protos/g" "${TMP_PROJECT_PATH}/${i}"
     sed -i'' -e "/proto.RegisterEnum/s/protos/${NAMESPACE_PREFIX}protos/g" "${TMP_PROJECT_PATH}/${i}"
   fi
+  if [[ ${i} == "protos/token"* ]]; then
+    sed -i'' -e "/proto.RegisterType/s/protos/${NAMESPACE_PREFIX}protos/g" "${TMP_PROJECT_PATH}/${i}"
+    sed -i'' -e "/proto.RegisterType/s/TokenTransaction\"/${NAMESPACE_PREFIX}TokenTransaction\"/g" "${TMP_PROJECT_PATH}/${i}"
+    sed -i'' -e "/proto.RegisterType/s/PlainTokenAction\"/${NAMESPACE_PREFIX}PlainTokenAction\"/g" "${TMP_PROJECT_PATH}/${i}"
+    sed -i'' -e "/proto.RegisterType/s/PlainImport\"/${NAMESPACE_PREFIX}PlainImport\"/g" "${TMP_PROJECT_PATH}/${i}"
+    sed -i'' -e "/proto.RegisterType/s/PlainTransfer\"/${NAMESPACE_PREFIX}PlainTransfer\"/g" "${TMP_PROJECT_PATH}/${i}"
+    sed -i'' -e "/proto.RegisterType/s/PlainApprove\"/${NAMESPACE_PREFIX}PlainApprove\"/g" "${TMP_PROJECT_PATH}/${i}"
+    sed -i'' -e "/proto.RegisterType/s/PlainTransferFrom\"/${NAMESPACE_PREFIX}PlainTransferFrom\"/g" "${TMP_PROJECT_PATH}/${i}"
+    sed -i'' -e "/proto.RegisterType/s/PlainOutput\"/${NAMESPACE_PREFIX}PlainOutput\"/g" "${TMP_PROJECT_PATH}/${i}"
+    sed -i'' -e "/proto.RegisterType/s/InputId\"/${NAMESPACE_PREFIX}InputId\"/g" "${TMP_PROJECT_PATH}/${i}"
+    sed -i'' -e "/proto.RegisterType/s/PlainDelegatedOutput\"/${NAMESPACE_PREFIX}PlainDelegatedOutput\"/g" "${TMP_PROJECT_PATH}/${i}"
+  fi
 done
 
 # Copy patched project into internal paths
