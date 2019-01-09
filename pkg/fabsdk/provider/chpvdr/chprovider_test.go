@@ -9,13 +9,14 @@ SPDX-License-Identifier: Apache-2.0
 package chpvdr
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/discovery/dynamicdiscovery"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/discovery/staticdiscovery"
+	clientmocks "github.com/hyperledger/fabric-sdk-go/pkg/client/common/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/dynamicselection"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/fabricselection"
-
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
@@ -112,4 +113,52 @@ func TestBasicValidChannel(t *testing.T) {
 	require.NotNil(t, selection)
 	_, ok = selection.(*fabricselection.Service)
 	assert.Truef(t, ok, "Expecting selection to be Fabric for v1_2")
+}
+
+func TestAccessDenied(t *testing.T) {
+	ctx := mocks.NewMockProviderContext()
+
+	user := mspmocks.NewMockSigningIdentity("user", "user")
+
+	clientCtx := &mockClientContext{
+		Providers:       ctx,
+		SigningIdentity: user,
+	}
+
+	discClient := clientmocks.NewMockDiscoveryClient()
+
+	discClient.SetResponses(
+		&clientmocks.MockDiscoverEndpointResponse{
+			Error: errors.New("access denied"),
+		},
+	)
+
+	dynamicdiscovery.SetClientProvider(func(ctx context.Client) (dynamicdiscovery.DiscoveryClient, error) {
+		return discClient, nil
+	})
+
+	cp, err := New(clientCtx.EndpointConfig())
+	require.NoError(t, err)
+
+	err = cp.Initialize(ctx)
+	assert.NoError(t, err)
+
+	testChannelCfg := mocks.NewMockChannelCfg("testchannel")
+	testChannelCfg.MockCapabilities[fab.ApplicationGroupKey][fab.V1_2Capability] = true
+	mockChConfigCache := newMockChCfgCache(chconfig.NewChannelCfg(""))
+	mockChConfigCache.Put(testChannelCfg)
+	cp.chCfgCache = mockChConfigCache
+
+	channelService, err := cp.ChannelService(clientCtx, "testchannel")
+	require.NoError(t, err)
+
+	discovery, err := channelService.Discovery()
+	require.NoError(t, err)
+	require.NotNil(t, discovery)
+	_, ok := discovery.(*dynamicdiscovery.ChannelService)
+	assert.Truef(t, ok, "Expecting discovery to be Dynamic for v1_2")
+
+	_, err = discovery.GetPeers()
+	require.Error(t, err)
+	assert.Equal(t, "access denied", err.Error())
 }

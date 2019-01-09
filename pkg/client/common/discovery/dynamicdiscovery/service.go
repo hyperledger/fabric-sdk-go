@@ -20,12 +20,13 @@ import (
 	"github.com/pkg/errors"
 )
 
-type discoveryClient interface {
+// DiscoveryClient is the client to the discovery service
+type DiscoveryClient interface {
 	Send(ctx context.Context, req *discclient.Request, targets ...fab.PeerConfig) ([]fabdiscovery.Response, error)
 }
 
 // clientProvider is overridden by unit tests
-var clientProvider = func(ctx contextAPI.Client) (discoveryClient, error) {
+var clientProvider = func(ctx contextAPI.Client) (DiscoveryClient, error) {
 	return fabdiscovery.New(ctx)
 }
 
@@ -36,8 +37,9 @@ type service struct {
 	responseTimeout time.Duration
 	lock            sync.RWMutex
 	ctx             contextAPI.Client
-	discClient      discoveryClient
+	discClient      DiscoveryClient
 	peersRef        *lazyref.Reference
+	lastErr         error
 }
 
 type queryPeers func() ([]fab.Peer, error)
@@ -57,15 +59,27 @@ func newService(config fab.EndpointConfig, query queryPeers, opts ...coptions.Op
 	logger.Debugf("Cache refresh interval: %s", options.refreshInterval)
 	logger.Debugf("Deliver service response timeout: %s", options.responseTimeout)
 
-	return &service{
+	s := &service{
 		responseTimeout: options.responseTimeout,
-		peersRef: lazyref.New(
-			func() (interface{}, error) {
-				return query()
-			},
-			lazyref.WithRefreshInterval(lazyref.InitOnFirstAccess, options.refreshInterval),
-		),
 	}
+
+	s.peersRef = lazyref.New(
+		func() (interface{}, error) {
+			peers, err := query()
+			if err != nil {
+				derr, ok := err.(*discoveryError)
+				if ok && derr.IsFatal() {
+					logger.Warnf("Got fatal error [%s]. Closing discovery client.", err)
+					s.lastErr = err
+					go func() { s.Close() }()
+				}
+			}
+			return peers, err
+		},
+		lazyref.WithRefreshInterval(lazyref.InitOnFirstAccess, options.refreshInterval),
+	)
+
+	return s
 }
 
 // initialize initializes the service with client context
@@ -98,6 +112,13 @@ func (s *service) Close() {
 
 // GetPeers returns the available peers
 func (s *service) GetPeers() ([]fab.Peer, error) {
+	if s.peersRef.IsClosed() {
+		if s.lastErr != nil {
+			return nil, errors.Errorf("Discovery client has been closed due to error: %s", s.lastErr)
+		}
+		return nil, errors.Errorf("Discovery client has been closed")
+	}
+
 	refValue, err := s.peersRef.Get()
 	if err != nil {
 		return nil, err
@@ -115,7 +136,7 @@ func (s *service) context() contextAPI.Client {
 	return s.ctx
 }
 
-func (s *service) discoveryClient() discoveryClient {
+func (s *service) discoveryClient() DiscoveryClient {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 	return s.discClient

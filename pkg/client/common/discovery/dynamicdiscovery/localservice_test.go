@@ -1,3 +1,5 @@
+// +build testing
+
 /*
 Copyright SecureKey Technologies Inc. All Rights Reserved.
 
@@ -45,9 +47,9 @@ func TestLocalDiscoveryService(t *testing.T) {
 		},
 	)
 
-	clientProvider = func(ctx contextAPI.Client) (discoveryClient, error) {
+	SetClientProvider(func(ctx contextAPI.Client) (DiscoveryClient, error) {
 		return discClient, nil
-	}
+	})
 
 	// Test initialize with invalid MSP ID
 	service := newLocalService(config, mspID2)

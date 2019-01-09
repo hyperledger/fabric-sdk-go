@@ -1,3 +1,5 @@
+// +build testing
+
 /*
 Copyright SecureKey Technologies Inc. All Rights Reserved.
 
@@ -7,6 +9,7 @@ SPDX-License-Identifier: Apache-2.0
 package dynamicdiscovery
 
 import (
+	"errors"
 	"testing"
 	"time"
 
@@ -57,14 +60,14 @@ func TestDiscoveryService(t *testing.T) {
 		},
 	)
 
-	clientProvider = func(ctx contextAPI.Client) (discoveryClient, error) {
+	SetClientProvider(func(ctx contextAPI.Client) (DiscoveryClient, error) {
 		return discClient, nil
-	}
+	})
 
 	service, err := NewChannelService(
 		ctx, mocks.NewMockMembership(), ch,
-		WithRefreshInterval(500*time.Millisecond),
-		WithResponseTimeout(2*time.Second),
+		WithRefreshInterval(10*time.Millisecond),
+		WithResponseTimeout(100*time.Millisecond),
 	)
 	require.NoError(t, err)
 	defer service.Close()
@@ -85,7 +88,7 @@ func TestDiscoveryService(t *testing.T) {
 		},
 	)
 
-	time.Sleep(1 * time.Second)
+	time.Sleep(20 * time.Millisecond)
 
 	peers, err = service.GetPeers()
 	assert.NoError(t, err)
@@ -108,16 +111,44 @@ func TestDiscoveryService(t *testing.T) {
 		},
 	)
 
-	time.Sleep(1 * time.Second)
+	time.Sleep(20 * time.Millisecond)
 
 	peers, err = service.GetPeers()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equalf(t, 2, len(peers), "Expected 2 peers")
 
 	filteredService := discovery.NewDiscoveryFilterService(service, &blockHeightFilter{minBlockHeight: 10})
 	peers, err = filteredService.GetPeers()
 	require.NoError(t, err)
 	require.Equalf(t, 1, len(peers), "expecting discovery filter to return only one peer")
+
+	// Non-fatal error
+	discClient.SetResponses(
+		&clientmocks.MockDiscoverEndpointResponse{
+			Error: errors.New("some transient error"),
+		},
+	)
+
+	time.Sleep(50 * time.Millisecond)
+
+	// GetPeers should return the cached response
+	peers, err = service.GetPeers()
+	require.NoError(t, err)
+	assert.Equalf(t, 2, len(peers), "Expected 2 peers")
+
+	// Fatal error (access denied can be due due a user being revoked)
+	discClient.SetResponses(
+		&clientmocks.MockDiscoverEndpointResponse{
+			Error: errors.New(accessDenied),
+		},
+	)
+
+	time.Sleep(50 * time.Millisecond)
+
+	// The discovery service should have been closed
+	_, err = service.GetPeers()
+	require.Error(t, err)
+	assert.Equal(t, "Discovery client has been closed due to error: access denied", err.Error())
 }
 
 func TestDiscoveryServiceWithNewOrgJoined(t *testing.T) {
@@ -154,9 +185,9 @@ func TestDiscoveryServiceWithNewOrgJoined(t *testing.T) {
 		},
 	)
 
-	clientProvider = func(ctx contextAPI.Client) (discoveryClient, error) {
+	SetClientProvider(func(ctx contextAPI.Client) (DiscoveryClient, error) {
 		return discClient, nil
-	}
+	})
 
 	service, err := NewChannelService(
 		ctx,

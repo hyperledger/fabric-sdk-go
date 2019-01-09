@@ -79,7 +79,7 @@ type Reference struct {
 	lastTimeAccessed  unsafe.Pointer
 	lock              sync.RWMutex
 	wg                sync.WaitGroup
-	closed            bool
+	closed            uint32
 	running           bool
 	closech           chan bool
 }
@@ -135,8 +135,17 @@ func NewWithData(initializer InitializerWithData, opts ...options.Opt) *Referenc
 	return lazyRef
 }
 
+// IsClosed returns true if the referenced has been closed
+func (r *Reference) IsClosed() bool {
+	return atomic.LoadUint32(&r.closed) == 1
+}
+
 // Get returns the value, or an error if the initialiser returned an error.
 func (r *Reference) Get(data ...interface{}) (interface{}, error) {
+	if r.IsClosed() {
+		return nil, errors.New("reference is already closed")
+	}
+
 	// Try outside of a lock
 	if value, ok := r.get(); ok {
 		return value, nil
@@ -144,10 +153,6 @@ func (r *Reference) Get(data ...interface{}) (interface{}, error) {
 
 	r.lock.Lock()
 	defer r.lock.Unlock()
-
-	if r.closed {
-		return nil, errors.New("reference is already closed")
-	}
 
 	// Try again inside the lock
 	if value, ok := r.get(); ok {
@@ -192,13 +197,7 @@ func (r *Reference) Close() {
 }
 
 func (r *Reference) setClosed() bool {
-	r.lock.Lock()
-	defer r.lock.Unlock()
-	if r.closed {
-		return false
-	}
-	r.closed = true
-	return true
+	return atomic.CompareAndSwapUint32(&r.closed, 0, 1)
 }
 
 func (r *Reference) notifyClosing() {
@@ -241,7 +240,7 @@ func (r *Reference) setTimerRunning() bool {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 
-	if r.running || r.closed {
+	if r.running || r.IsClosed() {
 		logger.Debug("Cannot start timer since timer is either already running or it is closed")
 		return false
 	}
