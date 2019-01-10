@@ -169,6 +169,11 @@ func (c *Cache) Close() {
 	c.DeleteAll()
 }
 
+// IsClosed reeturns true if the cache has been closed
+func (c *Cache) IsClosed() bool {
+	return atomic.LoadInt32(&c.closed) == 1
+}
+
 // DeleteAll does the following:
 // - calls Close on all values that implement a Close() function
 // - deletes all entries from the cache

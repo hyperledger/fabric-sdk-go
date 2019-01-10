@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	discclient "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/discovery/client"
@@ -32,7 +33,10 @@ import (
 	grpcCodes "google.golang.org/grpc/codes"
 )
 
-const moduleName = "fabsdk/client"
+const (
+	moduleName   = "fabsdk/client"
+	accessDenied = "access denied"
+)
 
 var logger = logging.NewLogger(moduleName)
 
@@ -53,12 +57,13 @@ var defaultRetryOpts = retry.Opts{
 	RetryableCodes: retryableCodes,
 }
 
-type discoveryClient interface {
+// DiscoveryClient is the client to the discovery service
+type DiscoveryClient interface {
 	Send(ctx context.Context, req *discclient.Request, targets ...fab.PeerConfig) ([]fabdiscovery.Response, error)
 }
 
 // clientProvider is overridden by unit tests
-var clientProvider = func(ctx contextAPI.Client) (discoveryClient, error) {
+var clientProvider = func(ctx contextAPI.Client) (DiscoveryClient, error) {
 	return fabdiscovery.New(ctx)
 }
 
@@ -69,9 +74,11 @@ type Service struct {
 	responseTimeout time.Duration
 	ctx             contextAPI.Client
 	discovery       fab.DiscoveryService
-	discClient      discoveryClient
+	discClient      DiscoveryClient
 	chResponseCache *lazycache.Cache
 	retryOpts       retry.Opts
+	lastErr         error
+	lock            sync.RWMutex
 }
 
 // New creates a new dynamic selection service using Fabric's Discovery Service
@@ -123,7 +130,14 @@ func New(ctx contextAPI.Client, channelID string, discovery fab.DiscoveryService
 				logger.Debugf("Overriding retry opts: %#v", ropts)
 			}
 
-			return s.queryEndorsers(invocationChain, ropts)
+			endorsers, err := s.queryEndorsers(invocationChain, ropts)
+			if err != nil {
+				derr, ok := err.(discoveryError)
+				if ok && derr.isFatal() {
+					go s.close(err)
+				}
+			}
+			return endorsers, err
 		},
 		lazyref.WithRefreshInterval(lazyref.InitImmediately, options.refreshInterval),
 	)
@@ -133,6 +147,14 @@ func New(ctx contextAPI.Client, channelID string, discovery fab.DiscoveryService
 
 // GetEndorsersForChaincode returns the endorsing peers for the given chaincodes
 func (s *Service) GetEndorsersForChaincode(chaincodes []*fab.ChaincodeCall, opts ...coptions.Opt) ([]fab.Peer, error) {
+	if s.chResponseCache.IsClosed() {
+		lastErr := s.getLastError()
+		if lastErr != nil {
+			return nil, errors.Errorf("Selection service has been closed due to error: %s", lastErr)
+		}
+		return nil, errors.Errorf("Selection service has been closed")
+	}
+
 	logger.Debugf("Getting endorsers for chaincodes [%#v]...", chaincodes)
 	if len(chaincodes) == 0 {
 		return nil, errors.New("no chaincode IDs provided")
@@ -165,6 +187,20 @@ func (s *Service) GetEndorsersForChaincode(chaincodes []*fab.ChaincodeCall, opts
 func (s *Service) Close() {
 	logger.Debug("Closing channel response cache")
 	s.chResponseCache.Close()
+}
+
+func (s *Service) close(err error) {
+	logger.Warnf("Got fatal error [%s]. Closing selection service.", err)
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	s.lastErr = err
+	s.chResponseCache.Close()
+}
+
+func (s *Service) getLastError() error {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+	return s.lastErr
 }
 
 func (s *Service) getEndorsers(chaincodes []*fab.ChaincodeCall, chResponse discclient.ChannelResponse, peerFilter soptions.PeerFilter, sorter soptions.PeerSorter) (discclient.Endorsers, error) {
@@ -214,9 +250,9 @@ func (s *Service) queryEndorsers(chaincodes []*fab.ChaincodeCall, retryOpts retr
 	)
 
 	if err != nil {
-		return nil, err
+		return nil, newDiscoveryError(err)
 	}
-	return chResponse.(discclient.ChannelResponse), err
+	return chResponse.(discclient.ChannelResponse), nil
 }
 
 func (s *Service) query(req *discclient.Request, chaincodes []*fab.ChaincodeCall, targets []fab.PeerConfig) (discclient.ChannelResponse, error) {
@@ -354,4 +390,8 @@ func (e discoveryError) Error() string {
 func (e discoveryError) isTransient() bool {
 	return strings.Contains(e.Error(), "failed constructing descriptor for chaincodes") ||
 		strings.Contains(e.Error(), "no endorsement combination can be satisfied")
+}
+
+func (e discoveryError) isFatal() bool {
+	return e == accessDenied
 }

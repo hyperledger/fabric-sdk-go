@@ -11,6 +11,7 @@ package chpvdr
 import (
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/discovery/dynamicdiscovery"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/discovery/staticdiscovery"
@@ -115,7 +116,69 @@ func TestBasicValidChannel(t *testing.T) {
 	assert.Truef(t, ok, "Expecting selection to be Fabric for v1_2")
 }
 
-func TestAccessDenied(t *testing.T) {
+func TestDiscoveryAccessDenied(t *testing.T) {
+	discClient, channelService := setupDiscovery(t, func(discClient *clientmocks.MockDiscoveryClient) {
+		dynamicdiscovery.SetClientProvider(func(ctx context.Client) (dynamicdiscovery.DiscoveryClient, error) {
+			return discClient, nil
+		})
+	})
+
+	discClient.SetResponses(
+		&clientmocks.MockDiscoverEndpointResponse{
+			Error: errors.New("access denied"),
+		},
+	)
+
+	discovery, err := channelService.Discovery()
+	require.NoError(t, err)
+	require.NotNil(t, discovery)
+	_, ok := discovery.(*dynamicdiscovery.ChannelService)
+	assert.Truef(t, ok, "Expecting discovery to be Dynamic for v1_2")
+
+	_, err = discovery.GetPeers()
+	require.Error(t, err)
+	assert.Equal(t, "access denied", err.Error())
+
+	time.Sleep(50 * time.Millisecond)
+
+	// Subsequent calls should fail since the service is closed
+	_, err = discovery.GetPeers()
+	require.Error(t, err)
+	assert.Equal(t, "Discovery client has been closed due to error: access denied", err.Error())
+}
+
+func TestSelectionAccessDenied(t *testing.T) {
+	discClient, channelService := setupDiscovery(t, func(discClient *clientmocks.MockDiscoveryClient) {
+		fabricselection.SetClientProvider(func(ctx context.Client) (fabricselection.DiscoveryClient, error) {
+			return discClient, nil
+		})
+	})
+
+	discClient.SetResponses(
+		&clientmocks.MockDiscoverEndpointResponse{
+			Error: errors.New("access denied"),
+		},
+	)
+
+	selection, err := channelService.Selection()
+	require.NoError(t, err)
+	require.NotNil(t, selection)
+	_, ok := selection.(*fabricselection.Service)
+	assert.Truef(t, ok, "Expecting selection to be Fabric for v1_2")
+
+	_, err = selection.GetEndorsersForChaincode([]*fab.ChaincodeCall{{ID: "cc1"}})
+	require.Error(t, err)
+	assert.Equal(t, "error getting channel response for channel [testchannel]: access denied", err.Error())
+
+	time.Sleep(50 * time.Millisecond)
+
+	// Subsequent calls should fail since the service is closed
+	_, err = selection.GetEndorsersForChaincode([]*fab.ChaincodeCall{{ID: "cc1"}})
+	require.Error(t, err)
+	assert.Equal(t, "Selection service has been closed due to error: access denied", err.Error())
+}
+
+func setupDiscovery(t *testing.T, preInit func(discClient *clientmocks.MockDiscoveryClient)) (*clientmocks.MockDiscoveryClient, fab.ChannelService) {
 	ctx := mocks.NewMockProviderContext()
 
 	user := mspmocks.NewMockSigningIdentity("user", "user")
@@ -127,15 +190,7 @@ func TestAccessDenied(t *testing.T) {
 
 	discClient := clientmocks.NewMockDiscoveryClient()
 
-	discClient.SetResponses(
-		&clientmocks.MockDiscoverEndpointResponse{
-			Error: errors.New("access denied"),
-		},
-	)
-
-	dynamicdiscovery.SetClientProvider(func(ctx context.Client) (dynamicdiscovery.DiscoveryClient, error) {
-		return discClient, nil
-	})
+	preInit(discClient)
 
 	cp, err := New(clientCtx.EndpointConfig())
 	require.NoError(t, err)
@@ -152,13 +207,5 @@ func TestAccessDenied(t *testing.T) {
 	channelService, err := cp.ChannelService(clientCtx, "testchannel")
 	require.NoError(t, err)
 
-	discovery, err := channelService.Discovery()
-	require.NoError(t, err)
-	require.NotNil(t, discovery)
-	_, ok := discovery.(*dynamicdiscovery.ChannelService)
-	assert.Truef(t, ok, "Expecting discovery to be Dynamic for v1_2")
-
-	_, err = discovery.GetPeers()
-	require.Error(t, err)
-	assert.Equal(t, "access denied", err.Error())
+	return discClient, channelService
 }

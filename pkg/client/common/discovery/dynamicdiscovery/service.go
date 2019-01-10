@@ -69,9 +69,7 @@ func newService(config fab.EndpointConfig, query queryPeers, opts ...coptions.Op
 			if err != nil {
 				derr, ok := err.(*discoveryError)
 				if ok && derr.IsFatal() {
-					logger.Warnf("Got fatal error [%s]. Closing discovery client.", err)
-					s.lastErr = err
-					go func() { s.Close() }()
+					go s.close(err)
 				}
 			}
 			return peers, err
@@ -110,11 +108,26 @@ func (s *service) Close() {
 	s.peersRef.Close()
 }
 
+func (s *service) close(err error) {
+	logger.Warnf("Got fatal error [%s]. Closing discovery client.", err)
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	s.lastErr = err
+	s.peersRef.Close()
+}
+
+func (s *service) getLastError() error {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+	return s.lastErr
+}
+
 // GetPeers returns the available peers
 func (s *service) GetPeers() ([]fab.Peer, error) {
 	if s.peersRef.IsClosed() {
-		if s.lastErr != nil {
-			return nil, errors.Errorf("Discovery client has been closed due to error: %s", s.lastErr)
+		lastErr := s.getLastError()
+		if lastErr != nil {
+			return nil, errors.Errorf("Discovery client has been closed due to error: %s", lastErr)
 		}
 		return nil, errors.Errorf("Discovery client has been closed")
 	}

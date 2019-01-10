@@ -261,6 +261,8 @@ func TestClose(t *testing.T) {
 	// Close the cache
 	cache.Close()
 
+	assert.True(t, cache.IsClosed())
+
 	// Close again should be fine
 	cache.Close()
 

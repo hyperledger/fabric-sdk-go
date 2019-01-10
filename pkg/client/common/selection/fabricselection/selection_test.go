@@ -1,3 +1,5 @@
+// +build testing
+
 /*
 Copyright SecureKey Technologies Inc. All Rights Reserved.
 
@@ -114,15 +116,15 @@ func TestSelection(t *testing.T) {
 
 	discClient := clientmocks.NewMockDiscoveryClient()
 
-	clientProvider = func(ctx contextAPI.Client) (discoveryClient, error) {
+	SetClientProvider(func(ctx contextAPI.Client) (DiscoveryClient, error) {
 		return discClient, nil
-	}
+	})
 
 	service, err := New(
 		ctx, channelID,
 		mocks.NewMockDiscoveryService(nil, peer1Org1, peer2Org1, peer1Org2, peer2Org2, peer1Org3, peer2Org3),
-		WithRefreshInterval(100*time.Millisecond),
-		WithResponseTimeout(10*time.Millisecond),
+		WithRefreshInterval(10*time.Millisecond),
+		WithResponseTimeout(100*time.Millisecond),
 	)
 	require.NoError(t, err)
 	defer service.Close()
@@ -135,7 +137,7 @@ func TestSelection(t *testing.T) {
 				Error:         fmt.Errorf("simulated response error"),
 			},
 		)
-		testSelectionError(t, service)
+		testSelectionError(t, service, "error getting channel response for channel [testchannel]: simulated response error")
 	})
 
 	t.Run("CCtoCC", func(t *testing.T) {
@@ -149,7 +151,7 @@ func TestSelection(t *testing.T) {
 		)
 
 		// Wait for cache to refresh
-		time.Sleep(200 * time.Millisecond)
+		time.Sleep(20 * time.Millisecond)
 		testSelectionCCtoCC(t, service)
 	})
 
@@ -168,6 +170,18 @@ func TestSelection(t *testing.T) {
 	t.Run("Priority Selector", func(t *testing.T) {
 		testSelectionPrioritySelector(t, service)
 	})
+
+	t.Run("Fatal Error", func(t *testing.T) {
+		discClient.SetResponses(
+			&clientmocks.MockDiscoverEndpointResponse{
+				PeerEndpoints: []*discmocks.MockDiscoveryPeerEndpoint{},
+				Error:         fmt.Errorf(accessDenied),
+			},
+		)
+		// Wait for cache to refresh
+		time.Sleep(20 * time.Millisecond)
+		testSelectionError(t, service, "Selection service has been closed due to error: access denied")
+	})
 }
 
 func TestWithDiscoveryFilter(t *testing.T) {
@@ -179,9 +193,9 @@ func TestWithDiscoveryFilter(t *testing.T) {
 	ctx.SetEndpointConfig(config)
 
 	discClient := clientmocks.NewMockDiscoveryClient()
-	clientProvider = func(ctx contextAPI.Client) (discoveryClient, error) {
+	SetClientProvider(func(ctx contextAPI.Client) (DiscoveryClient, error) {
 		return discClient, nil
-	}
+	})
 
 	discClient.SetResponses(
 		&clientmocks.MockDiscoverEndpointResponse{
@@ -241,9 +255,10 @@ func TestWithDiscoveryFilter(t *testing.T) {
 	})
 }
 
-func testSelectionError(t *testing.T, service *Service) {
+func testSelectionError(t *testing.T, service *Service, expectedErrMsg string) {
 	endorsers, err := service.GetEndorsersForChaincode([]*fab.ChaincodeCall{{ID: cc1}})
 	assert.Error(t, err)
+	assert.Equal(t, expectedErrMsg, err.Error())
 	assert.Equal(t, 0, len(endorsers))
 }
 
