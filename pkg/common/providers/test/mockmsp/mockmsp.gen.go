@@ -36,6 +36,7 @@ func (m *MockIdentityConfig) EXPECT() *MockIdentityConfigMockRecorder {
 
 // CAClientCert mocks base method
 func (m *MockIdentityConfig) CAClientCert(arg0 string) ([]byte, bool) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CAClientCert", arg0)
 	ret0, _ := ret[0].([]byte)
 	ret1, _ := ret[1].(bool)
@@ -44,11 +45,13 @@ func (m *MockIdentityConfig) CAClientCert(arg0 string) ([]byte, bool) {
 
 // CAClientCert indicates an expected call of CAClientCert
 func (mr *MockIdentityConfigMockRecorder) CAClientCert(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CAClientCert", reflect.TypeOf((*MockIdentityConfig)(nil).CAClientCert), arg0)
 }
 
 // CAClientKey mocks base method
 func (m *MockIdentityConfig) CAClientKey(arg0 string) ([]byte, bool) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CAClientKey", arg0)
 	ret0, _ := ret[0].([]byte)
 	ret1, _ := ret[1].(bool)
@@ -57,11 +60,13 @@ func (m *MockIdentityConfig) CAClientKey(arg0 string) ([]byte, bool) {
 
 // CAClientKey indicates an expected call of CAClientKey
 func (mr *MockIdentityConfigMockRecorder) CAClientKey(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CAClientKey", reflect.TypeOf((*MockIdentityConfig)(nil).CAClientKey), arg0)
 }
 
 // CAConfig mocks base method
 func (m *MockIdentityConfig) CAConfig(arg0 string) (*msp.CAConfig, bool) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CAConfig", arg0)
 	ret0, _ := ret[0].(*msp.CAConfig)
 	ret1, _ := ret[1].(bool)
@@ -70,11 +75,13 @@ func (m *MockIdentityConfig) CAConfig(arg0 string) (*msp.CAConfig, bool) {
 
 // CAConfig indicates an expected call of CAConfig
 func (mr *MockIdentityConfigMockRecorder) CAConfig(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CAConfig", reflect.TypeOf((*MockIdentityConfig)(nil).CAConfig), arg0)
 }
 
 // CAKeyStorePath mocks base method
 func (m *MockIdentityConfig) CAKeyStorePath() string {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CAKeyStorePath")
 	ret0, _ := ret[0].(string)
 	return ret0
@@ -82,11 +89,13 @@ func (m *MockIdentityConfig) CAKeyStorePath() string {
 
 // CAKeyStorePath indicates an expected call of CAKeyStorePath
 func (mr *MockIdentityConfigMockRecorder) CAKeyStorePath() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CAKeyStorePath", reflect.TypeOf((*MockIdentityConfig)(nil).CAKeyStorePath))
 }
 
 // CAServerCerts mocks base method
 func (m *MockIdentityConfig) CAServerCerts(arg0 string) ([][]byte, bool) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CAServerCerts", arg0)
 	ret0, _ := ret[0].([][]byte)
 	ret1, _ := ret[1].(bool)
@@ -95,11 +104,13 @@ func (m *MockIdentityConfig) CAServerCerts(arg0 string) ([][]byte, bool) {
 
 // CAServerCerts indicates an expected call of CAServerCerts
 func (mr *MockIdentityConfigMockRecorder) CAServerCerts(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CAServerCerts", reflect.TypeOf((*MockIdentityConfig)(nil).CAServerCerts), arg0)
 }
 
 // Client mocks base method
 func (m *MockIdentityConfig) Client() *msp.ClientConfig {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Client")
 	ret0, _ := ret[0].(*msp.ClientConfig)
 	return ret0
@@ -107,11 +118,13 @@ func (m *MockIdentityConfig) Client() *msp.ClientConfig {
 
 // Client indicates an expected call of Client
 func (mr *MockIdentityConfigMockRecorder) Client() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Client", reflect.TypeOf((*MockIdentityConfig)(nil).Client))
 }
 
 // CredentialStorePath mocks base method
 func (m *MockIdentityConfig) CredentialStorePath() string {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CredentialStorePath")
 	ret0, _ := ret[0].(string)
 	return ret0
@@ -119,6 +132,7 @@ func (m *MockIdentityConfig) CredentialStorePath() string {
 
 // CredentialStorePath indicates an expected call of CredentialStorePath
 func (mr *MockIdentityConfigMockRecorder) CredentialStorePath() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CredentialStorePath", reflect.TypeOf((*MockIdentityConfig)(nil).CredentialStorePath))
 }
 
@@ -147,6 +161,7 @@ func (m *MockIdentityManager) EXPECT() *MockIdentityManagerMockRecorder {
 
 // CreateSigningIdentity mocks base method
 func (m *MockIdentityManager) CreateSigningIdentity(arg0 ...msp.SigningIdentityOption) (msp.SigningIdentity, error) {
+	m.ctrl.T.Helper()
 	varargs := []interface{}{}
 	for _, a := range arg0 {
 		varargs = append(varargs, a)
@@ -159,11 +174,13 @@ func (m *MockIdentityManager) CreateSigningIdentity(arg0 ...msp.SigningIdentityO
 
 // CreateSigningIdentity indicates an expected call of CreateSigningIdentity
 func (mr *MockIdentityManagerMockRecorder) CreateSigningIdentity(arg0 ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateSigningIdentity", reflect.TypeOf((*MockIdentityManager)(nil).CreateSigningIdentity), arg0...)
 }
 
 // GetSigningIdentity mocks base method
 func (m *MockIdentityManager) GetSigningIdentity(arg0 string) (msp.SigningIdentity, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSigningIdentity", arg0)
 	ret0, _ := ret[0].(msp.SigningIdentity)
 	ret1, _ := ret[1].(error)
@@ -172,6 +189,7 @@ func (m *MockIdentityManager) GetSigningIdentity(arg0 string) (msp.SigningIdenti
 
 // GetSigningIdentity indicates an expected call of GetSigningIdentity
 func (mr *MockIdentityManagerMockRecorder) GetSigningIdentity(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSigningIdentity", reflect.TypeOf((*MockIdentityManager)(nil).GetSigningIdentity), arg0)
 }
 
@@ -200,6 +218,7 @@ func (m *MockProviders) EXPECT() *MockProvidersMockRecorder {
 
 // IdentityConfig mocks base method
 func (m *MockProviders) IdentityConfig() msp.IdentityConfig {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "IdentityConfig")
 	ret0, _ := ret[0].(msp.IdentityConfig)
 	return ret0
@@ -207,11 +226,13 @@ func (m *MockProviders) IdentityConfig() msp.IdentityConfig {
 
 // IdentityConfig indicates an expected call of IdentityConfig
 func (mr *MockProvidersMockRecorder) IdentityConfig() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IdentityConfig", reflect.TypeOf((*MockProviders)(nil).IdentityConfig))
 }
 
 // IdentityManager mocks base method
 func (m *MockProviders) IdentityManager(arg0 string) (msp.IdentityManager, bool) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "IdentityManager", arg0)
 	ret0, _ := ret[0].(msp.IdentityManager)
 	ret1, _ := ret[1].(bool)
@@ -220,11 +241,13 @@ func (m *MockProviders) IdentityManager(arg0 string) (msp.IdentityManager, bool)
 
 // IdentityManager indicates an expected call of IdentityManager
 func (mr *MockProvidersMockRecorder) IdentityManager(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IdentityManager", reflect.TypeOf((*MockProviders)(nil).IdentityManager), arg0)
 }
 
 // UserStore mocks base method
 func (m *MockProviders) UserStore() msp.UserStore {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UserStore")
 	ret0, _ := ret[0].(msp.UserStore)
 	return ret0
@@ -232,5 +255,6 @@ func (m *MockProviders) UserStore() msp.UserStore {
 
 // UserStore indicates an expected call of UserStore
 func (mr *MockProvidersMockRecorder) UserStore() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UserStore", reflect.TypeOf((*MockProviders)(nil).UserStore))
 }

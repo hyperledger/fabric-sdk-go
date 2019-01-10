@@ -29,5 +29,6 @@ func TestE2E(t *testing.T) {
 		fabsdk.WithEndpointConfig(endpointConfigImpls...),
 		fabsdk.WithCryptoSuiteConfig(cryptoConfigImpls...),
 		fabsdk.WithIdentityConfig(identityConfigImpls...),
+		fabsdk.WithMetricsConfig(operationsConfigImpls...),
 	)
 }

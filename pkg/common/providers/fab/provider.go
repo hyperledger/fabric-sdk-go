@@ -10,13 +10,12 @@ import (
 	reqContext "context"
 	"crypto/tls"
 	"crypto/x509"
-
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
-
 	"time"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/metrics"
 	"google.golang.org/grpc"
 )
 
@@ -155,6 +154,7 @@ type Providers interface {
 	ChannelProvider() ChannelProvider
 	InfraProvider() InfraProvider
 	EndpointConfig() EndpointConfig
+	MetricsProvider
 }
 
 // CertPool is a thread safe wrapper around the x509 standard library
@@ -165,4 +165,9 @@ type CertPool interface {
 	//Add allows adding certificates to CertPool
 	//Call Get() after Add() to get the updated certpool
 	Add(certs ...*x509.Certificate)
+}
+
+// MetricsProvider represents a provider of metrics.
+type MetricsProvider interface {
+	GetMetrics() *metrics.ClientMetrics
 }

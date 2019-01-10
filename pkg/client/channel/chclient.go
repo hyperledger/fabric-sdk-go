@@ -28,6 +28,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	contextImpl "github.com/hyperledger/fabric-sdk-go/pkg/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/metrics"
 	"github.com/pkg/errors"
 )
 
@@ -41,7 +42,7 @@ type Client struct {
 	membership   fab.ChannelMembership
 	eventService fab.EventService
 	greylist     *greylist.Filter
-	clientTally  // nolint
+	metrics      *metrics.ClientMetrics
 }
 
 // ClientOption describes a functional parameter for the New constructor

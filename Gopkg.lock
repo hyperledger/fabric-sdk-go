@@ -18,14 +18,6 @@
   revision = "3a771d992973f24aa725d07868b467d1ddfceafb"
 
 [[projects]]
-  digest = "1:47fe89a242ccbae03d31b4c665d3d983786acd316c0d7c51bcfa0d019b205004"
-  name = "github.com/cactus/go-statsd-client"
-  packages = ["statsd"]
-  pruneopts = ""
-  revision = "138b925ccdf617776955904ba7759fce64406cec"
-  version = "v3.1.1"
-
-[[projects]]
   digest = "1:87021a8fd708a9c4dd48a441cc2dace8063f2c1f5d67699ba6f1f93b548e4a33"
   name = "github.com/cloudflare/cfssl"
   packages = [
@@ -56,14 +48,6 @@
   version = "v1.1.0"
 
 [[projects]]
-  branch = "master"
-  digest = "1:88b37f144a80737f9e5cd50c887c00c2f3c7211257f884b8b80ce97e61ed1ccb"
-  name = "github.com/facebookgo/clock"
-  packages = ["."]
-  pruneopts = ""
-  revision = "600d898af40aa09a7a93ecb9265d87b0504b6f03"
-
-[[projects]]
   digest = "1:eb53021a8aa3f599d29c7102e65026242bdedce998a54837dc67f14b6a97c5fd"
   name = "github.com/fsnotify/fsnotify"
   packages = ["."]
@@ -72,12 +56,36 @@
   version = "v1.4.7"
 
 [[projects]]
+  digest = "1:48e65aaf8ce34ffb3e8d56daa9417826db162afbc2040705db331e9a2e9eebe3"
+  name = "github.com/go-kit/kit"
+  packages = [
+    "log",
+    "metrics",
+    "metrics/internal/lv",
+    "metrics/internal/ratemap",
+    "metrics/prometheus",
+    "metrics/statsd",
+    "util/conn",
+  ]
+  pruneopts = ""
+  revision = "12210fb6ace19e0496167bb3e667dcd91fa9f69b"
+  version = "v0.8.0"
+
+[[projects]]
+  digest = "1:df89444601379b2e1ee82bf8e6b72af9901cbeed4b469fa380a519c89c339310"
+  name = "github.com/go-logfmt/logfmt"
+  packages = ["."]
+  pruneopts = ""
+  revision = "07c9b44f60d7ffdfb7d8efe1ad539965737836dc"
+  version = "v0.4.0"
+
+[[projects]]
   branch = "master"
-  digest = "1:85e195bd952faa2e720f5c371d0993af6d515cfcda3894de9caf5c896165cd8c"
+  digest = "1:9949f4a2c726614c4d38ca692705f9f0a894122406e78cb62dc69ff267705483"
   name = "github.com/golang/mock"
   packages = ["gomock"]
   pruneopts = ""
-  revision = "b3e60bcdc577185fce3cf625fc96b62857ce5574"
+  revision = "c20582278a829e4b3259747a3ce0eceb1763ee13"
 
 [[projects]]
   digest = "1:f958a1c137db276e52f0b50efee41a1a389dcdded59a69711f3e872757dab34b"
@@ -124,6 +132,22 @@
   ]
   pruneopts = ""
   revision = "23c074d0eceb2b8a5bfdbb271ab780cde70f05a8"
+
+[[projects]]
+  digest = "1:f4e34f94e4873a32542b96bfd884df686b26c458f27ad719569e048abcc2b350"
+  name = "github.com/hyperledger/fabric-lib-go"
+  packages = ["healthz"]
+  pruneopts = ""
+  revision = "90dc96fb23ab7eb18477e4bfcf9cd8ebdb7209f0"
+  version = "v1.0.0"
+
+[[projects]]
+  branch = "master"
+  digest = "1:1ed9eeebdf24aadfbca57eb50e6455bd1d2474525e0f0d4454de8c8e9bc7ee9a"
+  name = "github.com/kr/logfmt"
+  packages = ["."]
+  pruneopts = ""
+  revision = "b84e30acd515aadc4b783ad4ff83aff3299bdfe0"
 
 [[projects]]
   digest = "1:739b2038a38cebb50e922d18f4b042c042256320fea2db094814aeef8891e0c1"
@@ -184,10 +208,7 @@
 [[projects]]
   digest = "1:4142d94383572e74b42352273652c62afec5b23f325222ed09198f46009022d1"
   name = "github.com/prometheus/client_golang"
-  packages = [
-    "prometheus",
-    "prometheus/promhttp",
-  ]
+  packages = ["prometheus"]
   pruneopts = ""
   revision = "c5b7fccd204277076155f10851dad72b76a49317"
   version = "v0.8.0"
@@ -278,18 +299,6 @@
   pruneopts = ""
   revision = "b91bfb9ebec76498946beb6af7c0230c7cc7ba6c"
   version = "v1.2.0"
-
-[[projects]]
-  digest = "1:67e9afe57bd4a951c89b694c39bc0485d7ac94df254316a9b28633bd938bdcf4"
-  name = "github.com/uber-go/tally"
-  packages = [
-    ".",
-    "prometheus",
-    "statsd",
-  ]
-  pruneopts = ""
-  revision = "522328b48efad0c6034dba92bf39228694e9d31f"
-  version = "v3.3.2"
 
 [[projects]]
   branch = "master"
@@ -407,28 +416,27 @@
   analyzer-version = 1
   input-imports = [
     "github.com/Knetic/govaluate",
-    "github.com/cactus/go-statsd-client/statsd",
     "github.com/cloudflare/cfssl/api",
     "github.com/cloudflare/cfssl/csr",
     "github.com/cloudflare/cfssl/helpers",
     "github.com/cloudflare/cfssl/log",
     "github.com/cloudflare/cfssl/signer",
+    "github.com/go-kit/kit/metrics",
+    "github.com/go-kit/kit/metrics/prometheus",
+    "github.com/go-kit/kit/metrics/statsd",
     "github.com/golang/mock/gomock",
     "github.com/golang/protobuf/proto",
     "github.com/golang/protobuf/ptypes",
     "github.com/golang/protobuf/ptypes/timestamp",
+    "github.com/hyperledger/fabric-lib-go/healthz",
     "github.com/miekg/pkcs11",
     "github.com/mitchellh/mapstructure",
     "github.com/pkg/errors",
     "github.com/prometheus/client_golang/prometheus",
-    "github.com/prometheus/client_golang/prometheus/promhttp",
     "github.com/spf13/cast",
     "github.com/spf13/viper",
     "github.com/stretchr/testify/assert",
     "github.com/stretchr/testify/require",
-    "github.com/uber-go/tally",
-    "github.com/uber-go/tally/prometheus",
-    "github.com/uber-go/tally/statsd",
     "golang.org/x/crypto/ocsp",
     "golang.org/x/crypto/sha3",
     "golang.org/x/net/context",

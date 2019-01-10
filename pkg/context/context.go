@@ -17,6 +17,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/metrics"
 )
 
 // Client supplies the configuration and signing identity to client objects.
@@ -43,6 +44,7 @@ type Channel struct {
 	context.Client
 	channelService fab.ChannelService
 	channelID      string
+	metrics        *metrics.ClientMetrics
 }
 
 //Providers returns core providers
@@ -72,6 +74,7 @@ type Provider struct {
 	idMgmtProvider         msp.IdentityManagerProvider
 	infraProvider          fab.InfraProvider
 	channelProvider        fab.ChannelProvider
+	clientMetrics          *metrics.ClientMetrics
 }
 
 // CryptoSuite returns the BCCSP provider of sdk.
@@ -117,6 +120,11 @@ func (c *Provider) InfraProvider() fab.InfraProvider {
 //EndpointConfig returns end point network config
 func (c *Provider) EndpointConfig() fab.EndpointConfig {
 	return c.endpointConfig
+}
+
+// GetMetrics will return the SDK's metrics instance
+func (c *Provider) GetMetrics() *metrics.ClientMetrics {
+	return c.clientMetrics
 }
 
 //SDKContextParams parameter for creating FabContext
@@ -192,6 +200,13 @@ func WithChannelProvider(channelProvider fab.ChannelProvider) SDKContextParams {
 	}
 }
 
+//WithClientMetrics sets clientMetrics to Context Provider
+func WithClientMetrics(cm *metrics.ClientMetrics) SDKContextParams {
+	return func(ctx *Provider) {
+		ctx.clientMetrics = cm
+	}
+}
+
 //NewProvider creates new context client provider
 // Not be used by end developers, fabsdk package use only
 func NewProvider(params ...SDKContextParams) *Provider {
@@ -258,6 +273,7 @@ func NewChannel(clientProvider context.ClientProvider, channelID string) (*Chann
 		Client:         client,
 		channelService: channelService,
 		channelID:      channelID,
+		metrics:        client.GetMetrics(),
 	}
 	if pi, ok := channelService.(serviceInit); ok {
 		if err := pi.Initialize(channel); err != nil {

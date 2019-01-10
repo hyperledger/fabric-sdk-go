@@ -34,8 +34,18 @@ declare -a PKGS=(
     "common/attrmgr"
     "common/ledger"
     "common/metrics"
+    "common/metrics/disabled"
+    "common/metrics/internal/namer"
+    "common/metrics/prometheus"
+    "common/metrics/statsd"
+    "common/metrics/statsd/goruntime"
+
+    "core/comm"
+    "core/middleware"
+    "core/operations"
 
     "sdkpatch/logbridge"
+    "sdkpatch/logbridge/httpadmin"
     "sdkpatch/cryptosuitebridge"
     "sdkpatch/cachebridge"
 
@@ -95,10 +105,12 @@ declare -a FILES=(
     "bccsp/utils/slice.go"
     "bccsp/utils/x509.go"
     "bccsp/utils/ecdsa.go"
+
+    "core/comm/config.go"
+
     "common/crypto/random.go"
     "common/crypto/signer.go"
 
-    "common/util/utils.go"
     "common/attrmgr/attrmgr.go"
 
     "common/channelconfig/applicationorg.go"
@@ -110,9 +122,25 @@ declare -a FILES=(
 
     "common/ledger/ledger_interface.go"
 
+    "common/metrics/disabled/provider.go"
+    "common/metrics/internal/namer/namer.go"
+    "common/metrics/prometheus/provider.go"
     "common/metrics/provider.go"
+    "common/metrics/statsd/goruntime/collector.go"
+    "common/metrics/statsd/goruntime/metrics.go"
+    "common/metrics/statsd/provider.go"
+
+    "core/middleware/chain.go"
+    "core/middleware/request_id.go"
+    "core/middleware/require_cert.go"
+    "core/operations/metrics.go"
+    "core/operations/system.go"
+    "core/operations/tls.go"
+
+    "common/util/utils.go"
 
     "sdkpatch/logbridge/logbridge.go"
+    "sdkpatch/logbridge/httpadmin/spec.go"
     "sdkpatch/cryptosuitebridge/cryptosuitebridge.go"
     "sdkpatch/cachebridge/cache.go"
 
@@ -254,8 +282,15 @@ FILTER_FN=
 gofilter
 
 FILTER_FILENAME="common/util/utils.go"
-FILTER_FN="CreateUtcTimestamp,ConcatenateBytes"
+FILTER_FN="CreateUtcTimestamp,ConcatenateBytes,GenerateBytesUUID,GenerateIntUUID,GenerateUUID,idBytesToStr"
 gofilter
+
+FILTER_FILENAME="core/comm/config.go"
+sed -i'' -e 's/flogging\.FabricLogger/flogging.Logger/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e '/MetricsProvider metrics\.Provider/ a\
+\/\/ HealthCheckEnabled enables the gRPC Health Checking Protocol for the server\
+	HealthCheckEnabled bool\
+' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 
 FILTER_FILENAME="common/channelconfig/applicationorg.go"
 FILTER_FN=

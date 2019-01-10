@@ -36,6 +36,7 @@ func (m *MockCryptoSuiteConfig) EXPECT() *MockCryptoSuiteConfigMockRecorder {
 
 // IsSecurityEnabled mocks base method
 func (m *MockCryptoSuiteConfig) IsSecurityEnabled() bool {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "IsSecurityEnabled")
 	ret0, _ := ret[0].(bool)
 	return ret0
@@ -43,11 +44,13 @@ func (m *MockCryptoSuiteConfig) IsSecurityEnabled() bool {
 
 // IsSecurityEnabled indicates an expected call of IsSecurityEnabled
 func (mr *MockCryptoSuiteConfigMockRecorder) IsSecurityEnabled() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsSecurityEnabled", reflect.TypeOf((*MockCryptoSuiteConfig)(nil).IsSecurityEnabled))
 }
 
 // KeyStorePath mocks base method
 func (m *MockCryptoSuiteConfig) KeyStorePath() string {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "KeyStorePath")
 	ret0, _ := ret[0].(string)
 	return ret0
@@ -55,11 +58,13 @@ func (m *MockCryptoSuiteConfig) KeyStorePath() string {
 
 // KeyStorePath indicates an expected call of KeyStorePath
 func (mr *MockCryptoSuiteConfigMockRecorder) KeyStorePath() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "KeyStorePath", reflect.TypeOf((*MockCryptoSuiteConfig)(nil).KeyStorePath))
 }
 
 // SecurityAlgorithm mocks base method
 func (m *MockCryptoSuiteConfig) SecurityAlgorithm() string {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SecurityAlgorithm")
 	ret0, _ := ret[0].(string)
 	return ret0
@@ -67,11 +72,13 @@ func (m *MockCryptoSuiteConfig) SecurityAlgorithm() string {
 
 // SecurityAlgorithm indicates an expected call of SecurityAlgorithm
 func (mr *MockCryptoSuiteConfigMockRecorder) SecurityAlgorithm() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SecurityAlgorithm", reflect.TypeOf((*MockCryptoSuiteConfig)(nil).SecurityAlgorithm))
 }
 
 // SecurityLevel mocks base method
 func (m *MockCryptoSuiteConfig) SecurityLevel() int {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SecurityLevel")
 	ret0, _ := ret[0].(int)
 	return ret0
@@ -79,11 +86,13 @@ func (m *MockCryptoSuiteConfig) SecurityLevel() int {
 
 // SecurityLevel indicates an expected call of SecurityLevel
 func (mr *MockCryptoSuiteConfigMockRecorder) SecurityLevel() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SecurityLevel", reflect.TypeOf((*MockCryptoSuiteConfig)(nil).SecurityLevel))
 }
 
 // SecurityProvider mocks base method
 func (m *MockCryptoSuiteConfig) SecurityProvider() string {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SecurityProvider")
 	ret0, _ := ret[0].(string)
 	return ret0
@@ -91,11 +100,13 @@ func (m *MockCryptoSuiteConfig) SecurityProvider() string {
 
 // SecurityProvider indicates an expected call of SecurityProvider
 func (mr *MockCryptoSuiteConfigMockRecorder) SecurityProvider() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SecurityProvider", reflect.TypeOf((*MockCryptoSuiteConfig)(nil).SecurityProvider))
 }
 
 // SecurityProviderLabel mocks base method
 func (m *MockCryptoSuiteConfig) SecurityProviderLabel() string {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SecurityProviderLabel")
 	ret0, _ := ret[0].(string)
 	return ret0
@@ -103,11 +114,13 @@ func (m *MockCryptoSuiteConfig) SecurityProviderLabel() string {
 
 // SecurityProviderLabel indicates an expected call of SecurityProviderLabel
 func (mr *MockCryptoSuiteConfigMockRecorder) SecurityProviderLabel() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SecurityProviderLabel", reflect.TypeOf((*MockCryptoSuiteConfig)(nil).SecurityProviderLabel))
 }
 
 // SecurityProviderLibPath mocks base method
 func (m *MockCryptoSuiteConfig) SecurityProviderLibPath() string {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SecurityProviderLibPath")
 	ret0, _ := ret[0].(string)
 	return ret0
@@ -115,11 +128,13 @@ func (m *MockCryptoSuiteConfig) SecurityProviderLibPath() string {
 
 // SecurityProviderLibPath indicates an expected call of SecurityProviderLibPath
 func (mr *MockCryptoSuiteConfigMockRecorder) SecurityProviderLibPath() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SecurityProviderLibPath", reflect.TypeOf((*MockCryptoSuiteConfig)(nil).SecurityProviderLibPath))
 }
 
 // SecurityProviderPin mocks base method
 func (m *MockCryptoSuiteConfig) SecurityProviderPin() string {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SecurityProviderPin")
 	ret0, _ := ret[0].(string)
 	return ret0
@@ -127,11 +142,13 @@ func (m *MockCryptoSuiteConfig) SecurityProviderPin() string {
 
 // SecurityProviderPin indicates an expected call of SecurityProviderPin
 func (mr *MockCryptoSuiteConfigMockRecorder) SecurityProviderPin() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SecurityProviderPin", reflect.TypeOf((*MockCryptoSuiteConfig)(nil).SecurityProviderPin))
 }
 
 // SoftVerify mocks base method
 func (m *MockCryptoSuiteConfig) SoftVerify() bool {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SoftVerify")
 	ret0, _ := ret[0].(bool)
 	return ret0
@@ -139,6 +156,7 @@ func (m *MockCryptoSuiteConfig) SoftVerify() bool {
 
 // SoftVerify indicates an expected call of SoftVerify
 func (mr *MockCryptoSuiteConfigMockRecorder) SoftVerify() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SoftVerify", reflect.TypeOf((*MockCryptoSuiteConfig)(nil).SoftVerify))
 }
 
@@ -167,6 +185,7 @@ func (m *MockConfigBackend) EXPECT() *MockConfigBackendMockRecorder {
 
 // Lookup mocks base method
 func (m *MockConfigBackend) Lookup(arg0 string) (interface{}, bool) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Lookup", arg0)
 	ret0, _ := ret[0].(interface{})
 	ret1, _ := ret[1].(bool)
@@ -175,6 +194,7 @@ func (m *MockConfigBackend) Lookup(arg0 string) (interface{}, bool) {
 
 // Lookup indicates an expected call of Lookup
 func (mr *MockConfigBackendMockRecorder) Lookup(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Lookup", reflect.TypeOf((*MockConfigBackend)(nil).Lookup), arg0)
 }
 
@@ -203,6 +223,7 @@ func (m *MockProviders) EXPECT() *MockProvidersMockRecorder {
 
 // CryptoSuite mocks base method
 func (m *MockProviders) CryptoSuite() core.CryptoSuite {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CryptoSuite")
 	ret0, _ := ret[0].(core.CryptoSuite)
 	return ret0
@@ -210,11 +231,13 @@ func (m *MockProviders) CryptoSuite() core.CryptoSuite {
 
 // CryptoSuite indicates an expected call of CryptoSuite
 func (mr *MockProvidersMockRecorder) CryptoSuite() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CryptoSuite", reflect.TypeOf((*MockProviders)(nil).CryptoSuite))
 }
 
 // SigningManager mocks base method
 func (m *MockProviders) SigningManager() core.SigningManager {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SigningManager")
 	ret0, _ := ret[0].(core.SigningManager)
 	return ret0
@@ -222,5 +245,6 @@ func (m *MockProviders) SigningManager() core.SigningManager {
 
 // SigningManager indicates an expected call of SigningManager
 func (mr *MockProvidersMockRecorder) SigningManager() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SigningManager", reflect.TypeOf((*MockProviders)(nil).SigningManager))
 }

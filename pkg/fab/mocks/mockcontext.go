@@ -16,6 +16,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/mocks"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/metrics"
 	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
 
 	"strings"
@@ -205,6 +206,11 @@ func (pc *MockProviderContext) SetCustomInfraProvider(customInfraProvider fab.In
 	pc.infraProvider = customInfraProvider
 }
 
+// GetMetrics not used in this mockcontext
+func (pc *MockProviderContext) GetMetrics() *metrics.ClientMetrics {
+	return &metrics.ClientMetrics{}
+}
+
 // MockContext holds core providers and identity to enable mocking.
 type MockContext struct {
 	*MockProviderContext
@@ -296,6 +302,11 @@ func (c *MockChannelContext) ChannelService() fab.ChannelService {
 // ChannelID returns the channel ID
 func (c *MockChannelContext) ChannelID() string {
 	return c.channelID
+}
+
+// GetMetrics not used in this mockcontext
+func (c *MockChannelContext) GetMetrics() *metrics.ClientMetrics {
+	return &metrics.ClientMetrics{}
 }
 
 // MockTransactionHeader supplies a transaction ID and metadata.

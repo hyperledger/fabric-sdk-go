@@ -11,18 +11,21 @@ import (
 	"math/rand"
 	"time"
 
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/core/operations"
 	contextApi "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/lookup"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/logging/api"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/metrics"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
-	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/lookup"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite"
 	fabImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab"
 	sdkApi "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
+	metricsCfg "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/metrics/cfg"
 	mspImpl "github.com/hyperledger/fabric-sdk-go/pkg/msp"
 	"github.com/pkg/errors"
 )
@@ -31,15 +34,18 @@ var logger = logging.NewLogger("fabsdk")
 
 // FabricSDK provides access (and context) to clients being managed by the SDK.
 type FabricSDK struct {
-	opts        options
-	provider    *context.Provider
-	cryptoSuite core.CryptoSuite
+	opts          options
+	provider      *context.Provider
+	cryptoSuite   core.CryptoSuite
+	system        *operations.System
+	clientMetrics *metrics.ClientMetrics
 }
 
 type configs struct {
 	cryptoSuiteConfig core.CryptoSuiteConfig
 	endpointConfig    fab.EndpointConfig
 	identityConfig    msp.IdentityConfig
+	metricsConfig     metricsCfg.MetricsConfig
 }
 
 type options struct {
@@ -51,6 +57,7 @@ type options struct {
 	endpointConfig    fab.EndpointConfig
 	IdentityConfig    msp.IdentityConfig
 	ConfigBackend     []core.ConfigBackend
+	metricsConfig     metricsCfg.MetricsConfig
 }
 
 // Option configures the SDK.
@@ -181,6 +188,20 @@ func WithLoggerPkg(logger api.LoggerProvider) Option {
 	}
 }
 
+// WithMetricsConfig injects a MetricsConfig interface to the SDK
+// it accepts either a full interface of MetricsConfig or a list
+// of sub interfaces each implementing one (or more) function(s) of MetricsConfig
+func WithMetricsConfig(metricsConfigs ...interface{}) Option {
+	return func(opts *options) error {
+		c, err := metricsCfg.BuildConfigMetricsFromOptions(metricsConfigs...)
+		if err != nil {
+			return err
+		}
+		opts.metricsConfig = c
+		return nil
+	}
+}
+
 // providerInit interface allows for initializing providers
 // TODO: minimize interface
 type providerInit interface {
@@ -245,6 +266,8 @@ func initSDK(sdk *FabricSDK, configProvider core.ConfigProvider, opts []Option) 
 		return errors.WithMessage(err, "failed to create channel provider")
 	}
 
+	sdk.initMetrics(cfg)
+
 	//update sdk providers list since all required providers are initialized
 	sdk.provider = context.NewProvider(context.WithCryptoSuiteConfig(cfg.cryptoSuiteConfig),
 		context.WithEndpointConfig(cfg.endpointConfig),
@@ -255,7 +278,9 @@ func initSDK(sdk *FabricSDK, configProvider core.ConfigProvider, opts []Option) 
 		context.WithLocalDiscoveryProvider(localDiscoveryProvider),
 		context.WithIdentityManagerProvider(identityManagerProvider),
 		context.WithInfraProvider(infraProvider),
-		context.WithChannelProvider(channelProvider))
+		context.WithChannelProvider(channelProvider),
+		context.WithClientMetrics(sdk.clientMetrics),
+	)
 
 	//initialize
 	if pi, ok := infraProvider.(providerInit); ok {
@@ -357,6 +382,7 @@ func (sdk *FabricSDK) loadConfigs(configProvider core.ConfigProvider) (*configs,
 		identityConfig:    sdk.opts.IdentityConfig,
 		endpointConfig:    sdk.opts.endpointConfig,
 		cryptoSuiteConfig: sdk.opts.CryptoSuiteConfig,
+		metricsConfig:     sdk.opts.metricsConfig,
 	}
 
 	var configBackend []core.ConfigBackend
@@ -391,7 +417,13 @@ func (sdk *FabricSDK) loadConfigs(configProvider core.ConfigProvider) (*configs,
 	// load identity config
 	c.identityConfig, err = sdk.loadIdentityConfig(configBackend...)
 	if err != nil {
-		return nil, errors.WithMessage(err, "unalbe to load identity config")
+		return nil, errors.WithMessage(err, "unable to load identity config")
+	}
+
+	// load metrics config
+	c.metricsConfig, err = sdk.loadMetricsConfig(configBackend...)
+	if err != nil {
+		return nil, errors.WithMessage(err, "unable to load metrics config")
 	}
 
 	sdk.opts.ConfigBackend = configBackend
@@ -466,4 +498,26 @@ func (sdk *FabricSDK) loadIdentityConfig(configBackend ...core.ConfigBackend) (m
 	}
 
 	return identityConfigOpt, nil
+}
+
+func (sdk *FabricSDK) loadMetricsConfig(configBackend ...core.ConfigBackend) (metricsCfg.MetricsConfig, error) {
+	metricsConfigOpt, ok := sdk.opts.metricsConfig.(*metricsCfg.OperationsConfigOptions)
+
+	if sdk.opts.metricsConfig == nil || (ok && !metricsCfg.IsMetricsConfigFullyOverridden(metricsConfigOpt)) {
+		defMetricsConfig, err := metricsCfg.ConfigFromBackend(configBackend...)
+		if err != nil {
+			return nil, errors.WithMessage(err, "failed to initialize metrics config from config backend")
+		}
+		if sdk.opts.metricsConfig == nil {
+			return defMetricsConfig, nil
+		}
+
+		return metricsCfg.UpdateMissingOptsWithDefaultConfig(metricsConfigOpt, defMetricsConfig), nil
+	}
+
+	if !ok {
+		return nil, errors.New("failed to retrieve metrics configs from opts")
+	}
+
+	return metricsConfigOpt, nil
 }

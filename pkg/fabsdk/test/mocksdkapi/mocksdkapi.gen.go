@@ -38,6 +38,7 @@ func (m *MockCoreProviderFactory) EXPECT() *MockCoreProviderFactoryMockRecorder 
 
 // CreateCryptoSuiteProvider mocks base method
 func (m *MockCoreProviderFactory) CreateCryptoSuiteProvider(arg0 core.CryptoSuiteConfig) (core.CryptoSuite, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateCryptoSuiteProvider", arg0)
 	ret0, _ := ret[0].(core.CryptoSuite)
 	ret1, _ := ret[1].(error)
@@ -46,11 +47,13 @@ func (m *MockCoreProviderFactory) CreateCryptoSuiteProvider(arg0 core.CryptoSuit
 
 // CreateCryptoSuiteProvider indicates an expected call of CreateCryptoSuiteProvider
 func (mr *MockCoreProviderFactoryMockRecorder) CreateCryptoSuiteProvider(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateCryptoSuiteProvider", reflect.TypeOf((*MockCoreProviderFactory)(nil).CreateCryptoSuiteProvider), arg0)
 }
 
 // CreateInfraProvider mocks base method
 func (m *MockCoreProviderFactory) CreateInfraProvider(arg0 fab.EndpointConfig) (fab.InfraProvider, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateInfraProvider", arg0)
 	ret0, _ := ret[0].(fab.InfraProvider)
 	ret1, _ := ret[1].(error)
@@ -59,11 +62,13 @@ func (m *MockCoreProviderFactory) CreateInfraProvider(arg0 fab.EndpointConfig) (
 
 // CreateInfraProvider indicates an expected call of CreateInfraProvider
 func (mr *MockCoreProviderFactoryMockRecorder) CreateInfraProvider(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateInfraProvider", reflect.TypeOf((*MockCoreProviderFactory)(nil).CreateInfraProvider), arg0)
 }
 
 // CreateSigningManager mocks base method
 func (m *MockCoreProviderFactory) CreateSigningManager(arg0 core.CryptoSuite) (core.SigningManager, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateSigningManager", arg0)
 	ret0, _ := ret[0].(core.SigningManager)
 	ret1, _ := ret[1].(error)
@@ -72,6 +77,7 @@ func (m *MockCoreProviderFactory) CreateSigningManager(arg0 core.CryptoSuite) (c
 
 // CreateSigningManager indicates an expected call of CreateSigningManager
 func (mr *MockCoreProviderFactoryMockRecorder) CreateSigningManager(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateSigningManager", reflect.TypeOf((*MockCoreProviderFactory)(nil).CreateSigningManager), arg0)
 }
 
@@ -100,6 +106,7 @@ func (m *MockMSPProviderFactory) EXPECT() *MockMSPProviderFactoryMockRecorder {
 
 // CreateIdentityManagerProvider mocks base method
 func (m *MockMSPProviderFactory) CreateIdentityManagerProvider(arg0 fab.EndpointConfig, arg1 core.CryptoSuite, arg2 msp.UserStore) (msp.IdentityManagerProvider, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateIdentityManagerProvider", arg0, arg1, arg2)
 	ret0, _ := ret[0].(msp.IdentityManagerProvider)
 	ret1, _ := ret[1].(error)
@@ -108,11 +115,13 @@ func (m *MockMSPProviderFactory) CreateIdentityManagerProvider(arg0 fab.Endpoint
 
 // CreateIdentityManagerProvider indicates an expected call of CreateIdentityManagerProvider
 func (mr *MockMSPProviderFactoryMockRecorder) CreateIdentityManagerProvider(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateIdentityManagerProvider", reflect.TypeOf((*MockMSPProviderFactory)(nil).CreateIdentityManagerProvider), arg0, arg1, arg2)
 }
 
 // CreateUserStore mocks base method
 func (m *MockMSPProviderFactory) CreateUserStore(arg0 msp.IdentityConfig) (msp.UserStore, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateUserStore", arg0)
 	ret0, _ := ret[0].(msp.UserStore)
 	ret1, _ := ret[1].(error)
@@ -121,6 +130,7 @@ func (m *MockMSPProviderFactory) CreateUserStore(arg0 msp.IdentityConfig) (msp.U
 
 // CreateUserStore indicates an expected call of CreateUserStore
 func (mr *MockMSPProviderFactoryMockRecorder) CreateUserStore(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateUserStore", reflect.TypeOf((*MockMSPProviderFactory)(nil).CreateUserStore), arg0)
 }
 
@@ -149,6 +159,7 @@ func (m *MockServiceProviderFactory) EXPECT() *MockServiceProviderFactoryMockRec
 
 // CreateChannelProvider mocks base method
 func (m *MockServiceProviderFactory) CreateChannelProvider(arg0 fab.EndpointConfig) (fab.ChannelProvider, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateChannelProvider", arg0)
 	ret0, _ := ret[0].(fab.ChannelProvider)
 	ret1, _ := ret[1].(error)
@@ -157,11 +168,13 @@ func (m *MockServiceProviderFactory) CreateChannelProvider(arg0 fab.EndpointConf
 
 // CreateChannelProvider indicates an expected call of CreateChannelProvider
 func (mr *MockServiceProviderFactoryMockRecorder) CreateChannelProvider(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateChannelProvider", reflect.TypeOf((*MockServiceProviderFactory)(nil).CreateChannelProvider), arg0)
 }
 
 // CreateLocalDiscoveryProvider mocks base method
 func (m *MockServiceProviderFactory) CreateLocalDiscoveryProvider(arg0 fab.EndpointConfig) (fab.LocalDiscoveryProvider, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateLocalDiscoveryProvider", arg0)
 	ret0, _ := ret[0].(fab.LocalDiscoveryProvider)
 	ret1, _ := ret[1].(error)
@@ -170,5 +183,6 @@ func (m *MockServiceProviderFactory) CreateLocalDiscoveryProvider(arg0 fab.Endpo
 
 // CreateLocalDiscoveryProvider indicates an expected call of CreateLocalDiscoveryProvider
 func (mr *MockServiceProviderFactoryMockRecorder) CreateLocalDiscoveryProvider(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateLocalDiscoveryProvider", reflect.TypeOf((*MockServiceProviderFactory)(nil).CreateLocalDiscoveryProvider), arg0)
 }

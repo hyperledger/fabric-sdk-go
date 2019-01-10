@@ -14,7 +14,6 @@ import (
 )
 
 func Example() {
-
 	c, err := New(mockChannelProvider("mychannel"))
 	if err != nil {
 		fmt.Println("failed to create client")
@@ -31,7 +30,6 @@ func Example() {
 }
 
 func ExampleNew() {
-
 	ctx := mockChannelProvider("mychannel")
 
 	c, err := New(ctx)
@@ -50,7 +48,6 @@ func ExampleNew() {
 }
 
 func ExampleClient_Query() {
-
 	c, err := New(mockChannelProvider("mychannel"))
 	if err != nil {
 		fmt.Println("failed to create client")
@@ -69,7 +66,6 @@ func ExampleClient_Query() {
 }
 
 func ExampleClient_Execute() {
-
 	c, err := New(mockChannelProvider("mychannel"))
 	if err != nil {
 		fmt.Println("failed to create client")
@@ -86,7 +82,6 @@ func ExampleClient_Execute() {
 }
 
 func ExampleClient_RegisterChaincodeEvent() {
-
 	c, err := New(mockChannelProvider("mychannel"))
 	if err != nil {
 		fmt.Println("failed to create client")
@@ -105,7 +100,6 @@ func ExampleClient_RegisterChaincodeEvent() {
 }
 
 func ExampleClient_InvokeHandler() {
-
 	c, err := New(mockChannelProvider("mychannel"))
 	if err != nil {
 		fmt.Println("failed to create client")

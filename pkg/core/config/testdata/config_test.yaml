@@ -390,36 +390,53 @@ certificateAuthorities:
 
 ###############################################################################
 #
-#    Metrics section
+#    Operations section
+#    copied from Fabric's core.yaml
+###############################################################################
+operations:
+  # host and port for the operations server
+  listenAddress: 127.0.0.1:8080
+
+  # TLS configuration for the operations endpoint
+  tls:
+    # TLS enabled
+    enabled: false
+
+    # path to PEM encoded server certificate for the operations server
+    cert:
+      file:
+
+    # path to PEM encoded server key for the operations server
+    key:
+      file:
+
+    # require client certificate authentication to access all resources
+    clientAuthRequired: false
+
+    # paths to PEM encoded ca certificates to trust for client authentication
+    clientRootCAs:
+      files: []
+
+###############################################################################
 #
-#    Similar to what's introduced in Fabric 1.3, this section can now
-#    be used in the SDK (see test/performance for an example showing how this is used)
-#    Note: In order to use performance metrics, the SDK must be built with 'pprof' build tag
+#    Metrics section
+#    copied from Fabric's core.yaml
 ###############################################################################
 metrics:
-        # enable or disable metrics server
-        enabled: true
+  # metrics provider is one of statsd, prometheus, or disabled
+  provider: prometheus
 
-        # when enable metrics server, must specify metrics reporter type
-        # currently supported type: "statsd","prom"
-        reporter: prom
+  # statsd configuration
+  statsd:
+    # network type: tcp or udp
+    network: udp
 
-        # determines frequency of report metrics(unit: second)
-        interval: 1s
+    # statsd server address
+    address: 127.0.0.1:8125
 
-        statsdReporter:
+    # the interval at which locally cached counters and gauges are pushed
+    # to statsd; timings are pushed immediately
+    writeInterval: 10s
 
-              # statsd server address to connect
-              address: peer0.org1.example.com:8125
-
-              # determines frequency of push metrics to statsd server(unit: second)
-              flushInterval: 2s
-
-              # max size bytes for each push metrics request
-              # intranet recommend 1432 and internet recommend 512
-              flushBytes: 1432
-
-        promReporter:
-
-              # prometheus http server listen address for pull metrics
-              listenAddress: peer0.org1.example.com:8080
+    # prefix is prepended to all emitted statsd metrics
+    prefix:

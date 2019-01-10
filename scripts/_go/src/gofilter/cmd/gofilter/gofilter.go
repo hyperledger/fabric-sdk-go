@@ -87,7 +87,7 @@ func main() {
 	fileset := token.NewFileSet()
 	astFile, err := parser.ParseFile(fileset, *filename, nil, parser.ParseComments)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error paring file: %s\n", err)
+		fmt.Fprintf(os.Stderr, "Error parsing file: %s\n", err)
 		os.Exit(1)
 	}
 

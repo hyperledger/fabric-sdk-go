@@ -51,6 +51,7 @@ mkdir -p "${THIRDPARTY_FABRIC_PATH}/protos"
 echo "Pinning and patching fabric client utils..."
 declare -a CLIENT_UTILS_IMPORT_SUBSTS=(
     's/[[:space:]]logging[[:space:]]\"github.com/\"github.com/g'
+    's/\"github.com\/hyperledger\/fabric\/common\/flogging\/httpadmin/\"github.com\/hyperledger\/fabric-sdk-go\/internal\/github.com\/hyperledger\/fabric\/sdkpatch\/logbridge\/httpadmin/g'
     's/\"github.com\/hyperledger\/fabric\/common\/flogging/flogging\"github.com\/hyperledger\/fabric-sdk-go\/internal\/github.com\/hyperledger\/fabric\/sdkpatch\/logbridge/g'
     's/\"github.com\/op\/go-logging/logging\"github.com\/hyperledger\/fabric-sdk-go\/internal\/github.com\/hyperledger\/fabric\/sdkpatch\/logbridge/g'
     's/\"github.com\/hyperledger\/fabric\/bccsp/\"github.com\/hyperledger\/fabric-sdk-go\/internal\/github.com\/hyperledger\/fabric\/bccsp/g'
