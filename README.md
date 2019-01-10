@@ -49,7 +49,7 @@ Additionally for development purposes integration tests also run against the dev
 ### Retired versions
 When the 'prev' code level is updated, the last tested fabric-sdk-go commit or tag is listed below.
 
-- fabric v1.2: 3b2b876
+- fabric v1.2: 5e291d3
 - fabric v1.1: f7ae259
 - fabric v1.0: 5ac5226
 
@@ -79,7 +79,7 @@ If you want to contribute to the Go SDK, please run the test suite and submit pa
 
 You need:
 
-- Go 1.9
+- Go 1.11
 - [Dep](https://github.com/golang/dep)
 - Make
 - Docker
