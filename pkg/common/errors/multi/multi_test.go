@@ -23,7 +23,7 @@ func TestErrorString(t *testing.T) {
 	assert.Equal(t, testErr.Error(), errs.Error())
 
 	errs = append(errs, testErr)
-	assert.Equal(t, "Multiple errors occurred: \ntest\ntest", errs.Error())
+	assert.Equal(t, "Multiple errors occurred: - test - test", errs.Error())
 }
 
 func TestAppend(t *testing.T) {

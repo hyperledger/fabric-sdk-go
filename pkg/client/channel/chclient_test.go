@@ -464,7 +464,7 @@ func TestMultiErrorPropogation(t *testing.T) {
 	assert.True(t, ok, "Expected status error")
 	assert.EqualValues(t, status.MultipleErrors, status.ToSDKStatusCode(statusError.Code))
 	assert.Equal(t, status.ClientStatus, statusError.Group)
-	assert.Equal(t, "Multiple errors occurred: \nTest Error\nTest Error", statusError.Message, "Expected multi error message")
+	assert.Equal(t, "Multiple errors occurred: - Test Error - Test Error", statusError.Message, "Expected multi error message")
 }
 
 func TestDiscoveryGreylist(t *testing.T) {

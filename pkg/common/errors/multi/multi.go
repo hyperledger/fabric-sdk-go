@@ -68,9 +68,9 @@ func (errs Errors) Error() string {
 		return errs[0].Error()
 	}
 
-	errors := []string{fmt.Sprint("Multiple errors occurred: ")}
+	errors := []string{fmt.Sprint("Multiple errors occurred:")}
 	for _, err := range errs {
 		errors = append(errors, err.Error())
 	}
-	return strings.Join(errors, "\n")
+	return strings.Join(errors, " - ")
 }
