@@ -36,7 +36,7 @@ type Credential interface {
 	Load() error
 	// CreateToken returns authorization token for the specified request with
 	// specified body
-	CreateToken(req *http.Request, reqBody []byte) (string, error)
+	CreateToken(req *http.Request, reqBody []byte, fabCACompatibilityMode bool) (string, error)
 	// Submits revoke request to the Fabric CA server to revoke this credential
 	RevokeSelf() (*api.RevocationResponse, error)
 }

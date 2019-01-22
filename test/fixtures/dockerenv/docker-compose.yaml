@@ -20,6 +20,8 @@ services:
       - FABRIC_CA_SERVER_TLS_CERTFILES
       - FABRIC_CA_SERVER_CFG_AFFILIATIONS_ALLOWREMOVE=true
       - FABRIC_CA_SERVER_CFG_IDENTITIES_ALLOWREMOVE=true
+      # TODO below env variable added to test Compatibility mode - remove when Fabric v1.3 is not supported anymore
+      - FABRIC_CA_SERVER_COMPATIBILITY_MODE_V1_3=false
     #comment out logging.driver in order to render the debug logs
     logging:
       driver: none
@@ -49,6 +51,8 @@ services:
       - FABRIC_CA_SERVER_TLS_CERTFILES
       - FABRIC_CA_SERVER_CFG_AFFILIATIONS_ALLOWREMOVE=true
       - FABRIC_CA_SERVER_CFG_IDENTITIES_ALLOWREMOVE=true
+      # TODO below env variable added to test Compatibility mode - remove when Fabric v1.3 is not supported anymore
+      - FABRIC_CA_SERVER_COMPATIBILITY_MODE_V1_3=false
     #comment out logging.driver in order to render the debug logs
     logging:
       driver: none

@@ -130,7 +130,19 @@ sed -i'' -e '/tlsConfig.CipherSuites = tls.DefaultCipherSuites/ a\
 //set the host name override \
 tlsConfig.ServerName = serverName\
 ' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
-
+# TODO remove below sed call for lib/client.go once Fabric CA v1.3 is not supported by the SDK anymore
+sed -i'' -e '$a\
+\
+/\/\ GetFabCAVersion is a utility function to fetch the Fabric CA version for this client\
+/\/\ TODO remove the function below once Fabric CA v1.3 is not supported by the SDK anymore\
+func (c \*Client) GetFabCAVersion() (string, error) {\
+    	i, e := c.GetCAInfo(&api.GetCAInfoRequest{CAName: c.Config.CAName})\
+	if e != nil {\
+		return "", e\
+	}\
+	return i.Version, nil\
+}\
+' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 
 FILTER_FILENAME="lib/identity.go"
 FILTER_FN="newIdentity,Revoke,Post,addTokenAuthHdr,GetECert,Reenroll,Register,GetName,GetAllIdentities,GetIdentity,AddIdentity,ModifyIdentity,RemoveIdentity,Get,Put,Delete,GetStreamResponse,NewIdentity,GetAffiliation,GetAllAffiliations,AddAffiliation,ModifyAffiliation,RemoveAffiliation"
@@ -141,6 +153,47 @@ sed -i'' -e '/log "github.com\// a\
 ' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e 's/bccsp.BCCSP/core.CryptoSuite/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e 's/bccsp.Key/core.Key/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+# TODO remove below sed calls for lib/identity.go once Fabric CA v1.3 is not supported by the SDK anymore
+sed -i'' -e '/\"strconv\"/ a\
+    "strings"
+' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e '/func (i \*Identity) addTokenAuthHdr(req \*http.Request, body \[\]byte) error {/ a\
+    /\/\ TODO remove the below compatibility logic once Fabric CA v1.3 is not supported by the SDK anymore\
+	caVer, e := i.client.GetFabCAVersion()\
+	if e != nil {\
+		return errors.WithMessage(e, "Failed to add token authorization header because client is unable to fetch the Fabric CA version")\
+	}\
+	compatibility := isCompatibleFabCA(caVer)\
+' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/token, err = cred.CreateToken(req, body)/token, err = cred.CreateToken(req, body, compatibility)/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e '$a\
+\
+/\/\ TODO remove the function below once Fabric CA v1.3 is not supported by the SDK anymore\
+func isCompatibleFabCA(caVersion string) bool {\
+	versions := strings.Split(caVersion, ".")\
+	\/\/ 1.0-1.3 -> set Compatible CA to true, otherwise (1.4 and above) set false\
+	if len(versions) > 1 {\
+		majv, e := strconv.Atoi(versions[0])\
+		if e != nil {\
+			log.Debugf("Fabric CA version retrieval format returned error, will not use Compatible Fabric CA setup in the client: %s", e)\
+			return false\
+		}\
+		if majv == 0 {\
+			return true\
+		}\
+\
+		minv, e := strconv.Atoi(versions[1])\
+		if e != nil {\
+			log.Debugf("Fabric CA version retrieval format returned error, will not use Compatible Fabric CA setup in the client: %s", e)\
+			return false\
+		}\
+		if majv == 1 && minv < 4 {\
+			return true\
+		}\
+	}\
+	return false\
+}\
+' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 
 FILTER_FILENAME="lib/clientconfig.go"
 FILTER_FN=
@@ -191,6 +244,12 @@ do
     sed -i'' -e ${START_LINE}'d' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 done
 
+# TODO remove below filter once Fabric CA v1.3 is not supported by the SDK anymore
+FILTER_FILENAME="lib/client/credential/credential.go"
+FILTER_FN=
+gofilter
+sed -i'' -e 's/CreateToken(req \*http.Request, reqBody \[\]byte) (string, error)/CreateToken(req *http.Request, reqBody []byte, fabCACompatibilityMode bool) (string, error)/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+
 FILTER_FILENAME="lib/client/credential/x509/credential.go"
 FILTER_FN=",NewCredential,Type,Val,EnrollmentID,SetVal,Load,Store,CreateToken,RevokeSelf,getCSP"
 gofilter
@@ -220,7 +279,9 @@ do
     sed -i'' -e ${START_LINE}'d' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 done
 sed -i'' -e 's/log.Infof("Stored client certificate at %s", cred.certFile)/log.Debugf("Credential.Store() not supported")/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
-
+# TODO remove below 2 sed commands once Fabric CA v1.3 is not supported by the SDK anymore
+sed -i'' -e 's/func (cred \*Credential) CreateToken(req \*http.Request, reqBody \[\]byte) (string, error) {/func (cred *Credential) CreateToken(req *http.Request, reqBody []byte, fabCACompatibilityMode bool) (string, error) {/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/return util.CreateToken(cred.getCSP(), cred.val.certBytes, cred.val.key, req.Method, req.URL.RequestURI(), reqBody)/return util.CreateToken(cred.getCSP(), cred.val.certBytes, cred.val.key, req.Method, req.URL.RequestURI(), reqBody, fabCACompatibilityMode)/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 
 
 
@@ -302,9 +363,21 @@ factory "github.com\/hyperledger\/fabric-sdk-go\/internal\/github.com\/hyperledg
 sed -i'' -e 's/bccsp.BCCSP/core.CryptoSuite/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e 's/bccsp.Key/core.Key/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e 's/&bccsp.SHAOpts{}/factory.GetSHAOpts()/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
-# TODO: The appropriate token mechanism should be selected based on the CA version.
-sed -i'' -e 's/payload := method + "." + b64uri + "." + b64body + "." + b64cert/payload := b64body + "." + b64cert/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
-sed -i'' -e '/b64uri :=/d' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+# TODO remove below sed calls for util/util.go once Fabric CA v1.3 is not supported by the SDK anymore
+sed -i'' -e '/\/\/ \@param body The body of an HTTP request/ a\
+    \/\/ @param fabCACompatibilityMode will set auth token signing for Fabric CA 1.3 (true) or Fabric 1.4+ (false)\
+' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/func CreateToken(csp core.CryptoSuite, cert \[\]byte, key core.Key, method, uri string, body \[\]byte) (string, error) {/func CreateToken(csp core.CryptoSuite, cert []byte, key core.Key, method, uri string, body []byte, fabCACompatibilityMode bool) (string, error) {/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/token, err = GenECDSAToken(csp, cert, key, method, uri, body)/token, err = GenECDSAToken(csp, cert, key, method, uri, body, fabCACompatibilityMode)/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/func GenECDSAToken(csp core.CryptoSuite, cert \[\]byte, key core.Key, method, uri string, body \[\]byte) (string, error) {/func GenECDSAToken(csp core.CryptoSuite, cert []byte, key core.Key, method, uri string, body []byte, fabCACompatibilityMode bool) (string, error) {/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e '/payload := method + "\." + b64uri + "\." + b64body + "\." + b64cert/ a\
+\
+    \/\/ TODO remove this condition once Fabric CA v1.3 is not supported by the SDK anymore\
+    if fabCACompatibilityMode {\
+		payload = b64body + "." + b64cert\
+	}\
+\
+' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 
 FILTER_FILENAME="lib/serverrevoke.go"
 FILTER_FN=

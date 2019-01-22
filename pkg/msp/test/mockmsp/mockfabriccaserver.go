@@ -259,7 +259,7 @@ func (s *MockFabricCAServer) affiliation(w http.ResponseWriter, req *http.Reques
 func (s *MockFabricCAServer) cainfo(w http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case http.MethodPost:
-		resp := &lib.GetCAInfoResponse{CAName: "123", CAChain: []byte{}}
+		resp := &lib.GetCAInfoResponse{CAName: "123", CAChain: []byte{}, Version: "1.4"}
 		if err := cfsslapi.SendResponse(w, resp); err != nil {
 			logger.Error(err)
 		}
