@@ -456,6 +456,9 @@ func TestIdentityConfigWithMultipleBackends(t *testing.T) {
 	assert.Equal(t, 1, len(caConfig.GRPCOptions))
 	assert.Equal(t, "ca.org1.example.com", caConfig.GRPCOptions["ssl-target-name-override"])
 
+	caConfig, ok = identityConfig.CAConfig("org2")
+	assert.True(t, ok, "identityConfig.CAConfig(org2) should have been successful for multiple backends")
+	assert.Equal(t, caConfig.URL, "https://ca.org2.example.com:8054")
 }
 
 func newViper(path string) *viper.Viper {

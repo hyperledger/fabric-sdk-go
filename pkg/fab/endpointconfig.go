@@ -11,6 +11,7 @@ import (
 	"crypto/x509"
 	"reflect"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -30,6 +31,8 @@ import (
 )
 
 var logger = logging.NewLogger("fabsdk/fab")
+var defaultOrdererListenPort = 7050
+var defaultPeerListenPort = 7051
 
 const (
 	defaultPeerConnectionTimeout          = time.Second * 10
@@ -822,7 +825,7 @@ func (c *EndpointConfig) loadAllPeerConfigs(networkConfig *fab.NetworkConfig, en
 		if err != nil {
 			return errors.WithMessage(err, "failed to load peer network config")
 		}
-		networkConfig.Peers[name] = c.addMissingPeerConfigItems(fab.PeerConfig{
+		networkConfig.Peers[name] = c.addMissingPeerConfigItems(name, fab.PeerConfig{
 			URL:         peerConfig.URL,
 			GRPCOptions: peerConfig.GRPCOptions,
 			TLSCACert:   tlsCert,
@@ -842,7 +845,7 @@ func (c *EndpointConfig) loadAllOrdererConfigs(networkConfig *fab.NetworkConfig,
 		if err != nil {
 			return errors.WithMessage(err, "failed to load orderer network config")
 		}
-		networkConfig.Orderers[name] = c.addMissingOrdererConfigItems(fab.OrdererConfig{
+		networkConfig.Orderers[name] = c.addMissingOrdererConfigItems(name, fab.OrdererConfig{
 			URL:         ordererConfig.URL,
 			GRPCOptions: ordererConfig.GRPCOptions,
 			TLSCACert:   tlsCert,
@@ -851,11 +854,15 @@ func (c *EndpointConfig) loadAllOrdererConfigs(networkConfig *fab.NetworkConfig,
 	return nil
 }
 
-func (c *EndpointConfig) addMissingPeerConfigItems(config fab.PeerConfig) fab.PeerConfig {
+func (c *EndpointConfig) addMissingPeerConfigItems(name string, config fab.PeerConfig) fab.PeerConfig {
 
 	// peer URL
 	if config.URL == "" {
-		config.URL = c.defaultPeerConfig.URL
+		if c.defaultPeerConfig.URL == "" {
+			config.URL = name + ":" + strconv.Itoa(defaultPeerListenPort)
+		} else {
+			config.URL = c.defaultPeerConfig.URL
+		}
 	}
 
 	//tls ca certs
@@ -880,10 +887,14 @@ func (c *EndpointConfig) addMissingPeerConfigItems(config fab.PeerConfig) fab.Pe
 	return config
 }
 
-func (c *EndpointConfig) addMissingOrdererConfigItems(config fab.OrdererConfig) fab.OrdererConfig {
+func (c *EndpointConfig) addMissingOrdererConfigItems(name string, config fab.OrdererConfig) fab.OrdererConfig {
 	// orderer URL
 	if config.URL == "" {
-		config.URL = c.defaultOrdererConfig.URL
+		if c.defaultOrdererConfig.URL == "" {
+			config.URL = name + ":" + strconv.Itoa(defaultOrdererListenPort)
+		} else {
+			config.URL = c.defaultOrdererConfig.URL
+		}
 	}
 
 	//tls ca certs

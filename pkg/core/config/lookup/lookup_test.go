@@ -305,11 +305,11 @@ func TestUnmarshalWithMultipleBackend(t *testing.T) {
 	assert.Equal(t, networkConfig.Organizations["org1"].MSPID, "Org1MSP")
 
 	//Orderer
-	assert.Equal(t, len(networkConfig.Orderers), 2)
+	assert.Equal(t, len(networkConfig.Orderers), 3)
 	assert.Equal(t, networkConfig.Orderers["local.orderer.example.com"].URL, "orderer.example.com:7050")
 
 	//Peer
-	assert.Equal(t, len(networkConfig.Peers), 3)
+	assert.Equal(t, len(networkConfig.Peers), 4)
 	assert.Equal(t, networkConfig.Peers["local.peer0.org1.example.com"].URL, "peer0.org1.example.com:7051")
 
 }

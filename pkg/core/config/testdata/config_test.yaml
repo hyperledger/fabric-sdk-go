@@ -267,7 +267,8 @@ organizations:
 #
 orderers:
   orderer.example.com:
-    url: orderer.example.com:7050
+    # [Optional] Default: Infer from hostname
+    #url: orderer.example.com:7050
 
     # these are standard properties defined by the gRPC library
     # they will be passed in as-is to gRPC client constructor
@@ -295,7 +296,8 @@ orderers:
 peers:
   peer0.org1.example.com:
     # this URL is used to send endorsement and query requests
-    url: peer0.org1.example.com:7051
+    # [Optional] Default: Infer from hostname
+    #url: peer0.org1.example.com:7051
 
     #TODO to be moved to high level, common for all grpc connections
     grpcOptions:
@@ -339,7 +341,8 @@ peers:
 #
 certificateAuthorities:
   ca.org1.example.com:
-    url: https://ca.org1.example.com:7054
+    # [Optional] Default: Infer from hostname
+    #url: https://ca.org1.example.com:7054
     # [Optional] The optional server name for target override
     grpcOptions:
       ssl-target-name-override: ca.org1.example.com
@@ -361,6 +364,7 @@ certificateAuthorities:
     # [Optional] The optional name of the CA.
     caName: ca.org1.example.com
   ca.org2.example.com:
+    # [Optional] Default: Infer from hostname
     url: https://ca.org2.example.com:8054
     # [Optional] The optional server name for target override
     grpcOptions:

@@ -1183,12 +1183,14 @@ func TestEndpointConfigWithMultipleBackends(t *testing.T) {
 	assert.Equal(t, networkConfig.Organizations["org1"].MSPID, "Org1MSP")
 
 	//Orderer
-	assert.Equal(t, len(networkConfig.Orderers), 1)
+	assert.Equal(t, len(networkConfig.Orderers), 2)
 	assert.Equal(t, networkConfig.Orderers["local.orderer.example.com"].URL, "orderer.example.com:7050")
+	assert.Equal(t, networkConfig.Orderers["orderer1.example.com"].URL, "orderer1.example.com:7050")
 
 	//Peer
-	assert.Equal(t, len(networkConfig.Peers), 2)
+	assert.Equal(t, len(networkConfig.Peers), 3)
 	assert.Equal(t, networkConfig.Peers["local.peer0.org1.example.com"].URL, "peer0.org1.example.com:7051")
+	assert.Equal(t, networkConfig.Peers["peer0.org3.example.com"].URL, "peer0.org3.example.com:7051")
 
 	//EntityMatchers
 	endpointConfigImpl := endpointConfig.(*EndpointConfig)

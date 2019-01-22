@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package msp
 
 import (
+	"strconv"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -23,6 +24,9 @@ import (
 	fabImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/util/pathvar"
 )
+
+var defaultCAServerSchema = "https"
+var defaultCAServerListenPort = 7054
 
 //ConfigFromBackend returns identity config implementation of given backend
 func ConfigFromBackend(coreBackend ...core.ConfigBackend) (msp.IdentityConfig, error) {
@@ -289,7 +293,7 @@ func (c *IdentityConfig) loadAllCAConfigs(configEntity *identityConfigEntity) er
 			}
 
 			logger.Debugf("Mapped Certificate Authority for [%s] to [%s]", orgName, caName)
-			mspCAConfig, err := c.getMSPCAConfig(matchedCaConfig)
+			mspCAConfig, err := c.getMSPCAConfig(caName, matchedCaConfig)
 			if err != nil {
 				return err
 			}
@@ -304,15 +308,22 @@ func (c *IdentityConfig) loadAllCAConfigs(configEntity *identityConfigEntity) er
 	return nil
 }
 
-func (c *IdentityConfig) getMSPCAConfig(caConfig *CAConfig) (*msp.CAConfig, error) {
+func (c *IdentityConfig) getMSPCAConfig(caName string, caConfig *CAConfig) (*msp.CAConfig, error) {
 
 	serverCerts, err := c.getServerCerts(caConfig)
 	if err != nil {
 		return nil, err
 	}
 
+	var URL string
+	if caConfig.URL == "" {
+		URL = defaultCAServerSchema + "://" + caName + ":" + strconv.Itoa(defaultCAServerListenPort)
+	} else {
+		URL = caConfig.URL
+	}
+
 	return &msp.CAConfig{
-		URL:              caConfig.URL,
+		URL:              URL,
 		GRPCOptions:      caConfig.GRPCOptions,
 		Registrar:        caConfig.Registrar,
 		CAName:           caConfig.CAName,

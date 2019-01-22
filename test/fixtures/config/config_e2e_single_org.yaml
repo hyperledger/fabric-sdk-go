@@ -189,6 +189,7 @@ orderers:
       allow-insecure: false
 
   orderer.example.com:
+    # [Optional] Default: Infer from hostname
     url: orderer.example.com:7050
 
     # these are standard properties defined by the gRPC library
@@ -229,6 +230,7 @@ peers:
 
   peer0.org1.example.com:
     # this URL is used to send endorsement and query requests
+    # [Optional] Default: Infer from hostname
     url: peer0.org1.example.com:7051
 
     grpcOptions:
@@ -256,6 +258,7 @@ peers:
 #
 certificateAuthorities:
   ca.org1.example.com:
+    # [Optional] Default: Infer from hostname
     url: https://ca.org1.example.com:7054
     tlsCACerts:
       # Comma-Separated list of paths

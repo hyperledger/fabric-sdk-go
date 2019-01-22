@@ -136,6 +136,7 @@ organizations:
 peers:
   peer0.org1.example.com:
     # this URL is used to send endorsement and query requests
+    # [Optional] Default: Infer from hostname
     url: peer0.org1.example.com:7051
 
     #TODO to be moved to high level, common for all grpc connections
