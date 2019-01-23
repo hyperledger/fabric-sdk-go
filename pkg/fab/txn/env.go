@@ -140,7 +140,7 @@ type ChannelHeaderOpts struct {
 //
 // TODO: Determine if this function should be exported after refactoring is completed.
 func CreateChannelHeader(headerType common.HeaderType, opts ChannelHeaderOpts) (*common.ChannelHeader, error) {
-	logger.Debugf("buildChannelHeader - headerType: %s channelID: %s txID: %d epoch: % chaincodeID: %s timestamp: %v", headerType, opts.TxnHeader.channelID, opts.TxnHeader.id, opts.Epoch, opts.ChaincodeID, opts.Timestamp)
+	logger.Debugf("buildChannelHeader - headerType: %s channelID: %s txID: %d epoch: %d chaincodeID: %s timestamp: %v", headerType, opts.TxnHeader.channelID, opts.TxnHeader.id, opts.Epoch, opts.ChaincodeID, opts.Timestamp)
 	channelHeader := &common.ChannelHeader{
 		Type:        int32(headerType),
 		ChannelId:   opts.TxnHeader.channelID,
