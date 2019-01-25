@@ -32,7 +32,7 @@ client:
       # Specific to the underlying KeyValueStore that backs the crypto key store.
       path: /tmp/msp
 
-   # BCCSP config for the client. Used by GO SDK.
+  # [Optional] BCCSP config for the client. Used by GO SDK.
   BCCSP:
     security:
      enabled: true

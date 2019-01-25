@@ -80,7 +80,7 @@ client:
       # Specific to the underlying KeyValueStore that backs the crypto key store.
       path: /tmp/msp
 
-   # BCCSP config for the client. Used by GO SDK.
+  # [Optional] BCCSP config for the client. Used by GO SDK.
   BCCSP:
     security:
      enabled: true
@@ -111,7 +111,7 @@ channels:
   # Default channel is used if channel configuration is missing or if defined channel configuration is missing info
   # If channel doesn't define peers then peers from default channel will be used
   # If channel doesn't define orderes then orderes from default channel will be used
-  # If channel doesn't define policies then policies from default channel will be used. 
+  # If channel doesn't define policies then policies from default channel will be used.
   # Also, if channel defines policies and some policy info is missing than that missing info will be filled from default channel.
   _default:
 
@@ -207,14 +207,14 @@ channels:
         #   - Setting this value too low may cause the event client to disconnect/reconnect too frequently, thereby
         #     affecting performance.
         reconnectBlockHeightLagThreshold: 8
-        
+
         # [Optional] peerMonitorPeriod is the period in which the connected peer is monitored to see if
         # the event client should disconnect from it and reconnect to another peer.
         # Default: 0 (disabled) for Balanced resolverStrategy; 5s for PreferOrg and MinBlockHeight strategy
         peerMonitorPeriod: 6s
 
 
-  #[Required if _default not defined; Optional if _default defined]. 
+  #[Required if _default not defined; Optional if _default defined].
   # name of the channel
   mychannel:
 
@@ -249,7 +249,7 @@ channels:
         # Default: true
         eventSource: true
 
- 
+
 #
 # list of participating organizations in this network
 #

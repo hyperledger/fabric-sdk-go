@@ -71,7 +71,7 @@ client:
       # Specific to the underlying KeyValueStore that backs the crypto key store.
       path: /tmp/msp
 
-   # BCCSP config for the client. Used by GO SDK.
+  # [Optional] BCCSP config for the client. Used by GO SDK.
   BCCSP:
     security:
      enabled: true
@@ -101,7 +101,7 @@ channels:
   # Default channel is used if channel configuration is missing or if defined channel configuration is missing info
   # If channel doesn't define peers then peers from default channel will be used
   # If channel doesn't define orderes then orderes from default channel will be used
-  # If channel doesn't define policies then policies from default channel will be used. 
+  # If channel doesn't define policies then policies from default channel will be used.
   # Also, if channel defines policies and some policy info is missing than that missing info will be filled from default channel.
   _default:
     # Required. list of orderers designated by the application to use for transactions on this
