@@ -288,7 +288,7 @@ func (c *IdentityConfig) loadAllCAConfigs(configEntity *identityConfigEntity) er
 				continue
 			}
 
-			logger.Debugf("Mapped Certificate Authority for [%s] to [%s]", caName)
+			logger.Debugf("Mapped Certificate Authority for [%s] to [%s]", orgName, caName)
 			mspCAConfig, err := c.getMSPCAConfig(matchedCaConfig)
 			if err != nil {
 				return err
