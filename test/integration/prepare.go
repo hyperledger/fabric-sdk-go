@@ -36,6 +36,7 @@ const (
 	examplePvtCCName    = "example_pvt_cc"
 	examplePvtCCPath    = "github.com/example_pvt_cc"
 	examplePvtCCVersion = "v0"
+	exampleUpgdPvtCCVer = "v1"
 )
 
 // GenerateExamplePvtID supplies a chaincode name for example_pvt_cc
@@ -146,6 +147,23 @@ func InstantiateExampleChaincode(orgs []*OrgContext, channelID, ccID, ccPolicy s
 // InstantiateExamplePvtChaincode instantiates the example pvt CC on the given channel
 func InstantiateExamplePvtChaincode(orgs []*OrgContext, channelID, ccID, ccPolicy string, collConfigs ...*cb.CollectionConfig) error {
 	_, err := InstantiateChaincode(orgs[0].ResMgmt, channelID, ccID, examplePvtCCPath, examplePvtCCVersion, ccPolicy, ExampleCCInitArgs(), collConfigs...)
+	return err
+}
+
+// UpgradeExamplePvtChaincode upgrades the instantiated example pvt CC on the given channel
+func UpgradeExamplePvtChaincode(orgs []*OrgContext, channelID, ccID, ccPolicy string, collConfigs ...*cb.CollectionConfig) error {
+	// first install the CC with the upgraded cc version
+	ccPkg, err := packager.NewCCPackage(examplePvtCCPath, GetDeployPath())
+	if err != nil {
+		return errors.WithMessage(err, "creating chaincode package failed")
+	}
+	err = InstallChaincodeWithOrgContexts(orgs, ccPkg, examplePvtCCPath, ccID, exampleUpgdPvtCCVer)
+	if err != nil {
+		return errors.WithMessage(err, "installing example chaincode failed")
+	}
+
+	// now upgrade cc
+	_, err = UpgradeChaincode(orgs[0].ResMgmt, channelID, ccID, examplePvtCCPath, exampleUpgdPvtCCVer, ccPolicy, ExampleCCInitArgs(), collConfigs...)
 	return err
 }
 

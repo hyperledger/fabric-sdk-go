@@ -325,6 +325,27 @@ func InstantiateChaincode(resMgmt *resmgmt.Client, channelID, ccName, ccPath, cc
 	)
 }
 
+// UpgradeChaincode upgrades the given chaincode on the given channel
+func UpgradeChaincode(resMgmt *resmgmt.Client, channelID, ccName, ccPath, ccVersion string, ccPolicyStr string, args [][]byte, collConfigs ...*cb.CollectionConfig) (resmgmt.UpgradeCCResponse, error) {
+	ccPolicy, err := cauthdsl.FromString(ccPolicyStr)
+	if err != nil {
+		return resmgmt.UpgradeCCResponse{}, errors.Wrapf(err, "error creating CC policy [%s]", ccPolicyStr)
+	}
+
+	return resMgmt.UpgradeCC(
+		channelID,
+		resmgmt.UpgradeCCRequest{
+			Name:       ccName,
+			Path:       ccPath,
+			Version:    ccVersion,
+			Args:       args,
+			Policy:     ccPolicy,
+			CollConfig: collConfigs,
+		},
+		resmgmt.WithRetry(retry.DefaultResMgmtOpts),
+	)
+}
+
 // DiscoverLocalPeers queries the local peers for the given MSP context and returns all of the peers. If
 // the number of peers does not match the expected number then an error is returned.
 func DiscoverLocalPeers(ctxProvider contextAPI.ClientProvider, expectedPeers int) ([]fabAPI.Peer, error) {

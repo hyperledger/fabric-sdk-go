@@ -38,14 +38,14 @@ var (
 
 type exampleOperation struct{}
 
-//OperationCfg overrides MetricsConfig's OperationConfig function which returns the operations config
+//OperationCfg overrides MetricsConfig's OperationConfig function which returns the operations system config
 func (m *exampleOperation) OperationCfg() cfg.OperationConfig {
 	return operationConfig
 }
 
 type exampleMetric struct{}
 
-//MetricCfg overrides MetricsConfig's OperationConfig function which returns the operations config
+//MetricCfg overrides MetricsConfig's MetricConfig function which returns the metrics specific config
 func (m *exampleMetric) MetricCfg() cfg.MetricConfig {
 	return metricConfig
 }
