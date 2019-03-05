@@ -23,7 +23,7 @@ func WithRefreshInterval(value time.Duration) coptions.Opt {
 	return func(p coptions.Params) {
 		logger.Debug("Checking refreshIntervalSetter")
 		if setter, ok := p.(refreshIntervalSetter); ok {
-			setter.SetRefreshInterval(value)
+			setter.SetDiscoveryRefreshInterval(value)
 		}
 	}
 }
@@ -33,25 +33,25 @@ func WithResponseTimeout(value time.Duration) coptions.Opt {
 	return func(p coptions.Params) {
 		logger.Debug("Checking responseTimeoutSetter")
 		if setter, ok := p.(responseTimeoutSetter); ok {
-			setter.SetResponseTimeout(value)
+			setter.SetDiscoveryResponseTimeout(value)
 		}
 	}
 }
 
 type refreshIntervalSetter interface {
-	SetRefreshInterval(value time.Duration)
+	SetDiscoveryRefreshInterval(value time.Duration)
 }
 
 type responseTimeoutSetter interface {
-	SetResponseTimeout(value time.Duration)
+	SetDiscoveryResponseTimeout(value time.Duration)
 }
 
-func (o *options) SetRefreshInterval(value time.Duration) {
+func (o *options) SetDiscoveryRefreshInterval(value time.Duration) {
 	logger.Debugf("RefreshInterval: %s", value)
 	o.refreshInterval = value
 }
 
-func (o *options) SetResponseTimeout(value time.Duration) {
+func (o *options) SetDiscoveryResponseTimeout(value time.Duration) {
 	logger.Debugf("ResponseTimeout: %s", value)
 	o.responseTimeout = value
 }

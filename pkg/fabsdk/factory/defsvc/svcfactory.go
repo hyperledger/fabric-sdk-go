@@ -7,9 +7,9 @@ SPDX-License-Identifier: Apache-2.0
 package defsvc
 
 import (
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
-
 	discovery "github.com/hyperledger/fabric-sdk-go/pkg/client/common/discovery/staticdiscovery"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/chpvdr"
 )
 
@@ -29,6 +29,6 @@ func (f *ProviderFactory) CreateLocalDiscoveryProvider(config fab.EndpointConfig
 }
 
 // CreateChannelProvider returns a new default implementation of channel provider
-func (f *ProviderFactory) CreateChannelProvider(config fab.EndpointConfig) (fab.ChannelProvider, error) {
-	return chpvdr.New(config)
+func (f *ProviderFactory) CreateChannelProvider(config fab.EndpointConfig, opts ...options.Opt) (fab.ChannelProvider, error) {
+	return chpvdr.New(config, opts...)
 }

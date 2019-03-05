@@ -8,6 +8,7 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
+	options "github.com/hyperledger/fabric-sdk-go/pkg/common/options"
 	core "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	fab "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	msp "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
@@ -158,18 +159,23 @@ func (m *MockServiceProviderFactory) EXPECT() *MockServiceProviderFactoryMockRec
 }
 
 // CreateChannelProvider mocks base method
-func (m *MockServiceProviderFactory) CreateChannelProvider(arg0 fab.EndpointConfig) (fab.ChannelProvider, error) {
+func (m *MockServiceProviderFactory) CreateChannelProvider(arg0 fab.EndpointConfig, arg1 ...options.Opt) (fab.ChannelProvider, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateChannelProvider", arg0)
+	varargs := []interface{}{arg0}
+	for _, a := range arg1 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "CreateChannelProvider", varargs...)
 	ret0, _ := ret[0].(fab.ChannelProvider)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CreateChannelProvider indicates an expected call of CreateChannelProvider
-func (mr *MockServiceProviderFactoryMockRecorder) CreateChannelProvider(arg0 interface{}) *gomock.Call {
+func (mr *MockServiceProviderFactoryMockRecorder) CreateChannelProvider(arg0 interface{}, arg1 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateChannelProvider", reflect.TypeOf((*MockServiceProviderFactory)(nil).CreateChannelProvider), arg0)
+	varargs := append([]interface{}{arg0}, arg1...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateChannelProvider", reflect.TypeOf((*MockServiceProviderFactory)(nil).CreateChannelProvider), varargs...)
 }
 
 // CreateLocalDiscoveryProvider mocks base method

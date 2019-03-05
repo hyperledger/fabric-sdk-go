@@ -10,10 +10,12 @@ package orgs
 
 import (
 	"testing"
+	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/discovery/dynamicdiscovery"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
@@ -44,7 +46,12 @@ func TestOrgsEndToEndWithBootstrapConfigs(t *testing.T) {
 		configProvider = integration.AddLocalEntityMapping(configProvider)
 	}
 
-	sdk, err := fabsdk.New(configProvider, fabsdk.WithServicePkg(&DynamicDiscoveryProviderFactory{}))
+	sdk, err := fabsdk.New(configProvider,
+		fabsdk.WithServicePkg(&DynamicDiscoveryProviderFactory{}),
+		fabsdk.WithProviderOpts(
+			dynamicdiscovery.WithRefreshInterval(500*time.Millisecond),
+		),
+	)
 	if err != nil {
 		require.NoError(t, err, "Failed to create new SDK")
 	}
@@ -103,11 +110,12 @@ func testDynamicDiscovery(t *testing.T, sdk *fabsdk.FabricSDK, mc *multiorgConte
 	// 1 discovered peer (not in config: peer1.org1.example.com)
 	// 1 org2 anchor peer (peer0.org2.example.com)
 	// 1 discovered peer (not in config: peer1.org2.example.com)
-	peersList := discoverPeers(t, sdk)
-	assert.Equal(t, 4, len(peersList), "Expected exactly 4 peers as per %s's channel and %s's org configs", channelID, org2)
+	expectedPeers := 4
+	peersList := discoverPeers(t, sdk, expectedPeers)
+	assert.Equal(t, expectedPeers, len(peersList), "Expected exactly %d peers as per %s's channel and %s's org configs", expectedPeers, channelID, org2)
 }
 
-func discoverPeers(t *testing.T, sdk *fabsdk.FabricSDK) []fab.Peer {
+func discoverPeers(t *testing.T, sdk *fabsdk.FabricSDK, expectedPeers int) []fab.Peer {
 	// any user from the network can access the discovery service, user org1User is selected for the test.
 	chProvider := sdk.ChannelContext(channelID, fabsdk.WithUser(org1User), fabsdk.WithOrg(org1))
 	chCtx, err := chProvider()
@@ -116,8 +124,6 @@ func discoverPeers(t *testing.T, sdk *fabsdk.FabricSDK) []fab.Peer {
 	chCtx.ChannelService()
 	discovery, err := chCtx.ChannelService().Discovery()
 	require.NoErrorf(t, err, "Error getting discovery service for channel [%s]", channelID)
-
-	const expectedPeers = 4
 
 	discoveredPeers, err := retry.NewInvoker(retry.New(retry.TestRetryOpts)).Invoke(
 		func() (interface{}, error) {
@@ -150,8 +156,8 @@ func (f *DynamicDiscoveryProviderFactory) CreateLocalDiscoveryProvider(config fa
 }
 
 // CreateChannelProvider returns a new default implementation of channel provider
-func (f *DynamicDiscoveryProviderFactory) CreateChannelProvider(config fab.EndpointConfig) (fab.ChannelProvider, error) {
-	chProvider, err := chpvdr.New(config)
+func (f *DynamicDiscoveryProviderFactory) CreateChannelProvider(config fab.EndpointConfig, opts ...options.Opt) (fab.ChannelProvider, error) {
+	chProvider, err := chpvdr.New(config, opts...)
 	if err != nil {
 		return nil, err
 	}

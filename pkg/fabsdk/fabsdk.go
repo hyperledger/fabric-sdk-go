@@ -12,19 +12,19 @@ import (
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/core/operations"
-	contextApi "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
-	"github.com/hyperledger/fabric-sdk-go/pkg/context"
-	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/lookup"
-	"github.com/hyperledger/fabric-sdk-go/pkg/core/logging/api"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/metrics"
-
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
+	coptions "github.com/hyperledger/fabric-sdk-go/pkg/common/options"
+	contextApi "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
+	"github.com/hyperledger/fabric-sdk-go/pkg/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/lookup"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/logging/api"
 	fabImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab"
 	sdkApi "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/metrics"
 	metricsCfg "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/metrics/cfg"
 	mspImpl "github.com/hyperledger/fabric-sdk-go/pkg/msp"
 	"github.com/pkg/errors"
@@ -57,6 +57,7 @@ type options struct {
 	endpointConfig    fab.EndpointConfig
 	IdentityConfig    msp.IdentityConfig
 	ConfigBackend     []core.ConfigBackend
+	ProviderOpts      []coptions.Opt // Provider options are passed along to the various providers
 	metricsConfig     metricsCfg.MetricsConfig
 }
 
@@ -202,6 +203,14 @@ func WithMetricsConfig(metricsConfigs ...interface{}) Option {
 	}
 }
 
+// WithProviderOpts adds options which are propagated to the various providers.
+func WithProviderOpts(sopts ...coptions.Opt) Option {
+	return func(opts *options) error {
+		opts.ProviderOpts = append(opts.ProviderOpts, sopts...)
+		return nil
+	}
+}
+
 // providerInit interface allows for initializing providers
 // TODO: minimize interface
 type providerInit interface {
@@ -261,7 +270,7 @@ func initSDK(sdk *FabricSDK, configProvider core.ConfigProvider, opts []Option) 
 		return errors.WithMessage(err, "failed to create local discovery provider")
 	}
 
-	channelProvider, err := sdk.opts.Service.CreateChannelProvider(cfg.endpointConfig)
+	channelProvider, err := sdk.opts.Service.CreateChannelProvider(cfg.endpointConfig, sdk.opts.ProviderOpts...)
 	if err != nil {
 		return errors.WithMessage(err, "failed to create channel provider")
 	}

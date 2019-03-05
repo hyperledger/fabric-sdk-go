@@ -278,8 +278,8 @@ type fabricSelectionChannelService struct {
 }
 
 // CreateChannelProvider returns a new default implementation of channel provider
-func (f *fabricSelectionProviderFactory) CreateChannelProvider(config fab.EndpointConfig) (fab.ChannelProvider, error) {
-	chProvider, err := chpvdr.New(config)
+func (f *fabricSelectionProviderFactory) CreateChannelProvider(config fab.EndpointConfig, opts ...options.Opt) (fab.ChannelProvider, error) {
+	chProvider, err := chpvdr.New(config, opts...)
 	if err != nil {
 		return nil, err
 	}

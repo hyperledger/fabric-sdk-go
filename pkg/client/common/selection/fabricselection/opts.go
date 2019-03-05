@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
-
 	coptions "github.com/hyperledger/fabric-sdk-go/pkg/common/options"
 )
 
@@ -26,7 +25,7 @@ func WithRefreshInterval(value time.Duration) coptions.Opt {
 	return func(p coptions.Params) {
 		logger.Debug("Checking refreshIntervalSetter")
 		if setter, ok := p.(refreshIntervalSetter); ok {
-			setter.SetRefreshInterval(value)
+			setter.SetSelectionRefreshInterval(value)
 		}
 	}
 }
@@ -36,7 +35,7 @@ func WithResponseTimeout(value time.Duration) coptions.Opt {
 	return func(p coptions.Params) {
 		logger.Debug("Checking responseTimeoutSetter")
 		if setter, ok := p.(responseTimeoutSetter); ok {
-			setter.SetResponseTimeout(value)
+			setter.SetSelectionResponseTimeout(value)
 		}
 	}
 }
@@ -47,34 +46,34 @@ func WithRetryOpts(value retry.Opts) coptions.Opt {
 	return func(p coptions.Params) {
 		logger.Debug("Checking retryOptsSetter")
 		if setter, ok := p.(retryOptsSetter); ok {
-			setter.SetRetryOpts(value)
+			setter.SetSelectionRetryOpts(value)
 		}
 	}
 }
 
 type refreshIntervalSetter interface {
-	SetRefreshInterval(value time.Duration)
+	SetSelectionRefreshInterval(value time.Duration)
 }
 
 type responseTimeoutSetter interface {
-	SetResponseTimeout(value time.Duration)
+	SetSelectionResponseTimeout(value time.Duration)
 }
 
 type retryOptsSetter interface {
-	SetRetryOpts(value retry.Opts)
+	SetSelectionRetryOpts(value retry.Opts)
 }
 
-func (o *params) SetRefreshInterval(value time.Duration) {
+func (o *params) SetSelectionRefreshInterval(value time.Duration) {
 	logger.Debugf("RefreshInterval: %s", value)
 	o.refreshInterval = value
 }
 
-func (o *params) SetResponseTimeout(value time.Duration) {
+func (o *params) SetSelectionResponseTimeout(value time.Duration) {
 	logger.Debugf("ResponseTimeout: %s", value)
 	o.responseTimeout = value
 }
 
-func (o *params) SetRetryOpts(value retry.Opts) {
+func (o *params) SetSelectionRetryOpts(value retry.Opts) {
 	logger.Debugf("RetryOpts: %#v", value)
 	o.retryOpts = value
 }

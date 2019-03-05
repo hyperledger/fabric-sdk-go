@@ -26,6 +26,7 @@ import (
 	mspclient "github.com/hyperledger/fabric-sdk-go/pkg/client/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
 	contextApi "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
@@ -526,8 +527,8 @@ func (f *DynDiscoveryProviderFactory) CreateLocalDiscoveryProvider(config fab.En
 }
 
 // CreateChannelProvider returns a new default implementation of channel provider
-func (f *DynDiscoveryProviderFactory) CreateChannelProvider(config fab.EndpointConfig) (fab.ChannelProvider, error) {
-	chProvider, err := chpvdr.New(config)
+func (f *DynDiscoveryProviderFactory) CreateChannelProvider(config fab.EndpointConfig, opts ...options.Opt) (fab.ChannelProvider, error) {
+	chProvider, err := chpvdr.New(config, opts...)
 	if err != nil {
 		return nil, err
 	}

@@ -46,13 +46,13 @@ type ChannelProvider struct {
 }
 
 // New creates a ChannelProvider based on a context
-func New(config fab.EndpointConfig) (*ChannelProvider, error) {
+func New(config fab.EndpointConfig, opts ...options.Opt) (*ChannelProvider, error) {
 	eventIdleTime := config.Timeout(fab.EventServiceIdle)
 	chConfigRefresh := config.Timeout(fab.ChannelConfigRefresh)
 	membershipRefresh := config.Timeout(fab.ChannelMembershipRefresh)
 
 	cp := ChannelProvider{
-		chCfgCache:      chconfig.NewRefCache(chConfigRefresh),
+		chCfgCache:      chconfig.NewRefCache(chconfig.WithRefreshInterval(chConfigRefresh)),
 		membershipCache: membership.NewRefCache(membershipRefresh),
 	}
 
@@ -60,7 +60,7 @@ func New(config fab.EndpointConfig) (*ChannelProvider, error) {
 		"Discovery_Service_Cache",
 		func(key lazycache.Key) (interface{}, error) {
 			ck := key.(*cacheKey)
-			return cp.createDiscoveryService(ck.context, ck.channelConfig)
+			return cp.createDiscoveryService(ck.context, ck.channelConfig, opts...)
 		},
 	)
 
@@ -68,7 +68,7 @@ func New(config fab.EndpointConfig) (*ChannelProvider, error) {
 		"Selection_Service_Cache",
 		func(key lazycache.Key) (interface{}, error) {
 			ck := key.(*cacheKey)
-			return cp.createSelectionService(ck.context, ck.channelConfig)
+			return cp.createSelectionService(ck.context, ck.channelConfig, opts...)
 		},
 	)
 
@@ -79,7 +79,7 @@ func New(config fab.EndpointConfig) (*ChannelProvider, error) {
 			return NewEventClientRef(
 				eventIdleTime,
 				func() (fab.EventClient, error) {
-					return cp.createEventClient(ck.context, ck.channelConfig, ck.opts...)
+					return cp.createEventClient(ck.context, ck.channelConfig, append(ck.opts, opts...)...)
 				},
 			), nil
 		},
@@ -133,7 +133,7 @@ func (cp *ChannelProvider) createEventClient(ctx context.Client, chConfig fab.Ch
 	return deliverclient.New(ctx, chConfig, discovery, opts...)
 }
 
-func (cp *ChannelProvider) createDiscoveryService(ctx context.Client, chConfig fab.ChannelCfg) (fab.DiscoveryService, error) {
+func (cp *ChannelProvider) createDiscoveryService(ctx context.Client, chConfig fab.ChannelCfg, opts ...options.Opt) (fab.DiscoveryService, error) {
 	if chConfig.HasCapability(fab.ApplicationGroupKey, fab.V1_2Capability) {
 		logger.Debugf("Using Dynamic Discovery based on V1_2 capability.")
 		cs := ChannelService{
@@ -145,7 +145,7 @@ func (cp *ChannelProvider) createDiscoveryService(ctx context.Client, chConfig f
 		if err != nil {
 			return nil, errors.WithMessage(err, "failed to create discovery service")
 		}
-		return dynamicdiscovery.NewChannelService(ctx, membership, chConfig.ID())
+		return dynamicdiscovery.NewChannelService(ctx, membership, chConfig.ID(), opts...)
 	}
 	return staticdiscovery.NewService(ctx.EndpointConfig(), ctx.InfraProvider(), chConfig.ID())
 }
@@ -166,7 +166,7 @@ func (cp *ChannelProvider) getDiscoveryService(context fab.ClientContext, channe
 	return discoveryService.(fab.DiscoveryService), nil
 }
 
-func (cp *ChannelProvider) createSelectionService(ctx context.Client, chConfig fab.ChannelCfg) (fab.SelectionService, error) {
+func (cp *ChannelProvider) createSelectionService(ctx context.Client, chConfig fab.ChannelCfg, opts ...options.Opt) (fab.SelectionService, error) {
 	discovery, err := cp.getDiscoveryService(ctx, chConfig.ID())
 	if err != nil {
 		return nil, err
@@ -174,7 +174,7 @@ func (cp *ChannelProvider) createSelectionService(ctx context.Client, chConfig f
 
 	if chConfig.HasCapability(fab.ApplicationGroupKey, fab.V1_2Capability) {
 		logger.Debugf("Using Fabric Selection based on V1_2 capability.")
-		return fabricselection.New(ctx, chConfig.ID(), discovery)
+		return fabricselection.New(ctx, chConfig.ID(), discovery, opts...)
 	}
 	return dynamicselection.NewService(ctx, chConfig.ID(), discovery)
 }

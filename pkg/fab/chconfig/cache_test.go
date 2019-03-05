@@ -26,7 +26,7 @@ func TestChannelConfigCache(t *testing.T) {
 	user := mspmocks.NewMockSigningIdentity("user", "user")
 	clientCtx := mocks.NewMockContext(user)
 
-	cache := NewRefCache(time.Millisecond * 10)
+	cache := NewRefCache(WithRefreshInterval(time.Millisecond * 10))
 	assert.NotNil(t, cache)
 
 	key, err := NewCacheKey(clientCtx, mockProvider, "test")
@@ -42,7 +42,7 @@ func TestChannelConfigCacheBad(t *testing.T) {
 	user := mspmocks.NewMockSigningIdentity("user", "user")
 	clientCtx := mocks.NewMockContext(user)
 
-	cache := NewRefCache(time.Millisecond * 10)
+	cache := NewRefCache(WithRefreshInterval(time.Millisecond * 10))
 	assert.NotNil(t, cache)
 
 	r, err := cache.Get(&badKey{s: "test"})
@@ -54,7 +54,7 @@ func TestChannelConfigCacheBad(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, key)
 
-	cache = NewRefCache(time.Millisecond * 10)
+	cache = NewRefCache(WithRefreshInterval(time.Millisecond * 10))
 	assert.NotNil(t, cache)
 
 	r, err = cache.Get(key)

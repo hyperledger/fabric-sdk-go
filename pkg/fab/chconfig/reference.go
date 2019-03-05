@@ -7,8 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package chconfig
 
 import (
-	"time"
-
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	contextImpl "github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/util/concurrent/lazyref"
@@ -23,8 +22,14 @@ type Ref struct {
 	channelID string
 }
 
+// ChannelConfigError is returned when the channel config could not be refreshed
+type ChannelConfigError error
+
 // NewRef returns a new channel config reference
-func NewRef(refresh time.Duration, pvdr Provider, channel string, ctx fab.ClientContext) *Ref {
+func NewRef(ctx fab.ClientContext, pvdr Provider, channel string, opts ...options.Opt) *Ref {
+	params := newDefaultParams()
+	options.Apply(params, opts)
+
 	cfgRef := &Ref{
 		pvdr:      pvdr,
 		ctx:       ctx,
@@ -33,7 +38,7 @@ func NewRef(refresh time.Duration, pvdr Provider, channel string, ctx fab.Client
 
 	cfgRef.Reference = lazyref.New(
 		cfgRef.initializer(),
-		lazyref.WithRefreshInterval(lazyref.InitImmediately, refresh),
+		lazyref.WithRefreshInterval(lazyref.InitImmediately, params.refreshInterval),
 	)
 
 	return cfgRef
