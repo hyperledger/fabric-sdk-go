@@ -9,16 +9,19 @@ SPDX-License-Identifier: Apache-2.0
 package dynamicdiscovery
 
 import (
+	"errors"
 	"testing"
 	"time"
 
 	clientmocks "github.com/hyperledger/fabric-sdk-go/pkg/client/common/mocks"
 	contextAPI "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	pfab "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	discmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/discovery/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -58,8 +61,16 @@ func TestLocalDiscoveryService(t *testing.T) {
 
 	service = newLocalService(
 		config, mspID1,
-		WithRefreshInterval(500*time.Millisecond),
+		WithRefreshInterval(3*time.Millisecond),
 		WithResponseTimeout(2*time.Second),
+		WithErrorHandler(
+			func(ctxt fab.ClientContext, channelID string, err error) {
+				derr, ok := err.(DiscoveryError)
+				if ok && derr.Error() == AccessDenied {
+					service.Close()
+				}
+			},
+		),
 	)
 	defer service.Close()
 
@@ -122,4 +133,19 @@ func TestLocalDiscoveryService(t *testing.T) {
 	for _, p := range peers {
 		assert.Equalf(t, mspID1, p.MSPID(), "Expecting peer to be in MSP [%s]", mspID1)
 	}
+
+	// Fatal error (access denied can be due due a user being revoked)
+	discClient.SetResponses(
+		&clientmocks.MockDiscoverEndpointResponse{
+			Error: errors.New(AccessDenied),
+		},
+	)
+
+	// Wait for the cache to refresh
+	time.Sleep(10 * time.Millisecond)
+
+	// The discovery service should have been closed
+	_, err = service.GetPeers()
+	require.Error(t, err)
+	assert.Equal(t, "Discovery client has been closed", err.Error())
 }

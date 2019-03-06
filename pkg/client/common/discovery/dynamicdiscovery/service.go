@@ -25,6 +25,14 @@ type DiscoveryClient interface {
 	Send(ctx context.Context, req *discclient.Request, targets ...fab.PeerConfig) ([]fabdiscovery.Response, error)
 }
 
+const (
+	// AccessDenied indicates that the user does not have permission to perform the operation
+	AccessDenied = "access denied"
+)
+
+// DiscoveryError is an error originating at the Discovery service
+type DiscoveryError error
+
 // clientProvider is overridden by unit tests
 var clientProvider = func(ctx contextAPI.Client) (DiscoveryClient, error) {
 	return fabdiscovery.New(ctx)
@@ -39,7 +47,7 @@ type service struct {
 	ctx             contextAPI.Client
 	discClient      DiscoveryClient
 	peersRef        *lazyref.Reference
-	lastErr         error
+	ErrHandler      fab.ErrorHandler
 }
 
 type queryPeers func() ([]fab.Peer, error)
@@ -59,25 +67,16 @@ func newService(config fab.EndpointConfig, query queryPeers, opts ...coptions.Op
 	logger.Debugf("Cache refresh interval: %s", options.refreshInterval)
 	logger.Debugf("Deliver service response timeout: %s", options.responseTimeout)
 
-	s := &service{
+	return &service{
 		responseTimeout: options.responseTimeout,
+		ErrHandler:      options.errHandler,
+		peersRef: lazyref.New(
+			func() (interface{}, error) {
+				return query()
+			},
+			lazyref.WithRefreshInterval(lazyref.InitOnFirstAccess, options.refreshInterval),
+		),
 	}
-
-	s.peersRef = lazyref.New(
-		func() (interface{}, error) {
-			peers, err := query()
-			if err != nil {
-				derr, ok := err.(*discoveryError)
-				if ok && derr.IsFatal() {
-					go s.close(err)
-				}
-			}
-			return peers, err
-		},
-		lazyref.WithRefreshInterval(lazyref.InitOnFirstAccess, options.refreshInterval),
-	)
-
-	return s
 }
 
 // initialize initializes the service with client context
@@ -108,27 +107,9 @@ func (s *service) Close() {
 	s.peersRef.Close()
 }
 
-func (s *service) close(err error) {
-	logger.Warnf("Got fatal error [%s]. Closing discovery client.", err)
-	s.lock.Lock()
-	defer s.lock.Unlock()
-	s.lastErr = err
-	s.peersRef.Close()
-}
-
-func (s *service) getLastError() error {
-	s.lock.RLock()
-	defer s.lock.RUnlock()
-	return s.lastErr
-}
-
 // GetPeers returns the available peers
 func (s *service) GetPeers() ([]fab.Peer, error) {
 	if s.peersRef.IsClosed() {
-		lastErr := s.getLastError()
-		if lastErr != nil {
-			return nil, errors.Errorf("Discovery client has been closed due to error: %s", lastErr)
-		}
 		return nil, errors.Errorf("Discovery client has been closed")
 	}
 

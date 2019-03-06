@@ -10,11 +10,13 @@ import (
 	"time"
 
 	coptions "github.com/hyperledger/fabric-sdk-go/pkg/common/options"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 )
 
 type options struct {
 	refreshInterval time.Duration
 	responseTimeout time.Duration
+	errHandler      fab.ErrorHandler
 }
 
 // WithRefreshInterval sets the interval in which the
@@ -38,12 +40,27 @@ func WithResponseTimeout(value time.Duration) coptions.Opt {
 	}
 }
 
+// WithErrorHandler sets the error handler
+func WithErrorHandler(value fab.ErrorHandler) coptions.Opt {
+	return func(p coptions.Params) {
+		logger.Debugf("Checking errHandlerSetter")
+		if setter, ok := p.(errHandlerSetter); ok {
+			logger.Debugf("... setting error handler")
+			setter.SetErrorHandler(value)
+		}
+	}
+}
+
 type refreshIntervalSetter interface {
 	SetDiscoveryRefreshInterval(value time.Duration)
 }
 
 type responseTimeoutSetter interface {
 	SetDiscoveryResponseTimeout(value time.Duration)
+}
+
+type errHandlerSetter interface {
+	SetErrorHandler(value fab.ErrorHandler)
 }
 
 func (o *options) SetDiscoveryRefreshInterval(value time.Duration) {
@@ -54,4 +71,9 @@ func (o *options) SetDiscoveryRefreshInterval(value time.Duration) {
 func (o *options) SetDiscoveryResponseTimeout(value time.Duration) {
 	logger.Debugf("ResponseTimeout: %s", value)
 	o.responseTimeout = value
+}
+
+func (o *options) SetErrorHandler(value fab.ErrorHandler) {
+	logger.Debugf("ErrorHandler: %+v", value)
+	o.errHandler = value
 }

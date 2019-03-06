@@ -81,6 +81,7 @@ func (r *response) ForChannel(string) discclient.ChannelResponse {
 func (r *response) ForLocal() discclient.LocalResponse {
 	return &localResponse{
 		peers: r.peers,
+		err:   r.err,
 	}
 }
 
@@ -109,11 +110,12 @@ func (cr *channelResponse) Endorsers(invocationChain discclient.InvocationChain,
 
 type localResponse struct {
 	peers []*discclient.Peer
+	err   error
 }
 
 // Peers returns a response for a peer membership query, or error if something went wrong
 func (cr *localResponse) Peers() ([]*discclient.Peer, error) {
-	return cr.peers, nil
+	return cr.peers, cr.err
 }
 
 // MockDiscoverEndpointResponse contains a mock response for the discover client

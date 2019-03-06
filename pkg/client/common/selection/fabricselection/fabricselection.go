@@ -11,7 +11,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
-	"sync"
 	"time"
 
 	discclient "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/discovery/client"
@@ -34,8 +33,10 @@ import (
 )
 
 const (
-	moduleName   = "fabsdk/client"
-	accessDenied = "access denied"
+	moduleName = "fabsdk/client"
+
+	// AccessDenied indicates that the user does not have permission to perform the operation
+	AccessDenied = "access denied"
 )
 
 var logger = logging.NewLogger(moduleName)
@@ -77,8 +78,7 @@ type Service struct {
 	discClient      DiscoveryClient
 	chResponseCache *lazycache.Cache
 	retryOpts       retry.Opts
-	lastErr         error
-	lock            sync.RWMutex
+	errHandler      fab.ErrorHandler
 }
 
 // New creates a new dynamic selection service using Fabric's Discovery Service
@@ -110,6 +110,7 @@ func New(ctx contextAPI.Client, channelID string, discovery fab.DiscoveryService
 		discovery:       discovery,
 		discClient:      discoveryClient,
 		retryOpts:       options.retryOpts,
+		errHandler:      options.errHandler,
 	}
 
 	s.chResponseCache = lazycache.NewWithData(
@@ -131,11 +132,9 @@ func New(ctx contextAPI.Client, channelID string, discovery fab.DiscoveryService
 			}
 
 			endorsers, err := s.queryEndorsers(invocationChain, ropts)
-			if err != nil {
-				derr, ok := err.(discoveryError)
-				if ok && derr.isFatal() {
-					go s.close(err)
-				}
+			if err != nil && s.errHandler != nil {
+				logger.Debugf("[%s] Got error from discovery query: %s. Invoking error handler", s.channelID, err)
+				s.errHandler(s.ctx, s.channelID, err)
 			}
 			return endorsers, err
 		},
@@ -148,10 +147,6 @@ func New(ctx contextAPI.Client, channelID string, discovery fab.DiscoveryService
 // GetEndorsersForChaincode returns the endorsing peers for the given chaincodes
 func (s *Service) GetEndorsersForChaincode(chaincodes []*fab.ChaincodeCall, opts ...coptions.Opt) ([]fab.Peer, error) {
 	if s.chResponseCache.IsClosed() {
-		lastErr := s.getLastError()
-		if lastErr != nil {
-			return nil, errors.Errorf("Selection service has been closed due to error: %s", lastErr)
-		}
 		return nil, errors.Errorf("Selection service has been closed")
 	}
 
@@ -187,20 +182,6 @@ func (s *Service) GetEndorsersForChaincode(chaincodes []*fab.ChaincodeCall, opts
 func (s *Service) Close() {
 	logger.Debug("Closing channel response cache")
 	s.chResponseCache.Close()
-}
-
-func (s *Service) close(err error) {
-	logger.Warnf("Got fatal error [%s]. Closing selection service.", err)
-	s.lock.Lock()
-	defer s.lock.Unlock()
-	s.lastErr = err
-	s.chResponseCache.Close()
-}
-
-func (s *Service) getLastError() error {
-	s.lock.RLock()
-	defer s.lock.RUnlock()
-	return s.lastErr
 }
 
 func (s *Service) getEndorsers(chaincodes []*fab.ChaincodeCall, chResponse discclient.ChannelResponse, peerFilter soptions.PeerFilter, sorter soptions.PeerSorter) (discclient.Endorsers, error) {
@@ -278,7 +259,7 @@ func (s *Service) query(req *discclient.Request, chaincodes []*fab.ChaincodeCall
 
 	invocChain := asInvocationChain(chaincodes)
 
-	var discErrs []discoveryError
+	var discErrs []DiscoveryError
 	for _, response := range responses {
 		logger.Debugf("Checking response from [%s]...", response.Target())
 		chResp := response.ForChannel(s.channelID)
@@ -377,21 +358,19 @@ func (p *peerEndpoint) BlockHeight() uint64 {
 	return p.blockHeight
 }
 
-type discoveryError string
+// DiscoveryError is an error originating at the Discovery service
+type DiscoveryError string
 
-func newDiscoveryError(err error) discoveryError {
-	return discoveryError(err.Error())
+func newDiscoveryError(err error) DiscoveryError {
+	return DiscoveryError(err.Error())
 }
 
-func (e discoveryError) Error() string {
+// Error returns the error message
+func (e DiscoveryError) Error() string {
 	return string(e)
 }
 
-func (e discoveryError) isTransient() bool {
+func (e DiscoveryError) isTransient() bool {
 	return strings.Contains(e.Error(), "failed constructing descriptor for chaincodes") ||
 		strings.Contains(e.Error(), "no endorsement combination can be satisfied")
-}
-
-func (e discoveryError) isFatal() bool {
-	return e == accessDenied
 }

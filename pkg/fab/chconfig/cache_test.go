@@ -8,6 +8,8 @@ package chconfig
 
 import (
 	"fmt"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -65,6 +67,48 @@ func TestChannelConfigCacheBad(t *testing.T) {
 	assert.NotNil(t, err)
 	assert.Nil(t, c)
 	assert.Contains(t, err.Error(), badProviderErrMessage)
+}
+
+func TestErrorHandler(t *testing.T) {
+	user := mspmocks.NewMockSigningIdentity("user", "user")
+	clientCtx := mocks.NewMockContext(user)
+
+	var numErrors int32
+	cache := NewRefCache(
+		WithRefreshInterval(time.Millisecond*10),
+		WithErrorHandler(func(ctxt fab.ClientContext, channelID string, err error) {
+			if _, ok := err.(ChannelConfigError); ok {
+				atomic.AddInt32(&numErrors, 1)
+			}
+		}),
+	)
+	assert.NotNil(t, cache)
+
+	var mutex sync.RWMutex
+	var providerErr error
+
+	provider := func(channelID string) (fab.ChannelConfig, error) {
+		chConfig, _ := mocks.NewMockChannelConfig(nil, channelID)
+		mutex.RLock()
+		defer mutex.RUnlock()
+		return chConfig, providerErr
+	}
+
+	// Should succeed
+	key, err := NewCacheKey(clientCtx, provider, "test")
+	assert.Nil(t, err)
+	assert.NotNil(t, key)
+
+	r, err := cache.Get(key)
+	assert.Nil(t, err)
+	assert.NotNil(t, r)
+
+	mutex.Lock()
+	providerErr = fmt.Errorf(badProviderErrMessage)
+	mutex.Unlock()
+
+	time.Sleep(50 * time.Millisecond)
+	assert.Truef(t, atomic.LoadInt32(&numErrors) > 0, "Error handler should have received at least one error")
 }
 
 type badKey struct {

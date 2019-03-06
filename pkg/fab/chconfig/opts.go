@@ -10,6 +10,7 @@ import (
 	"time"
 
 	coptions "github.com/hyperledger/fabric-sdk-go/pkg/common/options"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 )
 
 const (
@@ -18,6 +19,7 @@ const (
 
 type params struct {
 	refreshInterval time.Duration
+	errHandler      fab.ErrorHandler
 }
 
 func newDefaultParams() *params {
@@ -36,11 +38,30 @@ func WithRefreshInterval(value time.Duration) coptions.Opt {
 	}
 }
 
+// WithErrorHandler sets the error handler
+func WithErrorHandler(value fab.ErrorHandler) coptions.Opt {
+	return func(p coptions.Params) {
+		logger.Debug("Checking errHandlerSetter")
+		if setter, ok := p.(errHandlerSetter); ok {
+			setter.SetErrorHandler(value)
+		}
+	}
+}
+
 type refreshIntervalSetter interface {
 	SetChConfigRefreshInterval(value time.Duration)
+}
+
+type errHandlerSetter interface {
+	SetErrorHandler(value fab.ErrorHandler)
 }
 
 func (o *params) SetChConfigRefreshInterval(value time.Duration) {
 	logger.Debugf("RefreshInterval: %s", value)
 	o.refreshInterval = value
+}
+
+func (o *params) SetErrorHandler(value fab.ErrorHandler) {
+	logger.Debugf("ErrorHandler: %+v", value)
+	o.errHandler = value
 }

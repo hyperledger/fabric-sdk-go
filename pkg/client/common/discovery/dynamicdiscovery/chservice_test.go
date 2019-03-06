@@ -16,6 +16,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/discovery"
 	clientmocks "github.com/hyperledger/fabric-sdk-go/pkg/client/common/mocks"
 	contextAPI "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	pfab "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	discmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/discovery/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
@@ -64,10 +65,19 @@ func TestDiscoveryService(t *testing.T) {
 		return discClient, nil
 	})
 
+	var service *ChannelService
 	service, err := NewChannelService(
 		ctx, mocks.NewMockMembership(), ch,
 		WithRefreshInterval(10*time.Millisecond),
 		WithResponseTimeout(100*time.Millisecond),
+		WithErrorHandler(
+			func(ctxt fab.ClientContext, channelID string, err error) {
+				derr, ok := err.(DiscoveryError)
+				if ok && derr.Error() == AccessDenied {
+					service.Close()
+				}
+			},
+		),
 	)
 	require.NoError(t, err)
 	defer service.Close()
@@ -139,7 +149,7 @@ func TestDiscoveryService(t *testing.T) {
 	// Fatal error (access denied can be due due a user being revoked)
 	discClient.SetResponses(
 		&clientmocks.MockDiscoverEndpointResponse{
-			Error: errors.New(accessDenied),
+			Error: errors.New(AccessDenied),
 		},
 	)
 
@@ -148,7 +158,7 @@ func TestDiscoveryService(t *testing.T) {
 	// The discovery service should have been closed
 	_, err = service.GetPeers()
 	require.Error(t, err)
-	assert.Equal(t, "Discovery client has been closed due to error: access denied", err.Error())
+	assert.Equal(t, "Discovery client has been closed", err.Error())
 }
 
 func TestDiscoveryServiceWithNewOrgJoined(t *testing.T) {

@@ -50,6 +50,17 @@ func (s *LocalService) localContext() contextAPI.Local {
 }
 
 func (s *LocalService) queryPeers() ([]fab.Peer, error) {
+	peers, err := s.doQueryPeers()
+
+	if err != nil && s.ErrHandler != nil {
+		logger.Debugf("Got error from discovery query: %s. Invoking error handler", err)
+		s.ErrHandler(s.ctx, "", err)
+	}
+
+	return peers, err
+}
+
+func (s *LocalService) doQueryPeers() ([]fab.Peer, error) {
 	logger.Debug("Refreshing local peers from discovery service...")
 
 	ctx := s.localContext()
@@ -77,7 +88,7 @@ func (s *LocalService) queryPeers() ([]fab.Peer, error) {
 	response := responses[0]
 	endpoints, err := response.ForLocal().Peers()
 	if err != nil {
-		return nil, errors.Wrap(err, "error getting peers from discovery response")
+		return nil, DiscoveryError(err)
 	}
 
 	return s.filterLocalMSP(asPeers(ctx, endpoints)), nil

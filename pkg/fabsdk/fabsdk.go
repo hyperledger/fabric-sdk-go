@@ -215,6 +215,13 @@ func WithProviderOpts(sopts ...coptions.Opt) Option {
 	}
 }
 
+// WithErrorHandler sets an error handler that will be invoked when a service error is experienced.
+// This allows the client to take a decision of whether to ignore the error, shut down the client context,
+// or shut down the entire SDK.
+func WithErrorHandler(value fab.ErrorHandler) Option {
+	return WithProviderOpts(withErrorHandlerProviderOpt(value))
+}
+
 // providerInit interface allows for initializing providers
 // TODO: minimize interface
 type providerInit interface {
@@ -546,4 +553,17 @@ func (sdk *FabricSDK) loadMetricsConfig(configBackend ...core.ConfigBackend) (me
 	}
 
 	return metricsConfigOpt, nil
+}
+
+func withErrorHandlerProviderOpt(value fab.ErrorHandler) coptions.Opt {
+	return func(p coptions.Params) {
+		if setter, ok := p.(errHandlerSetter); ok {
+			logger.Debugf("... setting error handler")
+			setter.SetErrorHandler(value)
+		}
+	}
+}
+
+type errHandlerSetter interface {
+	SetErrorHandler(value fab.ErrorHandler)
 }

@@ -120,11 +120,21 @@ func TestSelection(t *testing.T) {
 		return discClient, nil
 	})
 
+	var service *Service
+
+	errHandler := func(ctxt fab.ClientContext, channelID string, err error) {
+		derr, ok := err.(DiscoveryError)
+		if ok && derr.Error() == AccessDenied {
+			service.Close()
+		}
+	}
+
 	service, err := New(
 		ctx, channelID,
 		mocks.NewMockDiscoveryService(nil, peer1Org1, peer2Org1, peer1Org2, peer2Org2, peer1Org3, peer2Org3),
-		WithRefreshInterval(10*time.Millisecond),
+		WithRefreshInterval(5*time.Millisecond),
 		WithResponseTimeout(100*time.Millisecond),
+		WithErrorHandler(errHandler),
 	)
 	require.NoError(t, err)
 	defer service.Close()
@@ -175,12 +185,12 @@ func TestSelection(t *testing.T) {
 		discClient.SetResponses(
 			&clientmocks.MockDiscoverEndpointResponse{
 				PeerEndpoints: []*discmocks.MockDiscoveryPeerEndpoint{},
-				Error:         fmt.Errorf(accessDenied),
+				Error:         fmt.Errorf(AccessDenied),
 			},
 		)
 		// Wait for cache to refresh
 		time.Sleep(20 * time.Millisecond)
-		testSelectionError(t, service, "Selection service has been closed due to error: access denied")
+		testSelectionError(t, service, "Selection service has been closed")
 	})
 }
 
@@ -257,7 +267,7 @@ func TestWithDiscoveryFilter(t *testing.T) {
 
 func testSelectionError(t *testing.T, service *Service, expectedErrMsg string) {
 	endorsers, err := service.GetEndorsersForChaincode([]*fab.ChaincodeCall{{ID: cc1}})
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Equal(t, expectedErrMsg, err.Error())
 	assert.Equal(t, 0, len(endorsers))
 }

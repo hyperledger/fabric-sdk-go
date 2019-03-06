@@ -11,12 +11,14 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
 	coptions "github.com/hyperledger/fabric-sdk-go/pkg/common/options"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 )
 
 type params struct {
 	refreshInterval time.Duration
 	responseTimeout time.Duration
 	retryOpts       retry.Opts
+	errHandler      fab.ErrorHandler
 }
 
 // WithRefreshInterval sets the interval in which the
@@ -51,6 +53,16 @@ func WithRetryOpts(value retry.Opts) coptions.Opt {
 	}
 }
 
+// WithErrorHandler sets the error handler
+func WithErrorHandler(value fab.ErrorHandler) coptions.Opt {
+	return func(p coptions.Params) {
+		logger.Debug("Checking errHandlerSetter")
+		if setter, ok := p.(errHandlerSetter); ok {
+			setter.SetErrorHandler(value)
+		}
+	}
+}
+
 type refreshIntervalSetter interface {
 	SetSelectionRefreshInterval(value time.Duration)
 }
@@ -61,6 +73,10 @@ type responseTimeoutSetter interface {
 
 type retryOptsSetter interface {
 	SetSelectionRetryOpts(value retry.Opts)
+}
+
+type errHandlerSetter interface {
+	SetErrorHandler(value fab.ErrorHandler)
 }
 
 func (o *params) SetSelectionRefreshInterval(value time.Duration) {
@@ -76,4 +92,9 @@ func (o *params) SetSelectionResponseTimeout(value time.Duration) {
 func (o *params) SetSelectionRetryOpts(value retry.Opts) {
 	logger.Debugf("RetryOpts: %#v", value)
 	o.retryOpts = value
+}
+
+func (o *params) SetErrorHandler(value fab.ErrorHandler) {
+	logger.Debugf("ErrorHandler: %+v", value)
+	o.errHandler = value
 }

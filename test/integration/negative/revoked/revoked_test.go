@@ -230,8 +230,17 @@ func testRevokedPeer(t *testing.T) {
 
 //testRevokedUser performs revoke peer test
 func testRevokedUser(t *testing.T) {
-
-	sdk, err := fabsdk.New(config.FromFile(integration.GetConfigPath(configFilename)))
+	var sdk *fabsdk.FabricSDK
+	var err error
+	sdk, err = fabsdk.New(
+		config.FromFile(integration.GetConfigPath(configFilename)),
+		fabsdk.WithErrorHandler(func(ctxt fab.ClientContext, channelID string, err error) {
+			if strings.Contains(err.Error(), "access denied") {
+				t.Logf("Closing context after error: %s", err)
+				go sdk.CloseContext(ctxt)
+			}
+		}),
+	)
 	require.NoError(t, err)
 	defer sdk.Close()
 

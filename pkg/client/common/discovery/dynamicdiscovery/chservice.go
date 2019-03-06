@@ -17,10 +17,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-const (
-	accessDenied = "access denied"
-)
-
 // ChannelService implements a dynamic Discovery Service that queries
 // Fabric's Discovery service for information about the peers that
 // are currently joined to the given channel.
@@ -53,6 +49,17 @@ func (s *ChannelService) Close() {
 }
 
 func (s *ChannelService) queryPeers() ([]fab.Peer, error) {
+	peers, err := s.doQueryPeers()
+
+	if err != nil && s.ErrHandler != nil {
+		logger.Infof("[%s] Got error from discovery query: %s. Invoking error handler", s.channelID, err)
+		s.ErrHandler(s.ctx, s.channelID, err)
+	}
+
+	return peers, err
+}
+
+func (s *ChannelService) doQueryPeers() ([]fab.Peer, error) {
 	logger.Debugf("Refreshing peers of channel [%s] from discovery service...", s.channelID)
 
 	ctx := s.context()
@@ -105,7 +112,7 @@ func (s *ChannelService) evaluate(ctx contextAPI.Client, responses []fabdiscover
 	for _, response := range responses {
 		endpoints, err := response.ForChannel(s.channelID).Peers()
 		if err != nil {
-			lastErr = newDiscoveryError(err)
+			lastErr = DiscoveryError(err)
 			logger.Warnf("error getting peers from discovery response: %s", lastErr)
 			continue
 		}
@@ -140,16 +147,4 @@ type peerEndpoint struct {
 
 func (p *peerEndpoint) BlockHeight() uint64 {
 	return p.blockHeight
-}
-
-type discoveryError struct {
-	error
-}
-
-func newDiscoveryError(cause error) *discoveryError {
-	return &discoveryError{error: cause}
-}
-
-func (e *discoveryError) IsFatal() bool {
-	return e.Error() == accessDenied
 }

@@ -11,15 +11,19 @@ package fabsdk
 import (
 	"os"
 	"reflect"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/golang/mock/gomock"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/discovery/dynamicdiscovery"
 	clientmocks "github.com/hyperledger/fabric-sdk-go/pkg/client/common/mocks"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/fabricselection"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
+	context2 "github.com/hyperledger/fabric-sdk-go/pkg/context"
+	contextImpl "github.com/hyperledger/fabric-sdk-go/pkg/context"
 	configImpl "github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	discmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/discovery/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
@@ -410,6 +414,181 @@ func TestCloseContext(t *testing.T) {
 	// Get the ChannelService from the second context; this one should still be valid
 	_, err = discovery2.GetPeers()
 	assert.NoError(t, err)
+}
+
+func TestErrorHandler(t *testing.T) {
+	c := configImpl.FromFile(sdkConfigFile)
+
+	core, err := newMockCorePkg(c)
+	require.NoError(t, err)
+
+	discClient := clientmocks.NewMockDiscoveryClient()
+	dynamicdiscovery.SetClientProvider(func(ctx context.Client) (dynamicdiscovery.DiscoveryClient, error) {
+		return discClient, nil
+	})
+	fabricselection.SetClientProvider(func(ctx context.Client) (fabricselection.DiscoveryClient, error) {
+		return discClient, nil
+	})
+
+	var sdk *FabricSDK
+	var chService fab.ChannelService
+	var localCtxt context.Local
+	var mutex sync.RWMutex
+
+	newContext := func(user, org string) {
+		getClientCtxt := sdk.Context(WithUser(user), WithOrg(org))
+		require.NotNil(t, getClientCtxt)
+
+		chCtxt, err := contextImpl.NewChannel(getClientCtxt, "orgchannel")
+		require.NoError(t, err)
+		require.NotNil(t, chCtxt)
+
+		s := chCtxt.ChannelService()
+		require.NotNil(t, s)
+
+		lc, err := context2.NewLocal(getClientCtxt)
+		require.NoError(t, err)
+
+		mutex.Lock()
+		defer mutex.Unlock()
+
+		chService = s
+		localCtxt = lc
+	}
+
+	getChannelService := func() fab.ChannelService {
+		mutex.Lock()
+		defer mutex.Unlock()
+		return chService
+	}
+
+	getLocalCtxt := func() context.Local {
+		mutex.Lock()
+		defer mutex.Unlock()
+		return localCtxt
+	}
+
+	errHandler := func(ctxt fab.ClientContext, channelID string, err error) {
+		// Analyse the error to see if it needs handling
+		if err.Error() != dynamicdiscovery.AccessDenied {
+			// Transient error; no handling necessary
+			return
+		}
+
+		// Need to spawn a new Go routine or else deadlock results when calling CloseContext
+		go func() {
+			sdk.CloseContext(ctxt)
+
+			// Reset the successful response
+			discClient.SetResponses(
+				&clientmocks.MockDiscoverEndpointResponse{
+					PeerEndpoints: []*discmocks.MockDiscoveryPeerEndpoint{},
+				},
+			)
+
+			newContext(sdkValidClientUser, sdkValidClientOrg2)
+		}()
+	}
+
+	sdk, err = New(c,
+		WithCorePkg(core),
+		WithServicePkg(&dynamicDiscoveryProviderFactory{}),
+		WithErrorHandler(errHandler),
+		WithProviderOpts(
+			dynamicdiscovery.WithRefreshInterval(3*time.Millisecond),
+			fabricselection.WithRefreshInterval(3*time.Millisecond),
+		),
+	)
+	require.NoError(t, err)
+	defer sdk.Close()
+
+	chCfg := mocks.NewMockChannelCfg("orgchannel")
+	chCfg.MockCapabilities[fab.ApplicationGroupKey][fab.V1_2Capability] = true
+	chpvdr.SetChannelConfig(chCfg)
+
+	newContext(sdkValidClientUser, sdkValidClientOrg1)
+
+	localDiscovery := getLocalCtxt().LocalDiscoveryService()
+	require.NotNil(t, localDiscovery)
+
+	discovery, err := getChannelService().Discovery()
+	require.NoError(t, err)
+
+	selection, err := getChannelService().Selection()
+	require.NoError(t, err)
+
+	// First set a successful response
+	discClient.SetResponses(
+		&clientmocks.MockDiscoverEndpointResponse{
+			PeerEndpoints: []*discmocks.MockDiscoveryPeerEndpoint{},
+		},
+	)
+
+	_, err = localDiscovery.GetPeers()
+	assert.NoError(t, err)
+
+	_, err = discovery.GetPeers()
+	assert.NoError(t, err)
+
+	_, err = selection.GetEndorsersForChaincode([]*fab.ChaincodeCall{{ID: "cc1"}})
+	require.NoError(t, err)
+
+	// Simulate a transient error
+	discClient.SetResponses(
+		&clientmocks.MockDiscoverEndpointResponse{
+			Error: errors.New("some transient error"),
+		},
+	)
+
+	time.Sleep(10 * time.Millisecond)
+
+	_, err = localDiscovery.GetPeers()
+	assert.NoError(t, err)
+
+	_, err = discovery.GetPeers()
+	assert.NoError(t, err)
+
+	_, err = selection.GetEndorsersForChaincode([]*fab.ChaincodeCall{{ID: "cc1"}})
+	require.NoError(t, err)
+
+	// Simulate an access-denied (could be due to a user being revoked)
+	discClient.SetResponses(
+		&clientmocks.MockDiscoverEndpointResponse{
+			Error: errors.New(dynamicdiscovery.AccessDenied),
+		},
+	)
+
+	time.Sleep(10 * time.Millisecond)
+
+	// Subsequent calls on the old services should fail since the service is closed
+	_, err = localDiscovery.GetPeers()
+	assert.EqualError(t, err, "Discovery client has been closed")
+
+	_, err = discovery.GetPeers()
+	assert.EqualError(t, err, "Discovery client has been closed")
+
+	_, err = selection.GetEndorsersForChaincode([]*fab.ChaincodeCall{{ID: "cc1"}})
+	assert.EqualError(t, err, "Selection service has been closed")
+
+	// Refresh the services with the new context
+
+	localDiscovery = getLocalCtxt().LocalDiscoveryService()
+	require.NotNil(t, localDiscovery)
+
+	_, err = localDiscovery.GetPeers()
+	assert.NoError(t, err)
+
+	discovery, err = getChannelService().Discovery()
+	require.NoError(t, err)
+
+	_, err = discovery.GetPeers()
+	assert.NoError(t, err)
+
+	selection, err = getChannelService().Selection()
+	require.NoError(t, err)
+
+	_, err = selection.GetEndorsersForChaincode([]*fab.ChaincodeCall{{ID: "cc1"}})
+	require.NoError(t, err)
 }
 
 type MockNetworkPeers struct{}
