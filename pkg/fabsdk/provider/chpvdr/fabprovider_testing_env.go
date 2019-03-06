@@ -11,6 +11,7 @@ package chpvdr
 import (
 	"sync"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/chconfig"
 	"github.com/hyperledger/fabric-sdk-go/pkg/util/concurrent/lazycache"
@@ -20,11 +21,10 @@ import (
 
 // SetChannelConfig allows setting channel configuration.
 // This method is intended to enable tests and should not be called.
-func (f *ChannelProvider) SetChannelConfig(cfg fab.ChannelCfg) {
-	if _, ok := f.chCfgCache.(*chCfgCache); !ok {
-		f.chCfgCache = newMockChCfgCache(cfg)
-	} else {
-		f.chCfgCache.(*chCfgCache).Put(cfg)
+func SetChannelConfig(cfg ...fab.ChannelCfg) {
+	provider := newMockChCfgCache(cfg...)
+	cfgCacheProvider = func(opts ...options.Opt) cache {
+		return provider
 	}
 }
 
@@ -32,9 +32,11 @@ type chCfgCache struct {
 	cfgMap sync.Map
 }
 
-func newMockChCfgCache(cfg fab.ChannelCfg) *chCfgCache {
+func newMockChCfgCache(cfgs ...fab.ChannelCfg) *chCfgCache {
 	c := &chCfgCache{}
-	c.cfgMap.Store(cfg.ID(), newChCfgRef(cfg))
+	for _, cfg := range cfgs {
+		c.Put(cfg)
+	}
 	return c
 }
 
@@ -48,9 +50,10 @@ func newChCfgRef(cfg fab.ChannelCfg) *chconfig.Ref {
 
 // Get mock channel config reference
 func (m *chCfgCache) Get(k lazycache.Key, data ...interface{}) (interface{}, error) {
-	cfg, ok := m.cfgMap.Load(k.(chconfig.CacheKey).ChannelID())
+	channelID := k.(chconfig.CacheKey).ChannelID()
+	cfg, ok := m.cfgMap.Load(channelID)
 	if !ok {
-		return nil, errors.New("Channel config not found in cache")
+		return nil, errors.Errorf("Channel config not found in cache for channel: %s", channelID)
 	}
 	return cfg, nil
 }

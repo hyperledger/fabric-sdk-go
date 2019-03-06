@@ -12,7 +12,10 @@ import (
 	"testing"
 	"time"
 
+	clientmocks "github.com/hyperledger/fabric-sdk-go/pkg/client/common/mocks"
+	contextAPI "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	pfab "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
+	discmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/discovery/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
 	"github.com/stretchr/testify/assert"
@@ -28,20 +31,39 @@ const (
 )
 
 func TestLocalProvider(t *testing.T) {
-	ctx := mocks.NewMockContext(mspmocks.NewMockSigningIdentity("test", mspID1))
-	config := &config{
-		EndpointConfig: mocks.NewMockEndpointConfig(),
-		peers: []pfab.ChannelPeer{
-			{
-				NetworkPeer: pfab.NetworkPeer{
-					PeerConfig: pfab.PeerConfig{
-						URL: peer1MSP1,
-					},
-				},
-			},
+	config := &mocks.MockConfig{}
+	peer1Org1 := pfab.NetworkPeer{
+		PeerConfig: pfab.PeerConfig{
+			URL: peer1MSP1,
 		},
+		MSPID: mspID1,
 	}
-	ctx.SetEndpointConfig(config)
+	peer1Org2 := pfab.NetworkPeer{
+		PeerConfig: pfab.PeerConfig{
+			URL: peer1MSP2,
+		},
+		MSPID: mspID2,
+	}
+	config.SetCustomNetworkPeerCfg([]pfab.NetworkPeer{peer1Org1, peer1Org2})
+
+	discClient := clientmocks.NewMockDiscoveryClient()
+	discClient.SetResponses(
+		&clientmocks.MockDiscoverEndpointResponse{
+			PeerEndpoints: []*discmocks.MockDiscoveryPeerEndpoint{},
+		},
+	)
+
+	SetClientProvider(func(ctx contextAPI.Client) (DiscoveryClient, error) {
+		return discClient, nil
+	})
+
+	ctx1 := mocks.NewMockContext(mspmocks.NewMockSigningIdentity("test", mspID1))
+	ctx1.SetEndpointConfig(config)
+	localCtx1 := mocks.NewMockLocalContext(ctx1, nil)
+
+	ctx2 := mocks.NewMockContext(mspmocks.NewMockSigningIdentity("test", mspID2))
+	ctx2.SetEndpointConfig(config)
+	localCtx2 := mocks.NewMockLocalContext(ctx2, nil)
 
 	p := NewLocalProvider(config, WithRefreshInterval(30*time.Second), WithResponseTimeout(10*time.Second))
 	defer p.Close()
@@ -49,8 +71,7 @@ func TestLocalProvider(t *testing.T) {
 	localService1, err := p.CreateLocalDiscoveryService(mspID1)
 	assert.NoError(t, err)
 
-	localCtx := mocks.NewMockLocalContext(ctx, nil)
-	err = localService1.(*LocalService).Initialize(localCtx)
+	err = localService1.(*LocalService).Initialize(localCtx1)
 	assert.NoError(t, err)
 
 	localService2, err := p.CreateLocalDiscoveryService(mspID1)
@@ -60,6 +81,24 @@ func TestLocalProvider(t *testing.T) {
 	localService2, err = p.CreateLocalDiscoveryService(mspID2)
 	assert.NoError(t, err)
 	assert.NotEqual(t, localService1, localService2)
+
+	err = localService2.(*LocalService).Initialize(localCtx2)
+	assert.NoError(t, err)
+
+	_, err = localService1.GetPeers()
+	assert.NoError(t, err)
+
+	_, err = localService2.GetPeers()
+	assert.NoError(t, err)
+
+	p.CloseContext(localCtx1)
+
+	_, err = localService1.GetPeers()
+	assert.EqualError(t, err, "Discovery client has been closed")
+
+	_, err = localService2.GetPeers()
+	assert.NoError(t, err)
+
 }
 
 type config struct {

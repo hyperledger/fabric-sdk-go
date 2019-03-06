@@ -215,12 +215,16 @@ func testRevokedPeer(t *testing.T) {
 	loadOrgPeers(t, org1AdminClientContext)
 
 	//query with revoked user
+	t.Log("query with revoked user - should fail with 'access denied'")
 	queryCC(t, org1UserChannelClientContext, "exampleCC", false, "access denied")
 	//query with valid user
+	t.Log("query with valid user - should fail with 'chaincode exampleCC not found'")
 	queryCC(t, org2UserChannelClientContext, "exampleCC", false, "chaincode exampleCC not found")
 	//query already instantiated chaincode with revoked user
+	t.Log("query already instantiated chaincode with revoked user - should fail with 'access denied'")
 	queryCC(t, org1UserChannelClientContext, "exampleCC2", false, "access denied")
 	//query already instantiated chaincode with valid user
+	t.Log("query already instantiated chaincode with valid user - should fail with 'signature validation failed'")
 	queryCC(t, org2UserChannelClientContext, "exampleCC2", false, "signature validation failed")
 }
 
@@ -241,11 +245,9 @@ func testRevokedUser(t *testing.T) {
 
 	//Try User1 whose certs are revoked, shouldn't be able to query channel config
 	user1ChannelContext := sdk.ChannelContext(channelID, fabsdk.WithUser(org1User), fabsdk.WithOrg(org1))
-	ledgerClient, err = ledger.New(user1ChannelContext)
-	require.NoError(t, err)
-	cfg, err = ledgerClient.QueryConfig(ledger.WithTargetEndpoints("peer1.org2.example.com"))
+	_, err = ledger.New(user1ChannelContext)
 	require.Error(t, err)
-	require.Empty(t, cfg)
+	assert.True(t, strings.Contains(err.Error(), "access denied"))
 }
 
 //prepareReadWriteSets prepares read write sets for channel config update
@@ -447,8 +449,15 @@ func joinChannel(t *testing.T, sdk *fabsdk.FabricSDK) {
 func queryCC(t *testing.T, channelClientContext contextAPI.ChannelProvider, ccID string, success bool, expectedMsg string) {
 	chClientOrg1User, err := channel.New(channelClientContext)
 	if err != nil {
-		t.Fatalf("Failed to create new channel client for Org1 user: %s", err)
+		if success {
+			t.Fatalf("Failed to create new channel client for Org1 user: %s", err)
+		}
+		if !strings.Contains(err.Error(), expectedMsg) {
+			t.Fatalf("Expected error: '%s' , but got '%s'", expectedMsg, err)
+		}
+		return
 	}
+
 	resp, err := chClientOrg1User.Query(channel.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCDefaultQueryArgs()},
 		channel.WithRetry(retry.DefaultChannelOpts), channel.WithTargetEndpoints("peer0.org1.example.com"))
 

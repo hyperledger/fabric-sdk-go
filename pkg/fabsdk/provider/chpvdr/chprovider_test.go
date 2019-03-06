@@ -18,10 +18,12 @@ import (
 	clientmocks "github.com/hyperledger/fabric-sdk-go/pkg/client/common/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/dynamicselection"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/fabricselection"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/chconfig"
+	discmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/discovery/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
 	"github.com/stretchr/testify/assert"
@@ -54,10 +56,7 @@ func TestBasicValidChannel(t *testing.T) {
 	testChannelCfg := mocks.NewMockChannelCfg("testchannel")
 	testChannelCfg.MockCapabilities[fab.ApplicationGroupKey][fab.V1_2Capability] = true
 
-	mockChConfigCache := newMockChCfgCache(chconfig.NewChannelCfg(""))
-	mockChConfigCache.Put(chconfig.NewChannelCfg("mychannel"))
-	mockChConfigCache.Put(testChannelCfg)
-	cp.chCfgCache = mockChConfigCache
+	SetChannelConfig(chconfig.NewChannelCfg(""), chconfig.NewChannelCfg("mychannel"), testChannelCfg)
 
 	// System channel
 	channelService, err := cp.ChannelService(clientCtx, "")
@@ -114,6 +113,70 @@ func TestBasicValidChannel(t *testing.T) {
 	require.NotNil(t, selection)
 	_, ok = selection.(*fabricselection.Service)
 	assert.Truef(t, ok, "Expecting selection to be Fabric for v1_2")
+}
+
+func TestCloseContext(t *testing.T) {
+	testChannelCfg := mocks.NewMockChannelCfg("testchannel")
+	testChannelCfg.MockCapabilities[fab.ApplicationGroupKey][fab.V1_2Capability] = true
+
+	SetChannelConfig(chconfig.NewChannelCfg(""), testChannelCfg)
+
+	discClient := clientmocks.NewMockDiscoveryClient()
+	dynamicdiscovery.SetClientProvider(func(ctx context.Client) (dynamicdiscovery.DiscoveryClient, error) {
+		return discClient, nil
+	})
+
+	discClient.SetResponses(
+		&clientmocks.MockDiscoverEndpointResponse{
+			PeerEndpoints: []*discmocks.MockDiscoveryPeerEndpoint{},
+		},
+	)
+
+	channelProvider := getChannelProvider(t, mocks.NewMockProviderContext(),
+		dynamicdiscovery.WithRefreshInterval(5*time.Millisecond),
+	)
+	defer channelProvider.Close()
+
+	clientCtxt1 := newMockClientContext("user1", "org")
+	clientCtxt2 := newMockClientContext("user2", "org")
+
+	channelService1, err := channelProvider.ChannelService(clientCtxt1, "testchannel")
+	require.NoError(t, err)
+	channelService2, err := channelProvider.ChannelService(clientCtxt2, "testchannel")
+	require.NoError(t, err)
+
+	discovery1, err := channelService1.Discovery()
+	require.NoError(t, err)
+	require.NotNil(t, discovery1)
+
+	discovery2, err := channelService2.Discovery()
+	require.NoError(t, err)
+	require.NotNil(t, discovery2)
+
+	_, err = discovery1.GetPeers()
+	require.NoError(t, err)
+
+	_, err = discovery2.GetPeers()
+	require.NoError(t, err)
+
+	channelProvider.CloseContext(clientCtxt1)
+
+	// Subsequent calls on the old discovery should fail since the service is closed
+	_, err = discovery1.GetPeers()
+	require.Error(t, err)
+	assert.Equal(t, "Discovery client has been closed", err.Error())
+
+	// Calls should still succeed on the second discovery since it wasn't closed
+	_, err = discovery2.GetPeers()
+	require.NoError(t, err)
+}
+
+func newMockClientContext(userID, mspID string) fab.ClientContext {
+	user := mspmocks.NewMockSigningIdentity(userID, mspID)
+	return &mockClientContext{
+		Providers:       mocks.NewMockProviderContext(),
+		SigningIdentity: user,
+	}
 }
 
 func TestDiscoveryAccessDenied(t *testing.T) {
@@ -200,12 +263,21 @@ func setupDiscovery(t *testing.T, preInit func(discClient *clientmocks.MockDisco
 
 	testChannelCfg := mocks.NewMockChannelCfg("testchannel")
 	testChannelCfg.MockCapabilities[fab.ApplicationGroupKey][fab.V1_2Capability] = true
-	mockChConfigCache := newMockChCfgCache(chconfig.NewChannelCfg(""))
-	mockChConfigCache.Put(testChannelCfg)
-	cp.chCfgCache = mockChConfigCache
+
+	SetChannelConfig(chconfig.NewChannelCfg(""), testChannelCfg)
 
 	channelService, err := cp.ChannelService(clientCtx, "testchannel")
 	require.NoError(t, err)
 
 	return discClient, channelService
+}
+
+func getChannelProvider(t *testing.T, providers context.Providers, opts ...options.Opt) *ChannelProvider {
+	cp, err := New(providers.EndpointConfig(), opts...)
+	require.NoError(t, err)
+
+	err = cp.Initialize(providers)
+	assert.NoError(t, err)
+
+	return cp
 }

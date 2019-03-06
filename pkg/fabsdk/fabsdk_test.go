@@ -1,3 +1,5 @@
+// +build testing
+
 /*
 Copyright SecureKey Technologies Inc. All Rights Reserved.
 
@@ -10,15 +12,24 @@ import (
 	"os"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/golang/mock/gomock"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/discovery/dynamicdiscovery"
+	clientmocks "github.com/hyperledger/fabric-sdk-go/pkg/client/common/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	configImpl "github.com/hyperledger/fabric-sdk-go/pkg/core/config"
+	discmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/discovery/mocks"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defsvc"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/chpvdr"
 	mockapisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/test/mocksdkapi"
 	"github.com/hyperledger/fabric-sdk-go/pkg/msp"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -324,6 +335,83 @@ func TestWithConfigEndpointAndBadOpt(t *testing.T) {
 	}
 }
 
+func TestCloseContext(t *testing.T) {
+	const channelID = "orgchannel"
+
+	c := configImpl.FromFile(sdkConfigFile)
+
+	core, err := newMockCorePkg(c)
+	require.NoError(t, err)
+
+	sdk, err := New(c,
+		WithCorePkg(core),
+		WithServicePkg(&dynamicDiscoveryProviderFactory{}),
+		WithProviderOpts(
+			dynamicdiscovery.WithRefreshInterval(3*time.Millisecond),
+		),
+	)
+	require.NoError(t, err)
+	defer sdk.Close()
+
+	chCfg := mocks.NewMockChannelCfg(channelID)
+	chCfg.MockCapabilities[fab.ApplicationGroupKey][fab.V1_2Capability] = true
+	chpvdr.SetChannelConfig(chCfg)
+
+	discClient := clientmocks.NewMockDiscoveryClient()
+	dynamicdiscovery.SetClientProvider(
+		func(ctx context.Client) (dynamicdiscovery.DiscoveryClient, error) {
+			return discClient, nil
+		},
+	)
+
+	getDiscovery := func(orgID, userID string) (context.Channel, fab.DiscoveryService) {
+		chCtxtProvider := sdk.ChannelContext(channelID, WithUser(userID), WithOrg(orgID))
+		require.NotNil(t, chCtxtProvider)
+
+		chCtxt, err := chCtxtProvider()
+		require.NoError(t, err)
+		require.NotNil(t, chCtxt)
+
+		chService := chCtxt.ChannelService()
+		require.NotNil(t, chService)
+
+		discovery, err := chService.Discovery()
+		require.NoError(t, err)
+
+		return chCtxt, discovery
+	}
+
+	chCtxt1, discovery1 := getDiscovery(sdkValidClientOrg1, sdkValidClientUser)
+	_, discovery2 := getDiscovery(sdkValidClientOrg2, sdkValidClientUser)
+
+	discClient.SetResponses(
+		&clientmocks.MockDiscoverEndpointResponse{
+			PeerEndpoints: []*discmocks.MockDiscoveryPeerEndpoint{},
+		},
+	)
+
+	_, err = discovery1.GetPeers()
+	assert.NoError(t, err)
+
+	_, err = discovery2.GetPeers()
+	assert.NoError(t, err)
+
+	// Close the first client context
+	sdk.CloseContext(chCtxt1)
+
+	// Wait for the cache to refresh
+	time.Sleep(10 * time.Millisecond)
+
+	// Subsequent calls on the first service should fail since the service is closed
+	_, err = discovery1.GetPeers()
+	assert.Error(t, err)
+	assert.EqualError(t, err, "Discovery client has been closed")
+
+	// Get the ChannelService from the second context; this one should still be valid
+	_, err = discovery2.GetPeers()
+	assert.NoError(t, err)
+}
+
 type MockNetworkPeers struct{}
 
 func (M *MockNetworkPeers) NetworkPeers() []fab.NetworkPeer {
@@ -334,4 +422,13 @@ type MockChannelOrderers struct{}
 
 func (M *MockChannelOrderers) ChannelOrderers(name string) []fab.OrdererConfig {
 	return []fab.OrdererConfig{}
+}
+
+type dynamicDiscoveryProviderFactory struct {
+	defsvc.ProviderFactory
+}
+
+// CreateLocalDiscoveryProvider returns a new local dynamic discovery provider
+func (f *dynamicDiscoveryProviderFactory) CreateLocalDiscoveryProvider(config fab.EndpointConfig) (fab.LocalDiscoveryProvider, error) {
+	return dynamicdiscovery.NewLocalProvider(config), nil
 }

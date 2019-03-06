@@ -40,8 +40,10 @@ func TestNewDefaultSDK(t *testing.T) {
 func verifySDK(t *testing.T, sdk *FabricSDK) {
 
 	// Mock channel provider cache
-	sdk.provider.ChannelProvider().(*chpvdr.ChannelProvider).SetChannelConfig(mocks.NewMockChannelCfg("mychannel"))
-	sdk.provider.ChannelProvider().(*chpvdr.ChannelProvider).SetChannelConfig(mocks.NewMockChannelCfg("orgchannel"))
+	chpvdr.SetChannelConfig(
+		mocks.NewMockChannelCfg("mychannel"),
+		mocks.NewMockChannelCfg("orgchannel"),
+	)
 
 	// Get a common client context for the following tests
 	chCtx := sdk.ChannelContext("orgchannel", WithUser(sdkValidClientUser), WithOrg(sdkValidClientOrg2))
@@ -66,15 +68,16 @@ func TestWithConfigOpt(t *testing.T) {
 }
 
 func TestNewDefaultTwoValidSDK(t *testing.T) {
+	// Mock channel provider cache
+	chpvdr.SetChannelConfig(
+		mocks.NewMockChannelCfg("mychannel"),
+		mocks.NewMockChannelCfg("orgchannel"),
+	)
+
 	sdk1, err := New(config.FromFile(sdkConfigFile))
 	if err != nil {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}
-
-	// Mock channel provider cache
-
-	sdk1.provider.ChannelProvider().(*chpvdr.ChannelProvider).SetChannelConfig(mocks.NewMockChannelCfg("mychannel"))
-	sdk1.provider.ChannelProvider().(*chpvdr.ChannelProvider).SetChannelConfig(mocks.NewMockChannelCfg("orgchannel"))
 
 	//prepare config backend for sdk2
 
@@ -90,9 +93,6 @@ func TestNewDefaultTwoValidSDK(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}
-
-	// Mock channel provider cache
-	sdk2.provider.ChannelProvider().(*chpvdr.ChannelProvider).SetChannelConfig(mocks.NewMockChannelCfg("orgchannel"))
 
 	// Default sdk with two channels
 	configBackend, err := sdk1.Config()

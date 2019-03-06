@@ -46,3 +46,10 @@ func (p *LocalProvider) Close() {
 	logger.Debug("Closing local provider cache")
 	p.cache.Close()
 }
+
+// CloseContext frees resources and caches for the given context.
+func (p *LocalProvider) CloseContext(ctx fab.ClientContext) {
+	mspID := ctx.Identifier().MSPID
+	logger.Debugf("Closing local discovery service for MSP [%s]", mspID)
+	p.cache.Delete(lazycache.NewStringKey(mspID))
+}

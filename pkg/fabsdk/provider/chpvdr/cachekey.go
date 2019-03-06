@@ -14,72 +14,87 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 )
 
-// cacheKey holds a key for the provider cache
-type cacheKey struct {
-	key           string
-	context       fab.ClientContext
-	channelConfig fab.ChannelCfg
+// ctxtCacheKey is a lazy cache key for the context cache
+type ctxtCacheKey struct {
+	key     string
+	context fab.ClientContext
 }
 
-// newCacheKey returns a new cacheKey
-func newCacheKey(ctx fab.ClientContext, chConfig fab.ChannelCfg, opts ...options.Opt) (*cacheKey, error) {
+// newCtxtCacheKey returns a new cacheKey
+func newCtxtCacheKey(ctx fab.ClientContext) (*ctxtCacheKey, error) {
 	identity, err := ctx.Serialize()
 	if err != nil {
 		return nil, err
 	}
 
-	params := defaultParams()
-	options.Apply(params, opts)
-
 	h := sha256.New()
-	h.Write(append(identity, []byte(params.getOptKey())...)) // nolint
-	hash := h.Sum([]byte(chConfig.ID()))
+	if _, err := h.Write(identity); err != nil {
+		return nil, err
+	}
 
+	hash := h.Sum(nil)
+
+	return &ctxtCacheKey{
+		key:     string(hash),
+		context: ctx,
+	}, nil
+}
+
+// String returns the key as a string
+func (k *ctxtCacheKey) String() string {
+	return k.key
+}
+
+// cacheKey holds a key for the provider cache
+type cacheKey struct {
+	channelConfig fab.ChannelCfg
+}
+
+// newCacheKey returns a new cacheKey
+func newCacheKey(chConfig fab.ChannelCfg) (*cacheKey, error) {
 	return &cacheKey{
-		key:           string(hash),
-		context:       ctx,
 		channelConfig: chConfig,
 	}, nil
 }
 
 // String returns the key as a string
 func (k *cacheKey) String() string {
-	return k.key
+	return k.channelConfig.ID()
 }
 
 // eventCacheKey holds a key for the provider cache
 type eventCacheKey struct {
-	cacheKey
-	opts []options.Opt
+	key           string
+	channelConfig fab.ChannelCfg
+	opts          []options.Opt
 }
 
 // newEventCacheKey returns a new eventCacheKey
-func newEventCacheKey(ctx fab.ClientContext, chConfig fab.ChannelCfg, opts ...options.Opt) (*eventCacheKey, error) {
-	identity, err := ctx.Serialize()
-	if err != nil {
-		return nil, err
-	}
-
+func newEventCacheKey(chConfig fab.ChannelCfg, opts ...options.Opt) (*eventCacheKey, error) {
 	params := defaultParams()
 	options.Apply(params, opts)
 
 	h := sha256.New()
-	h.Write(append(identity, []byte(params.getOptKey())...)) // nolint
+	if _, err := h.Write([]byte(params.getOptKey())); err != nil {
+		return nil, err
+	}
 	hash := h.Sum([]byte(chConfig.ID()))
 
 	return &eventCacheKey{
-		cacheKey: cacheKey{
-			key:           string(hash),
-			context:       ctx,
-			channelConfig: chConfig,
-		},
-		opts: opts,
+		channelConfig: chConfig,
+		key:           string(hash),
+		opts:          opts,
 	}, nil
 }
 
 // Opts returns the options to use for creating events service
 func (k *eventCacheKey) Opts() []options.Opt {
 	return k.opts
+}
+
+// String returns the key as a string
+func (k *eventCacheKey) String() string {
+	return k.key
 }
 
 type params struct {

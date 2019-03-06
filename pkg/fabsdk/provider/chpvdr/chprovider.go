@@ -9,83 +9,37 @@ package chpvdr
 import (
 	reqContext "context"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/discovery/dynamicdiscovery"
-	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/discovery/staticdiscovery"
-	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/dynamicselection"
-	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/fabricselection"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	channelImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab/channel"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fab/channel/membership"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/chconfig"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/deliverclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/util/concurrent/lazycache"
-	"github.com/pkg/errors"
 )
 
 var logger = logging.NewLogger("fabsdk")
-
-type cache interface {
-	Get(lazycache.Key, ...interface{}) (interface{}, error)
-	Close()
-}
 
 // ChannelProvider keeps context across ChannelService instances.
 //
 // TODO: add listener for channel config changes. Upon channel config change,
 // underlying channel services need to recreate their channel clients.
 type ChannelProvider struct {
-	providerContext       context.Providers
-	eventServiceCache     cache
-	discoveryServiceCache cache
-	selectionServiceCache cache
-	chCfgCache            cache
-	membershipCache       cache
+	providerContext context.Providers
+	ctxtCaches      *lazycache.Cache
 }
 
 // New creates a ChannelProvider based on a context
 func New(config fab.EndpointConfig, opts ...options.Opt) (*ChannelProvider, error) {
-	eventIdleTime := config.Timeout(fab.EventServiceIdle)
-	chConfigRefresh := config.Timeout(fab.ChannelConfigRefresh)
-	membershipRefresh := config.Timeout(fab.ChannelMembershipRefresh)
-
-	cp := ChannelProvider{
-		chCfgCache:      chconfig.NewRefCache(chconfig.WithRefreshInterval(chConfigRefresh)),
-		membershipCache: membership.NewRefCache(membershipRefresh),
-	}
-
-	cp.discoveryServiceCache = lazycache.New(
-		"Discovery_Service_Cache",
-		func(key lazycache.Key) (interface{}, error) {
-			ck := key.(*cacheKey)
-			return cp.createDiscoveryService(ck.context, ck.channelConfig, opts...)
-		},
-	)
-
-	cp.selectionServiceCache = lazycache.New(
-		"Selection_Service_Cache",
-		func(key lazycache.Key) (interface{}, error) {
-			ck := key.(*cacheKey)
-			return cp.createSelectionService(ck.context, ck.channelConfig, opts...)
-		},
-	)
-
-	cp.eventServiceCache = lazycache.New(
-		"Event_Service_Cache",
-		func(key lazycache.Key) (interface{}, error) {
-			ck := key.(*eventCacheKey)
-			return NewEventClientRef(
-				eventIdleTime,
-				func() (fab.EventClient, error) {
-					return cp.createEventClient(ck.context, ck.channelConfig, append(ck.opts, opts...)...)
-				},
-			), nil
-		},
-	)
-
-	return &cp, nil
+	return &ChannelProvider{
+		ctxtCaches: lazycache.New(
+			"Client_Context_Cache",
+			func(key lazycache.Key) (interface{}, error) {
+				ck := key.(*ctxtCacheKey)
+				return newContextCache(ck.context, opts), nil
+			},
+		),
+	}, nil
 }
 
 // Initialize sets the provider context
@@ -96,132 +50,39 @@ func (cp *ChannelProvider) Initialize(providers context.Providers) error {
 
 // Close frees resources and caches.
 func (cp *ChannelProvider) Close() {
-	logger.Debug("Closing event service cache...")
-	cp.eventServiceCache.Close()
+	cp.ctxtCaches.Close()
+}
 
-	logger.Debug("Closing membership cache...")
-	cp.membershipCache.Close()
-
-	logger.Debug("Closing channel configuration cache...")
-	cp.chCfgCache.Close()
-
-	logger.Debug("Closing selection service cache...")
-	cp.selectionServiceCache.Close()
-
-	logger.Debug("Closing discovery service cache...")
-	cp.discoveryServiceCache.Close()
+// CloseContext frees resources and caches for the given context.
+func (cp *ChannelProvider) CloseContext(ctx fab.ClientContext) {
+	key, err := newCtxtCacheKey(ctx)
+	if err != nil {
+		logger.Warnf("Unable to close context: %s", err)
+		return
+	}
+	logger.Warnf("Deleting context cache...")
+	cp.ctxtCaches.Delete(key)
 }
 
 // ChannelService creates a ChannelService for an identity
 func (cp *ChannelProvider) ChannelService(ctx fab.ClientContext, channelID string) (fab.ChannelService, error) {
-	cs := ChannelService{
+	key, err := newCtxtCacheKey(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	ctxtCache, err := cp.ctxtCaches.Get(key)
+	if err != nil {
+		// This should never happen since the creation of a cache never returns an error
+		return nil, err
+	}
+
+	return &ChannelService{
 		provider:  cp,
 		context:   ctx,
 		channelID: channelID,
-	}
-
-	return &cs, nil
-}
-
-func (cp *ChannelProvider) createEventClient(ctx context.Client, chConfig fab.ChannelCfg, opts ...options.Opt) (fab.EventClient, error) {
-	discovery, err := cp.getDiscoveryService(ctx, chConfig.ID())
-	if err != nil {
-		return nil, errors.WithMessage(err, "could not get discovery service")
-	}
-
-	logger.Debugf("Using deliver events for channel [%s]", chConfig.ID())
-	return deliverclient.New(ctx, chConfig, discovery, opts...)
-}
-
-func (cp *ChannelProvider) createDiscoveryService(ctx context.Client, chConfig fab.ChannelCfg, opts ...options.Opt) (fab.DiscoveryService, error) {
-	if chConfig.HasCapability(fab.ApplicationGroupKey, fab.V1_2Capability) {
-		logger.Debugf("Using Dynamic Discovery based on V1_2 capability.")
-		cs := ChannelService{
-			provider:  cp,
-			context:   ctx,
-			channelID: chConfig.ID(),
-		}
-		membership, err := cs.Membership()
-		if err != nil {
-			return nil, errors.WithMessage(err, "failed to create discovery service")
-		}
-		return dynamicdiscovery.NewChannelService(ctx, membership, chConfig.ID(), opts...)
-	}
-	return staticdiscovery.NewService(ctx.EndpointConfig(), ctx.InfraProvider(), chConfig.ID())
-}
-
-func (cp *ChannelProvider) getDiscoveryService(context fab.ClientContext, channelID string) (fab.DiscoveryService, error) {
-	chnlCfg, err := cp.channelConfig(context, channelID)
-	if err != nil {
-		return nil, err
-	}
-	key, err := newCacheKey(context, chnlCfg)
-	if err != nil {
-		return nil, err
-	}
-	discoveryService, err := cp.discoveryServiceCache.Get(key)
-	if err != nil {
-		return nil, err
-	}
-	return discoveryService.(fab.DiscoveryService), nil
-}
-
-func (cp *ChannelProvider) createSelectionService(ctx context.Client, chConfig fab.ChannelCfg, opts ...options.Opt) (fab.SelectionService, error) {
-	discovery, err := cp.getDiscoveryService(ctx, chConfig.ID())
-	if err != nil {
-		return nil, err
-	}
-
-	if chConfig.HasCapability(fab.ApplicationGroupKey, fab.V1_2Capability) {
-		logger.Debugf("Using Fabric Selection based on V1_2 capability.")
-		return fabricselection.New(ctx, chConfig.ID(), discovery, opts...)
-	}
-	return dynamicselection.NewService(ctx, chConfig.ID(), discovery)
-}
-
-func (cp *ChannelProvider) getSelectionService(context fab.ClientContext, channelID string) (fab.SelectionService, error) {
-	chnlCfg, err := cp.channelConfig(context, channelID)
-	if err != nil {
-		return nil, err
-	}
-	key, err := newCacheKey(context, chnlCfg)
-	if err != nil {
-		return nil, err
-	}
-	selectionService, err := cp.selectionServiceCache.Get(key)
-	if err != nil {
-		return nil, err
-	}
-	return selectionService.(fab.SelectionService), nil
-}
-
-func (cp *ChannelProvider) channelConfig(context fab.ClientContext, channelID string) (fab.ChannelCfg, error) {
-	if channelID == "" {
-		// System channel
-		return chconfig.NewChannelCfg(""), nil
-	}
-	chCfgRef, err := cp.loadChannelCfgRef(context, channelID)
-	if err != nil {
-		return nil, err
-	}
-	chCfg, err := chCfgRef.Get()
-	if err != nil {
-		return nil, errors.WithMessage(err, "could not get chConfig cache reference")
-	}
-	return chCfg.(fab.ChannelCfg), nil
-}
-
-func (cp *ChannelProvider) loadChannelCfgRef(context fab.ClientContext, channelID string) (*chconfig.Ref, error) {
-	key, err := chconfig.NewCacheKey(context, func(string) (fab.ChannelConfig, error) { return chconfig.New(channelID) }, channelID)
-	if err != nil {
-		return nil, err
-	}
-	c, err := cp.chCfgCache.Get(key)
-	if err != nil {
-		return nil, err
-	}
-
-	return c.(*chconfig.Ref), nil
+		ctxtCache: ctxtCache.(*contextCache),
+	}, nil
 }
 
 // ChannelService provides Channel clients and maintains contexts for them.
@@ -230,6 +91,7 @@ type ChannelService struct {
 	provider  *ChannelProvider
 	context   context.Client
 	channelID string
+	ctxtCache *contextCache
 }
 
 // Config returns the Config for the named channel
@@ -239,45 +101,18 @@ func (cs *ChannelService) Config() (fab.ChannelConfig, error) {
 
 // EventService returns the EventService.
 func (cs *ChannelService) EventService(opts ...options.Opt) (fab.EventService, error) {
-	chnlCfg, err := cs.ChannelConfig()
-	if err != nil {
-		return nil, err
-	}
-	key, err := newEventCacheKey(cs.context, chnlCfg, opts...)
-	if err != nil {
-		return nil, err
-	}
-	eventService, err := cs.provider.eventServiceCache.Get(key)
-	if err != nil {
-		return nil, err
-	}
-
-	return eventService.(fab.EventService), nil
+	return cs.ctxtCache.GetEventService(cs.channelID, opts...)
 }
 
 // Membership returns and caches a channel member identifier
 // A membership reference is returned that refreshes with the configured interval
 func (cs *ChannelService) Membership() (fab.ChannelMembership, error) {
-	chCfgRef, err := cs.loadChannelCfgRef()
-	if err != nil {
-		return nil, err
-	}
-	key, err := membership.NewCacheKey(membership.Context{Providers: cs.context, EndpointConfig: cs.context.EndpointConfig()},
-		chCfgRef.Reference, cs.channelID)
-	if err != nil {
-		return nil, err
-	}
-	ref, err := cs.provider.membershipCache.Get(key)
-	if err != nil {
-		return nil, err
-	}
-
-	return ref.(*membership.Ref), nil
+	return cs.ctxtCache.GetMembership(cs.channelID)
 }
 
 // ChannelConfig returns the channel config for this channel
 func (cs *ChannelService) ChannelConfig() (fab.ChannelCfg, error) {
-	return cs.provider.channelConfig(cs.context, cs.channelID)
+	return cs.ctxtCache.GetChannelConfig(cs.channelID)
 }
 
 // Transactor returns the transactor
@@ -291,14 +126,10 @@ func (cs *ChannelService) Transactor(reqCtx reqContext.Context) (fab.Transactor,
 
 // Discovery returns a DiscoveryService for the given channel
 func (cs *ChannelService) Discovery() (fab.DiscoveryService, error) {
-	return cs.provider.getDiscoveryService(cs.context, cs.channelID)
+	return cs.ctxtCache.GetDiscoveryService(cs.channelID)
 }
 
 // Selection returns a SelectionService for the given channel
 func (cs *ChannelService) Selection() (fab.SelectionService, error) {
-	return cs.provider.getSelectionService(cs.context, cs.channelID)
-}
-
-func (cs *ChannelService) loadChannelCfgRef() (*chconfig.Ref, error) {
-	return cs.provider.loadChannelCfgRef(cs.context, cs.channelID)
+	return cs.ctxtCache.GetSelectionService(cs.channelID)
 }

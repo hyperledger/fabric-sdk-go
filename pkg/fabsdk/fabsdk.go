@@ -68,6 +68,10 @@ type closeable interface {
 	Close()
 }
 
+type contextCloseable interface {
+	CloseContext(ctxt fab.ClientContext)
+}
+
 // New initializes the SDK based on the set of options provided.
 // ConfigOptions provides the application configuration.
 func New(configProvider core.ConfigProvider, opts ...Option) (*FabricSDK, error) {
@@ -327,6 +331,19 @@ func (sdk *FabricSDK) Close() {
 		pvdr.Close()
 	}
 	sdk.provider.InfraProvider().Close()
+}
+
+// CloseContext frees up caches being maintained by the SDK for the given context
+func (sdk *FabricSDK) CloseContext(ctxt fab.ClientContext) {
+	logger.Debug("Closing clients for the given context...")
+	if pvdr, ok := sdk.provider.LocalDiscoveryProvider().(contextCloseable); ok {
+		logger.Debugf("Closing local discovery provider...")
+		pvdr.CloseContext(ctxt)
+	}
+	if pvdr, ok := sdk.provider.ChannelProvider().(contextCloseable); ok {
+		logger.Debugf("Closing context in channel client...")
+		pvdr.CloseContext(ctxt)
+	}
 }
 
 //Config returns config backend used by all SDK config types
