@@ -91,6 +91,9 @@ fi
 
 echo "creating new slot and label..."
 softhsm2-util --init-token --slot 1 --label "ForFabric1" --pin 98765432 --so-pin 987654
+softhsm2-util --init-token --slot 2 --label "ForFabric2" --pin 22334455 --so-pin 987654
+
+
 
 GO_TAGS="${GO_TAGS} ${FABRIC_SDKGO_CODELEVEL_TAG}"
 

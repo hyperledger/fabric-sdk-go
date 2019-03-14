@@ -539,7 +539,7 @@ type pkcs11CtxCacheKey struct {
 
 //String return string value for pkcs11CtxCacheKey
 func (key *pkcs11CtxCacheKey) String() string {
-	return fmt.Sprintf("%x_%s_%s_%d_%d", key.lib, key.label, key.pin, key.opts.sessionCacheSize, key.opts.openSessionRetry)
+	return fmt.Sprintf("%x_%s_%s_%d_%d", key.lib, key.label, key.opts.connectionName, key.opts.sessionCacheSize, key.opts.openSessionRetry)
 }
 
 //getInstance loads ContextHandle instance from cache

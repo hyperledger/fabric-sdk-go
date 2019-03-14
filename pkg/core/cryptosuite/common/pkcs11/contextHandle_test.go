@@ -22,6 +22,7 @@ const (
 	pin              = "98765432"
 	label            = "ForFabric"
 	label1           = "ForFabric1"
+	label2           = "ForFabric2"
 	allLibs          = "/usr/lib/x86_64-linux-gnu/softhsm/libsofthsm2.so,/usr/lib/softhsm/libsofthsm2.so,/usr/lib/s390x-linux-gnu/softhsm/libsofthsm2.so,/usr/lib/powerpc64le-linux-gnu/softhsm/libsofthsm2.so, /usr/local/Cellar/softhsm/2.1.0/lib/softhsm/libsofthsm2.so"
 	ctxReloadTimeout = 2 * time.Second
 )
@@ -272,6 +273,40 @@ func TestContextHandleOpts(t *testing.T) {
 	_, e = handle.ctx.GetSessionInfo(session4)
 	assert.Equal(t, mPkcs11.Error(mPkcs11.CKR_SESSION_HANDLE_INVALID), e)
 
+}
+
+func TestContextHandleCacheCollision(t *testing.T) {
+
+	const pin1 = "22334455"
+
+	//get context handler-1
+	handle1, err := LoadPKCS11ContextHandle(lib, label2, pin, WithOpenSessionRetry(10), WithSessionCacheSize(2))
+	assert.NoError(t, err)
+	assert.NotNil(t, handle1)
+	assert.NotNil(t, handle1.ctx)
+	assert.Equal(t, handle1.lib, lib)
+	assert.Equal(t, handle1.label, label2)
+	assert.Equal(t, handle1.pin, pin)
+
+	//get context handler-2
+	handle2, err := LoadPKCS11ContextHandle(lib, label2, pin1, WithOpenSessionRetry(10), WithSessionCacheSize(2))
+	assert.NoError(t, err)
+	assert.NotNil(t, handle2)
+	assert.NotNil(t, handle2.ctx)
+	assert.Equal(t, handle2.lib, lib)
+	assert.Equal(t, handle2.label, label2)
+
+	//collision happens when different PINs used under same label and lib
+	assert.Equal(t, handle2.pin, handle1.pin)
+
+	//To fix, use connection name to distinguish instances in cache
+	handle2, err = LoadPKCS11ContextHandle(lib, label2, pin1, WithOpenSessionRetry(10), WithSessionCacheSize(2), WithConnectionName("connection-2"))
+	assert.NoError(t, err)
+	assert.NotNil(t, handle2)
+	assert.NotNil(t, handle2.ctx)
+	assert.Equal(t, handle2.lib, lib)
+	assert.Equal(t, handle2.label, label2)
+	assert.Equal(t, handle2.pin, pin1)
 }
 
 func TestContextHandleCommonInstance(t *testing.T) {

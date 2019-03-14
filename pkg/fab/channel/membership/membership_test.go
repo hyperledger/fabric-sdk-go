@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package membership
 
 import (
+	"bytes"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
@@ -15,11 +16,18 @@ import (
 	"encoding/asn1"
 	"encoding/pem"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"math/big"
+	"os"
+	"path"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/utils"
+	"github.com/pkg/errors"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/comm/tls"
@@ -27,6 +35,40 @@ import (
 	mb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/msp"
 	"github.com/stretchr/testify/assert"
 )
+
+const configPath = "../../../../test/fixtures/fabric/v1/crypto-config"
+
+var pathRevokeCaRoot = path.Join(configPath, "peerOrganizations/org1.example.com/ca/")
+var pathParentCert = path.Join(configPath, "peerOrganizations/org1.example.com/ca/ca.org1.example.com-cert.pem")
+var peerCertToBeRevoked = path.Join(configPath, "peerOrganizations/org1.example.com/peers/peer0.org1.example.com/msp/signcerts/peer0.org1.example.com-cert.pem")
+var newCRL string
+var revokedCert string
+
+//use this one to sign CRL
+var orgTwoCA string
+
+func TestMain(m *testing.M) {
+	crl, e := generateCRL(peerCertToBeRevoked, pathRevokeCaRoot, pathParentCert)
+	if e != nil {
+		panic(fmt.Sprintf("error generating CRL for test : %s", e))
+	}
+	newCRL = string(crl)
+
+	raw, err := ioutil.ReadFile(peerCertToBeRevoked)
+	if err != nil {
+		panic(fmt.Sprintf("failed to read cert to be revoked : %s", e))
+	}
+	revokedCert = string(raw)
+
+	raw, err = ioutil.ReadFile(pathParentCert)
+	if err != nil {
+		panic(fmt.Sprintf("failed to read cert to be revoked : %s", e))
+	}
+	orgTwoCA = string(raw)
+
+	fmt.Println(newCRL, revokedCert)
+	os.Exit(m.Run())
+}
 
 //TestCertSignedWithUnknownAuthority
 func TestCertSignedWithUnknownAuthority(t *testing.T) {
@@ -73,7 +115,7 @@ func TestRevokedCertificate(t *testing.T) {
 	assert.NotNil(t, m)
 
 	// We serialize identities by prepending the MSPID and appending the ASN.1 DER content of the cert
-	sID := &mb.SerializedIdentity{Mspid: goodMSPID, IdBytes: []byte(org2RevokedCert)}
+	sID := &mb.SerializedIdentity{Mspid: goodMSPID, IdBytes: []byte(revokedCert)}
 	goodEndorser, err := proto.Marshal(sID)
 	assert.Nil(t, err)
 	//Validation should return en error since created CRL contains
@@ -81,7 +123,7 @@ func TestRevokedCertificate(t *testing.T) {
 	err = m.Validate(goodEndorser)
 	assert.NotNil(t, err)
 	if !strings.Contains(err.Error(), "The certificate has been revoked") {
-		t.Fatal("Expected error for revoked certificate")
+		t.Fatalf("Expected error for revoked certificate, but got :%s", err)
 	}
 
 }
@@ -187,17 +229,6 @@ func buildfabricMSPConfig(name string, root []byte) *mb.FabricMSPConfig {
 
 }
 
-var newCRL = `-----BEGIN X509 CRL-----
-MIIBVDCB/AIBATAKBggqhkjOPQQDAjBzMQswCQYDVQQGEwJVUzETMBEGA1UECBMK
-Q2FsaWZvcm5pYTEWMBQGA1UEBxMNU2FuIEZyYW5jaXNjbzEZMBcGA1UEChMQb3Jn
-Mi5leGFtcGxlLmNvbTEcMBoGA1UEAxMTY2Eub3JnMi5leGFtcGxlLmNvbRcNMTgw
-MzE0MTYyNDM5WhcNMTgwMzE1MTYyNDM5WjAnMCUCFHvhRd6BdVtYCseQWUqLc0E0
-srURFw0xODAzMTQxNjI0MzFaoC8wLTArBgNVHSMEJDAigCCiWSBNvWrbFMBabgLe
-lFZ7Kp99vp5qBjunZ9Qr8LVEwTAKBggqhkjOPQQDAgNHADBEAiAVKHw2GK1vh+K1
-udBElnT7c1VYay8iIVQeBAvlzq+a5wIgdW1s9So8MDwt627LaJXyrbs4ZdMmkOAn
-HuI5WPVWHHQ=
------END X509 CRL-----`
-
 func marshalOrPanic(pb proto.Message) []byte {
 	data, err := proto.Marshal(pb)
 	if err != nil {
@@ -205,25 +236,6 @@ func marshalOrPanic(pb proto.Message) []byte {
 	}
 	return data
 }
-
-var org2RevokedCert = `-----BEGIN CERTIFICATE-----
-MIIC8DCCApegAwIBAgIUe+FF3oF1W1gKx5BZSotzQTSytREwCgYIKoZIzj0EAwIw
-czELMAkGA1UEBhMCVVMxEzARBgNVBAgTCkNhbGlmb3JuaWExFjAUBgNVBAcTDVNh
-biBGcmFuY2lzY28xGTAXBgNVBAoTEG9yZzIuZXhhbXBsZS5jb20xHDAaBgNVBAMT
-E2NhLm9yZzIuZXhhbXBsZS5jb20wHhcNMTgwMzE0MTYxOTAwWhcNMTkwMzE0MTYy
-NDAwWjCBgDELMAkGA1UEBhMCVVMxFzAVBgNVBAgTDk5vcnRoIENhcm9saW5hMRQw
-EgYDVQQKEwtIeXBlcmxlZGdlcjEaMAsGA1UECxMEcGVlcjALBgNVBAsTBG9yZzEx
-JjAkBgNVBAMTHXBlZXItcmV2b2tlZC5vcmcyLmV4YW1wbGUuY29tMFkwEwYHKoZI
-zj0CAQYIKoZIzj0DAQcDQgAExo+Z4mjffIxHcKxPSIKr8RAhBsv0lra6SidAIFsz
-MOjT7V47w5rBWbqbWJnOteuqkgcjra+yzPZsDbTY2WqwOqOB+jCB9zAOBgNVHQ8B
-Af8EBAMCB4AwDAYDVR0TAQH/BAIwADAdBgNVHQ4EFgQUlI8a5sgOnq7/uO9kiE0A
-T5DDv4swKwYDVR0jBCQwIoAgolkgTb1q2xTAWm4C3pRWeyqffb6eagY7p2fUK/C1
-RMEwFwYDVR0RBBAwDoIMNzg3MmVmNmI2OGRiMHIGCCoDBAUGBwgBBGZ7ImF0dHJz
-Ijp7ImhmLkFmZmlsaWF0aW9uIjoib3JnMSIsImhmLkVucm9sbG1lbnRJRCI6InBl
-ZXItcmV2b2tlZC5vcmcyLmV4YW1wbGUuY29tIiwiaGYuVHlwZSI6InBlZXIifX0w
-CgYIKoZIzj0EAwIDRwAwRAIgA8RuyDIiS+XV8XhODkTNdqvP3DaJ+JMt8ZX4o1E1
-fzECIE4DUQO2Dhp1ufZJqiym1AN61+PSIPOPj9n26nMkWNJ8
------END CERTIFICATE-----`
 
 var validRootCA = `-----BEGIN CERTIFICATE-----
 MIICQzCCAemgAwIBAgIQYZpqGmcswky9Iy1SHBIm8zAKBggqhkjOPQQDAjBzMQsw
@@ -269,23 +281,6 @@ IyYVdLIJaHjz5Bx3mTMwySYwUsDYU0zD0btx0EBAKjTMDiLqkC5dllaxrU4gzHxr
 DAYDVR0TAQH/BAIwADArBgNVHSMEJDAigCBdC72qnK+2ajHaE61O7EwMxTJgqgm7
 evx+2WCfZMfxOjAKBggqhkjOPQQDAgNHADBEAiAnGpZxlGGG4GIRc3bmrIqtG7sz
 O/7VzRFysxkwySQCNwIgedom1wB4w/W/p05tdh6YXo8kLrEOWUb9KMchm3iaKT8=
------END CERTIFICATE-----`
-
-//use this one to sign CRL
-var orgTwoCA = `-----BEGIN CERTIFICATE-----
-MIICRDCCAeqgAwIBAgIRANqpQ8r//fDaj4j6kuGJv8gwCgYIKoZIzj0EAwIwczEL
-MAkGA1UEBhMCVVMxEzARBgNVBAgTCkNhbGlmb3JuaWExFjAUBgNVBAcTDVNhbiBG
-cmFuY2lzY28xGTAXBgNVBAoTEG9yZzIuZXhhbXBsZS5jb20xHDAaBgNVBAMTE2Nh
-Lm9yZzIuZXhhbXBsZS5jb20wHhcNMTcwNzI4MTQyNzIwWhcNMjcwNzI2MTQyNzIw
-WjBzMQswCQYDVQQGEwJVUzETMBEGA1UECBMKQ2FsaWZvcm5pYTEWMBQGA1UEBxMN
-U2FuIEZyYW5jaXNjbzEZMBcGA1UEChMQb3JnMi5leGFtcGxlLmNvbTEcMBoGA1UE
-AxMTY2Eub3JnMi5leGFtcGxlLmNvbTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IA
-BLdwS4lO/WKTrsQt+Q2bLMIbntuM7Teg6fEXvKrpIHFNzaCsTlemFUVxQUugQfUA
-/GGIaomaE1STfvbCtElCsSOjXzBdMA4GA1UdDwEB/wQEAwIBpjAPBgNVHSUECDAG
-BgRVHSUAMA8GA1UdEwEB/wQFMAMBAf8wKQYDVR0OBCIEIKJZIE29atsUwFpuAt6U
-Vnsqn32+nmoGO6dn1CvwtUTBMAoGCCqGSM49BAMCA0gAMEUCIQCH8+Vw0L38dv/v
-9gWvLhQv69q2bS0FBiAFwR4M17Z/2QIgH5W6rmsItiwa7nD0eZyiGmCzzQXW01b4
-5fDo4hNhETQ=
 -----END CERTIFICATE-----`
 
 type validity struct {
@@ -372,4 +367,100 @@ func generateSelfSignedCert(t *testing.T, now time.Time) string {
 	}
 	return encodeCertToMemory(newCert)
 
+}
+
+func generateCRL(cerPath, pathRevokeCaRoot, pathParentCert string) ([]byte, error) {
+
+	var parentKey string
+	err := filepath.Walk(pathRevokeCaRoot, func(path string, info os.FileInfo, err error) error {
+		if strings.HasSuffix(path, "_sk") {
+			parentKey = path
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	key, err := loadPrivateKey(parentKey)
+	if err != nil {
+		return nil, errors.WithMessage(err, "Failed to load private key")
+	}
+
+	cert, err := loadCert(pathParentCert)
+	if err != nil {
+		return nil, errors.WithMessage(err, "Failed to load cert")
+	}
+
+	certToBeRevoked, err := loadCert(cerPath)
+	if err != nil {
+		return nil, errors.WithMessage(err, "Failed to load cert")
+	}
+
+	crlBytes, err := revokeCert(certToBeRevoked, cert, key)
+	if err != nil {
+		return nil, errors.WithMessage(err, "Failed to revoke cert")
+	}
+
+	return crlBytes, nil
+}
+
+func loadPrivateKey(path string) (interface{}, error) {
+
+	raw, err := ioutil.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+
+	key, err := utils.PEMtoPrivateKey(raw, []byte(""))
+	if err != nil {
+		return nil, err
+	}
+
+	return key, nil
+}
+
+func loadCert(path string) (*x509.Certificate, error) {
+
+	raw, err := ioutil.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+
+	block, _ := pem.Decode([]byte(raw))
+	if block == nil {
+		return nil, errors.New("failed to parse certificate PEM")
+	}
+
+	return x509.ParseCertificate(block.Bytes)
+}
+
+func revokeCert(certToBeRevoked *x509.Certificate, parentCert *x509.Certificate, parentKey interface{}) ([]byte, error) {
+
+	//Create a revocation record for the user
+	clientRevocation := pkix.RevokedCertificate{
+		SerialNumber:   certToBeRevoked.SerialNumber,
+		RevocationTime: time.Now().UTC(),
+	}
+
+	curRevokedCertificates := []pkix.RevokedCertificate{clientRevocation}
+	//Generate new CRL that includes the user's revocation
+	newCrlList, err := parentCert.CreateCRL(rand.Reader, parentKey, curRevokedCertificates, time.Now().UTC(), time.Now().UTC().AddDate(20, 0, 0))
+	if err != nil {
+		return nil, err
+	}
+
+	//CRL pem Block
+	crlPemBlock := &pem.Block{
+		Type:  "X509 CRL",
+		Bytes: newCrlList,
+	}
+	var crlBuffer bytes.Buffer
+	//Encode it to X509 CRL pem format print it out
+	err = pem.Encode(&crlBuffer, crlPemBlock)
+	if err != nil {
+		return nil, err
+	}
+
+	return crlBuffer.Bytes(), nil
 }
