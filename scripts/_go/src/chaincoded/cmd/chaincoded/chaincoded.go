@@ -33,6 +33,7 @@ var (
 	containerNameRegEx   = regexp.MustCompile("(.*)-(.*)-(.*)-(.*)")
 	containerStartRegEx  = regexp.MustCompile("/containers/(.+)/start")
 	containerUploadRegEx = regexp.MustCompile("/containers/(.+)/archive")
+	waitUploadRegEx      = regexp.MustCompile("/containers/(.+)/wait")
 )
 
 var peerEndpoints map[string]string
@@ -241,6 +242,10 @@ func (d *chaincoded) handleOtherRequest(w http.ResponseWriter, r *http.Request) 
 	w.WriteHeader(200)
 }
 
+func (d *chaincoded) handleWaitRequest(w http.ResponseWriter, r *http.Request) {
+	select {}
+}
+
 func randomHexString(len int) string {
 	b := make([]byte, len)
 	rand.Read(b)
@@ -299,6 +304,7 @@ func (d *chaincoded) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	startMatches := containerStartRegEx.FindStringSubmatch(r.URL.Path)
 	uploadMatches := containerUploadRegEx.FindStringSubmatch(r.URL.Path)
 	createMatches := containerCreateRegEx.FindStringSubmatch(r.URL.Path)
+	waitMatches := waitUploadRegEx.FindStringSubmatch(r.URL.Path)
 
 	logDebugf("Handling HTTP request [%s]", r.URL)
 	if startMatches != nil {
@@ -307,6 +313,9 @@ func (d *chaincoded) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		d.handleUploadToContainerRequest(w, r, uploadMatches[1])
 	} else if createMatches != nil {
 		d.handleCreateContainerRequest(w, r)
+	} else if waitMatches != nil {
+		logDebugf("Handling handleWaitRequest")
+		d.handleWaitRequest(w, r)
 	} else {
 		d.handleOtherRequest(w, r)
 	}
