@@ -75,18 +75,15 @@ func (m *MetricsConfigImpl) MetricCfg() MetricConfig {
 }
 
 func (m *MetricsConfigImpl) loadMetricsConfiguration() error {
-	err := m.createOperationCfg()
-	if err != nil {
-		return errors.WithMessage(err, "operation system configuration load failed")
-	}
-	err = m.createMetricCfg()
+	m.createOperationCfg()
+	err := m.createMetricCfg()
 	if err != nil {
 		return errors.WithMessage(err, "metric configuration load failed")
 	}
 	return nil
 }
 
-func (m *MetricsConfigImpl) createOperationCfg() error {
+func (m *MetricsConfigImpl) createOperationCfg() {
 	m.OperationConfig = OperationConfig{
 		ListenAddress:      m.backend.GetString("operations.listenAddress"),
 		ClientAuthRequired: m.backend.GetBool("operations.tls.clientAuthRequired"),
@@ -102,7 +99,6 @@ func (m *MetricsConfigImpl) createOperationCfg() error {
 		m.OperationConfig.ClientRootCAs = rootCAStrs
 	}
 
-	return nil
 }
 
 func (m *MetricsConfigImpl) createMetricCfg() error {

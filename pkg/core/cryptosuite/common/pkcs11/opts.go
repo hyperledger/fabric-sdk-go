@@ -25,20 +25,20 @@ type ctxOpts struct {
 type Options func(opts *ctxOpts)
 
 func getCtxOpts(opts ...Options) ctxOpts {
-	ctxOpts := ctxOpts{}
+	ctxOptions := ctxOpts{}
 	for _, option := range opts {
-		option(&ctxOpts)
+		option(&ctxOptions)
 	}
 
-	if ctxOpts.sessionCacheSize == 0 {
-		ctxOpts.sessionCacheSize = defaultSessionCacheSize
+	if ctxOptions.sessionCacheSize == 0 {
+		ctxOptions.sessionCacheSize = defaultSessionCacheSize
 	}
 
-	if ctxOpts.openSessionRetry == 0 {
-		ctxOpts.openSessionRetry = defaultOpenSessionRetry
+	if ctxOptions.openSessionRetry == 0 {
+		ctxOptions.openSessionRetry = defaultOpenSessionRetry
 	}
 
-	return ctxOpts
+	return ctxOptions
 }
 
 //WithSessionCacheSize size of session cache pool

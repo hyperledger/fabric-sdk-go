@@ -126,10 +126,7 @@ func (c *contextCache) GetDiscoveryService(channelID string) (fab.DiscoveryServi
 	if err != nil {
 		return nil, err
 	}
-	key, err := newCacheKey(chnlCfg)
-	if err != nil {
-		return nil, err
-	}
+	key := newCacheKey(chnlCfg)
 	discoveryService, err := c.discoveryServiceCache.Get(key)
 	if err != nil {
 		return nil, err
@@ -155,10 +152,7 @@ func (c *contextCache) GetSelectionService(channelID string) (fab.SelectionServi
 	if err != nil {
 		return nil, err
 	}
-	key, err := newCacheKey(chnlCfg)
-	if err != nil {
-		return nil, err
-	}
+	key := newCacheKey(chnlCfg)
 	selectionService, err := c.selectionServiceCache.Get(key)
 	if err != nil {
 		return nil, err

@@ -60,8 +60,8 @@ func New(request fab.TransactionRequest) (*fab.Transaction, error) {
 	}
 
 	responsePayload := request.ProposalResponses[0].ProposalResponse.Payload
-	if err := validateProposalResponses(request.ProposalResponses); err != nil {
-		return nil, err
+	if vprErr := validateProposalResponses(request.ProposalResponses); vprErr != nil {
+		return nil, vprErr
 	}
 
 	// fill endorsements

@@ -13,7 +13,7 @@ set -e
 GO_CMD="${GO_CMD:-go}"
 GO_DEP_CMD="${GO_DEP_CMD:-dep}"
 GO_DEP_REPO="github.com/golang/dep"
-GO_METALINTER_CMD="${GO_METALINTER_CMD:-gometalinter}"
+GOLANGCI_LINT_CMD="${GOLANGCI_LINT_CMD:-golangci-lint}"
 GOPATH="${GOPATH:-${HOME}/go}"
 
 DEPEND_SCRIPT_REVISION=$(git log -1 --pretty=format:"%h" test/scripts/dependencies.sh)
@@ -46,31 +46,17 @@ function installGoDep {
     installGoPkg "${repo}" "${revision}" "/cmd/dep" "dep"
 }
 
-function installGoMetalinter {
-    declare repo="github.com/alecthomas/gometalinter"
-    declare revision="v2.0.12"
+function installGolangCiLint {
+    declare repo="github.com/golangci/golangci-lint/cmd/golangci-lint"
+    declare revision="v1.15.0"
 
-    declare pkg="github.com/alecthomas/gometalinter"
+    declare pkg="github.com/golangci/golangci-lint/cmd/golangci-lint"
 
-    installGoPkg "${repo}" "${revision}" "" "gometalinter"
-
+    installGoPkg "${repo}" "${revision}" "" "golangci-lint"
     cp -f ${BUILD_TMP}/bin/* ${GOPATH}/bin/
     rm -Rf ${GOPATH}/src/${pkg}
     mkdir -p ${GOPATH}/src/${pkg}
     cp -Rf ${BUILD_TMP}/src/${repo}/* ${GOPATH}/src/${pkg}/
-    ${GO_METALINTER_CMD} --install --force
-}
-
-function installGoGas {
-    declare repo="github.com/GoASTScanner/gas"
-    declare revision="4ae8c95"
-
-    GOPATH=${BUILD_TMP} ${GO_CMD} get -u github.com/kisielk/gotool
-    GOPATH=${BUILD_TMP} ${GO_CMD} get -u github.com/nbutton23/zxcvbn-go
-    GOPATH=${BUILD_TMP} ${GO_CMD} get -u github.com/ryanuber/go-glob
-    GOPATH=${BUILD_TMP} ${GO_CMD} get -u gopkg.in/yaml.v2
-
-    installGoPkg "${repo}" "${revision}" "/cmd/gas/..." "gas"
 }
 
 function installGoPkg {
@@ -137,60 +123,13 @@ function isDependenciesInstalled {
     type gocov-xml >/dev/null 2>&1 || msgs+=("gocov-xml is not installed (go get -u github.com/AlekSi/gocov-xml)")
     type mockgen >/dev/null 2>&1 || msgs+=("mockgen is not installed (go get -u github.com/golang/mock/mockgen)")
     type ${GO_DEP_CMD} >/dev/null 2>&1 || msgs+=("dep is not installed (go get -u github.com/golang/dep/cmd/dep)")
-    type ${GO_METALINTER_CMD} >/dev/null 2>&1 || msgs+=("gometalinter is not installed (go get -u ${GO_METALINTER_PKG})")
+    type ${GOLANGCI_LINT_CMD} >/dev/null 2>&1 || msgs+=("golangci-lint is not installed (go get -u ${GOLANGCI_LINT_CMD})")
 
     if [ ${#msgs[@]} -gt 0 ]; then
         if [ ${printMsgs} = true ]; then
             echo >& 2 $(echo ${msgs[@]} | tr ' ' '\n')
         fi
 
-        return 1
-    fi
-
-    if ! isGoMetalinterInstalled; then
-        return 1
-    fi
-}
-
-function isGoMetalinterInstalled {
-    declare -a tools=(
-      gometalinter
-      deadcode
-      dupl
-      errcheck
-      gas
-      gochecknoglobals
-      gochecknoinits
-      goconst
-      gocyclo
-      goimports
-      golint
-      gosimple
-      gotype
-      ineffassign
-      interfacer
-      lll
-      maligned
-      megacheck
-      misspell
-      nakedret
-      safesql
-      staticcheck
-      structcheck
-      unconvert
-      unparam
-      unused
-      varcheck
-    )
-
-    declare -a msgs=()
-    for tool in ${tools[@]}
-    do
-        type ${tool} >/dev/null 2>&1 || msgs+=("${tool} is not installed")
-    done
-
-    if [ ${#msgs[@]} -gt 0 ]; then
-        echo >& 2 $(echo ${msgs[@]} | tr ' ' '\n')
         return 1
     fi
 }
@@ -204,10 +143,7 @@ function installDependencies {
     GOPATH=${BUILD_TMP} ${GO_CMD} get -u github.com/AlekSi/gocov-xml
     GOPATH=${BUILD_TMP} ${GO_CMD} get -u github.com/golang/mock/mockgen
 
-    installGoMetalinter
-
-    # gas in gometalinter is out of date.
-    installGoGas
+    installGolangCiLint
 
     # Install specific version of go dep (particularly for CI)
     if [ -n "${GO_DEP_COMMIT}" ]; then

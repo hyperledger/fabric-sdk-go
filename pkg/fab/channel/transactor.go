@@ -64,10 +64,7 @@ func orderersFromChannelCfg(ctx context.Client, cfg fab.ChannelCfg) ([]fab.Order
 		return orderers, nil
 	}
 
-	ordererDict, err := orderersByTarget(ctx)
-	if err != nil {
-		return nil, err
-	}
+	ordererDict := orderersByTarget(ctx)
 
 	// Add orderer if specified in channel config
 	for _, target := range cfg.Orderers() {
@@ -131,7 +128,7 @@ func orderersFromChannel(ctx context.Client, channelID string) ([]fab.Orderer, e
 	return orderers, nil
 }
 
-func orderersByTarget(ctx context.Client) (map[string]fab.OrdererConfig, error) {
+func orderersByTarget(ctx context.Client) map[string]fab.OrdererConfig {
 	ordererDict := map[string]fab.OrdererConfig{}
 	orderersConfig := ctx.EndpointConfig().OrderersConfig()
 
@@ -139,7 +136,7 @@ func orderersByTarget(ctx context.Client) (map[string]fab.OrdererConfig, error) 
 		address := endpoint.ToAddress(oc.URL)
 		ordererDict[address] = oc
 	}
-	return ordererDict, nil
+	return ordererDict
 }
 
 // CreateTransactionHeader creates a Transaction Header based on the current context.

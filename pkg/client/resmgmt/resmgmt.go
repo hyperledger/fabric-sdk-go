@@ -575,10 +575,10 @@ func (rc *Client) QueryInstantiatedChaincodes(channelID string, options ...Reque
 		target = opts.Targets[0]
 	} else {
 		// select random channel peer
-		var err error
-		target, err = rc.selectRandomChannelPeer(chCtx)
-		if err != nil {
-			return nil, err
+		var srcpErr error
+		target, srcpErr = rc.selectRandomChannelPeer(chCtx)
+		if srcpErr != nil {
+			return nil, srcpErr
 		}
 	}
 
@@ -635,10 +635,10 @@ func (rc *Client) QueryCollectionsConfig(channelID string, chaincodeName string,
 		target = opts.Targets[0]
 	} else {
 		// select random channel peer
-		var err error
-		target, err = rc.selectRandomChannelPeer(chCtx)
-		if err != nil {
-			return nil, err
+		var srcpErr error
+		target, srcpErr = rc.selectRandomChannelPeer(chCtx)
+		if srcpErr != nil {
+			return nil, srcpErr
 		}
 	}
 
@@ -716,7 +716,7 @@ func (rc *Client) QueryChannels(options ...RequestOption) (*pb.ChannelQueryRespo
 }
 
 // validateSendCCProposal
-func (rc *Client) getCCProposalTargets(channelID string, req InstantiateCCRequest, opts requestOptions) ([]fab.Peer, error) {
+func (rc *Client) getCCProposalTargets(channelID string, opts requestOptions) ([]fab.Peer, error) {
 
 	chCtx, err := contextImpl.NewChannel(
 		func() (context.Client, error) {
@@ -791,7 +791,7 @@ func (rc *Client) sendCCProposal(reqCtx reqContext.Context, ccProposalType chain
 		return fab.EmptyTransactionID, err
 	}
 
-	targets, err := rc.getCCProposalTargets(channelID, req, opts)
+	targets, err := rc.getCCProposalTargets(channelID, opts)
 	if err != nil {
 		return fab.EmptyTransactionID, err
 	}

@@ -356,9 +356,9 @@ func DiscoverLocalPeers(ctxProvider contextAPI.ClientProvider, expectedPeers int
 
 	discoveredPeers, err := retry.NewInvoker(retry.New(retry.TestRetryOpts)).Invoke(
 		func() (interface{}, error) {
-			peers, err := ctx.LocalDiscoveryService().GetPeers()
-			if err != nil {
-				return nil, errors.Wrapf(err, "error getting peers for MSP [%s]", ctx.Identifier().MSPID)
+			peers, serviceErr := ctx.LocalDiscoveryService().GetPeers()
+			if serviceErr != nil {
+				return nil, errors.Wrapf(serviceErr, "error getting peers for MSP [%s]", ctx.Identifier().MSPID)
 			}
 			if len(peers) < expectedPeers {
 				return nil, status.New(status.TestStatus, status.GenericTransient.ToInt32(), fmt.Sprintf("Expecting %d peers but got %d", expectedPeers, len(peers)), nil)

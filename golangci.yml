@@ -1,0 +1,90 @@
+#
+# Copyright SecureKey Technologies Inc. All Rights Reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+run:
+  concurrency: 4
+  deadline: 1m
+  issues-exit-code: 1
+  tests: true
+  build-tags: []
+  skip-dirs:  []
+  skip-files:
+    - ^(.*_test.go.*$)$
+
+output:
+  format: colored-line-number
+  print-issued-lines: true
+  print-linter-name: true
+
+linters-settings:
+  errcheck:
+    check-type-assertions: false
+    check-blank: false
+    ignore: fmt:.*,io/ioutil:^Read.*
+  govet:
+    check-shadowing: true
+    settings:
+      printf:
+        funcs:
+          - (github.com/golangci/golangci-lint/pkg/logutils.Log).Infof
+          - (github.com/golangci/golangci-lint/pkg/logutils.Log).Warnf
+          - (github.com/golangci/golangci-lint/pkg/logutils.Log).Errorf
+          - (github.com/golangci/golangci-lint/pkg/logutils.Log).Fatalf
+  golint:
+    min-confidence: 0.8
+  gofmt:
+    simplify: true
+  goimports:
+    local-prefixes:
+  gocyclo:
+    min-complexity: 10
+  maligned:
+    suggest-new: true
+  dupl:
+    threshold: 100
+  goconst:
+    min-len: 3
+    min-occurrences: 3
+  misspell:
+    locale:
+    ignore-words: []
+  lll:
+    line-length: 120
+    tab-width: 1
+  unused:
+    check-exported: false
+  unparam:
+    check-exported: false
+  nakedret:
+    max-func-lines: 30
+
+linters:
+  disable-all: true
+  enable:
+    - deadcode
+    - gocyclo
+    - gofmt
+    - goimports
+    - golint
+    - gosimple
+    - ineffassign
+    - misspell
+    - unconvert
+    - unused
+    - vet
+    - varcheck
+    - maligned
+    - errcheck
+    - megacheck
+    - goconst
+    - gas
+    - structcheck
+  enable-all: false
+  disable: []
+  presets:
+    - bugs
+    - unused
+  fast: false

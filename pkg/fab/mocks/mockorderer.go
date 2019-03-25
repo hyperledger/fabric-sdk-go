@@ -66,12 +66,12 @@ func delivery(o *MockOrderer) {
 			close(o.Deliveries)
 			return
 		}
-		switch value.(type) {
+		switch value := value.(type) {
 		case common.Status:
 		case *common.Block:
-			o.Deliveries <- value.(*common.Block)
+			o.Deliveries <- value
 		case error:
-			o.DeliveryErrors <- value.(error)
+			o.DeliveryErrors <- value
 		default:
 			panic(fmt.Sprintf("Value not *common.Block nor error: %+v", value))
 		}

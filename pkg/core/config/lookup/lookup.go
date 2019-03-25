@@ -114,13 +114,13 @@ func (c *ConfigLookup) UnmarshalKey(key string, rawVal interface{}, opts ...Unma
 	unmarshalHooks = append(unmarshalHooks, mapstructure.StringToTimeDurationHookFunc())
 
 	//check for opts
-	unmarshalOpts := unmarshalOpts{}
+	unmarshalOptions := unmarshalOpts{}
 	for _, param := range opts {
-		param(&unmarshalOpts)
+		param(&unmarshalOptions)
 	}
 
 	//compose multiple hook funcs to one if found in opts
-	hookFn := mapstructure.ComposeDecodeHookFunc(append(unmarshalHooks, unmarshalOpts.hooks...)...)
+	hookFn := mapstructure.ComposeDecodeHookFunc(append(unmarshalHooks, unmarshalOptions.hooks...)...)
 
 	//build decoder
 	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{

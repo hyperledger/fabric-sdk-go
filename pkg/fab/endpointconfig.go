@@ -397,43 +397,43 @@ func (c *EndpointConfig) getTimeout(tType fab.TimeoutType) time.Duration { //nol
 
 func (c *EndpointConfig) loadEndpointConfiguration() error {
 
-	endpointConfigEntity := endpointConfigEntity{}
+	endpointConfigurationEntity := endpointConfigEntity{}
 
-	err := c.backend.UnmarshalKey("client", &endpointConfigEntity.Client)
-	logger.Debugf("Client is: %+v", endpointConfigEntity.Client)
+	err := c.backend.UnmarshalKey("client", &endpointConfigurationEntity.Client)
+	logger.Debugf("Client is: %+v", endpointConfigurationEntity.Client)
 	if err != nil {
-		return errors.WithMessage(err, "failed to parse 'client' config item to endpointConfigEntity.Client type")
+		return errors.WithMessage(err, "failed to parse 'client' config item to endpointConfigurationEntity.Client type")
 	}
 
 	err = c.backend.UnmarshalKey(
-		"channels", &endpointConfigEntity.Channels,
+		"channels", &endpointConfigurationEntity.Channels,
 		lookup.WithUnmarshalHookFunction(peerChannelConfigHookFunc()),
 	)
-	logger.Debugf("channels are: %+v", endpointConfigEntity.Channels)
+	logger.Debugf("channels are: %+v", endpointConfigurationEntity.Channels)
 	if err != nil {
-		return errors.WithMessage(err, "failed to parse 'channels' config item to endpointConfigEntity.Channels type")
+		return errors.WithMessage(err, "failed to parse 'channels' config item to endpointConfigurationEntity.Channels type")
 	}
 
-	err = c.backend.UnmarshalKey("organizations", &endpointConfigEntity.Organizations)
-	logger.Debugf("organizations are: %+v", endpointConfigEntity.Organizations)
+	err = c.backend.UnmarshalKey("organizations", &endpointConfigurationEntity.Organizations)
+	logger.Debugf("organizations are: %+v", endpointConfigurationEntity.Organizations)
 	if err != nil {
-		return errors.WithMessage(err, "failed to parse 'organizations' config item to endpointConfigEntity.Organizations type")
+		return errors.WithMessage(err, "failed to parse 'organizations' config item to endpointConfigurationEntity.Organizations type")
 	}
 
-	err = c.backend.UnmarshalKey("orderers", &endpointConfigEntity.Orderers)
-	logger.Debugf("orderers are: %+v", endpointConfigEntity.Orderers)
+	err = c.backend.UnmarshalKey("orderers", &endpointConfigurationEntity.Orderers)
+	logger.Debugf("orderers are: %+v", endpointConfigurationEntity.Orderers)
 	if err != nil {
-		return errors.WithMessage(err, "failed to parse 'orderers' config item to endpointConfigEntity.Orderers type")
+		return errors.WithMessage(err, "failed to parse 'orderers' config item to endpointConfigurationEntity.Orderers type")
 	}
 
-	err = c.backend.UnmarshalKey("peers", &endpointConfigEntity.Peers)
-	logger.Debugf("peers are: %+v", endpointConfigEntity.Peers)
+	err = c.backend.UnmarshalKey("peers", &endpointConfigurationEntity.Peers)
+	logger.Debugf("peers are: %+v", endpointConfigurationEntity.Peers)
 	if err != nil {
-		return errors.WithMessage(err, "failed to parse 'peers' config item to endpointConfigEntity.Peers type")
+		return errors.WithMessage(err, "failed to parse 'peers' config item to endpointConfigurationEntity.Peers type")
 	}
 
 	//load all endpointconfig entities
-	err = c.loadEndpointConfigEntities(&endpointConfigEntity)
+	err = c.loadEndpointConfigEntities(&endpointConfigurationEntity)
 	if err != nil {
 		return errors.WithMessage(err, "failed to load channel configs")
 	}
@@ -527,10 +527,7 @@ func (c *EndpointConfig) loadDefaultConfigItems(configEntity *endpointConfigEnti
 	}
 
 	//default channel policies
-	err = c.loadDefaultChannelPolicies(configEntity)
-	if err != nil {
-		return errors.WithMessage(err, "failed to load default channel policies")
-	}
+	c.loadDefaultChannelPolicies(configEntity)
 	return nil
 }
 
@@ -973,7 +970,7 @@ func (c *EndpointConfig) loadDefaultOrderer(configEntity *endpointConfigEntity) 
 	return nil
 }
 
-func (c *EndpointConfig) loadDefaultChannelPolicies(configEntity *endpointConfigEntity) error {
+func (c *EndpointConfig) loadDefaultChannelPolicies(configEntity *endpointConfigEntity) {
 
 	var defaultChPolicies fab.ChannelPolicies
 	defaultChannel, ok := configEntity.Channels[defaultEntity]
@@ -990,7 +987,6 @@ func (c *EndpointConfig) loadDefaultChannelPolicies(configEntity *endpointConfig
 
 	c.defaultChannelPolicies = defaultChPolicies
 
-	return nil
 }
 
 func (c *EndpointConfig) loadDefaultDiscoveryPolicy(policy *fab.DiscoveryPolicy) {
@@ -1383,9 +1379,9 @@ func (c *EndpointConfig) loadTLSClientCerts(configEntity *endpointConfigEntity) 
 	// If CryptoSuite fails to load private key from cert then load private key from config
 	if err != nil || pk == nil {
 		logger.Debugf("Reading pk from config, unable to retrieve from cert: %s", err)
-		tlsClientCerts, err := c.loadPrivateKeyFromConfig(&configEntity.Client, clientCerts, cb)
-		if err != nil {
-			return errors.WithMessage(err, "failed to load TLS client certs")
+		tlsClientCerts, error := c.loadPrivateKeyFromConfig(&configEntity.Client, clientCerts, cb)
+		if error != nil {
+			return errors.WithMessage(error, "failed to load TLS client certs")
 		}
 		c.tlsClientCerts = tlsClientCerts
 		return nil
@@ -1439,7 +1435,11 @@ func (c *EndpointConfig) tryMatchingPeerConfig(peerSearchKey string, searchByURL
 		//lookup by URL
 		for _, staticPeerConfig := range c.networkConfig.Peers {
 			if strings.EqualFold(staticPeerConfig.URL, peerSearchKey) {
-				return &staticPeerConfig, true
+				return &fab.PeerConfig{
+					URL:         staticPeerConfig.URL,
+					GRPCOptions: staticPeerConfig.GRPCOptions,
+					TLSCACert:   staticPeerConfig.TLSCACert,
+				}, true
 			}
 		}
 	}
@@ -1536,7 +1536,11 @@ func (c *EndpointConfig) tryMatchingOrdererConfig(ordererSearchKey string, searc
 		//lookup by URL
 		for _, ordererCfg := range c.OrderersConfig() {
 			if strings.EqualFold(ordererCfg.URL, ordererSearchKey) {
-				return &ordererCfg, true
+				return &fab.OrdererConfig{
+					URL:         ordererCfg.URL,
+					GRPCOptions: ordererCfg.GRPCOptions,
+					TLSCACert:   ordererCfg.TLSCACert,
+				}, true
 			}
 		}
 	}
@@ -1609,26 +1613,26 @@ func (c *EndpointConfig) getMappedOrderer(host string) *fab.OrdererConfig {
 
 func (c *EndpointConfig) compileMatchers() error {
 
-	entityMatchers := entityMatchers{}
+	entMatchers := entityMatchers{}
 
-	err := c.backend.UnmarshalKey("entityMatchers", &entityMatchers.matchers)
-	logger.Debugf("Matchers are: %+v", entityMatchers)
+	err := c.backend.UnmarshalKey("entityMatchers", &entMatchers.matchers)
+	logger.Debugf("Matchers are: %+v", entMatchers)
 	if err != nil {
-		return errors.WithMessage(err, "failed to parse 'entityMatchers' config item")
+		return errors.WithMessage(err, "failed to parse 'entMatchers' config item")
 	}
 
 	//return no error if entityMatchers is not configured
-	if len(entityMatchers.matchers) == 0 {
+	if len(entMatchers.matchers) == 0 {
 		logger.Debug("Entity matchers are not configured")
 		return nil
 	}
 
-	err = c.compileAllMatchers(&entityMatchers)
+	err = c.compileAllMatchers(&entMatchers)
 	if err != nil {
 		return err
 	}
 
-	c.entityMatchers = &entityMatchers
+	c.entityMatchers = &entMatchers
 	return nil
 }
 

@@ -110,7 +110,7 @@ func (c *fabricCAAdapter) Reenroll(key core.Key, cert []byte, request *api.Reenr
 // request: Registration Request
 // Returns Enrolment Secret
 func (c *fabricCAAdapter) Register(key core.Key, cert []byte, request *api.RegistrationRequest) (string, error) {
-	// Contruct request for Fabric CA client
+	// Construct request for Fabric CA client
 	var attributes []caapi.Attribute
 	for i := range request.Attributes {
 		attributes = append(attributes, caapi.Attribute{Name: request.Attributes[i].Name, Value: request.Attributes[i].Value, ECert: request.Attributes[i].ECert})
@@ -367,9 +367,9 @@ func (c *fabricCAAdapter) GetAllIdentities(key core.Key, cert []byte, caname str
 
 	err = registrar.GetAllIdentities(caname, func(decoder *json.Decoder) error {
 		var identity caapi.IdentityInfo
-		err := decoder.Decode(&identity)
-		if err != nil {
-			return err
+		decodeErr := decoder.Decode(&identity)
+		if decodeErr != nil {
+			return decodeErr
 		}
 
 		identities = append(identities, identity)

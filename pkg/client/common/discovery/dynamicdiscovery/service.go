@@ -53,28 +53,28 @@ type service struct {
 type queryPeers func() ([]fab.Peer, error)
 
 func newService(config fab.EndpointConfig, query queryPeers, opts ...coptions.Opt) *service {
-	options := options{}
-	coptions.Apply(&options, opts)
+	opt := options{}
+	coptions.Apply(&opt, opts)
 
-	if options.refreshInterval == 0 {
-		options.refreshInterval = config.Timeout(fab.DiscoveryServiceRefresh)
+	if opt.refreshInterval == 0 {
+		opt.refreshInterval = config.Timeout(fab.DiscoveryServiceRefresh)
 	}
 
-	if options.responseTimeout == 0 {
-		options.responseTimeout = config.Timeout(fab.DiscoveryResponse)
+	if opt.responseTimeout == 0 {
+		opt.responseTimeout = config.Timeout(fab.DiscoveryResponse)
 	}
 
-	logger.Debugf("Cache refresh interval: %s", options.refreshInterval)
-	logger.Debugf("Deliver service response timeout: %s", options.responseTimeout)
+	logger.Debugf("Cache refresh interval: %s", opt.refreshInterval)
+	logger.Debugf("Deliver service response timeout: %s", opt.responseTimeout)
 
 	return &service{
-		responseTimeout: options.responseTimeout,
-		ErrHandler:      options.errHandler,
+		responseTimeout: opt.responseTimeout,
+		ErrHandler:      opt.errHandler,
 		peersRef: lazyref.New(
 			func() (interface{}, error) {
 				return query()
 			},
-			lazyref.WithRefreshInterval(lazyref.InitOnFirstAccess, options.refreshInterval),
+			lazyref.WithRefreshInterval(lazyref.InitOnFirstAccess, opt.refreshInterval),
 		),
 	}
 }

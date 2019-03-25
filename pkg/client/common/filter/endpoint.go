@@ -71,7 +71,10 @@ func (f *EndpointFilter) Accept(peer fab.Peer) bool {
 func (f *EndpointFilter) getChannelPeer(peerConfig *fab.PeerConfig) *fab.ChannelPeer {
 	for _, chpeer := range f.chPeers {
 		if chpeer.URL == peerConfig.URL {
-			return &chpeer
+			return &fab.ChannelPeer{
+				PeerChannelConfig: chpeer.PeerChannelConfig,
+				NetworkPeer:       chpeer.NetworkPeer,
+			}
 		}
 	}
 	return nil

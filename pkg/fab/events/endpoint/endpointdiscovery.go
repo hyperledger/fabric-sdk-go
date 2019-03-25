@@ -104,7 +104,10 @@ func (s *DiscoveryWrapper) GetPeers() ([]fab.Peer, error) {
 func (s *DiscoveryWrapper) getChannelPeer(url string) *fab.ChannelPeer {
 	for _, chpeer := range s.chPeers {
 		if chpeer.URL == url {
-			return &chpeer
+			return &fab.ChannelPeer{
+				PeerChannelConfig: chpeer.PeerChannelConfig,
+				NetworkPeer:       chpeer.NetworkPeer,
+			}
 		}
 	}
 	return nil

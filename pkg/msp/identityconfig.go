@@ -362,15 +362,15 @@ func (c *IdentityConfig) getServerCerts(caConfig *CAConfig) ([][]byte, error) {
 }
 
 func (c *IdentityConfig) compileMatchers() error {
-	entityMatchers := entityMatchers{}
+	entMatchers := entityMatchers{}
 
-	err := c.backend.UnmarshalKey("entityMatchers", &entityMatchers.matchers)
-	logger.Debugf("Matchers are: %+v", entityMatchers)
+	err := c.backend.UnmarshalKey("entityMatchers", &entMatchers.matchers)
+	logger.Debugf("Matchers are: %+v", entMatchers)
 	if err != nil {
-		return errors.WithMessage(err, "failed to parse 'entityMatchers' config item")
+		return errors.WithMessage(err, "failed to parse 'entMatchers' config item")
 	}
 
-	caMatcherConfigs := entityMatchers.matchers["certificateauthority"]
+	caMatcherConfigs := entMatchers.matchers["certificateauthority"]
 	c.caMatchers = make([]matcherEntry, len(caMatcherConfigs))
 
 	if len(caMatcherConfigs) > 0 {

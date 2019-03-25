@@ -291,8 +291,7 @@ func testResolveOptsDefaultValues(t *testing.T, channelID string) {
 		t.Fatal("Failed to create channel config")
 	}
 
-	err = channelConfig.resolveOptsFromConfig(ctx)
-	assert.Nil(t, err, "Failed to resolve opts from config, %v", err)
+	channelConfig.resolveOptsFromConfig(ctx)
 	assert.True(t, channelConfig.opts.MaxTargets == 2, "supposed to be loaded once opts resolved from config")
 	assert.True(t, channelConfig.opts.MinResponses == 1, "supposed to be loaded once opts resolved from config")
 	assert.True(t, channelConfig.opts.RetryOpts.RetryableCodes != nil, "supposed to be loaded once opts resolved from config")

@@ -49,7 +49,7 @@ func (dp *LocalProvider) CreateLocalDiscoveryService(mspID string) (fab.Discover
 	logger.Debugf("Found %d peers", len(netPeers))
 
 	for _, p := range netPeers {
-		newPeer, err := dp.fabPvdr.CreatePeerFromConfig(&p)
+		newPeer, err := dp.fabPvdr.CreatePeerFromConfig(&fab.NetworkPeer{PeerConfig: p.PeerConfig, MSPID: p.MSPID})
 		if err != nil {
 			return nil, errors.WithMessage(err, "NewPeerFromConfig failed")
 		}

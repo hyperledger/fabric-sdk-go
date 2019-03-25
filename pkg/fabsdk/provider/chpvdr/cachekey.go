@@ -51,10 +51,10 @@ type cacheKey struct {
 }
 
 // newCacheKey returns a new cacheKey
-func newCacheKey(chConfig fab.ChannelCfg) (*cacheKey, error) {
+func newCacheKey(chConfig fab.ChannelCfg) *cacheKey {
 	return &cacheKey{
 		channelConfig: chConfig,
-	}, nil
+	}
 }
 
 // String returns the key as a string
