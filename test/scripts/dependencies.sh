@@ -113,6 +113,16 @@ function isDependencyCurrent {
     fi
 }
 
+# areImagesInstalled checks that the docker images are installed.
+function areImagesInstalled {
+    declare imgCount=$(docker images | grep fabsdkgo-softhsm2 | wc -l)
+
+    if [ ${imgCount} -eq 0 ]; then
+        echo "fabsdkgo-softhsm2 docker image does not exist"
+        return 1
+    fi
+}
+
 # isDependenciesInstalled checks that Go tools are installed and help the user if they are missing
 function isDependenciesInstalled {
     declare printMsgs=$1
@@ -168,9 +178,28 @@ function isForceMode {
     fi
 }
 
+function isCheckOnlyMode {
+    if [ "${BASH_ARGV[0]}" != "-c" ]; then
+        return 1
+    fi
+}
+
 setCachePath
 
-if ! isDependencyCurrent || ! isDependenciesInstalled false || isForceMode; then
+if isCheckOnlyMode; then
+    if ! isDependenciesInstalled true; then
+        echo "Missing tool dependency. You can fix by running make depend or installing the tool listed above."
+        exit 1
+    fi
+
+    if ! areImagesInstalled; then
+        echo "Missing docker image dependency. You can fix by running make depend or make build-softhsm2-image."
+        exit 1
+    fi
+    exit 0
+fi
+
+if ! isDependencyCurrent || ! isDependenciesInstalled false || ! areImagesInstalled || isForceMode; then
     installDependencies
     buildDockerImages
     recordCacheResult
@@ -178,8 +207,3 @@ else
     echo "No need to install dependencies"
 fi
 
-if ! isDependenciesInstalled true; then
-    echo "Missing dependency. Aborting. You can fix by installing the tool listed above or running make depend-install."
-    rm ${CACHE_PATH}/${LASTRUN_INFO_FILENAME}
-    exit 1
-fi

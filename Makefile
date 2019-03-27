@@ -250,6 +250,9 @@ depend: version
 depend-noforce: version
 ifeq ($(FABRIC_SDKGO_DEPEND_INSTALL),true)
 	@$(TEST_SCRIPTS_PATH)/dependencies.sh
+	@$(TEST_SCRIPTS_PATH)/dependencies.sh -c
+else
+	-@$(TEST_SCRIPTS_PATH)/dependencies.sh -c
 endif
 
 .PHONY: checks
