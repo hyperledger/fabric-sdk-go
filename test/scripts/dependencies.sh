@@ -68,14 +68,14 @@ function installGoPkg {
 
     echo "Installing ${repo}@${revision} to $GOPATH/bin ..."
 
-    GOPATH=${BUILD_TMP} go get -d ${repo}
+    GO111MODULE=off GOPATH=${BUILD_TMP} go get -d ${repo}
     tag=$(cd ${BUILD_TMP}/src/${repo} && git tag -l --sort=-version:refname | head -n 1 | grep "${revision}" || true)
     if [ ! -z "${tag}" ]; then
         revision=${tag}
         echo "  using tag ${revision}"
     fi
     (cd ${BUILD_TMP}/src/${repo} && git reset --hard ${revision})
-    GOPATH=${BUILD_TMP} GOBIN=${BUILD_TMP}/bin go install -i ${repo}/${pkgPath}
+    GO111MODULE=off GOPATH=${BUILD_TMP} GOBIN=${BUILD_TMP}/bin go install -i ${repo}/${pkgPath}
 
     mkdir -p ${GOPATH}/bin
     for cmd in ${cmds[@]}
@@ -149,9 +149,9 @@ function installDependencies {
     rm -f "${CACHE_PATH}/${LASTRUN_INFO_FILENAME}"
 
     BUILD_TMP=`mktemp -d 2>/dev/null || mktemp -d -t 'fabricsdkgo'`
-    GOPATH=${BUILD_TMP} ${GO_CMD} get -u github.com/axw/gocov/...
-    GOPATH=${BUILD_TMP} ${GO_CMD} get -u github.com/AlekSi/gocov-xml
-    GOPATH=${BUILD_TMP} ${GO_CMD} get -u github.com/golang/mock/mockgen
+    GO111MODULE=off GOPATH=${BUILD_TMP} ${GO_CMD} get -u github.com/axw/gocov/...
+    GO111MODULE=off GOPATH=${BUILD_TMP} ${GO_CMD} get -u github.com/AlekSi/gocov-xml
+    GO111MODULE=off GOPATH=${BUILD_TMP} ${GO_CMD} get -u github.com/golang/mock/mockgen
 
     installGolangCiLint
 
