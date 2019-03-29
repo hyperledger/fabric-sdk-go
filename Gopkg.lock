@@ -167,11 +167,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:1ce2d46823cde7d9b9724c46268d43835ae0556f91457d1fbe2536a748476ee0"
+  digest = "1:7df1d8dee35a525b58446215928a3484902197a8b40f23a77afe6efcdde526be"
   name = "github.com/miekg/pkcs11"
   packages = ["."]
   pruneopts = ""
-  revision = "88ac7c418f89b164432a00c46ec7b7612d686b57"
+  revision = "55f3fac3af27733d63d892fafed86102fb486162"
 
 [[projects]]
   branch = "master"
