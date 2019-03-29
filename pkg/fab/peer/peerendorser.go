@@ -67,7 +67,7 @@ func newPeerEndorser(endorseReq *peerEndorserRequest) (*peerEndorser, error) {
 	if endorseReq.kap.Time > 0 {
 		grpcOpts = append(grpcOpts, grpc.WithKeepaliveParams(endorseReq.kap))
 	}
-	grpcOpts = append(grpcOpts, grpc.WithDefaultCallOptions(grpc.FailFast(endorseReq.failFast)))
+	grpcOpts = append(grpcOpts, grpc.WithDefaultCallOptions(grpc.WaitForReady(!endorseReq.failFast)))
 
 	if endpoint.AttemptSecured(endorseReq.target, endorseReq.allowInsecure) {
 		tlsConfig, err := comm.TLSConfig(endorseReq.certificate, endorseReq.serverHostOverride, endorseReq.config)

@@ -6,13 +6,10 @@
 #
 # This script installs dependencies for testing tools
 # Environment variables that affect this script:
-# GO_DEP_COMMIT: Tag or commit level of the go dep tool to install
 
 set -e
 
 GO_CMD="${GO_CMD:-go}"
-GO_DEP_CMD="${GO_DEP_CMD:-dep}"
-GO_DEP_REPO="github.com/golang/dep"
 GOLANGCI_LINT_CMD="${GOLANGCI_LINT_CMD:-golangci-lint}"
 GOPATH="${GOPATH:-${HOME}/go}"
 
@@ -37,13 +34,6 @@ function setCachePath {
 function recordCacheResult {
     mkdir -p ${CACHE_PATH}
     echo ${DEPEND_SCRIPT_REVISION} ${DATE} > "${CACHE_PATH}/${LASTRUN_INFO_FILENAME}"
-}
-
-function installGoDep {
-    declare repo=$1
-    declare revision=$2
-
-    installGoPkg "${repo}" "${revision}" "/cmd/dep" "dep"
 }
 
 function installGolangCiLint {
@@ -132,7 +122,6 @@ function isDependenciesInstalled {
     type gocov >/dev/null 2>&1 || msgs+=("gocov is not installed (go get -u github.com/axw/gocov/...)")
     type gocov-xml >/dev/null 2>&1 || msgs+=("gocov-xml is not installed (go get -u github.com/AlekSi/gocov-xml)")
     type mockgen >/dev/null 2>&1 || msgs+=("mockgen is not installed (go get -u github.com/golang/mock/mockgen)")
-    type ${GO_DEP_CMD} >/dev/null 2>&1 || msgs+=("dep is not installed (go get -u github.com/golang/dep/cmd/dep)")
     type ${GOLANGCI_LINT_CMD} >/dev/null 2>&1 || msgs+=("golangci-lint is not installed (go get -u ${GOLANGCI_LINT_CMD})")
 
     if [ ${#msgs[@]} -gt 0 ]; then
@@ -154,11 +143,6 @@ function installDependencies {
     GO111MODULE=off GOPATH=${BUILD_TMP} ${GO_CMD} get -u github.com/golang/mock/mockgen
 
     installGolangCiLint
-
-    # Install specific version of go dep (particularly for CI)
-    if [ -n "${GO_DEP_COMMIT}" ]; then
-        installGoDep ${GO_DEP_REPO} ${GO_DEP_COMMIT}
-    fi
 
     rm -Rf ${BUILD_TMP}
 }

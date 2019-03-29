@@ -96,6 +96,6 @@ func (c *StreamConnection) Close() {
 }
 
 // Stream returns the GRPC stream
-func (c *StreamConnection) Stream() grpc.Stream {
+func (c *StreamConnection) Stream() grpc.ClientStream {
 	return c.stream
 }

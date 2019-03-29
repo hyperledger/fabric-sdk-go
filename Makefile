@@ -21,7 +21,6 @@
 
 # Tool commands (overridable)
 GO_CMD             ?= go
-GO_DEP_CMD         ?= dep
 DOCKER_CMD         ?= docker
 DOCKER_COMPOSE_CMD ?= docker-compose
 
@@ -145,9 +144,6 @@ FABRIC_TOOLS_PREV_TAG       = $(FABRIC_ARCH)-$(FABRIC_PREV_VERSION)
 FABRIC_TOOLS_PRERELEASE_TAG = $(FABRIC_ARCH)-$(FABRIC_PRERELEASE_VERSION)
 FABRIC_TOOLS_DEVSTABLE_TAG  := stable
 
-# The version of dep that will be installed by depend (or in the CI)
-GO_DEP_COMMIT := v0.5.0
-
 # Detect CI
 # TODO introduce nightly and adjust verify
 ifdef JENKINS_URL
@@ -224,11 +220,9 @@ DOCKER_COMPOSE_PULL_FLAGS :=
 
 # Global environment exported for scripts
 export GO_CMD
-export GO_DEP_CMD
 export ARCH
 export FABRIC_ARCH
 export GO_LDFLAGS
-export GO_DEP_COMMIT
 export GO_MOCKGEN_COMMIT
 export GO_TAGS
 export DOCKER_CMD
@@ -256,7 +250,7 @@ else
 endif
 
 .PHONY: checks
-checks: version depend-noforce license check-dep lint
+checks: version depend-noforce license lint
 
 .PHONY: license
 license: version
@@ -269,10 +263,6 @@ lint: version populate-noforce
 .PHONY: lint-all
 lint-all: version populate-noforce
 	@$(TEST_SCRIPTS_PATH)/check_lint.sh
-
-.PHONY: check-dep
-check-dep: version
-	@dep check -skip-vendor
 
 .PHONY: build-softhsm2-image
 build-softhsm2-image:
@@ -289,7 +279,7 @@ build-socat-image:
 		-f $(FIXTURE_SOCAT_PATH)/Dockerfile .
 
 .PHONY: unit-test
-unit-test: clean-tests depend-noforce check-dep populate-noforce license
+unit-test: clean-tests depend-noforce populate-noforce license
 	@TEST_CHANGED_ONLY=$(FABRIC_SDKGO_TEST_CHANGED) TEST_WITH_LINTER=true FABRIC_SDKGO_CODELEVEL_TAG=$(FABRIC_CODELEVEL_UNITTEST_TAG) FABRIC_SDKGO_CODELEVEL_VER=$(FABRIC_CODELEVEL_UNITTEST_VER) \
 	GO_TESTFLAGS="$(GO_TESTFLAGS_UNIT)" \
 	$(TEST_SCRIPTS_PATH)/unit.sh

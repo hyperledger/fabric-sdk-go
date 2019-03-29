@@ -74,7 +74,7 @@ func New(config fab.EndpointConfig, opts ...Option) (*Orderer, error) {
 	if orderer.kap.Time > 0 {
 		grpcOpts = append(grpcOpts, grpc.WithKeepaliveParams(orderer.kap))
 	}
-	grpcOpts = append(grpcOpts, grpc.WithDefaultCallOptions(grpc.FailFast(orderer.failFast)))
+	grpcOpts = append(grpcOpts, grpc.WithDefaultCallOptions(grpc.WaitForReady(!orderer.failFast)))
 	if endpoint.AttemptSecured(orderer.url, orderer.allowInsecure) {
 		//tls config
 		tlsConfig, err := comm.TLSConfig(orderer.tlsCACert, orderer.serverName, config)
