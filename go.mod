@@ -3,7 +3,6 @@ module github.com/hyperledger/fabric-sdk-go
 replace github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos => ./third_party/github.com/hyperledger/fabric/protos
 
 require (
-	github.com/BurntSushi/toml v0.3.1 // indirect
 	github.com/Knetic/govaluate v3.0.0+incompatible
 	github.com/VividCortex/gohistogram v1.0.0 // indirect
 	github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973 // indirect
@@ -12,7 +11,7 @@ require (
 	github.com/go-kit/kit v0.8.0
 	github.com/go-logfmt/logfmt v0.4.0 // indirect
 	github.com/go-stack/stack v1.8.0 // indirect
-	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b // indirect
+	github.com/gogo/protobuf v1.1.1
 	github.com/golang/mock v1.2.0
 	github.com/golang/protobuf v1.2.0
 	github.com/google/certificate-transparency-go v0.0.0-20180222191210-5ab67e519c93 // indirect
@@ -39,8 +38,7 @@ require (
 	github.com/spf13/viper v1.0.2
 	github.com/stretchr/testify v1.2.2
 	golang.org/x/crypto v0.0.0-20180505025534-4ec37c66abab
-	golang.org/x/net v0.0.0-20180906233101-161cd47e91fd
-	google.golang.org/genproto v0.0.0-20180125080656-4eb30f4778ee // indirect
-	google.golang.org/grpc v1.11.3
+	golang.org/x/net v0.0.0-20190213061140-3a22650c66bd
+	google.golang.org/grpc v1.19.0
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
 )

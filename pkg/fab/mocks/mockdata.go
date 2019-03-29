@@ -17,7 +17,7 @@ import (
 	mb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/msp"
 	ab "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/orderer"
 	pp "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
-	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/utils"
+	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protoutil"
 
 	"time"
 
@@ -513,7 +513,7 @@ func CreateBlockWithCCEventAndTxStatus(events *pp.ChaincodeEvent, txID string,
 		},
 		ChannelId: channelID,
 		TxId:      txID}
-	hdr := &common.Header{ChannelHeader: utils.MarshalOrPanic(chdr)}
+	hdr := &common.Header{ChannelHeader: protoutil.MarshalOrPanic(chdr)}
 	payload := &common.Payload{Header: hdr}
 	cea := &pp.ChaincodeEndorsedAction{}
 	ccaPayload := &pp.ChaincodeActionPayload{Action: cea}
@@ -526,27 +526,27 @@ func CreateBlockWithCCEventAndTxStatus(events *pp.ChaincodeEvent, txID string,
 	pHashBytes := []byte("proposal_hash")
 	pResponse := &pp.Response{Status: 200}
 	results := []byte("results")
-	eventBytes, err := utils.GetBytesChaincodeEvent(events)
+	eventBytes, err := protoutil.GetBytesChaincodeEvent(events)
 	if err != nil {
 		return nil, err
 	}
-	ccaPayload.Action.ProposalResponsePayload, err = utils.GetBytesProposalResponsePayload(pHashBytes, pResponse, results, eventBytes, nil)
+	ccaPayload.Action.ProposalResponsePayload, err = protoutil.GetBytesProposalResponsePayload(pHashBytes, pResponse, results, eventBytes, nil)
 	if err != nil {
 		return nil, err
 	}
-	tx.Actions[0].Payload, err = utils.GetBytesChaincodeActionPayload(ccaPayload)
+	tx.Actions[0].Payload, err = protoutil.GetBytesChaincodeActionPayload(ccaPayload)
 	if err != nil {
 		return nil, err
 	}
-	payload.Data, err = utils.GetBytesTransaction(tx)
+	payload.Data, err = protoutil.GetBytesTransaction(tx)
 	if err != nil {
 		return nil, err
 	}
-	env.Payload, err = utils.GetBytesPayload(payload)
+	env.Payload, err = protoutil.GetBytesPayload(payload)
 	if err != nil {
 		return nil, err
 	}
-	ebytes, err := utils.GetBytesEnvelope(env)
+	ebytes, err := protoutil.GetBytesEnvelope(env)
 	if err != nil {
 		return nil, err
 	}

@@ -14,7 +14,7 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
-	protos_utils "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/utils"
+	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protoutil"
 )
 
 const (
@@ -54,13 +54,13 @@ func createChaincodeDeployProposal(txh fab.TransactionHeader, deploy chaincodePr
 	ccds := &pb.ChaincodeDeploymentSpec{ChaincodeSpec: &pb.ChaincodeSpec{
 		Type: pb.ChaincodeSpec_GOLANG, ChaincodeId: &pb.ChaincodeID{Name: chaincode.Name, Path: chaincode.Path, Version: chaincode.Version},
 		Input: &pb.ChaincodeInput{Args: chaincode.Args}}}
-	ccdsBytes, err := protos_utils.Marshal(ccds)
+	ccdsBytes, err := protoutil.Marshal(ccds)
 	if err != nil {
 		return nil, errors.WithMessage(err, "marshal of chaincode deployment spec failed")
 	}
 	args = append(args, ccdsBytes)
 
-	chaincodePolicyBytes, err := protos_utils.Marshal(chaincode.Policy)
+	chaincodePolicyBytes, err := protoutil.Marshal(chaincode.Policy)
 	if err != nil {
 		return nil, errors.WithMessage(err, "marshal of chaincode policy failed")
 	}

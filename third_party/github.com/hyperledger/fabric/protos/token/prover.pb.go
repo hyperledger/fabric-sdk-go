@@ -28,314 +28,166 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
-// TokenToIssue describes a token to be issued in the system
-type TokenToIssue struct {
-	// Recipient refers to the owner of the token to be issued
-	Recipient []byte `protobuf:"bytes,1,opt,name=recipient,proto3" json:"recipient,omitempty"`
-	// Type refers to the token type
-	Type string `protobuf:"bytes,2,opt,name=type,proto3" json:"type,omitempty"`
-	// Quantity refers to the number of token units to be issued
-	Quantity             uint64   `protobuf:"varint,3,opt,name=quantity,proto3" json:"quantity,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *TokenToIssue) Reset()         { *m = TokenToIssue{} }
-func (m *TokenToIssue) String() string { return proto.CompactTextString(m) }
-func (*TokenToIssue) ProtoMessage()    {}
-func (*TokenToIssue) Descriptor() ([]byte, []int) {
-	return fileDescriptor_prover_aacdf31643d38144, []int{0}
-}
-func (m *TokenToIssue) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_TokenToIssue.Unmarshal(m, b)
-}
-func (m *TokenToIssue) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_TokenToIssue.Marshal(b, m, deterministic)
-}
-func (dst *TokenToIssue) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_TokenToIssue.Merge(dst, src)
-}
-func (m *TokenToIssue) XXX_Size() int {
-	return xxx_messageInfo_TokenToIssue.Size(m)
-}
-func (m *TokenToIssue) XXX_DiscardUnknown() {
-	xxx_messageInfo_TokenToIssue.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_TokenToIssue proto.InternalMessageInfo
-
-func (m *TokenToIssue) GetRecipient() []byte {
-	if m != nil {
-		return m.Recipient
-	}
-	return nil
-}
-
-func (m *TokenToIssue) GetType() string {
-	if m != nil {
-		return m.Type
-	}
-	return ""
-}
-
-func (m *TokenToIssue) GetQuantity() uint64 {
-	if m != nil {
-		return m.Quantity
-	}
-	return 0
-}
-
-// RecipientTransferShare describes how much a recipient will receive in a token transfer
-type RecipientTransferShare struct {
-	// Recipient refers to the prospective owner of a transferred token
-	Recipient []byte `protobuf:"bytes,1,opt,name=recipient,proto3" json:"recipient,omitempty"`
-	// Quantity refers to the number of token units to be transferred to the recipient
-	Quantity             uint64   `protobuf:"varint,2,opt,name=quantity,proto3" json:"quantity,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *RecipientTransferShare) Reset()         { *m = RecipientTransferShare{} }
-func (m *RecipientTransferShare) String() string { return proto.CompactTextString(m) }
-func (*RecipientTransferShare) ProtoMessage()    {}
-func (*RecipientTransferShare) Descriptor() ([]byte, []int) {
-	return fileDescriptor_prover_aacdf31643d38144, []int{1}
-}
-func (m *RecipientTransferShare) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_RecipientTransferShare.Unmarshal(m, b)
-}
-func (m *RecipientTransferShare) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_RecipientTransferShare.Marshal(b, m, deterministic)
-}
-func (dst *RecipientTransferShare) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_RecipientTransferShare.Merge(dst, src)
-}
-func (m *RecipientTransferShare) XXX_Size() int {
-	return xxx_messageInfo_RecipientTransferShare.Size(m)
-}
-func (m *RecipientTransferShare) XXX_DiscardUnknown() {
-	xxx_messageInfo_RecipientTransferShare.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_RecipientTransferShare proto.InternalMessageInfo
-
-func (m *RecipientTransferShare) GetRecipient() []byte {
-	if m != nil {
-		return m.Recipient
-	}
-	return nil
-}
-
-func (m *RecipientTransferShare) GetQuantity() uint64 {
-	if m != nil {
-		return m.Quantity
-	}
-	return 0
-}
-
-// TokenOutput is used to specify a token returned by ListRequest
-type TokenOutput struct {
-	// ID is used to uniquely identify the token
-	Id []byte `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	// Type is the type of the token
-	Type string `protobuf:"bytes,2,opt,name=type,proto3" json:"type,omitempty"`
-	// Quantity represents the number for this type of token
-	Quantity             uint64   `protobuf:"varint,3,opt,name=quantity,proto3" json:"quantity,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *TokenOutput) Reset()         { *m = TokenOutput{} }
-func (m *TokenOutput) String() string { return proto.CompactTextString(m) }
-func (*TokenOutput) ProtoMessage()    {}
-func (*TokenOutput) Descriptor() ([]byte, []int) {
-	return fileDescriptor_prover_aacdf31643d38144, []int{2}
-}
-func (m *TokenOutput) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_TokenOutput.Unmarshal(m, b)
-}
-func (m *TokenOutput) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_TokenOutput.Marshal(b, m, deterministic)
-}
-func (dst *TokenOutput) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_TokenOutput.Merge(dst, src)
-}
-func (m *TokenOutput) XXX_Size() int {
-	return xxx_messageInfo_TokenOutput.Size(m)
-}
-func (m *TokenOutput) XXX_DiscardUnknown() {
-	xxx_messageInfo_TokenOutput.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_TokenOutput proto.InternalMessageInfo
-
-func (m *TokenOutput) GetId() []byte {
-	if m != nil {
-		return m.Id
-	}
-	return nil
-}
-
-func (m *TokenOutput) GetType() string {
-	if m != nil {
-		return m.Type
-	}
-	return ""
-}
-
-func (m *TokenOutput) GetQuantity() uint64 {
-	if m != nil {
-		return m.Quantity
-	}
-	return 0
-}
-
-// UnspentTokens is used to hold the output of listRequest
-type UnspentTokens struct {
-	Tokens               []*TokenOutput `protobuf:"bytes,1,rep,name=tokens,proto3" json:"tokens,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
-	XXX_unrecognized     []byte         `json:"-"`
-	XXX_sizecache        int32          `json:"-"`
-}
-
-func (m *UnspentTokens) Reset()         { *m = UnspentTokens{} }
-func (m *UnspentTokens) String() string { return proto.CompactTextString(m) }
-func (*UnspentTokens) ProtoMessage()    {}
-func (*UnspentTokens) Descriptor() ([]byte, []int) {
-	return fileDescriptor_prover_aacdf31643d38144, []int{3}
-}
-func (m *UnspentTokens) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_UnspentTokens.Unmarshal(m, b)
-}
-func (m *UnspentTokens) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_UnspentTokens.Marshal(b, m, deterministic)
-}
-func (dst *UnspentTokens) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_UnspentTokens.Merge(dst, src)
-}
-func (m *UnspentTokens) XXX_Size() int {
-	return xxx_messageInfo_UnspentTokens.Size(m)
-}
-func (m *UnspentTokens) XXX_DiscardUnknown() {
-	xxx_messageInfo_UnspentTokens.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_UnspentTokens proto.InternalMessageInfo
-
-func (m *UnspentTokens) GetTokens() []*TokenOutput {
-	if m != nil {
-		return m.Tokens
-	}
-	return nil
-}
-
-// ListRequest is used to request a list of unspent tokens
-type ListRequest struct {
-	Credential           []byte   `protobuf:"bytes,1,opt,name=credential,proto3" json:"credential,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *ListRequest) Reset()         { *m = ListRequest{} }
-func (m *ListRequest) String() string { return proto.CompactTextString(m) }
-func (*ListRequest) ProtoMessage()    {}
-func (*ListRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_prover_aacdf31643d38144, []int{4}
-}
-func (m *ListRequest) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_ListRequest.Unmarshal(m, b)
-}
-func (m *ListRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_ListRequest.Marshal(b, m, deterministic)
-}
-func (dst *ListRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ListRequest.Merge(dst, src)
-}
-func (m *ListRequest) XXX_Size() int {
-	return xxx_messageInfo_ListRequest.Size(m)
-}
-func (m *ListRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_ListRequest.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_ListRequest proto.InternalMessageInfo
-
-func (m *ListRequest) GetCredential() []byte {
-	if m != nil {
-		return m.Credential
-	}
-	return nil
-}
-
-// ImportRequest is used to request creation of imports
-type ImportRequest struct {
+// IssueRequest is used to request token issuance
+type IssueRequest struct {
 	// Credential contains information about the party who is requesting the operation
 	// the content of this field depends on the charateristic of the token manager system used.
 	Credential []byte `protobuf:"bytes,1,opt,name=credential,proto3" json:"credential,omitempty"`
-	// TokenToIssue contains the information about the tokens to be issued
-	TokensToIssue        []*TokenToIssue `protobuf:"bytes,2,rep,name=tokens_to_issue,json=tokensToIssue,proto3" json:"tokens_to_issue,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}        `json:"-"`
-	XXX_unrecognized     []byte          `json:"-"`
-	XXX_sizecache        int32           `json:"-"`
+	// TokensToIssue contains the information about the tokens to be issued
+	TokensToIssue        []*Token `protobuf:"bytes,2,rep,name=tokens_to_issue,json=tokensToIssue,proto3" json:"tokens_to_issue,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *ImportRequest) Reset()         { *m = ImportRequest{} }
-func (m *ImportRequest) String() string { return proto.CompactTextString(m) }
-func (*ImportRequest) ProtoMessage()    {}
-func (*ImportRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_prover_aacdf31643d38144, []int{5}
+func (m *IssueRequest) Reset()         { *m = IssueRequest{} }
+func (m *IssueRequest) String() string { return proto.CompactTextString(m) }
+func (*IssueRequest) ProtoMessage()    {}
+func (*IssueRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_prover_2a2fc6c2f642aa49, []int{0}
 }
-func (m *ImportRequest) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_ImportRequest.Unmarshal(m, b)
+func (m *IssueRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_IssueRequest.Unmarshal(m, b)
 }
-func (m *ImportRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_ImportRequest.Marshal(b, m, deterministic)
+func (m *IssueRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_IssueRequest.Marshal(b, m, deterministic)
 }
-func (dst *ImportRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ImportRequest.Merge(dst, src)
+func (dst *IssueRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_IssueRequest.Merge(dst, src)
 }
-func (m *ImportRequest) XXX_Size() int {
-	return xxx_messageInfo_ImportRequest.Size(m)
+func (m *IssueRequest) XXX_Size() int {
+	return xxx_messageInfo_IssueRequest.Size(m)
 }
-func (m *ImportRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_ImportRequest.DiscardUnknown(m)
+func (m *IssueRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_IssueRequest.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_ImportRequest proto.InternalMessageInfo
+var xxx_messageInfo_IssueRequest proto.InternalMessageInfo
 
-func (m *ImportRequest) GetCredential() []byte {
+func (m *IssueRequest) GetCredential() []byte {
 	if m != nil {
 		return m.Credential
 	}
 	return nil
 }
 
-func (m *ImportRequest) GetTokensToIssue() []*TokenToIssue {
+func (m *IssueRequest) GetTokensToIssue() []*Token {
 	if m != nil {
 		return m.TokensToIssue
 	}
 	return nil
 }
 
-// RequestTransfer is used to request creation of transfers
+// RecipientShare describes how much a recipient will receive in a token transfer
+type RecipientShare struct {
+	// Recipient refers to the prospective owner of a transferred token
+	Recipient *TokenOwner `protobuf:"bytes,1,opt,name=recipient,proto3" json:"recipient,omitempty"`
+	// Quantity refers to the number of token units to be transferred to the recipient.
+	// It is encoded as a string whose prefix determines the actual conversion base. A prefix of
+	// ``0x'' or ``0X'' selects base 16; the ``0'' prefix selects base 8, and a
+	// ``0b'' or ``0B'' prefix selects base 2. Otherwise the selected base is 10.
+	Quantity             string   `protobuf:"bytes,2,opt,name=quantity,proto3" json:"quantity,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *RecipientShare) Reset()         { *m = RecipientShare{} }
+func (m *RecipientShare) String() string { return proto.CompactTextString(m) }
+func (*RecipientShare) ProtoMessage()    {}
+func (*RecipientShare) Descriptor() ([]byte, []int) {
+	return fileDescriptor_prover_2a2fc6c2f642aa49, []int{1}
+}
+func (m *RecipientShare) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_RecipientShare.Unmarshal(m, b)
+}
+func (m *RecipientShare) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_RecipientShare.Marshal(b, m, deterministic)
+}
+func (dst *RecipientShare) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RecipientShare.Merge(dst, src)
+}
+func (m *RecipientShare) XXX_Size() int {
+	return xxx_messageInfo_RecipientShare.Size(m)
+}
+func (m *RecipientShare) XXX_DiscardUnknown() {
+	xxx_messageInfo_RecipientShare.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_RecipientShare proto.InternalMessageInfo
+
+func (m *RecipientShare) GetRecipient() *TokenOwner {
+	if m != nil {
+		return m.Recipient
+	}
+	return nil
+}
+
+func (m *RecipientShare) GetQuantity() string {
+	if m != nil {
+		return m.Quantity
+	}
+	return ""
+}
+
+// TokenTransactions is a container for token transactions
+type TokenTransactions struct {
+	Txs                  []*TokenTransaction `protobuf:"bytes,1,rep,name=txs,proto3" json:"txs,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}            `json:"-"`
+	XXX_unrecognized     []byte              `json:"-"`
+	XXX_sizecache        int32               `json:"-"`
+}
+
+func (m *TokenTransactions) Reset()         { *m = TokenTransactions{} }
+func (m *TokenTransactions) String() string { return proto.CompactTextString(m) }
+func (*TokenTransactions) ProtoMessage()    {}
+func (*TokenTransactions) Descriptor() ([]byte, []int) {
+	return fileDescriptor_prover_2a2fc6c2f642aa49, []int{2}
+}
+func (m *TokenTransactions) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_TokenTransactions.Unmarshal(m, b)
+}
+func (m *TokenTransactions) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_TokenTransactions.Marshal(b, m, deterministic)
+}
+func (dst *TokenTransactions) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_TokenTransactions.Merge(dst, src)
+}
+func (m *TokenTransactions) XXX_Size() int {
+	return xxx_messageInfo_TokenTransactions.Size(m)
+}
+func (m *TokenTransactions) XXX_DiscardUnknown() {
+	xxx_messageInfo_TokenTransactions.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_TokenTransactions proto.InternalMessageInfo
+
+func (m *TokenTransactions) GetTxs() []*TokenTransaction {
+	if m != nil {
+		return m.Txs
+	}
+	return nil
+}
+
+// TransferRequest is used to request token transfers
 type TransferRequest struct {
-	Credential           []byte                    `protobuf:"bytes,1,opt,name=credential,proto3" json:"credential,omitempty"`
-	TokenIds             [][]byte                  `protobuf:"bytes,2,rep,name=token_ids,json=tokenIds,proto3" json:"token_ids,omitempty"`
-	Shares               []*RecipientTransferShare `protobuf:"bytes,3,rep,name=shares,proto3" json:"shares,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}                  `json:"-"`
-	XXX_unrecognized     []byte                    `json:"-"`
-	XXX_sizecache        int32                     `json:"-"`
+	// Credential is the public credential of the requestor of the transfer
+	// The content of this field depends on the characteristic of token manager system
+	Credential []byte `protobuf:"bytes,1,opt,name=credential,proto3" json:"credential,omitempty"`
+	// TokenIds identifies the tokens to be transferred
+	TokenIds []*TokenId `protobuf:"bytes,2,rep,name=token_ids,json=tokenIds,proto3" json:"token_ids,omitempty"`
+	// Shares identify the prospective recipients and the quantity of tokens that each would receive
+	Shares               []*RecipientShare `protobuf:"bytes,3,rep,name=shares,proto3" json:"shares,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
+	XXX_unrecognized     []byte            `json:"-"`
+	XXX_sizecache        int32             `json:"-"`
 }
 
 func (m *TransferRequest) Reset()         { *m = TransferRequest{} }
 func (m *TransferRequest) String() string { return proto.CompactTextString(m) }
 func (*TransferRequest) ProtoMessage()    {}
 func (*TransferRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_prover_aacdf31643d38144, []int{6}
+	return fileDescriptor_prover_2a2fc6c2f642aa49, []int{3}
 }
 func (m *TransferRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_TransferRequest.Unmarshal(m, b)
@@ -362,14 +214,14 @@ func (m *TransferRequest) GetCredential() []byte {
 	return nil
 }
 
-func (m *TransferRequest) GetTokenIds() [][]byte {
+func (m *TransferRequest) GetTokenIds() []*TokenId {
 	if m != nil {
 		return m.TokenIds
 	}
 	return nil
 }
 
-func (m *TransferRequest) GetShares() []*RecipientTransferShare {
+func (m *TransferRequest) GetShares() []*RecipientShare {
 	if m != nil {
 		return m.Shares
 	}
@@ -378,13 +230,16 @@ func (m *TransferRequest) GetShares() []*RecipientTransferShare {
 
 // RedeemRequest is used to request token redemption
 type RedeemRequest struct {
-	// Credential contains information for the party who is requesting the operation
+	// Credential is the public credential of the requestor of the redemption
 	// The content of this field depends on the characteristic of token manager system
 	Credential []byte `protobuf:"bytes,1,opt,name=credential,proto3" json:"credential,omitempty"`
-	// token_ids specifies the ids for the tokens that will be redeemed
-	TokenIds [][]byte `protobuf:"bytes,2,rep,name=token_ids,json=tokenIds,proto3" json:"token_ids,omitempty"`
-	// quantity refers to the number of units of a given token needs to be redeemed.
-	QuantityToRedeem     uint64   `protobuf:"varint,3,opt,name=quantity_to_redeem,json=quantityToRedeem,proto3" json:"quantity_to_redeem,omitempty"`
+	// TokenIds identifies the tokens to be redeemed
+	TokenIds []*TokenId `protobuf:"bytes,2,rep,name=token_ids,json=tokenIds,proto3" json:"token_ids,omitempty"`
+	// Quantity refers to the number of units of a given token needs to be redeemed.
+	// It is encoded as a string whose prefix determines the actual conversion base. A prefix of
+	// ``0x'' or ``0X'' selects base 16; the ``0'' prefix selects base 8, and a
+	// ``0b'' or ``0B'' prefix selects base 2. Otherwise the selected base is 10.
+	Quantity             string   `protobuf:"bytes,3,opt,name=quantity,proto3" json:"quantity,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -394,7 +249,7 @@ func (m *RedeemRequest) Reset()         { *m = RedeemRequest{} }
 func (m *RedeemRequest) String() string { return proto.CompactTextString(m) }
 func (*RedeemRequest) ProtoMessage()    {}
 func (*RedeemRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_prover_aacdf31643d38144, []int{7}
+	return fileDescriptor_prover_2a2fc6c2f642aa49, []int{4}
 }
 func (m *RedeemRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_RedeemRequest.Unmarshal(m, b)
@@ -421,180 +276,215 @@ func (m *RedeemRequest) GetCredential() []byte {
 	return nil
 }
 
-func (m *RedeemRequest) GetTokenIds() [][]byte {
+func (m *RedeemRequest) GetTokenIds() []*TokenId {
 	if m != nil {
 		return m.TokenIds
 	}
 	return nil
 }
 
-func (m *RedeemRequest) GetQuantityToRedeem() uint64 {
-	if m != nil {
-		return m.QuantityToRedeem
-	}
-	return 0
-}
-
-// ALlowance defines how many and what tokens a recipient can transfer on behalf of their actual owner
-type AllowanceRecipientShare struct {
-	// Recipient refers to the entity allowed to spend the specified quantity from the tokens identified by token IDs
-	Recipient []byte `protobuf:"bytes,1,opt,name=recipient,proto3" json:"recipient,omitempty"`
-	// Quantity is how many tokens are delegated to the recipient
-	Quantity             uint64   `protobuf:"varint,2,opt,name=quantity,proto3" json:"quantity,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *AllowanceRecipientShare) Reset()         { *m = AllowanceRecipientShare{} }
-func (m *AllowanceRecipientShare) String() string { return proto.CompactTextString(m) }
-func (*AllowanceRecipientShare) ProtoMessage()    {}
-func (*AllowanceRecipientShare) Descriptor() ([]byte, []int) {
-	return fileDescriptor_prover_aacdf31643d38144, []int{8}
-}
-func (m *AllowanceRecipientShare) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_AllowanceRecipientShare.Unmarshal(m, b)
-}
-func (m *AllowanceRecipientShare) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_AllowanceRecipientShare.Marshal(b, m, deterministic)
-}
-func (dst *AllowanceRecipientShare) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_AllowanceRecipientShare.Merge(dst, src)
-}
-func (m *AllowanceRecipientShare) XXX_Size() int {
-	return xxx_messageInfo_AllowanceRecipientShare.Size(m)
-}
-func (m *AllowanceRecipientShare) XXX_DiscardUnknown() {
-	xxx_messageInfo_AllowanceRecipientShare.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_AllowanceRecipientShare proto.InternalMessageInfo
-
-func (m *AllowanceRecipientShare) GetRecipient() []byte {
-	if m != nil {
-		return m.Recipient
-	}
-	return nil
-}
-
-func (m *AllowanceRecipientShare) GetQuantity() uint64 {
+func (m *RedeemRequest) GetQuantity() string {
 	if m != nil {
 		return m.Quantity
 	}
-	return 0
+	return ""
 }
 
-// ApproveRequest is used to request the creation of allowance from one owner to another
-type ApproveRequest struct {
-	// Credential refers to the public credential of the request creator
-	Credential []byte `protobuf:"bytes,1,opt,name=credential,proto3" json:"credential,omitempty"`
-	// Allowance describes the tokens the creator of the request is willing to delegate
-	AllowanceShares []*AllowanceRecipientShare `protobuf:"bytes,2,rep,name=allowance_shares,json=allowanceShares,proto3" json:"allowance_shares,omitempty"`
-	// TokenIds are the token identifiers used to create the allowance
-	TokenIds             [][]byte `protobuf:"bytes,3,rep,name=token_ids,json=tokenIds,proto3" json:"token_ids,omitempty"`
+// UnspentToken is used to specify a token returned by ListRequest
+type UnspentToken struct {
+	// Id is used to uniquely identify the token in the ledger
+	Id *TokenId `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	// Type is the type of the token
+	Type string `protobuf:"bytes,2,opt,name=type,proto3" json:"type,omitempty"`
+	// Quantity represents the number of units of Type that this unspent token holds.
+	// It is formatted in decimal representation
+	Quantity             string   `protobuf:"bytes,3,opt,name=quantity,proto3" json:"quantity,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *ApproveRequest) Reset()         { *m = ApproveRequest{} }
-func (m *ApproveRequest) String() string { return proto.CompactTextString(m) }
-func (*ApproveRequest) ProtoMessage()    {}
-func (*ApproveRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_prover_aacdf31643d38144, []int{9}
+func (m *UnspentToken) Reset()         { *m = UnspentToken{} }
+func (m *UnspentToken) String() string { return proto.CompactTextString(m) }
+func (*UnspentToken) ProtoMessage()    {}
+func (*UnspentToken) Descriptor() ([]byte, []int) {
+	return fileDescriptor_prover_2a2fc6c2f642aa49, []int{5}
 }
-func (m *ApproveRequest) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_ApproveRequest.Unmarshal(m, b)
+func (m *UnspentToken) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_UnspentToken.Unmarshal(m, b)
 }
-func (m *ApproveRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_ApproveRequest.Marshal(b, m, deterministic)
+func (m *UnspentToken) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_UnspentToken.Marshal(b, m, deterministic)
 }
-func (dst *ApproveRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ApproveRequest.Merge(dst, src)
+func (dst *UnspentToken) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_UnspentToken.Merge(dst, src)
 }
-func (m *ApproveRequest) XXX_Size() int {
-	return xxx_messageInfo_ApproveRequest.Size(m)
+func (m *UnspentToken) XXX_Size() int {
+	return xxx_messageInfo_UnspentToken.Size(m)
 }
-func (m *ApproveRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_ApproveRequest.DiscardUnknown(m)
+func (m *UnspentToken) XXX_DiscardUnknown() {
+	xxx_messageInfo_UnspentToken.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_ApproveRequest proto.InternalMessageInfo
+var xxx_messageInfo_UnspentToken proto.InternalMessageInfo
 
-func (m *ApproveRequest) GetCredential() []byte {
+func (m *UnspentToken) GetId() *TokenId {
+	if m != nil {
+		return m.Id
+	}
+	return nil
+}
+
+func (m *UnspentToken) GetType() string {
+	if m != nil {
+		return m.Type
+	}
+	return ""
+}
+
+func (m *UnspentToken) GetQuantity() string {
+	if m != nil {
+		return m.Quantity
+	}
+	return ""
+}
+
+// UnspentTokens is used to hold the output of ListRequest
+type UnspentTokens struct {
+	// Tokens is an array of UnspentToken
+	Tokens               []*UnspentToken `protobuf:"bytes,1,rep,name=tokens,proto3" json:"tokens,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}        `json:"-"`
+	XXX_unrecognized     []byte          `json:"-"`
+	XXX_sizecache        int32           `json:"-"`
+}
+
+func (m *UnspentTokens) Reset()         { *m = UnspentTokens{} }
+func (m *UnspentTokens) String() string { return proto.CompactTextString(m) }
+func (*UnspentTokens) ProtoMessage()    {}
+func (*UnspentTokens) Descriptor() ([]byte, []int) {
+	return fileDescriptor_prover_2a2fc6c2f642aa49, []int{6}
+}
+func (m *UnspentTokens) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_UnspentTokens.Unmarshal(m, b)
+}
+func (m *UnspentTokens) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_UnspentTokens.Marshal(b, m, deterministic)
+}
+func (dst *UnspentTokens) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_UnspentTokens.Merge(dst, src)
+}
+func (m *UnspentTokens) XXX_Size() int {
+	return xxx_messageInfo_UnspentTokens.Size(m)
+}
+func (m *UnspentTokens) XXX_DiscardUnknown() {
+	xxx_messageInfo_UnspentTokens.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_UnspentTokens proto.InternalMessageInfo
+
+func (m *UnspentTokens) GetTokens() []*UnspentToken {
+	if m != nil {
+		return m.Tokens
+	}
+	return nil
+}
+
+// ListRequest is used to retrieve the unspent tokens belonging to the party holding Credential
+type ListRequest struct {
+	// Credential refers to the public credential of the party whose unspent tokens is to be listed
+	Credential           []byte   `protobuf:"bytes,1,opt,name=credential,proto3" json:"credential,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *ListRequest) Reset()         { *m = ListRequest{} }
+func (m *ListRequest) String() string { return proto.CompactTextString(m) }
+func (*ListRequest) ProtoMessage()    {}
+func (*ListRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_prover_2a2fc6c2f642aa49, []int{7}
+}
+func (m *ListRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_ListRequest.Unmarshal(m, b)
+}
+func (m *ListRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_ListRequest.Marshal(b, m, deterministic)
+}
+func (dst *ListRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ListRequest.Merge(dst, src)
+}
+func (m *ListRequest) XXX_Size() int {
+	return xxx_messageInfo_ListRequest.Size(m)
+}
+func (m *ListRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_ListRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ListRequest proto.InternalMessageInfo
+
+func (m *ListRequest) GetCredential() []byte {
 	if m != nil {
 		return m.Credential
 	}
 	return nil
 }
 
-func (m *ApproveRequest) GetAllowanceShares() []*AllowanceRecipientShare {
-	if m != nil {
-		return m.AllowanceShares
-	}
-	return nil
-}
-
-func (m *ApproveRequest) GetTokenIds() [][]byte {
-	if m != nil {
-		return m.TokenIds
-	}
-	return nil
-}
-
-// ExpectationRequest is used to request indirect token import or transfer based on the token expectation
-type ExpectationRequest struct {
+// TokenOperationRequest is used to ask the prover peer to perform a specific
+// token operation using given token ids. In this way, the prover peer can assemble
+// token transactions as requested by a chaincode.
+type TokenOperationRequest struct {
 	// credential contains information for the party who is requesting the operation
 	// The content of this field depends on the characteristic of token manager system
 	Credential []byte `protobuf:"bytes,1,opt,name=credential,proto3" json:"credential,omitempty"`
-	// expectation contains the expected outputs for token import or transfer
-	Expectation *TokenExpectation `protobuf:"bytes,2,opt,name=expectation,proto3" json:"expectation,omitempty"`
-	// TokenIds are the token identifiers used to fulfill the expectation
-	TokenIds             [][]byte `protobuf:"bytes,3,rep,name=token_ids,json=tokenIds,proto3" json:"token_ids,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	// operations contains the token operations to be performed
+	Operations []*TokenOperation `protobuf:"bytes,2,rep,name=operations,proto3" json:"operations,omitempty"`
+	// TokenIds are the token identifiers used for the operation. It is empty,
+	// in the case of an issue. It must not be empty for operations like transfer or redeem.
+	TokenIds             []*TokenId `protobuf:"bytes,3,rep,name=token_ids,json=tokenIds,proto3" json:"token_ids,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}   `json:"-"`
+	XXX_unrecognized     []byte     `json:"-"`
+	XXX_sizecache        int32      `json:"-"`
 }
 
-func (m *ExpectationRequest) Reset()         { *m = ExpectationRequest{} }
-func (m *ExpectationRequest) String() string { return proto.CompactTextString(m) }
-func (*ExpectationRequest) ProtoMessage()    {}
-func (*ExpectationRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_prover_aacdf31643d38144, []int{10}
+func (m *TokenOperationRequest) Reset()         { *m = TokenOperationRequest{} }
+func (m *TokenOperationRequest) String() string { return proto.CompactTextString(m) }
+func (*TokenOperationRequest) ProtoMessage()    {}
+func (*TokenOperationRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_prover_2a2fc6c2f642aa49, []int{8}
 }
-func (m *ExpectationRequest) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_ExpectationRequest.Unmarshal(m, b)
+func (m *TokenOperationRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_TokenOperationRequest.Unmarshal(m, b)
 }
-func (m *ExpectationRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_ExpectationRequest.Marshal(b, m, deterministic)
+func (m *TokenOperationRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_TokenOperationRequest.Marshal(b, m, deterministic)
 }
-func (dst *ExpectationRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ExpectationRequest.Merge(dst, src)
+func (dst *TokenOperationRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_TokenOperationRequest.Merge(dst, src)
 }
-func (m *ExpectationRequest) XXX_Size() int {
-	return xxx_messageInfo_ExpectationRequest.Size(m)
+func (m *TokenOperationRequest) XXX_Size() int {
+	return xxx_messageInfo_TokenOperationRequest.Size(m)
 }
-func (m *ExpectationRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_ExpectationRequest.DiscardUnknown(m)
+func (m *TokenOperationRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_TokenOperationRequest.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_ExpectationRequest proto.InternalMessageInfo
+var xxx_messageInfo_TokenOperationRequest proto.InternalMessageInfo
 
-func (m *ExpectationRequest) GetCredential() []byte {
+func (m *TokenOperationRequest) GetCredential() []byte {
 	if m != nil {
 		return m.Credential
 	}
 	return nil
 }
 
-func (m *ExpectationRequest) GetExpectation() *TokenExpectation {
+func (m *TokenOperationRequest) GetOperations() []*TokenOperation {
 	if m != nil {
-		return m.Expectation
+		return m.Operations
 	}
 	return nil
 }
 
-func (m *ExpectationRequest) GetTokenIds() [][]byte {
+func (m *TokenOperationRequest) GetTokenIds() []*TokenId {
 	if m != nil {
 		return m.TokenIds
 	}
@@ -606,14 +496,17 @@ type Header struct {
 	// Timestamp is the local time when the message was created
 	// by the sender
 	Timestamp *timestamp.Timestamp `protobuf:"bytes,1,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
-	// ChannelId identifies the channel this message is bound for
+	// ChannelId identifies the channel this message is meant for
 	ChannelId string `protobuf:"bytes,2,opt,name=channel_id,json=channelId,proto3" json:"channel_id,omitempty"`
 	// Nonce is a sufficientley long random value
 	// used to ensure the request has enough entropy.
 	Nonce []byte `protobuf:"bytes,3,opt,name=nonce,proto3" json:"nonce,omitempty"`
 	// Creator of the message.
 	// Typically, a marshaled msp.SerializedIdentity
-	Creator              []byte   `protobuf:"bytes,4,opt,name=creator,proto3" json:"creator,omitempty"`
+	Creator []byte `protobuf:"bytes,4,opt,name=creator,proto3" json:"creator,omitempty"`
+	// TlsCertHash represents the hash of the client's TLS certificate
+	// when mutual TLS is enabled
+	TlsCertHash          []byte   `protobuf:"bytes,5,opt,name=tls_cert_hash,json=tlsCertHash,proto3" json:"tls_cert_hash,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -623,7 +516,7 @@ func (m *Header) Reset()         { *m = Header{} }
 func (m *Header) String() string { return proto.CompactTextString(m) }
 func (*Header) ProtoMessage()    {}
 func (*Header) Descriptor() ([]byte, []int) {
-	return fileDescriptor_prover_aacdf31643d38144, []int{11}
+	return fileDescriptor_prover_2a2fc6c2f642aa49, []int{9}
 }
 func (m *Header) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Header.Unmarshal(m, b)
@@ -671,6 +564,13 @@ func (m *Header) GetCreator() []byte {
 	return nil
 }
 
+func (m *Header) GetTlsCertHash() []byte {
+	if m != nil {
+		return m.TlsCertHash
+	}
+	return nil
+}
+
 // Command describes the type of operation that a client is requesting.
 type Command struct {
 	// Header is the header of this command
@@ -678,13 +578,11 @@ type Command struct {
 	// Payload is the payload of this command. It can assume one of the following value
 	//
 	// Types that are valid to be assigned to Payload:
-	//	*Command_ImportRequest
+	//	*Command_IssueRequest
 	//	*Command_TransferRequest
 	//	*Command_ListRequest
 	//	*Command_RedeemRequest
-	//	*Command_ApproveRequest
-	//	*Command_TransferFromRequest
-	//	*Command_ExpectationRequest
+	//	*Command_TokenOperationRequest
 	Payload              isCommand_Payload `protobuf_oneof:"payload"`
 	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
 	XXX_unrecognized     []byte            `json:"-"`
@@ -695,7 +593,7 @@ func (m *Command) Reset()         { *m = Command{} }
 func (m *Command) String() string { return proto.CompactTextString(m) }
 func (*Command) ProtoMessage()    {}
 func (*Command) Descriptor() ([]byte, []int) {
-	return fileDescriptor_prover_aacdf31643d38144, []int{12}
+	return fileDescriptor_prover_2a2fc6c2f642aa49, []int{10}
 }
 func (m *Command) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Command.Unmarshal(m, b)
@@ -726,8 +624,8 @@ type isCommand_Payload interface {
 	isCommand_Payload()
 }
 
-type Command_ImportRequest struct {
-	ImportRequest *ImportRequest `protobuf:"bytes,2,opt,name=import_request,json=importRequest,proto3,oneof"`
+type Command_IssueRequest struct {
+	IssueRequest *IssueRequest `protobuf:"bytes,2,opt,name=issue_request,json=issueRequest,proto3,oneof"`
 }
 
 type Command_TransferRequest struct {
@@ -742,19 +640,11 @@ type Command_RedeemRequest struct {
 	RedeemRequest *RedeemRequest `protobuf:"bytes,5,opt,name=redeem_request,json=redeemRequest,proto3,oneof"`
 }
 
-type Command_ApproveRequest struct {
-	ApproveRequest *ApproveRequest `protobuf:"bytes,6,opt,name=approve_request,json=approveRequest,proto3,oneof"`
+type Command_TokenOperationRequest struct {
+	TokenOperationRequest *TokenOperationRequest `protobuf:"bytes,6,opt,name=token_operation_request,json=tokenOperationRequest,proto3,oneof"`
 }
 
-type Command_TransferFromRequest struct {
-	TransferFromRequest *TransferRequest `protobuf:"bytes,7,opt,name=transfer_from_request,json=transferFromRequest,proto3,oneof"`
-}
-
-type Command_ExpectationRequest struct {
-	ExpectationRequest *ExpectationRequest `protobuf:"bytes,8,opt,name=expectation_request,json=expectationRequest,proto3,oneof"`
-}
-
-func (*Command_ImportRequest) isCommand_Payload() {}
+func (*Command_IssueRequest) isCommand_Payload() {}
 
 func (*Command_TransferRequest) isCommand_Payload() {}
 
@@ -762,11 +652,7 @@ func (*Command_ListRequest) isCommand_Payload() {}
 
 func (*Command_RedeemRequest) isCommand_Payload() {}
 
-func (*Command_ApproveRequest) isCommand_Payload() {}
-
-func (*Command_TransferFromRequest) isCommand_Payload() {}
-
-func (*Command_ExpectationRequest) isCommand_Payload() {}
+func (*Command_TokenOperationRequest) isCommand_Payload() {}
 
 func (m *Command) GetPayload() isCommand_Payload {
 	if m != nil {
@@ -775,9 +661,9 @@ func (m *Command) GetPayload() isCommand_Payload {
 	return nil
 }
 
-func (m *Command) GetImportRequest() *ImportRequest {
-	if x, ok := m.GetPayload().(*Command_ImportRequest); ok {
-		return x.ImportRequest
+func (m *Command) GetIssueRequest() *IssueRequest {
+	if x, ok := m.GetPayload().(*Command_IssueRequest); ok {
+		return x.IssueRequest
 	}
 	return nil
 }
@@ -803,23 +689,9 @@ func (m *Command) GetRedeemRequest() *RedeemRequest {
 	return nil
 }
 
-func (m *Command) GetApproveRequest() *ApproveRequest {
-	if x, ok := m.GetPayload().(*Command_ApproveRequest); ok {
-		return x.ApproveRequest
-	}
-	return nil
-}
-
-func (m *Command) GetTransferFromRequest() *TransferRequest {
-	if x, ok := m.GetPayload().(*Command_TransferFromRequest); ok {
-		return x.TransferFromRequest
-	}
-	return nil
-}
-
-func (m *Command) GetExpectationRequest() *ExpectationRequest {
-	if x, ok := m.GetPayload().(*Command_ExpectationRequest); ok {
-		return x.ExpectationRequest
+func (m *Command) GetTokenOperationRequest() *TokenOperationRequest {
+	if x, ok := m.GetPayload().(*Command_TokenOperationRequest); ok {
+		return x.TokenOperationRequest
 	}
 	return nil
 }
@@ -827,13 +699,11 @@ func (m *Command) GetExpectationRequest() *ExpectationRequest {
 // XXX_OneofFuncs is for the internal use of the proto package.
 func (*Command) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
 	return _Command_OneofMarshaler, _Command_OneofUnmarshaler, _Command_OneofSizer, []interface{}{
-		(*Command_ImportRequest)(nil),
+		(*Command_IssueRequest)(nil),
 		(*Command_TransferRequest)(nil),
 		(*Command_ListRequest)(nil),
 		(*Command_RedeemRequest)(nil),
-		(*Command_ApproveRequest)(nil),
-		(*Command_TransferFromRequest)(nil),
-		(*Command_ExpectationRequest)(nil),
+		(*Command_TokenOperationRequest)(nil),
 	}
 }
 
@@ -841,9 +711,9 @@ func _Command_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
 	m := msg.(*Command)
 	// payload
 	switch x := m.Payload.(type) {
-	case *Command_ImportRequest:
+	case *Command_IssueRequest:
 		b.EncodeVarint(2<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.ImportRequest); err != nil {
+		if err := b.EncodeMessage(x.IssueRequest); err != nil {
 			return err
 		}
 	case *Command_TransferRequest:
@@ -861,19 +731,9 @@ func _Command_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
 		if err := b.EncodeMessage(x.RedeemRequest); err != nil {
 			return err
 		}
-	case *Command_ApproveRequest:
+	case *Command_TokenOperationRequest:
 		b.EncodeVarint(6<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.ApproveRequest); err != nil {
-			return err
-		}
-	case *Command_TransferFromRequest:
-		b.EncodeVarint(7<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.TransferFromRequest); err != nil {
-			return err
-		}
-	case *Command_ExpectationRequest:
-		b.EncodeVarint(8<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.ExpectationRequest); err != nil {
+		if err := b.EncodeMessage(x.TokenOperationRequest); err != nil {
 			return err
 		}
 	case nil:
@@ -886,13 +746,13 @@ func _Command_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
 func _Command_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
 	m := msg.(*Command)
 	switch tag {
-	case 2: // payload.import_request
+	case 2: // payload.issue_request
 		if wire != proto.WireBytes {
 			return true, proto.ErrInternalBadWireType
 		}
-		msg := new(ImportRequest)
+		msg := new(IssueRequest)
 		err := b.DecodeMessage(msg)
-		m.Payload = &Command_ImportRequest{msg}
+		m.Payload = &Command_IssueRequest{msg}
 		return true, err
 	case 3: // payload.transfer_request
 		if wire != proto.WireBytes {
@@ -918,29 +778,13 @@ func _Command_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer
 		err := b.DecodeMessage(msg)
 		m.Payload = &Command_RedeemRequest{msg}
 		return true, err
-	case 6: // payload.approve_request
+	case 6: // payload.token_operation_request
 		if wire != proto.WireBytes {
 			return true, proto.ErrInternalBadWireType
 		}
-		msg := new(ApproveRequest)
+		msg := new(TokenOperationRequest)
 		err := b.DecodeMessage(msg)
-		m.Payload = &Command_ApproveRequest{msg}
-		return true, err
-	case 7: // payload.transfer_from_request
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(TransferRequest)
-		err := b.DecodeMessage(msg)
-		m.Payload = &Command_TransferFromRequest{msg}
-		return true, err
-	case 8: // payload.expectation_request
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(ExpectationRequest)
-		err := b.DecodeMessage(msg)
-		m.Payload = &Command_ExpectationRequest{msg}
+		m.Payload = &Command_TokenOperationRequest{msg}
 		return true, err
 	default:
 		return false, nil
@@ -951,8 +795,8 @@ func _Command_OneofSizer(msg proto.Message) (n int) {
 	m := msg.(*Command)
 	// payload
 	switch x := m.Payload.(type) {
-	case *Command_ImportRequest:
-		s := proto.Size(x.ImportRequest)
+	case *Command_IssueRequest:
+		s := proto.Size(x.IssueRequest)
 		n += 1 // tag and wire
 		n += proto.SizeVarint(uint64(s))
 		n += s
@@ -971,18 +815,8 @@ func _Command_OneofSizer(msg proto.Message) (n int) {
 		n += 1 // tag and wire
 		n += proto.SizeVarint(uint64(s))
 		n += s
-	case *Command_ApproveRequest:
-		s := proto.Size(x.ApproveRequest)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *Command_TransferFromRequest:
-		s := proto.Size(x.TransferFromRequest)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *Command_ExpectationRequest:
-		s := proto.Size(x.ExpectationRequest)
+	case *Command_TokenOperationRequest:
+		s := proto.Size(x.TokenOperationRequest)
 		n += 1 // tag and wire
 		n += proto.SizeVarint(uint64(s))
 		n += s
@@ -1008,7 +842,7 @@ func (m *SignedCommand) Reset()         { *m = SignedCommand{} }
 func (m *SignedCommand) String() string { return proto.CompactTextString(m) }
 func (*SignedCommand) ProtoMessage()    {}
 func (*SignedCommand) Descriptor() ([]byte, []int) {
-	return fileDescriptor_prover_aacdf31643d38144, []int{13}
+	return fileDescriptor_prover_2a2fc6c2f642aa49, []int{11}
 }
 func (m *SignedCommand) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_SignedCommand.Unmarshal(m, b)
@@ -1062,7 +896,7 @@ func (m *CommandResponseHeader) Reset()         { *m = CommandResponseHeader{} }
 func (m *CommandResponseHeader) String() string { return proto.CompactTextString(m) }
 func (*CommandResponseHeader) ProtoMessage()    {}
 func (*CommandResponseHeader) Descriptor() ([]byte, []int) {
-	return fileDescriptor_prover_aacdf31643d38144, []int{14}
+	return fileDescriptor_prover_2a2fc6c2f642aa49, []int{12}
 }
 func (m *CommandResponseHeader) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CommandResponseHeader.Unmarshal(m, b)
@@ -1118,7 +952,7 @@ func (m *Error) Reset()         { *m = Error{} }
 func (m *Error) String() string { return proto.CompactTextString(m) }
 func (*Error) ProtoMessage()    {}
 func (*Error) Descriptor() ([]byte, []int) {
-	return fileDescriptor_prover_aacdf31643d38144, []int{15}
+	return fileDescriptor_prover_2a2fc6c2f642aa49, []int{13}
 }
 func (m *Error) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Error.Unmarshal(m, b)
@@ -1162,6 +996,7 @@ type CommandResponse struct {
 	//	*CommandResponse_Err
 	//	*CommandResponse_TokenTransaction
 	//	*CommandResponse_UnspentTokens
+	//	*CommandResponse_TokenTransactions
 	Payload              isCommandResponse_Payload `protobuf_oneof:"payload"`
 	XXX_NoUnkeyedLiteral struct{}                  `json:"-"`
 	XXX_unrecognized     []byte                    `json:"-"`
@@ -1172,7 +1007,7 @@ func (m *CommandResponse) Reset()         { *m = CommandResponse{} }
 func (m *CommandResponse) String() string { return proto.CompactTextString(m) }
 func (*CommandResponse) ProtoMessage()    {}
 func (*CommandResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_prover_aacdf31643d38144, []int{16}
+	return fileDescriptor_prover_2a2fc6c2f642aa49, []int{14}
 }
 func (m *CommandResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CommandResponse.Unmarshal(m, b)
@@ -1215,11 +1050,17 @@ type CommandResponse_UnspentTokens struct {
 	UnspentTokens *UnspentTokens `protobuf:"bytes,4,opt,name=unspent_tokens,json=unspentTokens,proto3,oneof"`
 }
 
+type CommandResponse_TokenTransactions struct {
+	TokenTransactions *TokenTransactions `protobuf:"bytes,5,opt,name=token_transactions,json=tokenTransactions,proto3,oneof"`
+}
+
 func (*CommandResponse_Err) isCommandResponse_Payload() {}
 
 func (*CommandResponse_TokenTransaction) isCommandResponse_Payload() {}
 
 func (*CommandResponse_UnspentTokens) isCommandResponse_Payload() {}
+
+func (*CommandResponse_TokenTransactions) isCommandResponse_Payload() {}
 
 func (m *CommandResponse) GetPayload() isCommandResponse_Payload {
 	if m != nil {
@@ -1249,12 +1090,20 @@ func (m *CommandResponse) GetUnspentTokens() *UnspentTokens {
 	return nil
 }
 
+func (m *CommandResponse) GetTokenTransactions() *TokenTransactions {
+	if x, ok := m.GetPayload().(*CommandResponse_TokenTransactions); ok {
+		return x.TokenTransactions
+	}
+	return nil
+}
+
 // XXX_OneofFuncs is for the internal use of the proto package.
 func (*CommandResponse) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
 	return _CommandResponse_OneofMarshaler, _CommandResponse_OneofUnmarshaler, _CommandResponse_OneofSizer, []interface{}{
 		(*CommandResponse_Err)(nil),
 		(*CommandResponse_TokenTransaction)(nil),
 		(*CommandResponse_UnspentTokens)(nil),
+		(*CommandResponse_TokenTransactions)(nil),
 	}
 }
 
@@ -1275,6 +1124,11 @@ func _CommandResponse_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
 	case *CommandResponse_UnspentTokens:
 		b.EncodeVarint(4<<3 | proto.WireBytes)
 		if err := b.EncodeMessage(x.UnspentTokens); err != nil {
+			return err
+		}
+	case *CommandResponse_TokenTransactions:
+		b.EncodeVarint(5<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.TokenTransactions); err != nil {
 			return err
 		}
 	case nil:
@@ -1311,6 +1165,14 @@ func _CommandResponse_OneofUnmarshaler(msg proto.Message, tag, wire int, b *prot
 		err := b.DecodeMessage(msg)
 		m.Payload = &CommandResponse_UnspentTokens{msg}
 		return true, err
+	case 5: // payload.token_transactions
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(TokenTransactions)
+		err := b.DecodeMessage(msg)
+		m.Payload = &CommandResponse_TokenTransactions{msg}
+		return true, err
 	default:
 		return false, nil
 	}
@@ -1332,6 +1194,11 @@ func _CommandResponse_OneofSizer(msg proto.Message) (n int) {
 		n += s
 	case *CommandResponse_UnspentTokens:
 		s := proto.Size(x.UnspentTokens)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *CommandResponse_TokenTransactions:
+		s := proto.Size(x.TokenTransactions)
 		n += 1 // tag and wire
 		n += proto.SizeVarint(uint64(s))
 		n += s
@@ -1357,7 +1224,7 @@ func (m *SignedCommandResponse) Reset()         { *m = SignedCommandResponse{} }
 func (m *SignedCommandResponse) String() string { return proto.CompactTextString(m) }
 func (*SignedCommandResponse) ProtoMessage()    {}
 func (*SignedCommandResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_prover_aacdf31643d38144, []int{17}
+	return fileDescriptor_prover_2a2fc6c2f642aa49, []int{15}
 }
 func (m *SignedCommandResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_SignedCommandResponse.Unmarshal(m, b)
@@ -1392,24 +1259,22 @@ func (m *SignedCommandResponse) GetSignature() []byte {
 }
 
 func init() {
-	proto.RegisterType((*TokenToIssue)(nil), "sdk.protos.TokenToIssue")
-	proto.RegisterType((*RecipientTransferShare)(nil), "sdk.protos.RecipientTransferShare")
-	proto.RegisterType((*TokenOutput)(nil), "sdk.protos.TokenOutput")
-	proto.RegisterType((*UnspentTokens)(nil), "sdk.protos.UnspentTokens")
-	proto.RegisterType((*ListRequest)(nil), "sdk.protos.ListRequest")
-	proto.RegisterType((*ImportRequest)(nil), "sdk.protos.ImportRequest")
-	proto.RegisterType((*TransferRequest)(nil), "sdk.protos.TransferRequest")
-	proto.RegisterType((*RedeemRequest)(nil), "sdk.protos.RedeemRequest")
-	proto.RegisterType((*AllowanceRecipientShare)(nil), "sdk.protos.AllowanceRecipientShare")
-	proto.RegisterType((*ApproveRequest)(nil), "sdk.protos.ApproveRequest")
-	proto.RegisterType((*ExpectationRequest)(nil), "sdk.protos.ExpectationRequest")
-	proto.RegisterType((*Header)(nil), "sdk.protos.Header")
-	proto.RegisterType((*Command)(nil), "sdk.protos.Command")
-	proto.RegisterType((*SignedCommand)(nil), "sdk.protos.SignedCommand")
-	proto.RegisterType((*CommandResponseHeader)(nil), "sdk.protos.CommandResponseHeader")
-	proto.RegisterType((*Error)(nil), "sdk.protos.Error")
-	proto.RegisterType((*CommandResponse)(nil), "sdk.protos.CommandResponse")
-	proto.RegisterType((*SignedCommandResponse)(nil), "sdk.protos.SignedCommandResponse")
+	proto.RegisterType((*IssueRequest)(nil), "token.IssueRequest")
+	proto.RegisterType((*RecipientShare)(nil), "token.RecipientShare")
+	proto.RegisterType((*TokenTransactions)(nil), "token.TokenTransactions")
+	proto.RegisterType((*TransferRequest)(nil), "token.TransferRequest")
+	proto.RegisterType((*RedeemRequest)(nil), "token.RedeemRequest")
+	proto.RegisterType((*UnspentToken)(nil), "token.UnspentToken")
+	proto.RegisterType((*UnspentTokens)(nil), "token.UnspentTokens")
+	proto.RegisterType((*ListRequest)(nil), "token.ListRequest")
+	proto.RegisterType((*TokenOperationRequest)(nil), "token.TokenOperationRequest")
+	proto.RegisterType((*Header)(nil), "token.Header")
+	proto.RegisterType((*Command)(nil), "token.Command")
+	proto.RegisterType((*SignedCommand)(nil), "token.SignedCommand")
+	proto.RegisterType((*CommandResponseHeader)(nil), "token.CommandResponseHeader")
+	proto.RegisterType((*Error)(nil), "token.Error")
+	proto.RegisterType((*CommandResponse)(nil), "token.CommandResponse")
+	proto.RegisterType((*SignedCommandResponse)(nil), "token.SignedCommandResponse")
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -1441,7 +1306,7 @@ func NewProverClient(cc *grpc.ClientConn) ProverClient {
 
 func (c *proverClient) ProcessCommand(ctx context.Context, in *SignedCommand, opts ...grpc.CallOption) (*SignedCommandResponse, error) {
 	out := new(SignedCommandResponse)
-	err := c.cc.Invoke(ctx, "/protos.Prover/ProcessCommand", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/token.Prover/ProcessCommand", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1471,7 +1336,7 @@ func _Prover_ProcessCommand_Handler(srv interface{}, ctx context.Context, dec fu
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/protos.Prover/ProcessCommand",
+		FullMethod: "/token.Prover/ProcessCommand",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ProverServer).ProcessCommand(ctx, req.(*SignedCommand))
@@ -1480,7 +1345,7 @@ func _Prover_ProcessCommand_Handler(srv interface{}, ctx context.Context, dec fu
 }
 
 var _Prover_serviceDesc = grpc.ServiceDesc{
-	ServiceName: "protos.Prover",
+	ServiceName: "token.Prover",
 	HandlerType: (*ProverServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
@@ -1492,72 +1357,68 @@ var _Prover_serviceDesc = grpc.ServiceDesc{
 	Metadata: "token/prover.proto",
 }
 
-func init() { proto.RegisterFile("token/prover.proto", fileDescriptor_prover_aacdf31643d38144) }
+func init() { proto.RegisterFile("token/prover.proto", fileDescriptor_prover_2a2fc6c2f642aa49) }
 
-var fileDescriptor_prover_aacdf31643d38144 = []byte{
-	// 1010 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x56, 0xdd, 0x6f, 0x1b, 0x45,
-	0x10, 0xf7, 0xd9, 0xae, 0x13, 0x8f, 0xbf, 0xd2, 0x4d, 0xd3, 0x9c, 0x0c, 0x69, 0xd3, 0x43, 0x42,
-	0x11, 0x1f, 0xb6, 0x14, 0x04, 0xaa, 0xa0, 0xaa, 0x48, 0xa1, 0x70, 0x41, 0x54, 0xb4, 0x1b, 0xf3,
-	0x82, 0x90, 0xac, 0xcd, 0xdd, 0xc6, 0x5e, 0xe1, 0xbb, 0xbd, 0xee, 0xee, 0x01, 0xe1, 0x0f, 0xe0,
-	0x0d, 0x24, 0x1e, 0x79, 0xe0, 0xff, 0xe4, 0x11, 0xdd, 0x7e, 0x9c, 0xef, 0xdc, 0xd0, 0x06, 0x95,
-	0x27, 0x7b, 0x67, 0x66, 0x67, 0x7e, 0x3b, 0xfb, 0xfb, 0xcd, 0x1e, 0x20, 0xc5, 0x7f, 0xa0, 0xe9,
-	0x34, 0x13, 0xfc, 0x47, 0x2a, 0x26, 0x99, 0xe0, 0x8a, 0xa3, 0x8e, 0xfe, 0x91, 0xe3, 0xbb, 0x0b,
-	0xce, 0x17, 0x2b, 0x3a, 0xd5, 0xcb, 0xf3, 0xfc, 0x62, 0xaa, 0x58, 0x42, 0xa5, 0x22, 0x49, 0x66,
-	0x02, 0xc7, 0xbe, 0xd9, 0x4c, 0x7f, 0xce, 0x68, 0xa4, 0x88, 0x62, 0x3c, 0x95, 0xd6, 0xb3, 0x6f,
-	0x3c, 0x4a, 0x90, 0x54, 0x92, 0xa8, 0xf0, 0x18, 0x47, 0xf0, 0x3d, 0xf4, 0x67, 0x85, 0x6b, 0xc6,
-	0x4f, 0xa5, 0xcc, 0x29, 0x7a, 0x13, 0xba, 0x82, 0x46, 0x2c, 0x63, 0x34, 0x55, 0xbe, 0x77, 0xe8,
-	0x1d, 0xf5, 0xf1, 0xda, 0x80, 0x10, 0xb4, 0xd5, 0x65, 0x46, 0xfd, 0xe6, 0xa1, 0x77, 0xd4, 0xc5,
-	0xfa, 0x3f, 0x1a, 0xc3, 0xf6, 0xf3, 0x9c, 0xa4, 0x8a, 0xa9, 0x4b, 0xbf, 0x75, 0xe8, 0x1d, 0xb5,
-	0x71, 0xb9, 0x0e, 0x30, 0xdc, 0xc6, 0x6e, 0xf3, 0xac, 0xa8, 0x7d, 0x41, 0xc5, 0xd9, 0x92, 0x88,
-	0x57, 0xd5, 0xa9, 0xe6, 0x6c, 0x6e, 0xe4, 0x7c, 0x02, 0x3d, 0x8d, 0xf8, 0x9b, 0x5c, 0x65, 0xb9,
-	0x42, 0x43, 0x68, 0xb2, 0xd8, 0x66, 0x68, 0xb2, 0xf8, 0x3f, 0x43, 0x7c, 0x00, 0x83, 0x6f, 0x53,
-	0x99, 0x15, 0x00, 0x8b, 0xac, 0x12, 0xbd, 0x0b, 0x1d, 0xdd, 0x2c, 0xe9, 0x7b, 0x87, 0xad, 0xa3,
-	0xde, 0xf1, 0xae, 0xe9, 0x94, 0x9c, 0x54, 0xaa, 0x62, 0x1b, 0x12, 0xbc, 0x0f, 0xbd, 0xaf, 0x99,
-	0x54, 0x98, 0x3e, 0xcf, 0xa9, 0x54, 0xe8, 0x0e, 0x40, 0x24, 0x68, 0x4c, 0x53, 0xc5, 0xc8, 0xca,
-	0x82, 0xaa, 0x58, 0x82, 0x04, 0x06, 0xa7, 0x49, 0xc6, 0xc5, 0x75, 0x37, 0xa0, 0x07, 0x30, 0x32,
-	0x95, 0xe6, 0x8a, 0xcf, 0x59, 0x71, 0x43, 0x7e, 0x53, 0xa3, 0xba, 0x55, 0x43, 0x65, 0x6f, 0x0f,
-	0x0f, 0x4c, 0xb0, 0x5d, 0x06, 0xbf, 0x7a, 0x30, 0x72, 0x6d, 0xbf, 0x6e, 0xc5, 0x37, 0xa0, 0xab,
-	0x93, 0xcc, 0x59, 0x2c, 0x75, 0xad, 0x3e, 0xde, 0xd6, 0x86, 0xd3, 0x58, 0xa2, 0x8f, 0xa0, 0x23,
-	0x8b, 0xeb, 0x93, 0x7e, 0x4b, 0xa3, 0xb8, 0xe3, 0x50, 0x5c, 0x7d, 0xcb, 0xd8, 0x46, 0x07, 0xbf,
-	0xc0, 0x00, 0xd3, 0x98, 0xd2, 0xe4, 0x7f, 0x41, 0xf1, 0x1e, 0x20, 0x77, 0x7d, 0x45, 0x5b, 0x84,
-	0xce, 0x6c, 0x2f, 0x76, 0xc7, 0x79, 0x66, 0xdc, 0x54, 0x0c, 0xce, 0x60, 0xff, 0x64, 0xb5, 0xe2,
-	0x3f, 0x91, 0x34, 0xa2, 0x25, 0xcc, 0xd7, 0x25, 0xe1, 0x9f, 0x1e, 0x0c, 0x4f, 0x32, 0xad, 0xd2,
-	0xeb, 0x1e, 0xe9, 0x2b, 0xd8, 0x21, 0x0e, 0xc7, 0xdc, 0x76, 0xd1, 0xdc, 0xe5, 0x5d, 0xd7, 0xc5,
-	0x7f, 0xc1, 0x89, 0x47, 0xe5, 0x46, 0xbd, 0x96, 0xf5, 0xf6, 0xb4, 0xea, 0xed, 0x09, 0x7e, 0xf3,
-	0x00, 0x3d, 0x5e, 0x8f, 0x80, 0xeb, 0xe2, 0xfb, 0x18, 0x7a, 0x95, 0xc1, 0xa1, 0x4f, 0xdc, 0x3b,
-	0xf6, 0x6b, 0x34, 0xab, 0x66, 0xad, 0x06, 0xbf, 0x1c, 0xcf, 0x1f, 0x1e, 0x74, 0x42, 0x4a, 0x62,
-	0x2a, 0xd0, 0x7d, 0xe8, 0x96, 0x33, 0x4b, 0x43, 0xe8, 0x1d, 0x8f, 0x27, 0x66, 0xaa, 0x4d, 0xdc,
-	0x54, 0x9b, 0xcc, 0x5c, 0x04, 0x5e, 0x07, 0xa3, 0x03, 0x80, 0x68, 0x49, 0xd2, 0x94, 0xae, 0xe6,
-	0x2c, 0xb6, 0xe2, 0xee, 0x5a, 0xcb, 0x69, 0x8c, 0x6e, 0xc1, 0x8d, 0x94, 0xa7, 0x11, 0xd5, 0x2c,
-	0xe8, 0x63, 0xb3, 0x40, 0x3e, 0x6c, 0x45, 0x82, 0x12, 0xc5, 0x85, 0xdf, 0xd6, 0x76, 0xb7, 0x0c,
-	0xfe, 0x6a, 0xc3, 0xd6, 0x67, 0x3c, 0x49, 0x48, 0x1a, 0xa3, 0xb7, 0xa1, 0xb3, 0xd4, 0xf0, 0x2c,
-	0xa2, 0xa1, 0x3b, 0xb3, 0x01, 0x8d, 0xad, 0x17, 0x3d, 0x84, 0x21, 0xd3, 0xe2, 0x9d, 0x0b, 0xd3,
-	0x52, 0xdb, 0xa3, 0x3d, 0x17, 0x5f, 0x93, 0x76, 0xd8, 0xc0, 0x03, 0x56, 0xd3, 0xfa, 0xe7, 0xb0,
-	0xa3, 0xac, 0x3a, 0xca, 0x0c, 0x2d, 0x9d, 0x61, 0xbf, 0xec, 0x72, 0x5d, 0xac, 0x61, 0x03, 0x8f,
-	0xd4, 0x86, 0x7e, 0xef, 0x43, 0x7f, 0xc5, 0xe4, 0x1a, 0x43, 0x5b, 0x67, 0x28, 0x87, 0x54, 0x65,
-	0x1a, 0x85, 0x0d, 0xdc, 0x5b, 0x55, 0x86, 0xd3, 0x43, 0x18, 0x1a, 0xa9, 0x94, 0x7b, 0x6f, 0xd4,
-	0xf1, 0xd7, 0x24, 0x5a, 0xe0, 0x17, 0x35, 0xcd, 0x9e, 0xc0, 0x88, 0x18, 0xca, 0x97, 0x09, 0x3a,
-	0x3a, 0xc1, 0xed, 0x92, 0xbf, 0x35, 0x45, 0x84, 0x0d, 0x3c, 0x24, 0x75, 0x8d, 0x3c, 0x81, 0xbd,
-	0xb2, 0x05, 0x17, 0x82, 0xaf, 0x91, 0x6c, 0xbd, 0xaa, 0x0f, 0xbb, 0x6e, 0xdf, 0x17, 0x82, 0x27,
-	0xeb, 0x74, 0xbb, 0x15, 0x16, 0x96, 0xc9, 0xb6, 0x2d, 0xb1, 0x6c, 0xb2, 0x17, 0xb5, 0x10, 0x36,
-	0x30, 0xa2, 0x2f, 0x58, 0x1f, 0x75, 0x61, 0x2b, 0x23, 0x97, 0x2b, 0x4e, 0xe2, 0xe0, 0x4b, 0x18,
-	0x9c, 0xb1, 0x45, 0x4a, 0x63, 0x47, 0x92, 0x82, 0x4a, 0xe6, 0xaf, 0x95, 0x8e, 0x5b, 0x16, 0x43,
-	0x44, 0xb2, 0x45, 0x4a, 0x54, 0x2e, 0xcc, 0xab, 0xd3, 0xc7, 0x6b, 0x43, 0xf0, 0xbb, 0x07, 0x7b,
-	0x36, 0x07, 0xa6, 0x32, 0xe3, 0xa9, 0xa4, 0xaf, 0xad, 0x85, 0x7b, 0xd0, 0xb7, 0xc5, 0xe7, 0x4b,
-	0x22, 0x97, 0xb6, 0x68, 0xcf, 0xda, 0x42, 0x22, 0x97, 0x55, 0xe6, 0xb7, 0xea, 0xcc, 0xff, 0x04,
-	0x6e, 0x3c, 0x16, 0x82, 0x8b, 0x22, 0x24, 0xa1, 0x52, 0x92, 0x05, 0xd5, 0xd5, 0xbb, 0xd8, 0x2d,
-	0x0b, 0x8f, 0xed, 0x83, 0x4d, 0x5d, 0xb6, 0xe5, 0x6f, 0x0f, 0x46, 0x1b, 0xa7, 0x41, 0x1f, 0x6e,
-	0xc8, 0xe7, 0xc0, 0xf5, 0xfd, 0xca, 0x63, 0x97, 0x6a, 0xba, 0x07, 0x2d, 0x2a, 0x84, 0x95, 0xd0,
-	0xa0, 0xbc, 0xab, 0x02, 0x5a, 0xd8, 0xc0, 0x85, 0x0f, 0x7d, 0x0a, 0x37, 0xcd, 0x54, 0xa9, 0x7c,
-	0xb6, 0x58, 0xc5, 0xdc, 0xb4, 0xef, 0xde, 0xda, 0x11, 0x36, 0xf0, 0x8e, 0xda, 0xb0, 0x15, 0x94,
-	0xcf, 0xcd, 0xe3, 0x3e, 0xb7, 0x6f, 0x7a, 0xbb, 0x4e, 0xf9, 0xda, 0xd3, 0x5f, 0x50, 0x3e, 0xaf,
-	0x1a, 0xaa, 0x8c, 0x78, 0x06, 0x7b, 0x35, 0x46, 0x94, 0xe7, 0x1f, 0xc3, 0xb6, 0xb0, 0xff, 0x2d,
-	0x35, 0xca, 0xf5, 0xcb, 0xb9, 0x71, 0x8c, 0xa1, 0xf3, 0x54, 0x7f, 0xe7, 0xa1, 0x10, 0x86, 0x4f,
-	0x05, 0x8f, 0xa8, 0x94, 0x8e, 0x6f, 0x25, 0xc2, 0x5a, 0xd1, 0xf1, 0xc1, 0x95, 0x66, 0x87, 0x25,
-	0x68, 0x3c, 0x7a, 0x06, 0x6f, 0x71, 0xb1, 0x98, 0x2c, 0x2f, 0x33, 0x2a, 0x56, 0x34, 0x5e, 0x50,
-	0x31, 0xb9, 0x20, 0xe7, 0x82, 0x45, 0x6e, 0xa3, 0xee, 0xc3, 0x77, 0xef, 0x2c, 0x98, 0x5a, 0xe6,
-	0xe7, 0x93, 0x88, 0x27, 0xd3, 0x4a, 0xec, 0xd4, 0xc4, 0x9a, 0x2f, 0x4c, 0x39, 0xd5, 0xb1, 0xe7,
-	0xe6, 0xf3, 0xf3, 0x83, 0x7f, 0x02, 0x00, 0x00, 0xff, 0xff, 0x10, 0x78, 0x90, 0x5b, 0x9b, 0x0a,
-	0x00, 0x00,
+var fileDescriptor_prover_2a2fc6c2f642aa49 = []byte{
+	// 953 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xb4, 0x56, 0xef, 0x6e, 0x23, 0x35,
+	0x10, 0x4f, 0x9a, 0x26, 0x6d, 0x26, 0x49, 0x7b, 0x35, 0x97, 0xbb, 0x55, 0x54, 0x8e, 0xb2, 0x08,
+	0xa9, 0x70, 0xba, 0x8d, 0x54, 0x0e, 0x81, 0xf8, 0xf7, 0xe1, 0x2a, 0x8e, 0x54, 0x42, 0xa2, 0xe7,
+	0x2b, 0x7c, 0x40, 0x82, 0x95, 0xbb, 0x3b, 0x4d, 0x2c, 0x36, 0xeb, 0x3d, 0xdb, 0x81, 0xeb, 0x3b,
+	0x00, 0x2f, 0xc0, 0x73, 0xf0, 0x0a, 0x3c, 0x17, 0x5a, 0xdb, 0xbb, 0xf1, 0x46, 0xbd, 0xaa, 0x12,
+	0xe2, 0x4b, 0x64, 0x8f, 0x7f, 0xf3, 0xf3, 0x78, 0xe6, 0x37, 0x93, 0x05, 0xa2, 0xc5, 0x2f, 0x98,
+	0x4f, 0x0b, 0x29, 0x7e, 0x45, 0x19, 0x15, 0x52, 0x68, 0x41, 0xba, 0xc6, 0x36, 0x79, 0x67, 0x2e,
+	0xc4, 0x3c, 0xc3, 0xa9, 0x31, 0x5e, 0xae, 0xae, 0xa6, 0x9a, 0x2f, 0x51, 0x69, 0xb6, 0x2c, 0x2c,
+	0x6e, 0xf2, 0xc0, 0xfa, 0x8a, 0x02, 0x25, 0xd3, 0x5c, 0xe4, 0xca, 0xd9, 0x1f, 0x5a, 0xbb, 0x96,
+	0x2c, 0x57, 0x2c, 0x29, 0x4f, 0xec, 0x41, 0x98, 0xc2, 0xf0, 0x4c, 0xa9, 0x15, 0x52, 0x7c, 0xb5,
+	0x42, 0xa5, 0xc9, 0x23, 0x80, 0x44, 0x62, 0x8a, 0xb9, 0xe6, 0x2c, 0x0b, 0xda, 0x47, 0xed, 0xe3,
+	0x21, 0xf5, 0x2c, 0xe4, 0x29, 0xec, 0x1b, 0x2a, 0x15, 0x6b, 0x11, 0xf3, 0xd2, 0x33, 0xd8, 0x3a,
+	0xea, 0x1c, 0x0f, 0x4e, 0x86, 0x91, 0xb1, 0x47, 0x17, 0xe5, 0x2f, 0x1d, 0x59, 0xd0, 0x85, 0x30,
+	0xe4, 0xe1, 0x4f, 0xb0, 0x47, 0x31, 0xe1, 0x05, 0xc7, 0x5c, 0xbf, 0x5c, 0x30, 0x89, 0x64, 0x0a,
+	0x7d, 0x59, 0x59, 0xcc, 0x35, 0x83, 0x93, 0x03, 0x9f, 0xe1, 0xbb, 0xdf, 0x72, 0x94, 0x74, 0x8d,
+	0x21, 0x13, 0xd8, 0x7d, 0xb5, 0x62, 0xb9, 0xe6, 0xfa, 0x3a, 0xd8, 0x3a, 0x6a, 0x1f, 0xf7, 0x69,
+	0xbd, 0x0f, 0xbf, 0x82, 0x03, 0xe3, 0x74, 0xb1, 0x7e, 0x9e, 0x22, 0x1f, 0x40, 0x47, 0xbf, 0x56,
+	0x41, 0xdb, 0x44, 0xf7, 0xd0, 0xe7, 0xf6, 0x60, 0xb4, 0xc4, 0x84, 0x7f, 0xb4, 0x61, 0xdf, 0x18,
+	0xaf, 0x50, 0xde, 0x35, 0x11, 0x8f, 0xa1, 0x6f, 0x28, 0x63, 0x9e, 0x2a, 0x97, 0x82, 0x3d, 0xff,
+	0x92, 0xb3, 0x94, 0xee, 0x6a, 0xbb, 0x50, 0xe4, 0x09, 0xf4, 0x54, 0xf9, 0x6c, 0x15, 0x74, 0x0c,
+	0x72, 0xec, 0x90, 0xcd, 0xa4, 0x50, 0x07, 0x0a, 0x5f, 0xc3, 0x88, 0x62, 0x8a, 0xb8, 0xfc, 0x5f,
+	0x82, 0xf1, 0x33, 0xd9, 0xd9, 0xc8, 0xe4, 0xcf, 0x30, 0xfc, 0x3e, 0x57, 0x05, 0xe6, 0xda, 0xf8,
+	0x91, 0x47, 0xb0, 0xc5, 0x53, 0x57, 0x9f, 0x4d, 0xc6, 0x2d, 0x9e, 0x12, 0x02, 0xdb, 0xfa, 0xba,
+	0x40, 0x57, 0x11, 0xb3, 0xbe, 0x95, 0xff, 0x0b, 0x18, 0xf9, 0xfc, 0x8a, 0x3c, 0x86, 0x9e, 0x95,
+	0x8a, 0x2b, 0xd4, 0x5b, 0xee, 0x12, 0x1f, 0x45, 0x1d, 0x24, 0x7c, 0x02, 0x83, 0x6f, 0xb9, 0xd2,
+	0x77, 0xcc, 0x4a, 0xf8, 0x57, 0x1b, 0xc6, 0x56, 0x4c, 0x55, 0x3b, 0xdc, 0x35, 0x9f, 0x1f, 0x03,
+	0xac, 0x5b, 0xc8, 0x25, 0x74, 0xdc, 0x90, 0x67, 0xcd, 0xe8, 0x01, 0x9b, 0x65, 0xe8, 0xdc, 0x5e,
+	0x86, 0xf0, 0xef, 0x36, 0xf4, 0x66, 0xc8, 0x52, 0x94, 0xe4, 0x53, 0xe8, 0xd7, 0x8d, 0xec, 0x92,
+	0x3d, 0x89, 0x6c, 0xab, 0x47, 0x55, 0xab, 0x47, 0x17, 0x15, 0x82, 0xae, 0xc1, 0xe4, 0x6d, 0x80,
+	0x64, 0xc1, 0xf2, 0x1c, 0xb3, 0x98, 0xa7, 0xae, 0x0a, 0x7d, 0x67, 0x39, 0x4b, 0xc9, 0x7d, 0xe8,
+	0xe6, 0x22, 0x4f, 0xd0, 0xd4, 0x61, 0x48, 0xed, 0x86, 0x04, 0xb0, 0x93, 0x48, 0x64, 0x5a, 0xc8,
+	0x60, 0xdb, 0xd8, 0xab, 0x2d, 0x09, 0x61, 0xa4, 0x33, 0x15, 0x27, 0x28, 0x75, 0xbc, 0x60, 0x6a,
+	0x11, 0x74, 0xcd, 0xf9, 0x40, 0x67, 0xea, 0x14, 0xa5, 0x9e, 0x31, 0xb5, 0x08, 0x7f, 0xef, 0xc0,
+	0xce, 0xa9, 0x58, 0x2e, 0x59, 0x9e, 0x92, 0xf7, 0xa1, 0xb7, 0x30, 0x4f, 0x70, 0x51, 0x8f, 0xdc,
+	0x6b, 0xed, 0xbb, 0xa8, 0x3b, 0x24, 0x9f, 0xc1, 0xc8, 0x8c, 0x8a, 0x58, 0xda, 0xfc, 0x9b, 0x40,
+	0xd7, 0xb5, 0xf6, 0x07, 0xd0, 0xac, 0x45, 0x87, 0xdc, 0x1f, 0x48, 0xa7, 0x70, 0x4f, 0xbb, 0xd6,
+	0xac, 0xdd, 0x3b, 0xc6, 0xfd, 0x41, 0x95, 0xda, 0x66, 0xe7, 0xce, 0x5a, 0x74, 0x5f, 0x6f, 0x34,
+	0xf3, 0x27, 0x30, 0xcc, 0xb8, 0xd2, 0x35, 0xc1, 0xb6, 0x21, 0x20, 0x8e, 0xc0, 0xd3, 0xd4, 0xac,
+	0x45, 0x07, 0x99, 0x27, 0xb1, 0x2f, 0x61, 0x4f, 0x9a, 0x4e, 0xac, 0x5d, 0xbb, 0xc6, 0xf5, 0x7e,
+	0xdd, 0xc0, 0x5e, 0x9b, 0xce, 0x5a, 0x74, 0x24, 0x1b, 0x7d, 0xfb, 0x03, 0xd8, 0xc1, 0x1b, 0xd7,
+	0x22, 0xa9, 0x79, 0x7a, 0x86, 0xe7, 0xf0, 0x66, 0x51, 0xd5, 0x7c, 0x63, 0x7d, 0xd3, 0xc1, 0xb3,
+	0x3e, 0xec, 0x14, 0xec, 0x3a, 0x13, 0x2c, 0x0d, 0xbf, 0x81, 0xd1, 0x4b, 0x3e, 0xcf, 0x31, 0xad,
+	0x6a, 0x52, 0x56, 0xd7, 0x2e, 0x9d, 0xb0, 0xab, 0x2d, 0x39, 0x84, 0xbe, 0xe2, 0xf3, 0x9c, 0xe9,
+	0x95, 0xb4, 0x1d, 0x3b, 0xa4, 0x6b, 0x43, 0xf8, 0x67, 0x1b, 0xc6, 0x8e, 0x83, 0xa2, 0x2a, 0x44,
+	0xae, 0xf0, 0x3f, 0xcb, 0xf3, 0x5d, 0x18, 0xba, 0xcb, 0xad, 0x9c, 0xec, 0xa5, 0x03, 0x67, 0x2b,
+	0xe5, 0xe4, 0x8b, 0xb1, 0xd3, 0x10, 0x63, 0xf8, 0x39, 0x74, 0xbf, 0x96, 0x52, 0xc8, 0x12, 0xb2,
+	0x44, 0xa5, 0xd8, 0x1c, 0xcd, 0xed, 0x7d, 0x5a, 0x6d, 0xcb, 0x13, 0x97, 0x07, 0x47, 0x5d, 0xa7,
+	0xe5, 0x9f, 0x2d, 0xd8, 0xdf, 0x78, 0x0d, 0x79, 0xba, 0xa1, 0xd6, 0x2a, 0xf9, 0x37, 0xbe, 0xba,
+	0x16, 0xef, 0x11, 0x74, 0x50, 0x4a, 0x27, 0xd9, 0xea, 0x5f, 0xce, 0x04, 0x36, 0x6b, 0xd1, 0xf2,
+	0x88, 0x3c, 0x87, 0x03, 0x5b, 0x65, 0xef, 0xef, 0xd5, 0x69, 0xf4, 0x4d, 0xff, 0x3b, 0xb3, 0x16,
+	0xbd, 0xa7, 0x37, 0x6c, 0xa5, 0xd8, 0x56, 0x76, 0xec, 0xc5, 0x6e, 0x26, 0x6e, 0x37, 0xc4, 0xd6,
+	0x98, 0x9c, 0xa5, 0xd8, 0x56, 0x8d, 0x51, 0x7a, 0xe6, 0xbe, 0x1c, 0xfc, 0x30, 0x94, 0xd3, 0x6b,
+	0xf0, 0x86, 0x38, 0x4a, 0x9a, 0x83, 0xcd, 0x40, 0x94, 0xaf, 0xaf, 0x17, 0x30, 0x6e, 0xe8, 0xab,
+	0xce, 0xe6, 0x04, 0x76, 0xa5, 0x5b, 0x3b, 0xa1, 0xd5, 0xfb, 0xdb, 0x95, 0x76, 0x72, 0x0e, 0xbd,
+	0x73, 0xf3, 0x71, 0x43, 0x9e, 0xc3, 0xde, 0xb9, 0x14, 0x09, 0x2a, 0x55, 0xa9, 0xb7, 0x7a, 0x6b,
+	0xe3, 0xce, 0xc9, 0xe1, 0x4d, 0xd6, 0x2a, 0x92, 0xb0, 0xf5, 0xec, 0x05, 0xbc, 0x27, 0xe4, 0x3c,
+	0x5a, 0x5c, 0x17, 0x28, 0x33, 0x4c, 0xe7, 0x28, 0xa3, 0x2b, 0x76, 0x29, 0x79, 0x62, 0xf5, 0xa9,
+	0xac, 0xfb, 0x8f, 0x1f, 0xce, 0xb9, 0x5e, 0xac, 0x2e, 0xa3, 0x44, 0x2c, 0xa7, 0x1e, 0x76, 0x6a,
+	0xb1, 0xf6, 0xab, 0x4a, 0x4d, 0x0d, 0xf6, 0xb2, 0x67, 0x76, 0x1f, 0xfd, 0x1b, 0x00, 0x00, 0xff,
+	0xff, 0x93, 0x22, 0x54, 0x97, 0x8e, 0x09, 0x00, 0x00,
 }

@@ -11,8 +11,8 @@ Please review third_party pinning scripts and patches for more details.
 package discovery
 
 import (
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/gossip/protoext"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/discovery"
-	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/gossip"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 )
@@ -71,7 +71,7 @@ type Endorsers []*Peer
 // of a certain peer.
 type Peer struct {
 	MSPID            string
-	AliveMessage     *gossip.SignedGossipMessage
-	StateInfoMessage *gossip.SignedGossipMessage
+	AliveMessage     *protoext.SignedGossipMessage
+	StateInfoMessage *protoext.SignedGossipMessage
 	Identity         []byte
 }

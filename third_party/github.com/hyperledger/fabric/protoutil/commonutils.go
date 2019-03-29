@@ -8,7 +8,7 @@ Notice: This file has been modified for Hyperledger Fabric SDK Go usage.
 Please review third_party pinning scripts and patches for more details.
 */
 
-package utils
+package protoutil
 
 import (
 	"fmt"

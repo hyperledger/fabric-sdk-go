@@ -16,6 +16,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/core/ledger"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
+	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protoutil"
 )
 
 // Collection defines a common interface for collections
@@ -57,6 +58,10 @@ type CollectionAccessPolicy interface {
 	// IsMemberOnlyRead returns a true if only collection members can read
 	// the private data
 	IsMemberOnlyRead() bool
+
+	// IsMemberOnlyWrite returns a true if only collection members can write
+	// the private data
+	IsMemberOnlyWrite() bool
 }
 
 // CollectionPersistenceConfigs encapsulates configurations related to persistece of a collection
@@ -73,7 +78,7 @@ type CollectionPersistenceConfigs interface {
 // Signature on that Data.
 // Returns: True, if the policy holds for the given signed data.
 //          False otherwise
-type Filter func(common.SignedData) bool
+type Filter func(protoutil.SignedData) bool
 
 // CollectionStore provides various APIs to retrieves stored collections and perform
 // membership check & read permission check based on the collection's properties.
@@ -88,14 +93,14 @@ type Filter func(common.SignedData) bool
 // (3) we would need a cache in collection store to avoid repeated crypto operation.
 //     This would be simple to implement when we introduce IsAMemberOf() APIs.
 type CollectionStore interface {
-	// GetCollection retrieves the collection in the following way:
+	// RetrieveCollection retrieves the collection in the following way:
 	// If the TxID exists in the ledger, the collection that is returned has the
 	// latest configuration that was committed into the ledger before this txID
 	// was committed.
 	// Else - it's the latest configuration for the collection.
 	RetrieveCollection(common.CollectionCriteria) (Collection, error)
 
-	// GetCollectionAccessPolicy retrieves a collection's access policy
+	// RetrieveCollectionAccessPolicy retrieves a collection's access policy
 	RetrieveCollectionAccessPolicy(common.CollectionCriteria) (CollectionAccessPolicy, error)
 
 	// RetrieveCollectionConfigPackage retrieves the whole configuration package
@@ -105,9 +110,10 @@ type CollectionStore interface {
 	// RetrieveCollectionPersistenceConfigs retrieves the collection's persistence related configurations
 	RetrieveCollectionPersistenceConfigs(common.CollectionCriteria) (CollectionPersistenceConfigs, error)
 
-	// HasReadAccess checks whether the creator of the signedProposal has read permission on a
-	// given collection
-	HasReadAccess(common.CollectionCriteria, *pb.SignedProposal, ledger.QueryExecutor) (bool, error)
+	// RetrieveReadWritePermission retrieves the read-write persmission of the creator of the
+	// signedProposal for a given collection using collection access policy and flags such as
+	// memberOnlyRead & memberOnlyWrite
+	RetrieveReadWritePermission(common.CollectionCriteria, *pb.SignedProposal, ledger.QueryExecutor) (bool, bool, error)
 
 	CollectionFilter
 }

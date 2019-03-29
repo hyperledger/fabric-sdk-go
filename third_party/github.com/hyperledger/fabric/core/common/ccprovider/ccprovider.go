@@ -11,18 +11,9 @@ Please review third_party pinning scripts and patches for more details.
 package ccprovider
 
 import (
-	"os"
-
 	"github.com/golang/protobuf/proto"
-	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/core/common/privdata"
-	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/core/ledger"
-	flogging "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/sdkpatch/logbridge"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
-
-var ccproviderLogger = flogging.MustGetLogger("ccprovider")
-
-var chaincodeInstallPath string
 
 // CCPackage encapsulates a chaincode package which can be
 //    raw ChaincodeDeploymentSpec
@@ -32,9 +23,6 @@ var chaincodeInstallPath string
 type CCPackage interface {
 	//InitFromBuffer initialize the package from bytes
 	InitFromBuffer(buf []byte) (*ChaincodeData, error)
-
-	// InitFromFS gets the chaincode from the filesystem (includes the raw bytes too)
-	InitFromFS(ccname string, ccversion string) ([]byte, *pb.ChaincodeDeploymentSpec, error)
 
 	// PutChaincodeToFS writes the chaincode to the filesystem
 	PutChaincodeToFS() error
@@ -60,59 +48,8 @@ type CCPackage interface {
 	GetId() []byte
 }
 
-type CCCacheSupport interface {
-	// GetChaincode is needed by the cache to get chaincode data
-	GetChaincode(ccname string, ccversion string) (CCPackage, error)
-}
-
-// CCInfoFSImpl provides the implementation for CC on the FS and the access to it
-// It implements CCCacheSupport
-type CCInfoFSImpl struct{}
-
-// DirEnumerator enumerates directories
-type DirEnumerator func(string) ([]os.FileInfo, error)
-
 // ChaincodeExtractor extracts chaincode from a given path
 type ChaincodeExtractor func(ccname string, ccversion string, path string) (CCPackage, error)
-
-// ccInfoFSStorageMgr is the storage manager used either by the cache or if the
-// cache is bypassed
-var ccInfoFSProvider = &CCInfoFSImpl{}
-
-// ccInfoCache is the cache instance itself
-
-// CCContext pass this around instead of string of args
-type CCContext struct {
-	// Name chaincode name
-	Name string
-
-	// Version used to construct the chaincode image and register
-	Version string
-}
-
-//-------- ChaincodeDefinition - interface for ChaincodeData ------
-// ChaincodeDefinition describes all of the necessary information for a peer to decide whether to endorse
-// a proposal and whether to validate a transaction, for a particular chaincode.
-type ChaincodeDefinition interface {
-	// CCName returns the name of this chaincode (the name it was put in the ChaincodeRegistry with).
-	CCName() string
-
-	// Hash returns the hash of the chaincode.
-	Hash() []byte
-
-	// CCVersion returns the version of the chaincode.
-	CCVersion() string
-
-	// Validation returns how to validate transactions for this chaincode.
-	// The string returned is the name of the validation method (usually 'vscc')
-	// and the bytes returned are the argument to the validation (in the case of
-	// 'vscc', this is a marshaled pb.VSCCArgs message).
-	Validation() (string, []byte)
-
-	// Endorsement returns how to endorse proposals for this chaincode.
-	// The string returns is the name of the endorsement method (usually 'escc').
-	Endorsement() string
-}
 
 //-------- ChaincodeData is stored on the LSCC -------
 
@@ -156,45 +93,3 @@ func (cd *ChaincodeData) String() string { return proto.CompactTextString(cd) }
 
 // ProtoMessage just exists to make proto happy
 func (*ChaincodeData) ProtoMessage() {}
-
-// ChaincodeContainerInfo is yet another synonym for the data required to start/stop a chaincode.
-type ChaincodeContainerInfo struct {
-	Name        string
-	Version     string
-	Path        string
-	Type        string
-	CodePackage []byte
-
-	// ContainerType is not a great name, but 'DOCKER' and 'SYSTEM' are the valid types
-	ContainerType string
-}
-
-// TransactionParams are parameters which are tied to a particular transaction
-// and which are required for invoking chaincode.
-type TransactionParams struct {
-	TxID                 string
-	ChannelID            string
-	SignedProp           *pb.SignedProposal
-	Proposal             *pb.Proposal
-	TXSimulator          ledger.TxSimulator
-	HistoryQueryExecutor ledger.HistoryQueryExecutor
-	CollectionStore      privdata.CollectionStore
-	IsInitTransaction    bool
-
-	// this is additional data passed to the chaincode
-	ProposalDecorations map[string][]byte
-}
-
-// ChaincodeProvider provides an abstraction layer that is
-// used for different packages to interact with code in the
-// chaincode package without importing it; more methods
-// should be added below if necessary
-type ChaincodeProvider interface {
-	// Execute executes a standard chaincode invocation for a chaincode and an input
-	Execute(txParams *TransactionParams, cccid *CCContext, input *pb.ChaincodeInput) (*pb.Response, *pb.ChaincodeEvent, error)
-	// ExecuteLegacyInit is a special case for executing chaincode deployment specs,
-	// which are not already in the LSCC, needed for old lifecycle
-	ExecuteLegacyInit(txParams *TransactionParams, cccid *CCContext, spec *pb.ChaincodeDeploymentSpec) (*pb.Response, *pb.ChaincodeEvent, error)
-	// Stop stops the chaincode give
-	Stop(ccci *ChaincodeContainerInfo) error
-}

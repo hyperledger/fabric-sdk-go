@@ -18,7 +18,7 @@ GOFILTER_CMD="go run scripts/_go/src/gofilter/cmd/gofilter/gofilter.go"
 
 declare -a PKGS=(
         "common/cauthdsl"
-        "protos/utils"
+        "protoutil"
         "core/common/ccprovider"
         "core/ledger/kvledger/txmgmt/rwsetutil"
         "core/ledger/util"
@@ -27,9 +27,10 @@ declare -a PKGS=(
 declare -a FILES=(
         "common/cauthdsl/cauthdsl_builder.go"
         "common/cauthdsl/policyparser.go"
-        "protos/utils/commonutils.go"
-        "protos/utils/proputils.go"
-        "protos/utils/txutils.go"
+        "protoutil/commonutils.go"
+        "protoutil/proputils.go"
+        "protoutil/signeddata.go"
+        "protoutil/txutils.go"
         "core/common/ccprovider/ccprovider.go"
         "core/common/ccprovider/cdspackage.go"
         "core/ledger/kvledger/txmgmt/rwsetutil/rwset_proto_util.go"
@@ -51,17 +52,19 @@ gofilter() {
     echo "Filtering: ${FILTER_FILENAME}"
     cp ${TMP_PROJECT_PATH}/${FILTER_FILENAME} ${TMP_PROJECT_PATH}/${FILTER_FILENAME}.bak
     $GOFILTER_CMD -filename "${TMP_PROJECT_PATH}/${FILTER_FILENAME}.bak" \
-        -filters fn -fn "$FILTER_FN" \
+        -filters "$FILTERS_ENABLED" -fn "$FILTER_FN" -gen "$FILTER_GEN" -type "$FILTER_TYPE" \
         > "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 }
 
 echo "Filtering Go sources for allowed functions ..."
-FILTER_FILENAME="protos/utils/commonutils.go"
+FILTERS_ENABLED="fn"
+
+FILTER_FILENAME="protoutil/commonutils.go"
 FILTER_FN="UnmarshalChannelHeader,MarshalOrPanic,UnmarshalChannelHeader,MakeChannelHeader,MakePayloadHeader,ExtractPayload"
 FILTER_FN+=",Marshal,ExtractEnvelope,ExtractEnvelopeOrPanic,ExtractPayloadOrPanic"
 gofilter
 
-FILTER_FILENAME="protos/utils/proputils.go"
+FILTER_FILENAME="protoutil/proputils.go"
 FILTER_FN="GetHeader,GetChaincodeProposalPayload,GetSignatureHeader,GetChaincodeHeaderExtension,GetBytesChaincodeActionPayload"
 FILTER_FN+=",GetBytesTransaction,GetBytesPayload,GetHeader,GetBytesProposalResponsePayload,GetBytesProposal"
 FILTER_FN+=",CreateChaincodeProposalWithTxIDNonceAndTransient"
@@ -71,7 +74,7 @@ gofilter
 sed -i'' -e 's/"github.com\/hyperledger\/fabric\/bccsp\/factory"/factory "github.com\/hyperledger\/fabric-sdk-go\/internal\/github.com\/hyperledger\/fabric\/sdkpatch\/cryptosuitebridge"/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e 's/&bccsp.SHA256Opts{}/factory.GetSHA256Opts()/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 
-FILTER_FILENAME="protos/utils/txutils.go"
+FILTER_FILENAME="protoutil/txutils.go"
 FILTER_FN="GetBytesProposalPayloadForTx,GetEnvelopeFromBlock,GetPayloads"
 gofilter
 
@@ -92,6 +95,13 @@ gofilter
 
 FILTER_FILENAME="core/ledger/util/txvalidationflags.go"
 FILTER_FN="IsValid,IsInvalid,Flag,IsSetTo,NewTxValidationFlags,newTxValidationFlagsSetValue"
+gofilter
+
+echo "Filtering Go sources for allowed declarations ..."
+FILTER_FILENAME="core/common/ccprovider/ccprovider.go"
+FILTERS_ENABLED="gen,type"
+FILTER_TYPE="IMPORT,CONST"
+FILTER_GEN="CCPackage,ChaincodeData"
 gofilter
 
 # Apply patching

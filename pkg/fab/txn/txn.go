@@ -19,7 +19,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
-	protos_utils "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/utils"
+	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protoutil"
 )
 
 var logger = logging.NewLogger("fabsdk/fab")
@@ -42,19 +42,19 @@ func New(request fab.TransactionRequest) (*fab.Transaction, error) {
 	proposal := request.Proposal
 
 	// the original header
-	hdr, err := protos_utils.GetHeader(proposal.Header)
+	hdr, err := protoutil.GetHeader(proposal.Header)
 	if err != nil {
 		return nil, errors.Wrap(err, "unmarshal proposal header failed")
 	}
 
 	// the original payload
-	pPayl, err := protos_utils.GetChaincodeProposalPayload(proposal.Payload)
+	pPayl, err := protoutil.GetChaincodeProposalPayload(proposal.Payload)
 	if err != nil {
 		return nil, errors.Wrap(err, "unmarshal proposal payload failed")
 	}
 
 	// get header extensions so we have the visibility field
-	hdrExt, err := protos_utils.GetChaincodeHeaderExtension(hdr)
+	hdrExt, err := protoutil.GetChaincodeHeaderExtension(hdr)
 	if err != nil {
 		return nil, err
 	}
@@ -74,14 +74,14 @@ func New(request fab.TransactionRequest) (*fab.Transaction, error) {
 	cea := &pb.ChaincodeEndorsedAction{ProposalResponsePayload: responsePayload, Endorsements: endorsements}
 
 	// obtain the bytes of the proposal payload that will go to the transaction
-	propPayloadBytes, err := protos_utils.GetBytesProposalPayloadForTx(pPayl, hdrExt.PayloadVisibility)
+	propPayloadBytes, err := protoutil.GetBytesProposalPayloadForTx(pPayl, hdrExt.PayloadVisibility)
 	if err != nil {
 		return nil, err
 	}
 
 	// serialize the chaincode action payload
 	cap := &pb.ChaincodeActionPayload{ChaincodeProposalPayload: propPayloadBytes, Action: cea}
-	capBytes, err := protos_utils.GetBytesChaincodeActionPayload(cap)
+	capBytes, err := protoutil.GetBytesChaincodeActionPayload(cap)
 	if err != nil {
 		return nil, err
 	}
@@ -119,12 +119,12 @@ func Send(reqCtx reqContext.Context, tx *fab.Transaction, orderers []fab.Orderer
 	}
 
 	// the original header
-	hdr, err := protos_utils.GetHeader(tx.Proposal.Proposal.Header)
+	hdr, err := protoutil.GetHeader(tx.Proposal.Proposal.Header)
 	if err != nil {
 		return nil, errors.Wrap(err, "unmarshal proposal header failed")
 	}
 	// serialize the tx
-	txBytes, err := protos_utils.GetBytesTransaction(tx.Transaction)
+	txBytes, err := protoutil.GetBytesTransaction(tx.Transaction)
 	if err != nil {
 		return nil, err
 	}

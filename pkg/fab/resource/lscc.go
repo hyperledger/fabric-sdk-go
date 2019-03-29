@@ -10,7 +10,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/txn"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
-	protos_utils "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/utils"
+	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protoutil"
 	"github.com/pkg/errors"
 )
 
@@ -52,7 +52,7 @@ func createInstallInvokeRequest(request ChaincodeInstallRequest) (fab.ChaincodeI
 		Type: request.Package.Type, ChaincodeId: &pb.ChaincodeID{Name: request.Name, Path: request.Path, Version: request.Version}},
 		CodePackage: request.Package.Code}
 
-	ccdsBytes, err := protos_utils.Marshal(ccds)
+	ccdsBytes, err := protoutil.Marshal(ccds)
 	if err != nil {
 		return fab.ChaincodeInvokeRequest{}, errors.WithMessage(err, "marshal of chaincode deployment spec failed")
 	}

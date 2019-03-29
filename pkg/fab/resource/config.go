@@ -46,10 +46,15 @@ type ConfigSignatureData struct {
 	SigningBytes         []byte
 }
 
+type identitySerializer interface {
+	// Serialize takes an identity object and converts it to the byte representation.
+	Serialize() ([]byte, error)
+}
+
 // GetConfigSignatureData will prepare a ConfigSignatureData comprising:
 // SignatureHeader, its marshaled []byte and the full signing []byte to be used for signing (by an external tool) a Channel Config
-func GetConfigSignatureData(ctx crypto.IdentitySerializer, config []byte) (signatureHeaderData ConfigSignatureData, e error) {
-	creator, err := ctx.Serialize()
+func GetConfigSignatureData(creator identitySerializer, config []byte) (signatureHeaderData ConfigSignatureData, e error) {
+	creatorBytes, err := creator.Serialize()
 	if err != nil {
 		e = errors.WithMessage(err, "failed to get user context's identity")
 		return
@@ -65,7 +70,7 @@ func GetConfigSignatureData(ctx crypto.IdentitySerializer, config []byte) (signa
 	signatureHeaderData = ConfigSignatureData{}
 	// signature is across a signature header and the config update
 	signatureHeaderData.SignatureHeader = common.SignatureHeader{
-		Creator: creator,
+		Creator: creatorBytes,
 		Nonce:   nonce,
 	}
 

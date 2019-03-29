@@ -30,7 +30,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/core/middleware"
 	flogging "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/sdkpatch/logbridge"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/sdkpatch/logbridge/httpadmin"
-	prom "github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 //go:generate counterfeiter -o fakes/logger.go -fake-name Logger . Logger
@@ -182,7 +182,7 @@ func (s *System) initializeMetricsProvider() error {
 	case "prometheus":
 		s.Provider = &prometheus.Provider{}
 		s.versionGauge = versionGauge(s.Provider)
-		s.mux.Handle("/metrics", s.handlerChain(prom.Handler(), s.options.TLS.Enabled))
+		s.mux.Handle("/metrics", s.handlerChain(promhttp.Handler(), s.options.TLS.Enabled))
 		return nil
 
 	default:

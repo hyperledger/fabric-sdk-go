@@ -36,7 +36,6 @@ declare -a FILES=(
     "protos/common/ledger.pb.go"
     "protos/common/policies.pb.go"
     "protos/common/collection.pb.go"
-    "protos/common/signed_data.go"
 
     "protos/peer/chaincode.pb.go"
     "protos/peer/chaincode_event.pb.go"
@@ -58,7 +57,7 @@ declare -a FILES=(
 
     "protos/orderer/configuration.pb.go"
 
-    "protos/token/expectations.pb.go"
+    "protos/token/operations.pb.go"
     "protos/token/prover.pb.go"
     "protos/token/transaction.pb.go"
 )

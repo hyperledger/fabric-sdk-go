@@ -20,7 +20,7 @@ import (
 	ledgerutil "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/core/ledger/util"
 	cb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
-	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/utils"
+	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protoutil"
 	"github.com/pkg/errors"
 )
 
@@ -683,7 +683,7 @@ func toFilteredBlock(block *cb.Block) *pb.FilteredBlock {
 }
 
 func getFilteredTx(data []byte, txValidationCode pb.TxValidationCode) (*pb.FilteredTransaction, string, error) {
-	env, err := utils.GetEnvelopeFromBlock(data)
+	env, err := protoutil.GetEnvelopeFromBlock(data)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "error extracting Envelope from block")
 	}
@@ -691,7 +691,7 @@ func getFilteredTx(data []byte, txValidationCode pb.TxValidationCode) (*pb.Filte
 		return nil, "", errors.New("nil envelope")
 	}
 
-	payload, err := utils.GetPayload(env)
+	payload, err := protoutil.GetPayload(env)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "error extracting Payload from envelope")
 	}
@@ -722,23 +722,23 @@ func getFilteredTransactionActions(data []byte) (*pb.FilteredTransaction_Transac
 	actions := &pb.FilteredTransaction_TransactionActions{
 		TransactionActions: &pb.FilteredTransactionActions{},
 	}
-	tx, err := utils.GetTransaction(data)
+	tx, err := protoutil.GetTransaction(data)
 	if err != nil {
 		return nil, errors.Wrap(err, "error unmarshalling transaction payload")
 	}
-	chaincodeActionPayload, err := utils.GetChaincodeActionPayload(tx.Actions[0].Payload)
+	chaincodeActionPayload, err := protoutil.GetChaincodeActionPayload(tx.Actions[0].Payload)
 	if err != nil {
 		return nil, errors.Wrap(err, "error unmarshalling chaincode action payload")
 	}
-	propRespPayload, err := utils.GetProposalResponsePayload(chaincodeActionPayload.Action.ProposalResponsePayload)
+	propRespPayload, err := protoutil.GetProposalResponsePayload(chaincodeActionPayload.Action.ProposalResponsePayload)
 	if err != nil {
 		return nil, errors.Wrap(err, "error unmarshalling response payload")
 	}
-	ccAction, err := utils.GetChaincodeAction(propRespPayload.Extension)
+	ccAction, err := protoutil.GetChaincodeAction(propRespPayload.Extension)
 	if err != nil {
 		return nil, errors.Wrap(err, "error unmarshalling chaincode action")
 	}
-	ccEvent, err := utils.GetChaincodeEvents(ccAction.Events)
+	ccEvent, err := protoutil.GetChaincodeEvents(ccAction.Events)
 	if err != nil {
 		return nil, errors.Wrap(err, "error getting chaincode events")
 	}

@@ -8,7 +8,7 @@ Notice: This file has been modified for Hyperledger Fabric SDK Go usage.
 Please review third_party pinning scripts and patches for more details.
 */
 
-package utils
+package protoutil
 
 import (
 	"github.com/golang/protobuf/proto"
@@ -59,7 +59,10 @@ func GetEnvelopeFromBlock(data []byte) (*common.Envelope, error) {
 
 // GetBytesProposalPayloadForTx takes a ChaincodeProposalPayload and returns
 // its serialized version according to the visibility field
-func GetBytesProposalPayloadForTx(payload *peer.ChaincodeProposalPayload, visibility []byte) ([]byte, error) {
+func GetBytesProposalPayloadForTx(
+	payload *peer.ChaincodeProposalPayload,
+	visibility []byte,
+) ([]byte, error) {
 	// check for nil argument
 	if payload == nil {
 		return nil, errors.New("nil arguments")

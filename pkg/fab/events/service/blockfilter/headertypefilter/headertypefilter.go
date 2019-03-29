@@ -10,7 +10,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	cb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
-	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/utils"
+	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protoutil"
 )
 
 var logger = logging.NewLogger("eventservice/blockfilter")
@@ -25,17 +25,17 @@ func New(headerTypes ...cb.HeaderType) fab.BlockFilter {
 
 func hasType(block *cb.Block, headerTypes ...cb.HeaderType) bool {
 	for i := 0; i < len(block.Data.Data); i++ {
-		env, err := utils.ExtractEnvelope(block, i)
+		env, err := protoutil.ExtractEnvelope(block, i)
 		if err != nil {
 			logger.Errorf("error extracting envelope from block: %s", err)
 			continue
 		}
-		payload, err := utils.ExtractPayload(env)
+		payload, err := protoutil.ExtractPayload(env)
 		if err != nil {
 			logger.Errorf("error extracting payload from block: %s", err)
 			continue
 		}
-		chdr, err := utils.UnmarshalChannelHeader(payload.Header.ChannelHeader)
+		chdr, err := protoutil.UnmarshalChannelHeader(payload.Header.ChannelHeader)
 		if err != nil {
 			logger.Errorf("error extracting channel header: %s", err)
 			continue

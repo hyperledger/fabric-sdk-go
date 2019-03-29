@@ -22,7 +22,7 @@ import (
 	clientdisp "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client/dispatcher"
 	cb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
-	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/utils"
+	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protoutil"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 )
@@ -143,7 +143,7 @@ func (c *DeliverConnection) createSignedEnvelope(msg proto.Message) (*cb.Envelop
 	var msgVersion int32
 	var epoch uint64
 
-	payloadChannelHeader := utils.MakeChannelHeader(cb.HeaderType_DELIVER_SEEK_INFO, msgVersion, c.ChannelConfig().ID(), epoch)
+	payloadChannelHeader := protoutil.MakeChannelHeader(cb.HeaderType_DELIVER_SEEK_INFO, msgVersion, c.ChannelConfig().ID(), epoch)
 	payloadChannelHeader.TlsCertHash = c.TLSCertHash()
 
 	data, err := proto.Marshal(msg)
@@ -166,8 +166,8 @@ func (c *DeliverConnection) createSignedEnvelope(msg proto.Message) (*cb.Envelop
 		Nonce:   nonce,
 	}
 
-	paylBytes := utils.MarshalOrPanic(&cb.Payload{
-		Header: utils.MakePayloadHeader(payloadChannelHeader, payloadSignatureHeader),
+	paylBytes := protoutil.MarshalOrPanic(&cb.Payload{
+		Header: protoutil.MakePayloadHeader(payloadChannelHeader, payloadSignatureHeader),
 		Data:   data,
 	})
 

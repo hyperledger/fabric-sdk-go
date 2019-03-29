@@ -28,7 +28,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/endpoint"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
-	protos_utils "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/utils"
+	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protoutil"
 )
 
 const (
@@ -294,12 +294,12 @@ func extractChaincodeNameNotFoundError(grpcstat *grpcstatus.Status) (int32, stri
 // getChaincodeResponseStatus gets the actual response status from response.Payload.extension.Response.status, as fabric always returns actual 200
 func getChaincodeResponseStatus(response *pb.ProposalResponse) (int32, error) {
 	if response.Payload != nil {
-		payload, err := protos_utils.GetProposalResponsePayload(response.Payload)
+		payload, err := protoutil.GetProposalResponsePayload(response.Payload)
 		if err != nil {
 			return 0, errors.Wrap(err, "unmarshal of proposal response payload failed")
 		}
 
-		extension, err := protos_utils.GetChaincodeAction(payload.Extension)
+		extension, err := protoutil.GetChaincodeAction(payload.Extension)
 		if err != nil {
 			return 0, errors.Wrap(err, "unmarshal of chaincode action failed")
 		}
