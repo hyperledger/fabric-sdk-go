@@ -433,7 +433,7 @@ func (l *Log) getCallerInfo(opts *loggerOpts) string {
 	}
 
 	const MAXCALLERS = 6  // search MAXCALLERS frames for the real caller
-	const SKIPCALLERS = 4 // skip SKIPCALLERS frames when determining the real caller
+	const SKIPCALLERS = 3 // skip SKIPCALLERS frames when determining the real caller
 	const NOTFOUND = "n/a"
 
 	fpcs := make([]uintptr, MAXCALLERS)
@@ -444,7 +444,7 @@ func (l *Log) getCallerInfo(opts *loggerOpts) string {
 	}
 
 	frames := runtime.CallersFrames(fpcs[:n])
-	funcIsNext := false
+	loggerFrameFound := false
 	for f, more := frames.Next(); more; f, more = frames.Next() {
 		pkgPath, fnName := filepath.Split(f.Function)
 
@@ -453,9 +453,9 @@ func (l *Log) getCallerInfo(opts *loggerOpts) string {
 		}
 
 		if hasLoggerFnPrefix(pkgPath, fnName) {
-			funcIsNext = true
+			loggerFrameFound = true
 
-		} else if funcIsNext {
+		} else if loggerFrameFound {
 			return fmt.Sprintf(callerInfoFormatter, fnName)
 		}
 	}
@@ -466,7 +466,8 @@ func (l *Log) getCallerInfo(opts *loggerOpts) string {
 func hasLoggerFnPrefix(pkgPath string, fnName string) bool {
 	const (
 		loggingAPIPath = "github.com/hyperledger/fabric-sdk-go/pkg/core/logging/"
-		loggingAPIPkg  = "api"
+		loggingAPIPkg  = "api" // Go < 1.12
+		modlogFnPrefix = "modlog.(*Log)."
 		loggingPath    = "github.com/hyperledger/fabric-sdk-go/pkg/common/"
 		loggingPkg     = "logging"
 		logBridgePath  = "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/sdkpatch/logbridge"
@@ -475,7 +476,7 @@ func hasLoggerFnPrefix(pkgPath string, fnName string) bool {
 
 	switch pkgPath {
 	case loggingAPIPath:
-		return strings.HasPrefix(fnName, loggingAPIPkg)
+		return strings.HasPrefix(fnName, modlogFnPrefix) || strings.HasPrefix(fnName, loggingAPIPkg)
 	case loggingPath:
 		return strings.HasPrefix(fnName, loggingPkg)
 	case logBridgePath:

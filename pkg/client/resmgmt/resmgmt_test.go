@@ -400,7 +400,7 @@ func TestIsChaincodeInstalled(t *testing.T) {
 		t.Fatal(err)
 	}
 	if !installed {
-		t.Fatalf("CC should have been installed: %s", req)
+		t.Fatalf("CC should have been installed: %+v", req)
 	}
 
 	// Chaincode not found request
@@ -412,7 +412,7 @@ func TestIsChaincodeInstalled(t *testing.T) {
 		t.Fatal(err)
 	}
 	if installed {
-		t.Fatalf("CC should NOT have been installed: %s", req)
+		t.Fatalf("CC should NOT have been installed: %+v", req)
 	}
 
 	// Test error retrieving installed cc info (peer is nil)
