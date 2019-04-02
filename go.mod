@@ -1,7 +1,5 @@
 module github.com/hyperledger/fabric-sdk-go
 
-replace github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos => ./third_party/github.com/hyperledger/fabric/protos
-
 require (
 	github.com/Knetic/govaluate v3.0.0+incompatible
 	github.com/VividCortex/gohistogram v1.0.0 // indirect
@@ -17,7 +15,7 @@ require (
 	github.com/google/certificate-transparency-go v0.0.0-20180222191210-5ab67e519c93 // indirect
 	github.com/hashicorp/hcl v0.0.0-20180404174102-ef8a98b0bbce // indirect
 	github.com/hyperledger/fabric-lib-go v1.0.0
-	github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos v0.0.0
+	github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos v0.0.0-20190328182020-93c3fcb272be
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/magiconair/properties v1.7.6 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
