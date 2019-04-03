@@ -119,7 +119,7 @@ func (s *MockDeliverServer) Deliver(srv pb.Deliver_DeliverServer) error {
 		if err1 != nil {
 			return err1
 		}
-		if err == io.EOF || envelope == nil {
+		if err == io.EOF {
 			test.Logf("*** mockdelserver err is io.EOF or envelope == nil, disconnecting from Deliver..")
 			disconnect <- true
 			break
@@ -162,7 +162,7 @@ func (s *MockDeliverServer) DeliverFiltered(srv pb.Deliver_DeliverFilteredServer
 		if err1 != nil {
 			return err1
 		}
-		if err == io.EOF || envelope == nil {
+		if err == io.EOF {
 			test.Logf("*** mockdelserver err is io.EOF or envelope == nil, disconnecting from DeliverFiltered..")
 			disconnect <- true
 			break

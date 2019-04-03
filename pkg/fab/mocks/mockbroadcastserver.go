@@ -93,7 +93,7 @@ func (m *MockBroadcastServer) mockBlockDelivery(payload []byte) error {
 		return err
 	}
 	// if payload is empty, then no need to broadcast to block DeliveryServer
-	if pl == nil || pl.Header == nil {
+	if pl.Header == nil {
 		return nil
 	}
 	chdr := &common.ChannelHeader{}

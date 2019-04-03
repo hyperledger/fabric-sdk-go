@@ -138,17 +138,6 @@ func (fkvs *FileKeyValueStore) Store(key interface{}, value interface{}) error {
 	if err != nil {
 		return err
 	}
-	if value == nil {
-		_, err1 := os.Stat(file)
-		if err1 != nil {
-			if !os.IsNotExist(err1) {
-				return errors.Wrapf(err, "stat dir failed")
-			}
-			// Doesn't exist, OK
-			return nil
-		}
-		return os.Remove(file)
-	}
 	valueBytes, err := fkvs.marshaller(value)
 	if err != nil {
 		return err

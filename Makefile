@@ -50,7 +50,7 @@ FABRIC_SDKGO_TEST_CHANGED  ?= false
 FABRIC_SDKGO_TESTRUN_ID    ?= $(shell date +'%Y%m%d%H%M%S')
 
 # Dev tool versions (overridable)
-GOLANGCI_LINT_VER ?= v1.15.0
+GOLANGCI_LINT_VER ?= v1.16.0
 
 # Fabric tool versions (overridable)
 FABRIC_TOOLS_VERSION ?= $(FABRIC_STABLE_VERSION)
