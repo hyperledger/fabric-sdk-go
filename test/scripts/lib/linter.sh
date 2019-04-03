@@ -5,14 +5,21 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
-GOLANGCI_LINT_CMD="${GOLANGCI_LINT_CMD:-golangci-lint}"
+GOLANGCI_LINT_PKG="github.com/golangci/golangci-lint/cmd/golangci-lint"
+GOLANGCI_LINT_VER="${GOLANGCI_LINT_VER:-}"
+
+if [ "${GOLANGCI_LINT_VER}" != "" ]; then
+    GOLANGCI_LINT_AT_VER="@${GOLANGCI_LINT_VER}"
+fi
+
+GOLANGCI_LINT_CMD="${GOLANGCI_LINT_CMD:-gobin -run ${GOLANGCI_LINT_PKG}${GOLANGCI_LINT_AT_VER}}"
 
 function runLinter {
     packagesToDirs
 
     echo "Directories to lint: ${DIRS[@]}"
 
-    echo "Running golangci-lint..."
+    echo "Running golangci-lint${GOLANGCI_LINT_AT_VER} ..."
     ${GOLANGCI_LINT_CMD} run -c "./golangci.yml" "${DIRS[@]}"
     echo "golangci-lint finished successfully"
 }

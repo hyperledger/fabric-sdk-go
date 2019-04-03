@@ -88,12 +88,17 @@ If you want to contribute to the Go SDK, please run the test suite and submit pa
 You need:
 
 - Go 1.11
-- [Dep](https://github.com/golang/dep) (dep is deprecated and replaced with go modules)
 - Make
 - Docker
 - Docker Compose
 - Git
+- gobin (GO111MODULE=off go get -u github.com/myitcv/gobin)
 - libtool
+
+Notes:
+
+- Dep is deprecated and replaced with Go modules.
+
 
 ### Gerrit Git repository
 

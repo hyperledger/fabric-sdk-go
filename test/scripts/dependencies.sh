@@ -10,7 +10,7 @@
 set -e
 
 GO_CMD="${GO_CMD:-go}"
-GOLANGCI_LINT_CMD="${GOLANGCI_LINT_CMD:-golangci-lint}"
+GOBIN_CMD="${GOBIN_CMD:-gobin}"
 GOPATH="${GOPATH:-${HOME}/go}"
 
 DEPEND_SCRIPT_REVISION=$(git log -1 --pretty=format:"%h" test/scripts/dependencies.sh)
@@ -36,13 +36,13 @@ function recordCacheResult {
     echo ${DEPEND_SCRIPT_REVISION} ${DATE} > "${CACHE_PATH}/${LASTRUN_INFO_FILENAME}"
 }
 
-function installGolangCiLint {
-    declare repo="github.com/golangci/golangci-lint/cmd/golangci-lint"
-    declare revision="v1.15.0"
+function installGoBin {
+    declare repo="github.com/myitcv/gobin"
+    declare revision="master"
+    declare pkg="github.com/myitcv/gobin"
+    declare cmd="gobin"
 
-    declare pkg="github.com/golangci/golangci-lint/cmd/golangci-lint"
-
-    installGoPkg "${repo}" "${revision}" "" "golangci-lint"
+    installGoPkg "${repo}" "${revision}" "" "${cmd}"
     cp -f ${BUILD_TMP}/bin/* ${GOPATH}/bin/
     rm -Rf ${GOPATH}/src/${pkg}
     mkdir -p ${GOPATH}/src/${pkg}
@@ -119,10 +119,7 @@ function isDependenciesInstalled {
     declare -a msgs=()
 
     # Check that Go tools are installed and help the user if they are missing
-    type gocov >/dev/null 2>&1 || msgs+=("gocov is not installed (go get -u github.com/axw/gocov/...)")
-    type gocov-xml >/dev/null 2>&1 || msgs+=("gocov-xml is not installed (go get -u github.com/AlekSi/gocov-xml)")
-    type mockgen >/dev/null 2>&1 || msgs+=("mockgen is not installed (go get -u github.com/golang/mock/mockgen)")
-    type ${GOLANGCI_LINT_CMD} >/dev/null 2>&1 || msgs+=("golangci-lint is not installed (go get -u ${GOLANGCI_LINT_CMD})")
+    type ${GOBIN_CMD} >/dev/null 2>&1 || msgs+=("${GOBIN_CMD} is not installed (GO111MODULE=off go get -u github.com/myitcv/gobin)")
 
     if [ ${#msgs[@]} -gt 0 ]; then
         if [ ${printMsgs} = true ]; then
@@ -138,11 +135,8 @@ function installDependencies {
     rm -f "${CACHE_PATH}/${LASTRUN_INFO_FILENAME}"
 
     BUILD_TMP=`mktemp -d 2>/dev/null || mktemp -d -t 'fabricsdkgo'`
-    GO111MODULE=off GOPATH=${BUILD_TMP} ${GO_CMD} get -u github.com/axw/gocov/...
-    GO111MODULE=off GOPATH=${BUILD_TMP} ${GO_CMD} get -u github.com/AlekSi/gocov-xml
-    GO111MODULE=off GOPATH=${BUILD_TMP} ${GO_CMD} get -u github.com/golang/mock/mockgen
 
-    installGolangCiLint
+    installGoBin
 
     rm -Rf ${BUILD_TMP}
 }
