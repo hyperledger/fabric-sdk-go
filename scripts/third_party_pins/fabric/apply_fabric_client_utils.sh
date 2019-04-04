@@ -55,6 +55,8 @@ declare -a PKGS=(
 
     "msp"
 
+    "protoutil"
+
     "discovery/client"
     "discovery/protoext"
 
@@ -159,6 +161,11 @@ declare -a FILES=(
     "msp/mspmgrimpl.go"
     "msp/mspimplsetup.go"
     "msp/mspimplvalidate.go"
+
+    "protoutil/commonutils.go"
+    "protoutil/proputils.go"
+    "protoutil/signeddata.go"
+    "protoutil/txutils.go"
 
     "discovery/client/api.go"
     "discovery/client/client.go"
@@ -314,6 +321,25 @@ gofilter
 
 FILTER_FILENAME="core/ledger/kvledger/txmgmt/version/version.go"
 FILTER_FN=
+gofilter
+
+FILTER_FILENAME="protoutil/commonutils.go"
+FILTER_FN="UnmarshalChannelHeader,MarshalOrPanic,UnmarshalChannelHeader,MakeChannelHeader,MakePayloadHeader,ExtractPayload"
+FILTER_FN+=",Marshal,ExtractEnvelope,ExtractEnvelopeOrPanic,ExtractPayloadOrPanic"
+gofilter
+
+FILTER_FILENAME="protoutil/proputils.go"
+FILTER_FN="GetHeader,GetChaincodeProposalPayload,GetSignatureHeader,GetChaincodeHeaderExtension,GetBytesChaincodeActionPayload"
+FILTER_FN+=",GetBytesTransaction,GetBytesPayload,GetHeader,GetBytesProposalResponsePayload,GetBytesProposal"
+FILTER_FN+=",CreateChaincodeProposalWithTxIDNonceAndTransient"
+FILTER_FN+=",GetTransaction,GetPayload,GetBytesChaincodeProposalPayload"
+FILTER_FN+=",GetChaincodeActionPayload,GetProposalResponsePayload,GetChaincodeAction,GetChaincodeEvents,GetBytesChaincodeEvent,GetBytesEnvelope"
+gofilter
+sed -i'' -e 's/"github.com\/hyperledger\/fabric\/bccsp\/factory"/factory "github.com\/hyperledger\/fabric-sdk-go\/internal\/github.com\/hyperledger\/fabric\/sdkpatch\/cryptosuitebridge"/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/&bccsp.SHA256Opts{}/factory.GetSHA256Opts()/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+
+FILTER_FILENAME="protoutil/txutils.go"
+FILTER_FN="GetBytesProposalPayloadForTx,GetEnvelopeFromBlock,GetPayloads"
 gofilter
 
 FILTER_FILENAME="discovery/client/signer.go"
