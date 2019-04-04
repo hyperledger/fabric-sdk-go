@@ -4,9 +4,6 @@
 
 module github.com/hyperledger/fabric-sdk-go
 
-// TEMPORARY - so that we can create a commit for the third_party fabric module.
-replace github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric => ./third_party/github.com/hyperledger/fabric
-
 require (
 	github.com/VividCortex/gohistogram v1.0.0 // indirect
 	github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973 // indirect
@@ -21,7 +18,7 @@ require (
 	github.com/google/certificate-transparency-go v0.0.0-20180222191210-5ab67e519c93 // indirect
 	github.com/hashicorp/hcl v0.0.0-20180404174102-ef8a98b0bbce // indirect
 	github.com/hyperledger/fabric-lib-go v1.0.0
-	github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric v0.0.0-00010101000000-000000000000
+	github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric v0.0.0-20190404153447-06a75db4978f
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/magiconair/properties v1.7.6 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
