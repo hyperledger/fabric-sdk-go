@@ -217,7 +217,11 @@ function packagesToDirs {
     DIRS=()
     for i in "${PKGS[@]}"
     do
-        declare -a pkgDir=${i#$REPO/}
+        declare -a pkgDir=${i#$MODULE/}
+        if [ "${i}" = "${MODULE}" ]; then
+            pkgDir="."
+        fi
+
         DIRS+=(${pkgDir})
     done
 }

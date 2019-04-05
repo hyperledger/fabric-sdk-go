@@ -18,6 +18,7 @@
 set -e
 
 GO_CMD="${GO_CMD:-go}"
+GOPATH="${GOPATH:-$HOME/go}"
 FABRIC_SDKGO_CODELEVEL_TAG="${FABRIC_SDKGO_CODELEVEL_TAG:-devstable}"
 FABRIC_SDKGO_TESTRUN_ID="${FABRIC_SDKGO_TESTRUN_ID:-${RANDOM}}"
 FABRIC_CRYPTOCONFIG_VERSION="${FABRIC_CRYPTOCONFIG_VERSION:-v1}"
@@ -25,14 +26,21 @@ TEST_CHANGED_ONLY="${TEST_CHANGED_ONLY:-false}"
 TEST_RACE_CONDITIONS="${TEST_RACE_CONDITIONS:-true}"
 TEST_WITH_LINTER="${TEST_WITH_LINTER:-false}"
 SCRIPT_DIR="$(dirname "$0")"
+CONFIG_DIR=$(pwd)
 
 REPO="github.com/hyperledger/fabric-sdk-go"
+MODULE="${MODULE:-${REPO}}"
 
 source ${SCRIPT_DIR}/lib/find_packages.sh
 source ${SCRIPT_DIR}/lib/linter.sh
 
+# Temporary fix for Fabric base image
+unset GOCACHE
+
 echo "Running" $(basename "$0")
 
+PWD_ORIG=$(pwd)
+cd "${GOPATH}/src/${MODULE}"
 declare -a PKGS=(
     "${REPO}/pkg/core/cryptosuite/bccsp/pkcs11"
     "${REPO}/pkg/core/cryptosuite/bccsp/multisuite"
@@ -47,7 +55,7 @@ if [ "$TEST_CHANGED_ONLY" = true ]; then
     findChangedFiles
     cd ${PWD_ORIG}
 
-    if [[ "${CHANGED_FILES[@]}" =~ ( |^)(test/fixtures/|test/metadata/|test/scripts/|Makefile( |$)|Gopkg.lock( |$)|gometalinter.json( |$)|ci.properties( |$)) ]]; then
+    if [[ "${CHANGED_FILES[@]}" =~ ( |^)(test/fixtures/|test/metadata/|test/scripts/|Makefile( |$)|go.mod( |$)|gometalinter.json( |$)|ci.properties( |$)) ]]; then
         echo "Test scripts, fixtures or metadata changed - running all tests"
     else
         findChangedPackages
@@ -100,4 +108,6 @@ GO_TAGS="${GO_TAGS} ${FABRIC_SDKGO_CODELEVEL_TAG}"
 GO_LDFLAGS="${GO_LDFLAGS} -X github.com/hyperledger/fabric-sdk-go/test/metadata.ChannelConfigPath=test/fixtures/fabric/${FABRIC_SDKGO_CODELEVEL_VER}/channel"
 GO_LDFLAGS="${GO_LDFLAGS} -X github.com/hyperledger/fabric-sdk-go/test/metadata.CryptoConfigPath=test/fixtures/fabric/${FABRIC_CRYPTOCONFIG_VERSION}/crypto-config"
 GO_LDFLAGS="${GO_LDFLAGS} -X github.com/hyperledger/fabric-sdk-go/test/metadata.TestRunID=${FABRIC_SDKGO_TESTRUN_ID}"
+
 $GO_CMD test ${RACEFLAG} -cover -tags "testing ${GO_TAGS}" ${GO_TESTFLAGS} -ldflags="${GO_LDFLAGS}" ${PKGS[@]} -p 1 -timeout=40m
+cd ${PWD_ORIG}

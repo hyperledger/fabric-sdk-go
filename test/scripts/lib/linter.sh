@@ -20,13 +20,13 @@ function runLinter {
     echo "Directories to lint: ${DIRS[@]}"
 
     echo "Running golangci-lint${GOLANGCI_LINT_AT_VER} ..."
-    ${GOLANGCI_LINT_CMD} run -c "./golangci.yml" "${DIRS[@]}"
+    ${GOLANGCI_LINT_CMD} run -c "${CONFIG_DIR}/golangci.yml" "${DIRS[@]}"
     echo "golangci-lint finished successfully"
 }
 
 function findChangedLinterPkgs {
     findChangedFiles
-    declare matcher='( |^)(test/fixtures/|test/metadata/|test/scripts/|Makefile( |$)|Gopkg.lock( |$))'
+    declare matcher='( |^)(test/fixtures/|test/metadata/|test/scripts/|Makefile( |$)|go.mod( |$))'
     if [[ "${CHANGED_FILES[@]}" =~ ${matcher} ]]; then
         echo "Test scripts, fixtures or metadata changed - running all tests"
     else

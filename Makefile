@@ -28,7 +28,7 @@ DOCKER_COMPOSE_CMD ?= docker-compose
 FABRIC_STABLE_VERSION           := 1.4.0
 FABRIC_STABLE_VERSION_MINOR     := 1.4
 FABRIC_STABLE_VERSION_MAJOR     := 1
-FABRIC_BASEIMAGE_STABLE_VERSION := 0.4.14
+FABRIC_BASEIMAGE_STABLE_VERSION := 0.4.15
 
 FABRIC_PRERELEASE_VERSION       :=
 FABRIC_PRERELEASE_VERSION_MINOR :=
@@ -234,6 +234,7 @@ export GO_TAGS
 export DOCKER_CMD
 export DOCKER_COMPOSE_CMD
 export FABRIC_SDKGO_TESTRUN_ID
+export GO111MODULE=on
 
 .PHONY: all
 all: version depend-noforce license unit-test integration-test
@@ -263,12 +264,19 @@ license: version
 	@$(TEST_SCRIPTS_PATH)/check_license.sh
 
 .PHONY: lint
-lint: version populate-noforce
-	@LINT_CHANGED_ONLY=true GOLANGCI_LINT_VER=$(GOLANGCI_LINT_VER) $(TEST_SCRIPTS_PATH)/check_lint.sh
+lint: version populate-noforce lint-submodules
+	@MODULE="github.com/hyperledger/fabric-sdk-go" PKG_ROOT="./pkg" LINT_CHANGED_ONLY=true GOLANGCI_LINT_VER=$(GOLANGCI_LINT_VER) $(TEST_SCRIPTS_PATH)/check_lint.sh
+
+.PHONY: lint-submodules
+lint-submodules: version populate-noforce
+	@MODULE="github.com/hyperledger/fabric-sdk-go/test/integration" LINT_CHANGED_ONLY=true GOLANGCI_LINT_VER=$(GOLANGCI_LINT_VER) $(TEST_SCRIPTS_PATH)/check_lint.sh
+	@MODULE="github.com/hyperledger/fabric-sdk-go/test/performance" LINT_CHANGED_ONLY=true GOLANGCI_LINT_VER=$(GOLANGCI_LINT_VER) $(TEST_SCRIPTS_PATH)/check_lint.sh
 
 .PHONY: lint-all
 lint-all: version populate-noforce
-	@$(TEST_SCRIPTS_PATH)/check_lint.sh
+	@MODULE="github.com/hyperledger/fabric-sdk-go" PKG_ROOT="./pkg" GOLANGCI_LINT_VER=$(GOLANGCI_LINT_VER) $(TEST_SCRIPTS_PATH)/check_lint.sh
+	@MODULE="github.com/hyperledger/fabric-sdk-go/test/integration" GOLANGCI_LINT_VER=$(GOLANGCI_LINT_VER) $(TEST_SCRIPTS_PATH)/check_lint.sh
+	@MODULE="github.com/hyperledger/fabric-sdk-go/test/performance" GOLANGCI_LINT_VER=$(GOLANGCI_LINT_VER) $(TEST_SCRIPTS_PATH)/check_lint.sh
 
 .PHONY: build-softhsm2-image
 build-softhsm2-image:
@@ -285,14 +293,18 @@ build-socat-image:
 		-f $(FIXTURE_SOCAT_PATH)/Dockerfile .
 
 .PHONY: unit-test
-unit-test: clean-tests depend-noforce populate-noforce license
+unit-test: clean-tests depend-noforce populate-noforce license lint-submodules
 	@TEST_CHANGED_ONLY=$(FABRIC_SDKGO_TEST_CHANGED) TEST_WITH_LINTER=true FABRIC_SDKGO_CODELEVEL_TAG=$(FABRIC_CODELEVEL_UNITTEST_TAG) FABRIC_SDKGO_CODELEVEL_VER=$(FABRIC_CODELEVEL_UNITTEST_VER) \
 	GO_TESTFLAGS="$(GO_TESTFLAGS_UNIT)" \
 	GOLANGCI_LINT_VER="$(GOLANGCI_LINT_VER)" \
+	MODULE="github.com/hyperledger/fabric-sdk-go" \
+	PKG_ROOT="./pkg" \
 	$(TEST_SCRIPTS_PATH)/unit.sh
 ifeq ($(FABRIC_SDK_DEPRECATED_UNITTEST),true)
 	@GO_TAGS="$(GO_TAGS) deprecated" TEST_CHANGED_ONLY=$(FABRIC_SDKGO_TEST_CHANGED) FABRIC_SDKGO_CODELEVEL_TAG=$(FABRIC_CODELEVEL_UNITTEST_TAG) FABRIC_SDKGO_CODELEVEL_VER=$(FABRIC_CODELEVEL_UNITTEST_VER) \
 	GOLANGCI_LINT_VER="$(GOLANGCI_LINT_VER)" \
+	MODULE="github.com/hyperledger/fabric-sdk-go" \
+	PKG_ROOT="./pkg" \
 	$(TEST_SCRIPTS_PATH)/unit.sh
 endif
 
@@ -304,6 +316,8 @@ unit-tests-pkcs11: clean-tests depend-noforce populate-noforce license
 	@TEST_CHANGED_ONLY=$(FABRIC_SDKGO_TEST_CHANGED) TEST_WITH_LINTER=true FABRIC_SDKGO_CODELEVEL_TAG=$(FABRIC_CODELEVEL_UNITTEST_TAG) FABRIC_SDKGO_CODELEVEL_VER=$(FABRIC_CODELEVEL_UNITTEST_VER) \
 	GO_TESTFLAGS="$(GO_TESTFLAGS_UNIT)" \
 	GOLANGCI_LINT_VER="$(GOLANGCI_LINT_VER)" \
+	MODULE="github.com/hyperledger/fabric-sdk-go" \
+	PKG_ROOT="./pkg" \
 	$(TEST_SCRIPTS_PATH)/unit-pkcs11.sh
 
 .PHONY: integration-tests-stable

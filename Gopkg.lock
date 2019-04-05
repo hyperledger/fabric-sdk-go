@@ -416,7 +416,6 @@
     "stats",
     "status",
     "tap",
-    "testdata",
   ]
   pruneopts = ""
   revision = "2fdaae294f38ed9a121193c51ec99fecd3b13eb7"
@@ -465,11 +464,9 @@
     "google.golang.org/grpc/codes",
     "google.golang.org/grpc/connectivity",
     "google.golang.org/grpc/credentials",
-    "google.golang.org/grpc/grpclog",
     "google.golang.org/grpc/keepalive",
     "google.golang.org/grpc/peer",
     "google.golang.org/grpc/status",
-    "google.golang.org/grpc/testdata",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1

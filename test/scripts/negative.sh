@@ -29,6 +29,10 @@ SCRIPT_DIR="$(dirname "$0")"
 # TODO: better default handling for FABRIC_CRYPTOCONFIG_VERSION
 
 REPO="github.com/hyperledger/fabric-sdk-go"
+MODULE="github.com/hyperledger/fabric-sdk-go/test/integration"
+
+# Temporary fix for Fabric base image
+unset GOCACHE
 
 source ${SCRIPT_DIR}/lib/find_packages.sh
 source ${SCRIPT_DIR}/lib/docker.sh
@@ -36,8 +40,11 @@ source ${SCRIPT_DIR}/lib/docker.sh
 echo "Running" $(basename "$0")
 
 # Packages to exclude from test run
+PWD_ORIG=$(pwd)
+cd "${GOPATH}/src/${MODULE}"
 PKGS=($(${GO_CMD} list ${REPO}/test/integration/negative/... 2> /dev/null | \
       tr '\n' ' '))
+cd ${PWD_ORIG}
 
 # Reduce tests to changed packages.
 if [ "${TEST_CHANGED_ONLY}" = true ]; then
@@ -47,7 +54,7 @@ if [ "${TEST_CHANGED_ONLY}" = true ]; then
     findChangedFiles
     cd ${PWD_ORIG}
 
-    if [[ "${CHANGED_FILES[@]}" =~ ( |^)(test/fixtures/|test/metadata/|test/scripts/|Makefile( |$)|Gopkg.lock( |$)|ci.properties( |$)) ]]; then
+    if [[ "${CHANGED_FILES[@]}" =~ ( |^)(test/fixtures/|test/metadata/|test/scripts/|Makefile( |$)|go.mod( |$)|ci.properties( |$)) ]]; then
         echo "Test scripts, fixtures or metadata changed - running all tests"
     else
         findChangedPackages
@@ -83,4 +90,8 @@ GO_TAGS="${GO_TAGS} ${FABRIC_SDKGO_CODELEVEL_TAG}"
 GO_LDFLAGS="${GO_LDFLAGS} -X github.com/hyperledger/fabric-sdk-go/test/metadata.ChannelConfigPath=test/fixtures/fabric/${FABRIC_SDKGO_CODELEVEL_VER}/channel"
 GO_LDFLAGS="${GO_LDFLAGS} -X github.com/hyperledger/fabric-sdk-go/test/metadata.CryptoConfigPath=test/fixtures/fabric/${FABRIC_CRYPTOCONFIG_VERSION}/crypto-config"
 GO_LDFLAGS="${GO_LDFLAGS} -X github.com/hyperledger/fabric-sdk-go/test/metadata.TestRunID=${FABRIC_SDKGO_TESTRUN_ID}"
+
+PWD_ORIG=$(pwd)
+cd "${GOPATH}/src/${MODULE}"
 ${GO_CMD} test ${RACEFLAG} -tags "${GO_TAGS}" ${GO_TESTFLAGS} -ldflags="${GO_LDFLAGS}" ${PKGS[@]} -p 1 -timeout=40m configFile=${CONFIG_FILE}
+cd ${PWD_ORIG}
