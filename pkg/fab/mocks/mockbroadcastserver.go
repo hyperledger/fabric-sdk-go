@@ -13,10 +13,10 @@ import (
 	"sync"
 
 	"github.com/golang/protobuf/proto"
-	po "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protos/orderer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/service/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/util/test"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
+	po "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/orderer"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
