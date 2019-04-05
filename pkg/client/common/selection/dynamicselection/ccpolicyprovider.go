@@ -83,7 +83,7 @@ func (dp *ccPolicyProvider) GetChaincodePolicy(chaincodeID string) (*common.Sign
 
 	response, err := dp.queryChaincode(ccDataProviderSCC, ccDataProviderfunction, [][]byte{[]byte(dp.channelID), []byte(chaincodeID)})
 	if err != nil {
-		return nil, errors.WithMessage(err, fmt.Sprintf("error querying chaincode data for chaincode [%s] on channel [%s]", chaincodeID, dp.channelID))
+		return nil, errors.WithMessagef(err, "error querying chaincode data for chaincode [%s] on channel [%s]", chaincodeID, dp.channelID)
 	}
 
 	ccData = &ccprovider.ChaincodeData{}

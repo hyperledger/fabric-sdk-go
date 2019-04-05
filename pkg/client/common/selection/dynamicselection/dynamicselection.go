@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package dynamicselection
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/util/concurrent/lazycache"
@@ -113,7 +112,7 @@ func (s *SelectionService) GetEndorsersForChaincode(chaincodes []*fab.ChaincodeC
 
 	resolver, err := s.getPeerGroupResolver(chaincodeIDs)
 	if err != nil {
-		return nil, errors.WithMessage(err, fmt.Sprintf("Error getting peer group resolver for chaincodes [%v] on channel [%s]", chaincodeIDs, s.channelID))
+		return nil, errors.WithMessagef(err, "Error getting peer group resolver for chaincodes [%v] on channel [%s]", chaincodeIDs, s.channelID)
 	}
 
 	peers, err := s.discoveryService.GetPeers()
@@ -165,7 +164,7 @@ func (s *SelectionService) createPGResolver(key *resolverKey) (pgresolver.PeerGr
 	for _, ccID := range key.chaincodeIDs {
 		policyGroup, err := s.getPolicyGroupForCC(key.channelID, ccID)
 		if err != nil {
-			return nil, errors.WithMessage(err, fmt.Sprintf("error retrieving signature policy for chaincode [%s] on channel [%s]", ccID, key.channelID))
+			return nil, errors.WithMessagef(err, "error retrieving signature policy for chaincode [%s] on channel [%s]", ccID, key.channelID)
 		}
 		policyGroups = append(policyGroups, policyGroup)
 	}
@@ -186,7 +185,7 @@ func (s *SelectionService) createPGResolver(key *resolverKey) (pgresolver.PeerGr
 	// Create the resolver
 	resolver, err := pgresolver.NewPeerGroupResolver(aggregatePolicyGroupRetriever, s.pgLBP)
 	if err != nil {
-		return nil, errors.WithMessage(err, fmt.Sprintf("error creating peer group resolver for chaincodes [%v] on channel [%s]", key.chaincodeIDs, key.channelID))
+		return nil, errors.WithMessagef(err, "error creating peer group resolver for chaincodes [%v] on channel [%s]", key.chaincodeIDs, key.channelID)
 	}
 	return resolver, nil
 }
@@ -194,7 +193,7 @@ func (s *SelectionService) createPGResolver(key *resolverKey) (pgresolver.PeerGr
 func (s *SelectionService) getPolicyGroupForCC(channelID string, ccID string) (pgresolver.GroupRetriever, error) {
 	sigPolicyEnv, err := s.ccPolicyProvider.GetChaincodePolicy(ccID)
 	if err != nil {
-		return nil, errors.WithMessage(err, fmt.Sprintf("error querying chaincode [%s] on channel [%s]", ccID, channelID))
+		return nil, errors.WithMessagef(err, "error querying chaincode [%s] on channel [%s]", ccID, channelID)
 	}
 	return pgresolver.CompileSignaturePolicy(sigPolicyEnv)
 }
