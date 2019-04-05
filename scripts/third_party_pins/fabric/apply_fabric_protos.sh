@@ -16,6 +16,12 @@ IMPORT_SUBSTS=($IMPORT_SUBSTS)
 GOIMPORTS_CMD=goimports
 NAMESPACE_PREFIX="sdk."
 
+# Create and populate patching directory.
+declare TMP=`mktemp -d 2>/dev/null || mktemp -d -t 'mytmpdir'`
+declare PATCH_PROJECT_PATH=$TMP/src/$UPSTREAM_PROJECT
+cp -R ${TMP_PROJECT_PATH} ${PATCH_PROJECT_PATH}
+declare TMP_PROJECT_PATH=${PATCH_PROJECT_PATH}
+
 declare -a PKGS=(
     "protos/common"
     "protos/peer"
@@ -129,3 +135,5 @@ do
     TARGET_PATH=`dirname $INTERNAL_PATH/${i}`
     cp $TMP_PROJECT_PATH/${i} $TARGET_PATH
 done
+
+rm -Rf ${TMP_PROJECT_PATH}

@@ -5,6 +5,7 @@
 module github.com/hyperledger/fabric-sdk-go
 
 require (
+	github.com/Knetic/govaluate v3.0.0+incompatible
 	github.com/VividCortex/gohistogram v1.0.0 // indirect
 	github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973 // indirect
 	github.com/cloudflare/cfssl v0.0.0-20180223231731-4e2dcbde5004

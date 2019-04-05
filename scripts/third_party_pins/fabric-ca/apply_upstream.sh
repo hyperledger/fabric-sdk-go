@@ -40,6 +40,10 @@ git am ${CWD}/${PATCHES_PATH}/*
 
 cd $CWD
 
+echo 'Removing current upstream project from working directory ...'
+rm -Rf "${THIRDPARTY_INTERNAL_FABRIC_CA_PATH}"
+mkdir -p "${THIRDPARTY_INTERNAL_FABRIC_CA_PATH}"
+
 # fabric-ca client utils
 echo "Pinning and patching fabric-ca client utils..."
 declare -a CLIENT_UTILS_IMPORT_SUBSTS=(
@@ -49,7 +53,7 @@ declare -a CLIENT_UTILS_IMPORT_SUBSTS=(
     '/clog.\"github.com\/cloudflare\/cfssl\/log/!s/\"github.com\/cloudflare\/cfssl\/log/log\"github.com\/hyperledger\/fabric-sdk-go\/internal\/github.com\/hyperledger\/fabric-ca\/sdkpatch\/logbridge/g'
     's/\"github.com\/hyperledger\/fabric\//\"github.com\/hyperledger\/fabric-sdk-go\/internal\/github.com\/hyperledger\/fabric\//g'
 )
-eval "INTERNAL_PATH=$THIRDPARTY_INTERNAL_FABRIC_CA_PATH TMP_PROJECT_PATH=$TMP_PROJECT_PATH IMPORT_SUBSTS=\"${CLIENT_UTILS_IMPORT_SUBSTS[*]}\" $SCRIPTS_PATH/apply_fabric_ca_client_utils.sh"
+INTERNAL_PATH=$THIRDPARTY_INTERNAL_FABRIC_CA_PATH TMP_PROJECT_PATH=$TMP_PROJECT_PATH IMPORT_SUBSTS="${CLIENT_UTILS_IMPORT_SUBSTS[*]}" $SCRIPTS_PATH/apply_fabric_ca_client_utils.sh
 
 # Cleanup temporary files from patch application
 echo "Removing temporary files ..."

@@ -16,6 +16,12 @@ IMPORT_SUBSTS=($IMPORT_SUBSTS)
 GOIMPORTS_CMD=goimports
 GOFILTER_CMD="go run scripts/_go/src/gofilter/cmd/gofilter/gofilter.go"
 
+# Create and populate patching directory.
+declare TMP=`mktemp -d 2>/dev/null || mktemp -d -t 'mytmpdir'`
+declare PATCH_PROJECT_PATH=$TMP/src/$UPSTREAM_PROJECT
+cp -R ${TMP_PROJECT_PATH} ${PATCH_PROJECT_PATH}
+declare TMP_PROJECT_PATH=${PATCH_PROJECT_PATH}
+
 declare -a PKGS=(
         "common/cauthdsl"
         "core/common/ccprovider"
@@ -33,10 +39,6 @@ declare -a FILES=(
         "core/ledger/util/txvalidationflags.go"
         "internal/protoutil/commonutils.go"
 )
-
-echo 'Removing current upstream project from working directory ...'
-rm -Rf "${INTERNAL_PATH}/common"
-mkdir -p "${INTERNAL_PATH}/common"
 
 # Create directory structure for packages
 for i in "${PKGS[@]}"
@@ -100,3 +102,5 @@ do
     TARGET_PATH=`dirname $INTERNAL_PATH/${i}`
     cp $TMP_PROJECT_PATH/${i} $TARGET_PATH
 done
+
+rm -Rf ${TMP_PROJECT_PATH}
