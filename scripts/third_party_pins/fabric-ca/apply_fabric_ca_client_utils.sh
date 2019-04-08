@@ -25,6 +25,7 @@ declare TMP_PROJECT_PATH=${PATCH_PROJECT_PATH}
 declare -a PKGS=(
     "api"
     "lib"
+    "lib/attrmgr"
     "lib/streamer"
     "lib/tls"
     "lib/client"
@@ -40,6 +41,7 @@ declare -a FILES=(
     "api/client.go"
     "api/net.go"
 
+    "lib/attrmgr/attrmgr.go"
     "lib/client.go"
     "lib/identity.go"
     "lib/clientconfig.go"
@@ -294,7 +296,7 @@ sed -i'' -e '/"github.com\/cloudflare/ a\
 "github.com\/hyperledger\/fabric-sdk-go\/pkg\/common\/providers\/core"\
 ' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e 's/bccsp.Key/core.Key/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
-
+sed -i'' -e 's/github.com\/hyperledger\/fabric\/common\/attrmgr/github.com\/hyperledger\/fabric\/core\/chaincode\/shim\/ext\/attrmgr/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 
 FILTER_FILENAME="util/csp.go"
 FILTER_FN=",getBCCSPKeyOpts,ImportBCCSPKeyFromPEM,LoadX509KeyPair,GetSignerFromCert,BCCSPKeyRequestGenerate,GetSignerFromCertFile"

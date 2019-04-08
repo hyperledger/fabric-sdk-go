@@ -57,6 +57,12 @@ func GetEnvelopeFromBlock(data []byte) (*common.Envelope, error) {
 	return env, nil
 }
 
+// Signer is the interface needed to sign a transaction
+type Signer interface {
+	Sign(msg []byte) ([]byte, error)
+	Serialize() ([]byte, error)
+}
+
 // GetBytesProposalPayloadForTx takes a ChaincodeProposalPayload and returns
 // its serialized version according to the visibility field
 func GetBytesProposalPayloadForTx(

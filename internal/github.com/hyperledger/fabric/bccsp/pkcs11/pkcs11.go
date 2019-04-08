@@ -287,9 +287,11 @@ func (csp *impl) verifyP11ECDSA(ski []byte, msg []byte, R, S *big.Int, byteSize 
 	return true, nil
 }
 
+type keyType int8
+
 const (
-	privateKeyFlag = true
-	publicKeyFlag  = false
+	publicKeyType keyType = iota
+	privateKeyType
 )
 
 func timeTrack(start time.Time, msg string) {
@@ -297,8 +299,8 @@ func timeTrack(start time.Time, msg string) {
 	logger.Debugf("%s took %s", msg, elapsed)
 }
 
-func (csp *impl) findKeyPairFromSKI(mod *pkcs11.Ctx, session pkcs11.SessionHandle, ski []byte, keyType bool) (*pkcs11.ObjectHandle, error) {
-	return cachebridge.GetKeyPairFromSessionSKI(&cachebridge.KeyPairCacheKey{Mod: mod, Session: session, SKI: ski, KeyType: keyType})
+func (csp *impl) findKeyPairFromSKI(mod *pkcs11.Ctx, session pkcs11.SessionHandle, ski []byte, keyType keyType) (*pkcs11.ObjectHandle, error) {
+	return cachebridge.GetKeyPairFromSessionSKI(&cachebridge.KeyPairCacheKey{Mod: mod, Session: session, SKI: ski, KeyType: keyType == privateKeyType})
 }
 
 // Fairly straightforward EC-point query, other than opencryptoki
@@ -358,7 +360,7 @@ func ecPoint(p11lib *sdkp11.ContextHandle, session pkcs11.SessionHandle, key pkc
 			logger.Debugf("EC point: attr type %d/0x%x, len %d\n%s\n", a.Type, a.Type, len(a.Value), hex.Dump(a.Value))
 
 			// workarounds, see above
-			if (0 == (len(a.Value) % 2)) &&
+			if ((len(a.Value) % 2) == 0) &&
 				(byte(0x04) == a.Value[0]) &&
 				(byte(0x04) == a.Value[len(a.Value)-1]) {
 				logger.Debugf("Detected opencryptoki bug, trimming trailing 0x04")
@@ -421,3 +423,9 @@ func nextIDCtr() *big.Int {
 	idMutex.Unlock()
 	return idCtr
 }
+
+// TODO: Refactor using keyType
+const (
+	privateKeyFlag = true
+	publicKeyFlag  = false
+)

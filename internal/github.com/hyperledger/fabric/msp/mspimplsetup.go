@@ -208,11 +208,11 @@ func (msp *bccspmsp) finalizeSetupCAs() error {
 			return errors.Errorf("CA Certificate did not have the CA attribute, (SN: %x)", id.(*identity).cert.SerialNumber)
 		}
 		if _, err := getSubjectKeyIdentifierFromCert(id.(*identity).cert); err != nil {
-			return errors.WithMessage(err, fmt.Sprintf("CA Certificate problem with Subject Key Identifier extension, (SN: %x)", id.(*identity).cert.SerialNumber))
+			return errors.WithMessagef(err, "CA Certificate problem with Subject Key Identifier extension, (SN: %x)", id.(*identity).cert.SerialNumber)
 		}
 
 		if err := msp.validateCAIdentity(id.(*identity)); err != nil {
-			return errors.WithMessage(err, fmt.Sprintf("CA Certificate is not valid, (SN: %s)", id.(*identity).cert.SerialNumber))
+			return errors.WithMessagef(err, "CA Certificate is not valid, (SN: %s)", id.(*identity).cert.SerialNumber)
 		}
 	}
 
@@ -222,7 +222,7 @@ func (msp *bccspmsp) finalizeSetupCAs() error {
 	for _, id := range append([]Identity{}, msp.intermediateCerts...) {
 		chain, err := msp.getUniqueValidationChain(id.(*identity).cert, msp.getValidityOptsForCert(id.(*identity).cert))
 		if err != nil {
-			return errors.WithMessage(err, fmt.Sprintf("failed getting validation chain, (SN: %s)", id.(*identity).cert.SerialNumber))
+			return errors.WithMessagef(err, "failed getting validation chain, (SN: %s)", id.(*identity).cert.SerialNumber)
 		}
 
 		// Recall chain[0] is id.(*identity).id so it does not count as a parent
@@ -295,7 +295,7 @@ func (msp *bccspmsp) setupOUs(conf *m.FabricMSPConfig) error {
 
 		certifiersIdentifier, err := msp.getCertifiersIdentifier(ou.Certificate)
 		if err != nil {
-			return errors.WithMessage(err, fmt.Sprintf("failed getting certificate for [%v]", ou))
+			return errors.WithMessagef(err, "failed getting certificate for [%v]", ou)
 		}
 
 		// Check for duplicates
@@ -362,11 +362,11 @@ func (msp *bccspmsp) setupTLSCAs(conf *m.FabricMSPConfig) error {
 			return errors.Errorf("CA Certificate did not have the CA attribute, (SN: %x)", cert.SerialNumber)
 		}
 		if _, err := getSubjectKeyIdentifierFromCert(cert); err != nil {
-			return errors.WithMessage(err, fmt.Sprintf("CA Certificate problem with Subject Key Identifier extension, (SN: %x)", cert.SerialNumber))
+			return errors.WithMessagef(err, "CA Certificate problem with Subject Key Identifier extension, (SN: %x)", cert.SerialNumber)
 		}
 
 		if err := msp.validateTLSCAIdentity(cert, opts); err != nil {
-			return errors.WithMessage(err, fmt.Sprintf("CA Certificate is not valid, (SN: %s)", cert.SerialNumber))
+			return errors.WithMessagef(err, "CA Certificate is not valid, (SN: %s)", cert.SerialNumber)
 		}
 	}
 
@@ -438,7 +438,7 @@ func (msp *bccspmsp) postSetupV1(conf *m.FabricMSPConfig) error {
 	for i, admin := range msp.admins {
 		err := admin.Validate()
 		if err != nil {
-			return errors.WithMessage(err, fmt.Sprintf("admin %d is invalid", i))
+			return errors.WithMessagef(err, "admin %d is invalid", i)
 		}
 	}
 
@@ -482,7 +482,7 @@ func (msp *bccspmsp) postSetupV11(conf *m.FabricMSPConfig) error {
 	for i, admin := range msp.admins {
 		err = admin.SatisfiesPrincipal(principal)
 		if err != nil {
-			return errors.WithMessage(err, fmt.Sprintf("admin %d is invalid", i))
+			return errors.WithMessagef(err, "admin %d is invalid", i)
 		}
 	}
 

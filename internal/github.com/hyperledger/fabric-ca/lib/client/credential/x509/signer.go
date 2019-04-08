@@ -14,8 +14,8 @@ import (
 	"crypto/x509"
 	"fmt"
 
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/lib/attrmgr"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/util"
-	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/attrmgr"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/pkg/errors"
 )
