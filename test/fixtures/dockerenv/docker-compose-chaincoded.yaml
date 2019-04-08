@@ -28,7 +28,9 @@ services:
       - DOCKER_HOST=http://dockerd.example.com:2375
       - CHAINCODED_VERBOSE
       - CORE_CHAINCODE_LOGGING_LEVEL
+      - GO111MODULE
     volumes:
+      - ${GOPATH}/pkg/mod:/opt/gopath/pkg/mod
       - ../../../scripts/_go/src/chaincoded:/opt/gopath/src/chaincoded
       - ../../../:/opt/gopath/src/github.com/hyperledger/fabric-sdk-go
       - ../../../test/fixtures/testdata/src/github.com/example_cc:/opt/gopath/src/github.com/example_cc

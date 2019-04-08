@@ -10,12 +10,15 @@ set -e
 GO_CMD="${GO_CMD:-go}"
 GOPATH="${GOPATH:-$HOME/go}"
 
-mkdir -p ${GOPATH}/src/github.com/hyperledger
-ln -s ${GOPATH}/src/chaincoded/vendor/github.com/hyperledger/fabric ${GOPATH}/src/github.com/hyperledger/fabric
+# Temporary fix for Fabric base image
+unset GOCACHE
 
 echo "Installing chaincodes ..."
+cd ${GOPATH}/src/github.com/example_cc
 go install github.com/example_cc
+cd ${GOPATH}/src/github.com/example_pvt_cc
 go install github.com/example_pvt_cc
+cd ${GOPATH}/src/chaincoded
 go install chaincoded/cmd/chaincoded
 
 PEERS=(

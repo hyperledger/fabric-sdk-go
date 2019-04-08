@@ -13,13 +13,13 @@ function waitForCoreVMUp {
         declare host=${BASH_REMATCH[1]}
         declare port=${BASH_REMATCH[2]}
 
-        if [ "${TEST_LOCAL}" = true ]; then
+        if [[ "${TEST_LOCAL}" = true ]]; then
             host="localhost"
         fi
 
         echo "Waiting for VM endpoint to listen [${host}:${port}]..."
         while true; do
-          if [ ${attempt} -gt 120 ]; then
+          if [[ ${attempt} -gt 300 ]]; then
             echo "VM endpoint is not listening after ${attempt} attempt(s)"
             exit 1
           fi

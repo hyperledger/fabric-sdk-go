@@ -44,7 +44,6 @@ GO_TESTFLAGS_UNIT          ?= $(GO_TESTFLAGS)
 GO_TESTFLAGS_INTEGRATION   ?= $(GO_TESTFLAGS) -failfast
 FABRIC_SDK_EXPERIMENTAL    ?= true
 FABRIC_SDK_EXTRA_GO_TAGS   ?=
-FABRIC_SDK_POPULATE_VENDOR ?= true
 FABRIC_SDK_CHAINCODED      ?= false
 FABRIC_SDKGO_TEST_CHANGED  ?= false
 FABRIC_SDKGO_TESTRUN_ID    ?= $(shell date +'%Y%m%d%H%M%S')
@@ -197,7 +196,6 @@ endif
 # Detect subtarget execution
 ifdef FABRIC_SDKGO_SUBTARGET
 export FABRIC_SDKGO_DEPEND_INSTALL=false
-FABRIC_SDK_POPULATE_VENDOR := false
 endif
 
 FABRIC_ARCH := $(ARCH)
@@ -584,7 +582,7 @@ populate: populate-vendor populate-fixtures-stable
 
 .PHONY: populate-vendor
 populate-vendor:
-	@$(TEST_SCRIPTS_PATH)/populate-vendor.sh -f
+	@go mod vendor
 
 .PHONY: populate-fixtures-stable
 populate-fixtures-stable:
@@ -594,13 +592,7 @@ populate-fixtures-stable:
 	$(TEST_SCRIPTS_PATH)/populate-fixtures.sh -f
 
 .PHONY: populate-noforce
-populate-noforce: populate-vendor-noforce populate-fixtures-stable-noforce
-
-.PHONY: populate-vendor-noforce
-populate-vendor-noforce:
-ifeq ($(FABRIC_SDK_POPULATE_VENDOR),true)
-	@$(TEST_SCRIPTS_PATH)/populate-vendor.sh
-endif
+populate-noforce: populate-fixtures-stable-noforce
 
 .PHONY: populate-fixtures-stable-noforce
 populate-fixtures-stable-noforce:
