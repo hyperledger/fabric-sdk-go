@@ -88,3 +88,6 @@ linters:
     - bugs
     - unused
   fast: false
+
+issues:
+  exclude-use-default: false
