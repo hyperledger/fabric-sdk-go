@@ -22,11 +22,19 @@ cp -R ${TMP_PROJECT_PATH} ${PATCH_PROJECT_PATH}
 declare TMP_PROJECT_PATH=${PATCH_PROJECT_PATH}
 
 declare -a PKGS=(
-        "internal/protoutil"
+        "common/cauthdsl"
+        "core/common/ccprovider"
+        "core/ledger/kvledger/txmgmt/rwsetutil"
+        "core/ledger/util"
 )
 
 declare -a FILES=(
-        "internal/protoutil/commonutils.go"
+        "common/cauthdsl/cauthdsl_builder.go"
+        "common/cauthdsl/policyparser.go"
+        "core/common/ccprovider/ccprovider.go"
+        "core/common/ccprovider/cdspackage.go"
+        "core/ledger/kvledger/txmgmt/rwsetutil/rwset_proto_util.go"
+        "core/ledger/util/txvalidationflags.go"
 )
 
 # Create directory structure for packages
@@ -47,8 +55,30 @@ gofilter() {
 echo "Filtering Go sources for allowed functions ..."
 FILTERS_ENABLED="fn"
 
-FILTER_FILENAME="internal/protoutil/commonutils.go"
-FILTER_FN="MarshalOrPanic"
+FILTER_FILENAME="core/common/ccprovider/ccprovider.go"
+FILTER_FN=Reset,String,ProtoMessage
+gofilter
+sed -i'' -e 's/var ccInfoCache = NewCCInfoCache(ccInfoFSProvider)//g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+
+FILTER_FILENAME="core/common/ccprovider/cdspackage.go"
+FILTER_FN=Reset,String,ProtoMessage
+gofilter
+sed -i'' -e 's/var ccInfoCache = NewCCInfoCache(ccInfoFSProvider)//g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+
+FILTER_FILENAME="core/ledger/kvledger/txmgmt/rwsetutil/rwset_proto_util.go"
+FILTER_FN="NewHeight,ToProtoBytes,FromProtoBytes,toProtoMsg,TxRwSetFromProtoMsg,TxPvtRwSetFromProtoMsg,nsRwSetFromProtoMsg,nsPvtRwSetFromProtoMsg"
+FILTER_FN+=",collHashedRwSetFromProtoMsg,collPvtRwSetFromProtoMsg"
+gofilter
+
+FILTER_FILENAME="core/ledger/util/txvalidationflags.go"
+FILTER_FN="IsValid,IsInvalid,Flag,IsSetTo,NewTxValidationFlags,newTxValidationFlagsSetValue"
+gofilter
+
+echo "Filtering Go sources for allowed declarations ..."
+FILTER_FILENAME="core/common/ccprovider/ccprovider.go"
+FILTERS_ENABLED="gen,type"
+FILTER_TYPE="IMPORT,CONST"
+FILTER_GEN="CCPackage,ChaincodeData"
 gofilter
 
 # Apply patching

@@ -49,7 +49,7 @@ echo "Running" $(basename "$0")
 # Packages to include in test run
 PWD_ORIG=$(pwd)
 cd "${MODULE_PATH}"
-pwd
+
 PKGS=($(${GO_CMD} list ${PROJECT_MODULE}/test/integration/... 2> /dev/null | \
       grep -v ^${PROJECT_MODULE}/test/integration/e2e/pkcs11 | \
       grep -v ^${PROJECT_MODULE}/test/integration/negative | \
