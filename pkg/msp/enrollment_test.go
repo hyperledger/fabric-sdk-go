@@ -8,6 +8,7 @@ package msp
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -22,6 +23,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/msp/api"
 	apimocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmspapi"
+	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 )
 
 var (
@@ -55,7 +57,8 @@ m1KOnMry/mOZcnXnTIh2ASV4ss8VluzBcyHGAv7BCmxXxDkjcV9eybv8
 )
 
 func TestGetSigningIdentityWithEnrollment(t *testing.T) {
-	configBackend, err := config.FromFile("../../test/fixtures/config/config_test.yaml")()
+	configPath := filepath.Join(metadata.GetProjectPath(), metadata.SDKConfigPath, configTestFile)
+	configBackend, err := config.FromFile(configPath)()
 	if err != nil {
 		t.Fatalf(err.Error())
 	}

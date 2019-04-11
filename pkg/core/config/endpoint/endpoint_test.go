@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package endpoint
 
 import (
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -121,7 +122,7 @@ O94CDp7l2k7hMQI0zQ==
 
 	// test with empty pem
 	tlsConfig.Pem = ""
-	tlsConfig.Path = "../testdata/config_test.yaml"
+	tlsConfig.Path = filepath.Join("..", "testdata", "config_test.yaml")
 	e = tlsConfig.LoadBytes()
 	if e != nil {
 		t.Fatalf("error loading bytes for empty pem cert %s", e)
@@ -145,7 +146,7 @@ O94CDp7l2k7hMQI0zQ==
 
 func TestTLSConfig_TLSCertPostive(t *testing.T) {
 	tlsConfig := &TLSConfig{
-		Path: "../testdata/certs/client_sdk_go.pem",
+		Path: filepath.Join("..", "testdata", "certs", "client_sdk_go.pem"),
 		Pem:  "",
 	}
 
@@ -163,7 +164,7 @@ func TestTLSConfig_TLSCertPostive(t *testing.T) {
 	}
 
 	// test with both correct pem and path set
-	tlsConfig.Path = "../testdata/certs/client_sdk_go.pem"
+	tlsConfig.Path = filepath.Join("..", "testdata", "certs", "client_sdk_go.pem")
 	tlsConfig.Pem = `-----BEGIN CERTIFICATE-----
 MIICSTCCAfCgAwIBAgIRAPQIzfkrCZjcpGwVhMSKd0AwCgYIKoZIzj0EAwIwdjEL
 MAkGA1UEBhMCVVMxEzARBgNVBAgTCkNhbGlmb3JuaWExFjAUBgNVBAcTDVNhbiBG
@@ -230,7 +231,7 @@ func TestTLSConfigBytes(t *testing.T) {
 
 	// test with wrong path
 	tlsConfig := &TLSConfig{
-		Path: "../testdata/config_test.yaml",
+		Path: filepath.Join("..", "testdata", "config_test.yaml"),
 		Pem:  "",
 	}
 
@@ -239,7 +240,7 @@ func TestTLSConfigBytes(t *testing.T) {
 	assert.Nil(t, err, "tlsConfig.Bytes supposed to succeed")
 	assert.NotEmpty(t, bytes1, "supposed to get valid bytes")
 
-	tlsConfig.Path = "../testdata/config_test_pem.yaml"
+	tlsConfig.Path = filepath.Join("..", "testdata", "config_test_pem.yaml")
 	bytes2 := tlsConfig.Bytes()
 	assert.Nil(t, err, "tlsConfig.Bytes supposed to succeed")
 	assert.NotEmpty(t, bytes2, "supposed to get valid bytes")

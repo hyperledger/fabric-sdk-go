@@ -8,6 +8,7 @@ package msp
 
 import (
 	"bytes"
+	"path/filepath"
 	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/util"
@@ -16,6 +17,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite"
 	cryptosuiteimpl "github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/bccsp/sw"
+	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 )
 
 func TestUserMethods(t *testing.T) {
@@ -23,7 +25,8 @@ func TestUserMethods(t *testing.T) {
 	testUserMSPID := "testUserMSPID"
 	testUsername := "testUsername"
 
-	configBackend, err := config.FromFile("../../test/fixtures/config/config_test.yaml")()
+	configPath := filepath.Join(metadata.GetProjectPath(), metadata.SDKConfigPath, configTestFile)
+	configBackend, err := config.FromFile(configPath)()
 	if err != nil {
 		t.Fatalf("Failed to read config: %s", err)
 	}

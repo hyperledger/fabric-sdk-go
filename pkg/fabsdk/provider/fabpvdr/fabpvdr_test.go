@@ -8,6 +8,7 @@ package fabpvdr
 
 import (
 	"fmt"
+	"path/filepath"
 	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
@@ -15,6 +16,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite/bccsp/sw"
 	coreMocks "github.com/hyperledger/fabric-sdk-go/pkg/core/mocks"
+	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite"
 	fabImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab"
@@ -63,7 +65,8 @@ func TestCreatePeerFromConfig(t *testing.T) {
 }
 
 func newInfraProvider(t *testing.T) *InfraProvider {
-	configBackend, err := config.FromFile("../../../../test/fixtures/config/config_test.yaml")()
+	configPath := filepath.Join(metadata.GetProjectPath(), metadata.SDKConfigPath, "config_test.yaml")
+	configBackend, err := config.FromFile(configPath)()
 	if err != nil {
 		t.Fatalf("config.FromFile failed: %s", err)
 	}

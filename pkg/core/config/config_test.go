@@ -9,12 +9,14 @@ package config
 import (
 	"bytes"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite"
 	"github.com/hyperledger/fabric-sdk-go/pkg/util/test"
+	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
@@ -24,14 +26,19 @@ import (
 var configBackend core.ConfigBackend
 
 const (
-	configTestFilePath = "testdata/config_test.yaml"
-	configType         = "yaml"
-	defaultConfigPath  = "testdata/template"
+	configFile = "config_test.yaml"
+	configType = "yaml"
+)
+
+var (
+	configTestFilePath = filepath.Join("testdata", configFile)
+	defaultConfigPath  = filepath.Join("testdata", "template")
 )
 
 func TestFromRawSuccess(t *testing.T) {
 	// get a config byte for testing
-	cBytes, _ := loadConfigBytesFromFile(t, configTestFilePath)
+	configPath := filepath.Join("testdata", configFile)
+	cBytes, _ := loadConfigBytesFromFile(t, configPath)
 
 	// test init config from bytes
 	_, err := FromRaw(cBytes, configType)()
@@ -42,7 +49,8 @@ func TestFromRawSuccess(t *testing.T) {
 
 func TestFromReaderSuccess(t *testing.T) {
 	// get a config byte for testing
-	cBytes, _ := loadConfigBytesFromFile(t, configTestFilePath)
+	configPath := filepath.Join("testdata", configFile)
+	cBytes, _ := loadConfigBytesFromFile(t, configPath)
 	buf := bytes.NewBuffer(cBytes)
 
 	// test init config from bytes
@@ -150,7 +158,8 @@ func TestInitConfigInvalidLocation(t *testing.T) {
 // Test case to create a new viper instance to prevent conflict with existing
 // viper instances in applications that use the SDK
 func TestMultipleVipers(t *testing.T) {
-	viper.SetConfigFile("./testdata/viper-test.yaml")
+	configPath := filepath.Join("testdata", "viper-test.yaml")
+	viper.SetConfigFile(configPath)
 	err := viper.ReadInConfig()
 	if err != nil {
 		t.Log(err)
@@ -258,7 +267,8 @@ func teardown() {
 }
 
 func TestNewGoodOpt(t *testing.T) {
-	_, err := FromFile("../../../test/fixtures/config/config_test.yaml", goodOpt())()
+	configPath := filepath.Join(metadata.GetProjectPath(), metadata.SDKConfigPath, configFile)
+	_, err := FromFile(configPath, goodOpt())()
 	if err != nil {
 		t.Fatalf("Expected no error from New, but got %s", err)
 	}
@@ -301,7 +311,8 @@ func goodOpt() Option {
 }
 
 func TestNewBadOpt(t *testing.T) {
-	_, err := FromFile("../../../test/fixtures/config/config_test.yaml", badOpt())()
+	configPath := filepath.Join(metadata.GetProjectPath(), metadata.SDKConfigPath, configFile)
+	_, err := FromFile(configPath, badOpt())()
 	if err == nil {
 		t.Fatal("Expected error from FromFile")
 	}

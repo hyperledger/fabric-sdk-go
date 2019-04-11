@@ -7,7 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package cryptosuite
 
 import (
-	"path"
+	"path/filepath"
 	"testing"
 
 	"os"
@@ -17,14 +17,16 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/mocks"
+	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 	"github.com/stretchr/testify/assert"
 )
 
-const configTestFilePath = "../config/testdata/config_test.yaml"
-const configEmptyTestFilePath = "../config/testdata/viper-test.yaml"
+const configTestFile = "config_test.yaml"
+const configEmptyTestFile = "viper-test.yaml"
 
 func TestEmptyTestFile(t *testing.T) {
-	backend, err := config.FromFile(configEmptyTestFilePath)()
+	configPath := filepath.Join(metadata.GetProjectPath(), "pkg", "core", "config", "testdata", configEmptyTestFile)
+	backend, err := config.FromFile(configPath)()
 	assert.Nil(t, err, "Failed to read from empty config")
 
 	cryptoConfig := ConfigFromBackend(backend[0]).(*Config)
@@ -39,7 +41,8 @@ func TestEmptyTestFile(t *testing.T) {
 }
 
 func TestCAConfigKeyStorePath(t *testing.T) {
-	backend, err := config.FromFile(configTestFilePath)()
+	configPath := filepath.Join(metadata.GetProjectPath(), "pkg", "core", "config", "testdata", configTestFile)
+	backend, err := config.FromFile(configPath)()
 	if err != nil {
 		t.Fatal("Failed to get config backend")
 	}
@@ -54,13 +57,14 @@ func TestCAConfigKeyStorePath(t *testing.T) {
 		t.Fatal("expected valid value")
 	}
 
-	if path.Join(val.(string), "keystore") != cryptoConfig.KeyStorePath() {
+	if filepath.Join(val.(string), "keystore") != cryptoConfig.KeyStorePath() {
 		t.Fatal("Incorrect keystore path")
 	}
 }
 
 func TestCAConfigBCCSPSecurityEnabled(t *testing.T) {
-	backend, err := config.FromFile(configTestFilePath)()
+	configPath := filepath.Join(metadata.GetProjectPath(), "pkg", "core", "config", "testdata", configTestFile)
+	backend, err := config.FromFile(configPath)()
 	if err != nil {
 		t.Fatal("Failed to get config backend")
 	}
@@ -80,7 +84,8 @@ func TestCAConfigBCCSPSecurityEnabled(t *testing.T) {
 }
 
 func TestCAConfigSecurityAlgorithm(t *testing.T) {
-	backend, err := config.FromFile(configTestFilePath)()
+	configPath := filepath.Join(metadata.GetProjectPath(), "pkg", "core", "config", "testdata", configTestFile)
+	backend, err := config.FromFile(configPath)()
 	if err != nil {
 		t.Fatal("Failed to get config backend")
 	}
@@ -100,7 +105,8 @@ func TestCAConfigSecurityAlgorithm(t *testing.T) {
 }
 
 func TestCAConfigSecurityLevel(t *testing.T) {
-	backend, err := config.FromFile(configTestFilePath)()
+	configPath := filepath.Join(metadata.GetProjectPath(), "pkg", "core", "config", "testdata", configTestFile)
+	backend, err := config.FromFile(configPath)()
 	if err != nil {
 		t.Fatal("Failed to get config backend")
 	}
@@ -120,7 +126,8 @@ func TestCAConfigSecurityLevel(t *testing.T) {
 }
 
 func TestCAConfigSecurityProvider(t *testing.T) {
-	backend, err := config.FromFile(configTestFilePath)()
+	configPath := filepath.Join(metadata.GetProjectPath(), "pkg", "core", "config", "testdata", configTestFile)
+	backend, err := config.FromFile(configPath)()
 	if err != nil {
 		t.Fatal("Failed to get config backend")
 	}
@@ -140,7 +147,8 @@ func TestCAConfigSecurityProvider(t *testing.T) {
 }
 
 func TestCAConfigSoftVerifyFlag(t *testing.T) {
-	backend, err := config.FromFile(configTestFilePath)()
+	configPath := filepath.Join(metadata.GetProjectPath(), "pkg", "core", "config", "testdata", configTestFile)
+	backend, err := config.FromFile(configPath)()
 	if err != nil {
 		t.Fatal("Failed to get config backend")
 	}
@@ -160,7 +168,8 @@ func TestCAConfigSoftVerifyFlag(t *testing.T) {
 }
 
 func TestCAConfigSecurityProviderPin(t *testing.T) {
-	backend, err := config.FromFile(configTestFilePath)()
+	configPath := filepath.Join(metadata.GetProjectPath(), "pkg", "core", "config", "testdata", configTestFile)
+	backend, err := config.FromFile(configPath)()
 	if err != nil {
 		t.Fatal("Failed to get config backend")
 	}
@@ -180,7 +189,8 @@ func TestCAConfigSecurityProviderPin(t *testing.T) {
 }
 
 func TestCAConfigSecurityProviderLabel(t *testing.T) {
-	backend, err := config.FromFile(configTestFilePath)()
+	configPath := filepath.Join(metadata.GetProjectPath(), "pkg", "core", "config", "testdata", configTestFile)
+	backend, err := config.FromFile(configPath)()
 	if err != nil {
 		t.Fatal("Failed to get config backend")
 	}
@@ -223,7 +233,8 @@ func TestCAConfigSecurityProviderCase(t *testing.T) {
 		// set the input value, overriding what's in file
 		os.Setenv("FABRIC_SDK_CLIENT_BCCSP_SECURITY_DEFAULT_PROVIDER", inputValue)
 
-		backend, err := config.FromFile(configTestFilePath)()
+		configPath := filepath.Join(metadata.GetProjectPath(), "pkg", "core", "config", "testdata", configTestFile)
+		backend, err := config.FromFile(configPath)()
 		if err != nil {
 			t.Fatal("Failed to get config backend")
 		}

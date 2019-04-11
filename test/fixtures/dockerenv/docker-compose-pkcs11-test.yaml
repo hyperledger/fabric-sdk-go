@@ -20,11 +20,10 @@ services:
       - FABRIC_SDK_CLIENT_EVENTSERVICE_TYPE
       - TEST_CHANGED_ONLY
       - CORE_VM_ENDPOINT
-      - GO111MODULE
     volumes:
       - ${GOPATH}/pkg/mod:/opt/gopath/pkg/mod
-      - ../../../:/opt/gopath/src/github.com/hyperledger/fabric-sdk-go
-    command: bash -c "/opt/gopath/src/github.com/hyperledger/fabric-sdk-go/test/scripts/unit-pkcs11.sh && /opt/gopath/src/github.com/hyperledger/fabric-sdk-go/test/scripts/integration-pkcs11.sh"
+      - ../../../:/opt/workspace/fabric-sdk-go
+    command: bash -c "/opt/workspace/fabric-sdk-go/test/scripts/unit-pkcs11.sh && /opt/workspace/fabric-sdk-go/test/scripts/integration-pkcs11.sh"
     depends_on:
       - org1ca1
       - org2ca1

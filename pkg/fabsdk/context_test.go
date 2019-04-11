@@ -7,19 +7,22 @@ SPDX-License-Identifier: Apache-2.0
 package fabsdk
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
+	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 )
 
 const (
-	identityOptConfigFile = "../../test/fixtures/config/config_test.yaml"
+	identityOptConfigFile = "config_test.yaml"
 	identityValidOptUser  = "User1"
 	identityValidOptOrg   = "Org2"
 )
 
 func TestWithUserValid(t *testing.T) {
-	sdk, err := New(config.FromFile(identityOptConfigFile))
+	configPath := filepath.Join(metadata.GetProjectPath(), metadata.SDKConfigPath, identityOptConfigFile)
+	sdk, err := New(config.FromFile(configPath))
 	if err != nil {
 		t.Fatalf("Expected no error from New, but got %s", err)
 	}
@@ -34,7 +37,8 @@ func TestWithUserValid(t *testing.T) {
 }
 
 func TestWithIdentity(t *testing.T) {
-	sdk, err := New(config.FromFile(identityOptConfigFile))
+	configPath := filepath.Join(metadata.GetProjectPath(), metadata.SDKConfigPath, identityOptConfigFile)
+	sdk, err := New(config.FromFile(configPath))
 	if err != nil {
 		t.Fatalf("Expected no error from New, but got %s", err)
 	}
@@ -62,7 +66,8 @@ func TestWithIdentity(t *testing.T) {
 
 func TestFabricSDKContext(t *testing.T) {
 
-	sdk, err := New(config.FromFile(identityOptConfigFile))
+	configPath := filepath.Join(metadata.GetProjectPath(), metadata.SDKConfigPath, identityOptConfigFile)
+	sdk, err := New(config.FromFile(configPath))
 	if err != nil {
 		t.Fatalf("Expected no error from New, but got %s", err)
 	}

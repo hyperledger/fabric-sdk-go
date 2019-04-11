@@ -6,7 +6,7 @@
 #
 
 CONFIGTXGEN_CMD="${CONFIGTXGEN_CMD:-configtxgen}"
-FIXTURES_PATH="${FIXTURES_PATH:-/opt/gopath/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/}"
+FIXTURES_PATH="${FIXTURES_PATH:-/opt/workspace/fabric-sdk-go/test/fixtures/}"
 CHANNEL_DIR="${CHANNEL_DIR:-channel}"
 CONFIG_DIR="${CONFIG_DIR:-config}"
 

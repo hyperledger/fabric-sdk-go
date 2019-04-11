@@ -13,7 +13,6 @@ import (
 	"go/build"
 	"io"
 	"os"
-	"path"
 	"path/filepath"
 	"time"
 
@@ -58,7 +57,7 @@ func NewCCPackage(chaincodePath string, goPath string) (*resource.CCPackage, err
 		logger.Debugf("Default GOPATH=%s", gp)
 	}
 
-	projDir = path.Join(gp, "src", chaincodePath)
+	projDir = filepath.Join(gp, "src", chaincodePath)
 
 	logger.Debugf("projDir variable=%s", projDir)
 

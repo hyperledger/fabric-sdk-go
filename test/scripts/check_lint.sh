@@ -9,10 +9,13 @@
 set -e
 LINT_CHANGED_ONLY="${LINT_CHANGED_ONLY:-false}"
 GO_CMD="${GO_CMD:-go}"
-GOPATH="${GOPATH:-$HOME/go}"
 SCRIPT_DIR="$(dirname "$0")"
-CONFIG_DIR=$(pwd)
 PKG_ROOT="${PKG_ROOT:-./}"
+
+PROJECT_MODULE=$(awk -F' ' '$1 == "module" {print $2}' < $(go env GOMOD))
+PROJECT_DIR=$(dirname $(go env GOMOD))
+
+CONFIG_DIR=${PROJECT_DIR}
 
 echo "Running" $(basename "$0") "(${MODULE} ${PKG_ROOT})"
 
@@ -21,7 +24,7 @@ source ${SCRIPT_DIR}/lib/linter.sh
 
 # Find all packages that should be linted.
 PWD_ORIG=$(pwd)
-cd "${GOPATH}/src/${MODULE}"
+cd "${PROJECT_DIR}/${MODULE#${PROJECT_MODULE}}"
 declare -a PKG_SRC=(
     "${PKG_ROOT}"
 )

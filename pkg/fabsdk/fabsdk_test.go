@@ -10,6 +10,7 @@ package fabsdk
 
 import (
 	"os"
+	"path/filepath"
 	"reflect"
 	"sync"
 	"testing"
@@ -31,19 +32,21 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/chpvdr"
 	mockapisdk "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/test/mocksdkapi"
 	"github.com/hyperledger/fabric-sdk-go/pkg/msp"
+	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 const (
-	sdkConfigFile      = "../../test/fixtures/config/config_test.yaml"
+	sdkConfigFile      = "config_test.yaml"
 	sdkValidClientUser = "User1"
 	sdkValidClientOrg1 = "org1"
 )
 
 func TestNewGoodOpt(t *testing.T) {
-	sdk, err := New(configImpl.FromFile(sdkConfigFile),
+	configPath := filepath.Join(metadata.GetProjectPath(), metadata.SDKConfigPath, sdkConfigFile)
+	sdk, err := New(configImpl.FromFile(configPath),
 		goodOpt())
 	if err != nil {
 		t.Fatalf("Expected no error from New, but got %s", err)
@@ -58,7 +61,8 @@ func goodOpt() Option {
 }
 
 func TestNewBadOpt(t *testing.T) {
-	_, err := New(configImpl.FromFile(sdkConfigFile),
+	configPath := filepath.Join(metadata.GetProjectPath(), metadata.SDKConfigPath, sdkConfigFile)
+	_, err := New(configImpl.FromFile(configPath),
 		badOpt())
 	if err == nil {
 		t.Fatal("Expected error from New")
@@ -72,7 +76,8 @@ func badOpt() Option {
 }
 
 func TestDoubleClose(t *testing.T) {
-	sdk, err := New(configImpl.FromFile(sdkConfigFile),
+	configPath := filepath.Join(metadata.GetProjectPath(), metadata.SDKConfigPath, sdkConfigFile)
+	sdk, err := New(configImpl.FromFile(configPath),
 		goodOpt())
 	if err != nil {
 		t.Fatalf("Expected no error from New, but got %s", err)
@@ -83,7 +88,8 @@ func TestDoubleClose(t *testing.T) {
 
 func TestWithCorePkg(t *testing.T) {
 	// Test New SDK with valid config file
-	c := configImpl.FromFile(sdkConfigFile)
+	configPath := filepath.Join(metadata.GetProjectPath(), metadata.SDKConfigPath, sdkConfigFile)
+	c := configImpl.FromFile(configPath)
 	sdk, err := New(c)
 	if err != nil {
 		t.Fatalf("Error initializing SDK: %s", err)
@@ -106,7 +112,8 @@ func TestWithCorePkg(t *testing.T) {
 
 func TestWithMSPPkg(t *testing.T) {
 	// Test New SDK with valid config file
-	c := configImpl.FromFile(sdkConfigFile)
+	configPath := filepath.Join(metadata.GetProjectPath(), metadata.SDKConfigPath, sdkConfigFile)
+	c := configImpl.FromFile(configPath)
 
 	sdk, err := New(c)
 	if err != nil {
@@ -129,7 +136,8 @@ func TestWithMSPPkg(t *testing.T) {
 
 func TestWithServicePkg(t *testing.T) {
 	// Test New SDK with valid config file
-	c := configImpl.FromFile(sdkConfigFile)
+	configPath := filepath.Join(metadata.GetProjectPath(), metadata.SDKConfigPath, sdkConfigFile)
+	c := configImpl.FromFile(configPath)
 
 	sdk, err := New(c)
 	if err != nil {
@@ -152,7 +160,8 @@ func TestWithServicePkg(t *testing.T) {
 
 func TestWithSessionPkg(t *testing.T) {
 	// Test New SDK with valid config file
-	c := configImpl.FromFile(sdkConfigFile)
+	configPath := filepath.Join(metadata.GetProjectPath(), metadata.SDKConfigPath, sdkConfigFile)
+	c := configImpl.FromFile(configPath)
 
 	core, err := newMockCorePkg(c)
 	if err != nil {
@@ -183,7 +192,8 @@ func TestWithSessionPkg(t *testing.T) {
 func TestErrPkgSuite(t *testing.T) {
 	ps := mockPkgSuite{}
 
-	c := configImpl.FromFile(sdkConfigFile)
+	configPath := filepath.Join(metadata.GetProjectPath(), metadata.SDKConfigPath, sdkConfigFile)
+	c := configImpl.FromFile(configPath)
 
 	_, err := fromPkgSuite(c, &ps)
 	if err != nil {
@@ -213,7 +223,8 @@ func TestErrPkgSuite(t *testing.T) {
 }
 
 func TestNewDefaultSDKFromByte(t *testing.T) {
-	cBytes, err := loadConfigBytesFromFile(t, sdkConfigFile)
+	configPath := filepath.Join(metadata.GetProjectPath(), metadata.SDKConfigPath, sdkConfigFile)
+	cBytes, err := loadConfigBytesFromFile(t, configPath)
 	if err != nil {
 		t.Fatalf("Failed to load sample bytes from File. Error: %s", err)
 	}
@@ -253,7 +264,8 @@ func loadConfigBytesFromFile(t *testing.T, filePath string) ([]byte, error) {
 }
 
 func TestWithConfigSuccess(t *testing.T) {
-	sdk, err := New(configImpl.FromFile(sdkConfigFile))
+	configPath := filepath.Join(metadata.GetProjectPath(), metadata.SDKConfigPath, sdkConfigFile)
+	sdk, err := New(configImpl.FromFile(configPath))
 	if err != nil {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}
@@ -283,13 +295,15 @@ func TestWithConfigFailure(t *testing.T) {
 }
 
 func TestEmptyConfigFile(t *testing.T) {
-	_, err := New(configImpl.FromFile("../../pkg/core/config/testdata/viper-test.yaml"))
+	configPath := filepath.Join(metadata.GetProjectPath(), "pkg", "core", "config", "testdata", "viper-test.yaml")
+	_, err := New(configImpl.FromFile(configPath))
 	assert.Nil(t, err, "New with empty config file should not have failed")
 }
 
 func TestWithConfigEndpoint(t *testing.T) {
 	// Test New SDK with valid config file
-	c := configImpl.FromFile(sdkConfigFile)
+	configPath := filepath.Join(metadata.GetProjectPath(), metadata.SDKConfigPath, sdkConfigFile)
+	c := configImpl.FromFile(configPath)
 
 	np := &MockNetworkPeers{}
 	// override EndpointConfig's NetworkConfig() function with np's and co's instances
@@ -326,7 +340,8 @@ func TestWithConfigEndpoint(t *testing.T) {
 }
 
 func TestWithConfigEndpointAndBadOpt(t *testing.T) {
-	c := configImpl.FromFile(sdkConfigFile)
+	configPath := filepath.Join(metadata.GetProjectPath(), metadata.SDKConfigPath, sdkConfigFile)
+	c := configImpl.FromFile(configPath)
 
 	np := &MockNetworkPeers{}
 	co := &MockChannelOrderers{}
@@ -342,7 +357,8 @@ func TestWithConfigEndpointAndBadOpt(t *testing.T) {
 func TestCloseContext(t *testing.T) {
 	const channelID = "orgchannel"
 
-	c := configImpl.FromFile(sdkConfigFile)
+	configPath := filepath.Join(metadata.GetProjectPath(), metadata.SDKConfigPath, sdkConfigFile)
+	c := configImpl.FromFile(configPath)
 
 	core, err := newMockCorePkg(c)
 	require.NoError(t, err)
@@ -417,7 +433,8 @@ func TestCloseContext(t *testing.T) {
 }
 
 func TestErrorHandler(t *testing.T) {
-	c := configImpl.FromFile(sdkConfigFile)
+	configPath := filepath.Join(metadata.GetProjectPath(), metadata.SDKConfigPath, sdkConfigFile)
+	c := configImpl.FromFile(configPath)
 
 	core, err := newMockCorePkg(c)
 	require.NoError(t, err)

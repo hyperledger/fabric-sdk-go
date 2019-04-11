@@ -7,9 +7,11 @@ SPDX-License-Identifier: Apache-2.0
 package channel
 
 import (
+	"path/filepath"
 	"testing"
 	"time"
 
+	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
@@ -171,7 +173,8 @@ func TestOrderersURLOverride(t *testing.T) {
 	sampleOrdererURL := "orderer.example.com.sample.url:100090"
 
 	//Create endpoint config
-	configBackends, err := config.FromFile("../../core/config/testdata/config_test.yaml")()
+	configPath := filepath.Join(metadata.GetProjectPath(), "pkg", "core", "config", "testdata", "config_test.yaml")
+	configBackends, err := config.FromFile(configPath)()
 	if err != nil {
 		t.Fatal("failed to get config backends")
 	}

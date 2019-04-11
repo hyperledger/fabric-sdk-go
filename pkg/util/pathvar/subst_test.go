@@ -156,3 +156,11 @@ func TestSubstMiddleNoVarPrefix(t *testing.T) {
 
 	assert.Equal(t, e, s, "Unexpected path substitution")
 }
+
+func TestSubstProjectPath(t *testing.T) {
+	o := "$foo${FABRIC_SDK_GO_PROJECT_PATH}foo"
+	s := Subst(o)
+	e := "$foo" + metadata.GetProjectPath() + "foo"
+
+	assert.Equal(t, e, s, "Unexpected path substitution")
+}

@@ -8,6 +8,7 @@ package resmgmt
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/cauthdsl"
@@ -17,6 +18,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource"
 	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
+	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 )
 
@@ -29,7 +31,8 @@ func Example() {
 	}
 
 	// Read channel configuration
-	r, err := os.Open(channelConfig)
+	channelConfigPath := filepath.Join(metadata.GetProjectPath(), metadata.ChannelConfigPath, channelConfigFile)
+	r, err := os.Open(channelConfigPath)
 	if err != nil {
 		fmt.Printf("failed to open channel config: %s\n", err)
 	}
@@ -191,7 +194,8 @@ func ExampleClient_SaveChannel() {
 		fmt.Printf("failed to create client: %s\n", err)
 	}
 
-	r, err := os.Open(channelConfig)
+	channelConfigPath := filepath.Join(metadata.GetProjectPath(), metadata.ChannelConfigPath, channelConfigFile)
+	r, err := os.Open(channelConfigPath)
 	if err != nil {
 		fmt.Printf("failed to open channel config: %s\n", err)
 	}
@@ -218,7 +222,8 @@ func ExampleClient_SaveChannel_withOrdererEndpoint() {
 		fmt.Printf("failed to create client: %s\n", err)
 	}
 
-	r, err := os.Open(channelConfig)
+	channelConfigPath := filepath.Join(metadata.GetProjectPath(), metadata.ChannelConfigPath, channelConfigFile)
+	r, err := os.Open(channelConfigPath)
 	if err != nil {
 		fmt.Printf("failed to open channel config: %s\n", err)
 	}

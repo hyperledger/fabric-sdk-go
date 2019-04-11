@@ -9,6 +9,7 @@ package comm
 import (
 	"bytes"
 	"encoding/hex"
+	"path/filepath"
 	"strconv"
 	"testing"
 
@@ -134,7 +135,7 @@ func TestTlsCertHash(t *testing.T) {
 	defer mockCtrl.Finish()
 	config := mockfab.NewMockEndpointConfig(mockCtrl)
 
-	cert, err := tls.LoadX509KeyPair("testdata/server.crt", "testdata/server.key")
+	cert, err := tls.LoadX509KeyPair(filepath.Join("testdata", "server.crt"), filepath.Join("testdata", "server.key"))
 	if err != nil {
 		t.Fatalf("Unexpected error loading cert %s", err)
 	}

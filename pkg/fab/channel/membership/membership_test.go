@@ -20,13 +20,13 @@ import (
 	"log"
 	"math/big"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/utils"
+	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 	"github.com/pkg/errors"
 
 	"github.com/golang/protobuf/proto"
@@ -36,11 +36,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-const configPath = "../../../../test/fixtures/fabric/v1/crypto-config"
-
-var pathRevokeCaRoot = path.Join(configPath, "peerOrganizations/org1.example.com/ca/")
-var pathParentCert = path.Join(configPath, "peerOrganizations/org1.example.com/ca/ca.org1.example.com-cert.pem")
-var peerCertToBeRevoked = path.Join(configPath, "peerOrganizations/org1.example.com/peers/peer0.org1.example.com/msp/signcerts/peer0.org1.example.com-cert.pem")
+var pathRevokeCaRoot = filepath.Join(metadata.GetProjectPath(), metadata.CryptoConfigPath, "peerOrganizations/org1.example.com/ca/")
+var pathParentCert = filepath.Join(metadata.GetProjectPath(), metadata.CryptoConfigPath, "peerOrganizations/org1.example.com/ca/ca.org1.example.com-cert.pem")
+var peerCertToBeRevoked = filepath.Join(metadata.GetProjectPath(), metadata.CryptoConfigPath, "peerOrganizations/org1.example.com/peers/peer0.org1.example.com/msp/signcerts/peer0.org1.example.com-cert.pem")
 var newCRL string
 var revokedCert string
 

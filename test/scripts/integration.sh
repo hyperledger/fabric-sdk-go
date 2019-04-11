@@ -20,7 +20,6 @@ set -e
 
 
 GO_CMD="${GO_CMD:-go}"
-GOPATH="${GOPATH:-$HOME/go}"
 FABRIC_SDKGO_CODELEVEL_TAG="${FABRIC_SDKGO_CODELEVEL_TAG:-stable}"
 FABRIC_SDKGO_TESTRUN_ID="${FABRIC_SDKGO_TESTRUN_ID:-${RANDOM}}"
 FABRIC_CRYPTOCONFIG_VERSION="${FABRIC_CRYPTOCONFIG_VERSION:-v1}"
@@ -32,8 +31,12 @@ TEST_RACE_CONDITIONS="${TEST_RACE_CONDITIONS:-true}"
 SCRIPT_DIR="$(dirname "$0")"
 # TODO: better default handling for FABRIC_CRYPTOCONFIG_VERSION
 
-REPO="github.com/hyperledger/fabric-sdk-go"
-MODULE="github.com/hyperledger/fabric-sdk-go/test/integration"
+GOMOD_PATH=$(cd ${SCRIPT_DIR} && ${GO_CMD} env GOMOD)
+PROJECT_MODULE=$(awk -F' ' '$1 == "module" {print $2}' ${GOMOD_PATH})
+PROJECT_DIR=$(dirname ${GOMOD_PATH})
+
+MODULE="${PROJECT_MODULE}/test/integration"
+MODULE_PATH="${PROJECT_DIR}/${MODULE#${PROJECT_MODULE}}" && MODULE_PATH=${MODULE_PATH%/}
 
 source ${SCRIPT_DIR}/lib/find_packages.sh
 source ${SCRIPT_DIR}/lib/docker.sh
@@ -45,24 +48,25 @@ echo "Running" $(basename "$0")
 
 # Packages to include in test run
 PWD_ORIG=$(pwd)
-cd "${GOPATH}/src/${MODULE}"
-PKGS=($(${GO_CMD} list ${REPO}/test/integration/... 2> /dev/null | \
-      grep -v ^${REPO}/test/integration/e2e/pkcs11 | \
-      grep -v ^${REPO}/test/integration/negative | \
-      grep -v ^${REPO}/test/integration\$ | \
+cd "${MODULE_PATH}"
+pwd
+PKGS=($(${GO_CMD} list ${PROJECT_MODULE}/test/integration/... 2> /dev/null | \
+      grep -v ^${PROJECT_MODULE}/test/integration/e2e/pkcs11 | \
+      grep -v ^${PROJECT_MODULE}/test/integration/negative | \
+      grep -v ^${PROJECT_MODULE}/test/integration\$ | \
       tr '\n' ' '))
 cd ${PWD_ORIG}
 
 if [ "$E2E_ONLY" == "true" ]; then
     echo "Including E2E tests only"
-    PKGS=($(echo ${PKGS[@]} | tr ' ' '\n' | grep ^${REPO}/test/integration/e2e | tr '\n' ' '))
+    PKGS=($(echo ${PKGS[@]} | tr ' ' '\n' | grep ^${PROJECT_MODULE}/test/integration/e2e | tr '\n' ' '))
 fi
 
 # Reduce tests to changed packages.
 if [ "${TEST_CHANGED_ONLY}" = true ]; then
     # findChangedFiles assumes that the working directory contains the repo; so change to the repo directory.
     PWD_ORIG=$(pwd)
-    cd "${GOPATH}/src/${REPO}"
+    cd "${PROJECT_DIR}"
     findChangedFiles
     cd ${PWD_ORIG}
 
@@ -99,11 +103,12 @@ echo "Code level ${FABRIC_SDKGO_CODELEVEL_TAG} (Fabric ${FABRIC_FIXTURE_VERSION}
 echo "Running integration tests ..."
 
 GO_TAGS="${GO_TAGS} ${FABRIC_SDKGO_CODELEVEL_TAG}"
-GO_LDFLAGS="${GO_LDFLAGS} -X github.com/hyperledger/fabric-sdk-go/test/metadata.ChannelConfigPath=test/fixtures/fabric/${FABRIC_FIXTURE_VERSION}/channel"
-GO_LDFLAGS="${GO_LDFLAGS} -X github.com/hyperledger/fabric-sdk-go/test/metadata.CryptoConfigPath=test/fixtures/fabric/${FABRIC_CRYPTOCONFIG_VERSION}/crypto-config"
-GO_LDFLAGS="${GO_LDFLAGS} -X github.com/hyperledger/fabric-sdk-go/test/metadata.TestRunID=${FABRIC_SDKGO_TESTRUN_ID}"
+GO_LDFLAGS="${GO_LDFLAGS} -X ${PROJECT_MODULE}/test/metadata.ProjectPath=${PROJECT_DIR}"
+GO_LDFLAGS="${GO_LDFLAGS} -X ${PROJECT_MODULE}/test/metadata.ChannelConfigPath=test/fixtures/fabric/${FABRIC_FIXTURE_VERSION}/channel"
+GO_LDFLAGS="${GO_LDFLAGS} -X ${PROJECT_MODULE}/test/metadata.CryptoConfigPath=test/fixtures/fabric/${FABRIC_CRYPTOCONFIG_VERSION}/crypto-config"
+GO_LDFLAGS="${GO_LDFLAGS} -X ${PROJECT_MODULE}/fabric-sdk-go/test/metadata.TestRunID=${FABRIC_SDKGO_TESTRUN_ID}"
 
 PWD_ORIG=$(pwd)
-cd "${GOPATH}/src/${MODULE}"
+cd "${MODULE_PATH}"
 ${GO_CMD} test ${RACEFLAG} -tags "${GO_TAGS}" ${GO_TESTFLAGS} -ldflags="${GO_LDFLAGS}" ${PKGS[@]} -p 1 -timeout=40m configFile=${CONFIG_FILE} testLocal=${TEST_LOCAL}
 cd ${PWD_ORIG}

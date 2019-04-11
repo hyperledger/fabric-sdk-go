@@ -8,10 +8,12 @@ package mocks
 
 import (
 	"crypto/tls"
+	"path/filepath"
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/endpoint"
+	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 
 	"crypto/x509"
 
@@ -32,6 +34,10 @@ type MockConfig struct {
 	customRandomOrdererCfg *fab.OrdererConfig
 	CustomTLSCACertPool    fab.CertPool
 	chConfig               map[string]*fab.ChannelEndpointConfig
+}
+
+func getConfigPath() string {
+	return filepath.Join(metadata.GetProjectPath(), "pkg", "core", "config", "testdata")
 }
 
 // NewMockCryptoConfig ...
@@ -73,8 +79,8 @@ func (c *MockConfig) Client() *msp.ClientConfig {
 	}
 
 	if c.mutualTLSEnabled {
-		key := endpoint.TLSConfig{Path: "../../../pkg/core/config/testdata/certs/client_sdk_go-key.pem"}
-		cert := endpoint.TLSConfig{Path: "../../../pkg/core/config/testdata/certs/client_sdk_go.pem"}
+		key := endpoint.TLSConfig{Path: filepath.Join(getConfigPath(), "certs", "client_sdk_go-key.pem")}
+		cert := endpoint.TLSConfig{Path: filepath.Join(getConfigPath(), "certs", "client_sdk_go.pem")}
 
 		err := key.LoadBytes()
 		if err != nil {

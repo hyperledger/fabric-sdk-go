@@ -8,12 +8,11 @@ package msp
 
 import (
 	"crypto/x509"
-	"testing"
-
-	"os"
-	"strings"
-
 	"encoding/pem"
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	fabImpl "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
@@ -21,24 +20,30 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/endpoint"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab"
+	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 )
 
 const (
-	configTestFilePath               = "../core/config/testdata/config_test.yaml"
-	configEmbeddedUsersTestFilePath  = "../core/config/testdata/config_test_embedded_pems.yaml"
-	configPemTestFilePath            = "../core/config/testdata/config_test_pem.yaml"
-	configTestEntityMatchersFilePath = "../core/config/testdata/config_test_entity_matchers.yaml"
-	configType                       = "yaml"
+	configTestFile               = "config_test.yaml"
+	configEmbeddedUsersTestFile  = "config_test_embedded_pems.yaml"
+	configMSPOnly                = "config_test_msp_only.yaml"
+	configPemTestFile            = "config_test_pem.yaml"
+	configTestEntityMatchersFile = "config_test_entity_matchers.yaml"
+	configType                   = "yaml"
 )
+
+func getConfigPath() string {
+	return filepath.Join(metadata.GetProjectPath(), "pkg", "core", "config", "testdata")
+}
 
 func TestCAConfigFailsByNetworkConfig(t *testing.T) {
 
 	//Tamper 'client.network' value and use a new config to avoid conflicting with other tests
-
-	configBackends, err := config.FromFile(configTestFilePath)()
+	configPath := filepath.Join(getConfigPath(), configTestFile)
+	configBackends, err := config.FromFile(configPath)()
 	if err != nil {
 		t.Fatalf("Unexpected error reading config: %s", err)
 	}
@@ -101,7 +106,8 @@ func testCAConfigFailureScenario(sampleIdentityConfig *IdentityConfig, t *testin
 }
 
 func TestTLSCAConfigFromPems(t *testing.T) {
-	embeddedBackend, err := config.FromFile(configEmbeddedUsersTestFilePath)()
+	configPath := filepath.Join(getConfigPath(), configEmbeddedUsersTestFile)
+	embeddedBackend, err := config.FromFile(configPath)()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -153,7 +159,8 @@ func TestTLSCAConfigFromPems(t *testing.T) {
 
 func TestInitConfigFromRawWithPem(t *testing.T) {
 	// get a config byte for testing
-	cBytes, err := loadConfigBytesFromFile(t, configPemTestFilePath)
+	configPath := filepath.Join(getConfigPath(), configPemTestFile)
+	cBytes, err := loadConfigBytesFromFile(t, configPath)
 	if err != nil {
 		t.Fatalf("Failed to load sample bytes from File. Error: %s", err)
 	}
@@ -295,7 +302,8 @@ func loadConfigBytesFromFile(t *testing.T, filePath string) ([]byte, error) {
 
 func TestCAConfigCryptoFiles(t *testing.T) {
 	//Test config
-	backend, err := config.FromFile(configTestFilePath)()
+	configPath := filepath.Join(getConfigPath(), configTestFile)
+	backend, err := config.FromFile(configPath)()
 	if err != nil {
 		t.Fatal("Failed to get config backend")
 	}
@@ -325,7 +333,8 @@ func TestCAConfigCryptoFiles(t *testing.T) {
 
 func TestCAConfig(t *testing.T) {
 	//Test config
-	backend, err := config.FromFile(configTestFilePath)()
+	configPath := filepath.Join(getConfigPath(), configTestFile)
+	backend, err := config.FromFile(configPath)()
 	if err != nil {
 		t.Fatal("Failed to get config backend")
 	}
@@ -374,7 +383,8 @@ func testCAKeyStorePath(backend core.ConfigBackend, t *testing.T, identityConfig
 
 func TestCACertAndKeys(t *testing.T) {
 
-	backend, err := config.FromFile(configEmbeddedUsersTestFilePath)()
+	configPath := filepath.Join(getConfigPath(), configEmbeddedUsersTestFile)
+	backend, err := config.FromFile(configPath)()
 	if err != nil {
 		t.Fatal("Failed to get config backend")
 	}
@@ -407,7 +417,8 @@ func TestCACertAndKeys(t *testing.T) {
 
 func TestIdentityConfigWithMultipleBackends(t *testing.T) {
 
-	sampleViper := newViper(configTestEntityMatchersFilePath)
+	configPath := filepath.Join(getConfigPath(), configTestEntityMatchersFile)
+	sampleViper := newViper(configPath)
 
 	var backends []core.ConfigBackend
 	backendMap := make(map[string]interface{})
@@ -492,7 +503,8 @@ func tlsCertByBytes(bytes []byte) (*x509.Certificate, error) {
 
 func TestEntityMatchers(t *testing.T) {
 
-	backend, err := config.FromFile(configTestEntityMatchersFilePath)()
+	configPath := filepath.Join(getConfigPath(), configTestEntityMatchersFile)
+	backend, err := config.FromFile(configPath)()
 	if err != nil {
 		t.Fatal("Failed to get config backend")
 	}

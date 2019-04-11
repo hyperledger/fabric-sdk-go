@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package lookup
 
 import (
+	"path/filepath"
 	"testing"
 
 	"os"
@@ -26,7 +27,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var sampleConfigFile = "../testdata/config_test_entity_matchers.yaml"
+var sampleConfigFile = filepath.Join("..", "testdata", "config_test_entity_matchers.yaml")
 
 const orgChannelID = "orgchannel"
 

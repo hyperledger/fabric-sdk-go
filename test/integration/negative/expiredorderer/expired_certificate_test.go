@@ -34,7 +34,7 @@ const (
 	org1AdminUser    = "Admin"
 	org2AdminUser    = "Admin"
 	configFilename   = "config_test.yaml"
-	expiredCertPath  = "${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/integration/negative/testdata/ordererOrganizations/example.com/expiredtlsca/expired.pem"
+	expiredCertPath  = "${FABRIC_SDK_GO_PROJECT_PATH}/test/integration/negative/testdata/ordererOrganizations/example.com/expiredtlsca/expired.pem"
 )
 
 var logger = logging.NewLogger("test-logger")

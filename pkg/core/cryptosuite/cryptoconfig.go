@@ -8,7 +8,7 @@ package cryptosuite
 
 import (
 	"os"
-	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
@@ -113,5 +113,5 @@ func (c *Config) SecurityProviderLabel() string {
 // KeyStorePath returns the keystore path used by BCCSP
 func (c *Config) KeyStorePath() string {
 	keystorePath := pathvar.Subst(c.backend.GetString("client.credentialStore.cryptoStore.path"))
-	return path.Join(keystorePath, "keystore")
+	return filepath.Join(keystorePath, "keystore")
 }

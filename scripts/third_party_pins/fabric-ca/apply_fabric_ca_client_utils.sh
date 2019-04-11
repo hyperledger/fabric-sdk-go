@@ -101,9 +101,7 @@ FILTER_FN+=",getURL,NormalizeURL,initHTTPClient,net2LocalServerInfo,NewIdentity,
 FILTER_FN+=",handleIdemixEnroll,checkX509Enrollment,handleX509Enroll,GetCSP,NewX509Identity,net2LocalCAInfo"
 gofilter
 sed -i'' -e 's/util.GetServerPort()/\"\"/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
-sed -i'' -e '/log "github.com\// a\
-"github.com\/hyperledger\/fabric-sdk-go\/pkg\/common\/providers\/core"\
-' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e '/import (/ a\"github.com\/hyperledger\/fabric-sdk-go\/pkg\/common\/providers\/core"' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e 's/bccsp.BCCSP/core.CryptoSuite/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e 's/bccsp.Key/core.Key/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e 's/\/\/ Initialize BCCSP (the crypto layer)/c.csp = cfg.CSP/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
@@ -152,9 +150,7 @@ FILTER_FILENAME="lib/identity.go"
 FILTER_FN="newIdentity,Revoke,Post,addTokenAuthHdr,GetECert,Reenroll,Register,GetName,GetAllIdentities,GetIdentity,AddIdentity,ModifyIdentity,RemoveIdentity,Get,Put,Delete,GetStreamResponse,NewIdentity,GetAffiliation,GetAllAffiliations,AddAffiliation,ModifyAffiliation,RemoveAffiliation"
 gofilter
 sed -i'' -e 's/util.GetDefaultBCCSP()/nil/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
-sed -i'' -e '/log "github.com\// a\
-"github.com\/hyperledger\/fabric-sdk-go\/pkg\/common\/providers\/core"\
-' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e '/import (/ a\"github.com\/hyperledger\/fabric-sdk-go\/pkg\/common\/providers\/core"' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e 's/bccsp.BCCSP/core.CryptoSuite/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e 's/bccsp.Key/core.Key/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 # TODO remove below sed calls for lib/identity.go once Fabric CA v1.3 is not supported by the SDK anymore
@@ -202,6 +198,7 @@ func isCompatibleFabCA(caVersion string) bool {\
 FILTER_FILENAME="lib/clientconfig.go"
 FILTER_FN=
 gofilter
+sed -i'' -e '/import (/ a\"github.com\/hyperledger\/fabric-sdk-go\/pkg\/common\/providers\/core"' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e 's/*factory.FactoryOpts/core.CryptoSuite/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e '/core.CryptoSuite `mapstructure:"bccsp" hide:"true"`/ a\
 ServerName string           `help:"CA server name to be used in case of host name override"`\
@@ -218,9 +215,7 @@ gofilter
 FILTER_FILENAME="lib/tls/tls.go"
 FILTER_FN="GetClientTLSConfig,checkCertDates"
 gofilter
-sed -i'' -e '/log "github.com\// a\
-"github.com\/hyperledger\/fabric-sdk-go\/pkg\/common\/providers\/core"\
-' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e '/import (/ a\"github.com\/hyperledger\/fabric-sdk-go\/pkg\/common\/providers\/core"' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e 's/bccsp.BCCSP/core.CryptoSuite/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 START_LINE=`grep -n "// ServerTLSConfig defines key material for a TLS server" "${TMP_PROJECT_PATH}/${FILTER_FILENAME}" | head -n 1 | awk -F':' '{print $1}'`
 for i in {1..14}
@@ -257,9 +252,7 @@ sed -i'' -e 's/CreateToken(req \*http.Request, reqBody \[\]byte) (string, error)
 FILTER_FILENAME="lib/client/credential/x509/credential.go"
 FILTER_FN=",NewCredential,Type,Val,EnrollmentID,SetVal,Load,Store,CreateToken,RevokeSelf,getCSP"
 gofilter
-sed -i'' -e '/"encoding\/hex"/ a\
-"github.com\/hyperledger\/fabric-sdk-go\/pkg\/common\/providers\/core"\
-' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e '/import (/ a\"github.com\/hyperledger\/fabric-sdk-go\/pkg\/common\/providers\/core"' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e '/"github.com\/cloudflare/ a\
 factory "github.com\/hyperledger\/fabric-sdk-go\/internal\/github.com\/hyperledger\/fabric-ca\/sdkpatch\/cryptosuitebridge"\
 ' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
@@ -292,9 +285,7 @@ sed -i'' -e 's/return util.CreateToken(cred.getCSP(), cred.val.certBytes, cred.v
 FILTER_FILENAME="lib/client/credential/x509/signer.go"
 FILTER_FN=",NewSigner,Key,Cert,GetX509Cert,GetName,Attributes"
 gofilter
-sed -i'' -e '/"github.com\/cloudflare/ a\
-"github.com\/hyperledger\/fabric-sdk-go\/pkg\/common\/providers\/core"\
-' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e '/import (/ a\"github.com\/hyperledger\/fabric-sdk-go\/pkg\/common\/providers\/core"' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e 's/bccsp.Key/core.Key/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e 's/github.com\/hyperledger\/fabric\/common\/attrmgr/github.com\/hyperledger\/fabric\/core\/chaincode\/shim\/ext\/attrmgr/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 
@@ -304,9 +295,7 @@ gofilter
 sed -i'' -e '/_.\"time\"/d' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e '/\"github.com\/cloudflare\/cfssl\/cli\"/d' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e '/\"github.com\/cloudflare\/cfssl\/ocsp\"/d' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
-sed -i'' -e '/log "github.com\// a\
-"github.com\/hyperledger\/fabric-sdk-go\/pkg\/common\/providers\/core"\
-' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e '/import (/ a\"github.com\/hyperledger\/fabric-sdk-go\/pkg\/common\/providers\/core"' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e 's/bccsp.BCCSP/core.CryptoSuite/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e 's/bccsp.Key/core.Key/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e 's/&factory.SwOpts{}/factory.NewSwOpts()/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
@@ -358,9 +347,7 @@ FILTER_FN+=",MakeFileAbs,Marshal,StructToString,LoadX509KeyPair,CreateToken"
 FILTER_FN+=",GenECDSAToken,genECDSAToken,GetEnrollmentIDFromX509Certificate,B64Encode,B64Decode"
 FILTER_FN+=",GetMaskedURL,WriteFile,FileExists"
 gofilter
-sed -i'' -e '/log "golang.org\/x/ a\
-"github.com\/hyperledger\/fabric-sdk-go\/pkg\/common\/providers\/core"\
-' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e '/import (/ a\"github.com\/hyperledger\/fabric-sdk-go\/pkg\/common\/providers\/core"' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e '/mrand "math\// a\
 factory "github.com\/hyperledger\/fabric-sdk-go\/internal\/github.com\/hyperledger\/fabric-ca\/sdkpatch\/cryptosuitebridge"\
 ' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"

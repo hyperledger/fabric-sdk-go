@@ -15,7 +15,6 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
-	"path"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -194,7 +193,7 @@ func executeSDKSigning(t *testing.T, dsCtx *dsClientCtx, chConfigPath, user, sig
 	chCfgName := getBaseChCfgFileName(chConfigPath)
 
 	channelCfgSigSDK := createSignatureFromSDK(t, dsCtx, chConfigPath, user)
-	f, err := os.Create(path.Join(sigDir, fmt.Sprintf("%s_%s_%s_sbytes.txt.sha256", chCfgName, dsCtx.org, user)))
+	f, err := os.Create(filepath.Join(sigDir, fmt.Sprintf("%s_%s_%s_sbytes.txt.sha256", chCfgName, dsCtx.org, user)))
 	require.NoError(t, err, "Failed to create temporary file")
 	defer func() {
 		err = f.Close()
@@ -205,7 +204,7 @@ func executeSDKSigning(t *testing.T, dsCtx *dsClientCtx, chConfigPath, user, sig
 	assert.NoError(t, err, "must be able to write signature of [%s-%s] to buffer", dsCtx.org, user)
 	err = bufferedWriter.Flush()
 	assert.NoError(t, err, "must be able to flush signature header of [%s-%s] from buffer", dsCtx.org, user)
-	shf, err := os.Create(path.Join(sigDir, fmt.Sprintf("%s_%s_%s_sHeaderbytes.txt", chCfgName, dsCtx.org, user)))
+	shf, err := os.Create(filepath.Join(sigDir, fmt.Sprintf("%s_%s_%s_sHeaderbytes.txt", chCfgName, dsCtx.org, user)))
 	require.NoError(t, err, "Failed to create temporary file")
 	defer func() {
 		err = shf.Close()
@@ -414,7 +413,7 @@ func generateChConfigData(t *testing.T, dsCtx *dsClientCtx, chConfigPath, user, 
 	chCfgName := getBaseChCfgFileName(chConfigPath)
 
 	// create a temporary file and save the channel config data in that file
-	f, err := os.Create(path.Join(sigDir, fmt.Sprintf("%s_%s_%s_sbytes.txt", chCfgName, dsCtx.org, user)))
+	f, err := os.Create(filepath.Join(sigDir, fmt.Sprintf("%s_%s_%s_sbytes.txt", chCfgName, dsCtx.org, user)))
 	require.NoError(t, err, "Failed to create temporary file")
 	defer func() {
 		err = f.Close()
@@ -429,7 +428,7 @@ func generateChConfigData(t *testing.T, dsCtx *dsClientCtx, chConfigPath, user, 
 	assert.NoError(t, err, "must be able to flush buffer for signature of [%s-%s] to buffer", dsCtx.org, user)
 
 	// marshal signatureHeader struct for later use
-	shf, err := os.Create(path.Join(sigDir, fmt.Sprintf("%s_%s_%s_sHeaderbytes.txt", chCfgName, dsCtx.org, user)))
+	shf, err := os.Create(filepath.Join(sigDir, fmt.Sprintf("%s_%s_%s_sHeaderbytes.txt", chCfgName, dsCtx.org, user)))
 	require.NoError(t, err, "Failed to create temporary file")
 	defer func() {
 		err = shf.Close()
@@ -447,7 +446,7 @@ func generateChConfigData(t *testing.T, dsCtx *dsClientCtx, chConfigPath, user, 
 func generateExternalChConfigSignature(t *testing.T, org, user, chConfigPath, sigDir string) {
 	chCfgName := getBaseChCfgFileName(chConfigPath)
 
-	cmd := exec.Command(path.Join("scripts", "generate_signature.sh"), org, user, chCfgName, sigDir)
+	cmd := exec.Command(filepath.Join("scripts", "generate_signature.sh"), org, user, chCfgName, sigDir)
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 	_, err := cmd.Output()
@@ -459,12 +458,12 @@ func generateExternalChConfigSignature(t *testing.T, org, user, chConfigPath, si
 func loadExternalSignature(t *testing.T, org, chConfigPath, user, sigDir string) *common.ConfigSignature {
 	chCfgName := getBaseChCfgFileName(chConfigPath)
 
-	fName := path.Join(sigDir, fmt.Sprintf("%s_%s_%s_sbytes.txt.sha256", chCfgName, org, user))
+	fName := filepath.Join(sigDir, fmt.Sprintf("%s_%s_%s_sbytes.txt.sha256", chCfgName, org, user))
 	sig, err := ioutil.ReadFile(fName)
 	require.NoError(t, err, "Failed to read signature data with ioutil.ReadFile()")
 	//t.Logf("Signature bytes read for %s, %s, %s: '%s'", org, chCfgName, user, sig)
 
-	fName = path.Join(sigDir, fmt.Sprintf("%s_%s_%s_sHeaderbytes.txt", chCfgName, org, user))
+	fName = filepath.Join(sigDir, fmt.Sprintf("%s_%s_%s_sHeaderbytes.txt", chCfgName, org, user))
 	sigHeader, err := ioutil.ReadFile(fName)
 	require.NoError(t, err, "Failed to read signature header data")
 
@@ -511,9 +510,9 @@ client:
     # [Optional]. Client key and cert for TLS handshake with peers and orderers
     client:
       key:
-        path: "${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/tls.example.com/users/User1@tls.example.com/tls/client.key"
+        path: "${FABRIC_SDK_GO_PROJECT_PATH}/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/tls.example.com/users/User1@tls.example.com/tls/client.key"
       cert:
-        path: "${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/tls.example.com/users/User1@tls.example.com/tls/client.crt"
+        path: "${FABRIC_SDK_GO_PROJECT_PATH}/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/tls.example.com/users/User1@tls.example.com/tls/client.crt"
 `
 
 // DynDiscoveryProviderFactory is configured with dynamic (endorser) selection provider
@@ -545,7 +544,7 @@ type chanProvider struct {
 
 func loadOrgUserPrivateKey(t *testing.T, org, user string) interface{} {
 	o := strings.ToLower(org)
-	pathToKey := path.Join("peerOrganizations", fmt.Sprintf("%s.example.com", o), "users", fmt.Sprintf("%s@%s.example.com", user, o), "msp", "keystore")
+	pathToKey := filepath.Join("peerOrganizations", fmt.Sprintf("%s.example.com", o), "users", fmt.Sprintf("%s@%s.example.com", user, o), "msp", "keystore")
 	root := integration.GetCryptoConfigPath(pathToKey)
 	var parentKey string
 	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
@@ -572,7 +571,7 @@ func loadPrivateKey(t *testing.T, path string) interface{} {
 }
 
 func isOpensslAvailable(t *testing.T) bool {
-	cmd := exec.Command(path.Join(string(os.PathSeparator), "bin", "sh"), "-c", "command -v openssl")
+	cmd := exec.Command(filepath.Join(string(os.PathSeparator), "bin", "sh"), "-c", "command -v openssl")
 	if err := cmd.Run(); err != nil {
 		t.Logf("Checking if openssl command is available failed (command -v openssl) [error: %s]. Make sure openssl is installed. Skipping External Channel Config Signing with openssl tests.", err)
 		return false

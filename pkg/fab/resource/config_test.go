@@ -8,14 +8,14 @@ package resource
 
 import (
 	"io/ioutil"
-	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 )
 
 func TestExtractChannelConfig(t *testing.T) {
-	configTx, err := ioutil.ReadFile(path.Join("../../../", metadata.ChannelConfigPath, "mychannel.tx"))
+	configTx, err := ioutil.ReadFile(filepath.Join(metadata.GetProjectPath(), metadata.ChannelConfigPath, "mychannel.tx"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -29,7 +29,7 @@ func TestExtractChannelConfig(t *testing.T) {
 func TestCreateConfigSignature(t *testing.T) {
 	ctx := setupContext()
 
-	configTx, err := ioutil.ReadFile(path.Join("../../../", metadata.ChannelConfigPath, "mychannel.tx"))
+	configTx, err := ioutil.ReadFile(filepath.Join(metadata.GetProjectPath(), metadata.ChannelConfigPath, "mychannel.tx"))
 	if err != nil {
 		t.Fatal(err)
 	}

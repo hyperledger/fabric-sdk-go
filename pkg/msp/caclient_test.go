@@ -7,10 +7,10 @@ SPDX-License-Identifier: Apache-2.0
 package msp
 
 import (
-	"testing"
-
 	"fmt"
+	"path/filepath"
 	"strings"
+	"testing"
 
 	"github.com/golang/mock/gomock"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
@@ -702,6 +702,7 @@ func getCustomBackend(configPath string) ([]core.ConfigBackend, error) {
 
 func getInvalidURLBackend() ([]core.ConfigBackend, error) {
 
+	configPath := filepath.Join(getConfigPath(), configTestFile)
 	mockConfigBackend, err := getCustomBackend(configPath)
 	if err != nil {
 		return nil, err
@@ -735,6 +736,7 @@ func getInvalidURLBackend() ([]core.ConfigBackend, error) {
 
 func getNoRegistrarBackend() ([]core.ConfigBackend, error) {
 
+	configPath := filepath.Join(getConfigPath(), configTestFile)
 	mockConfigBackend, err := getCustomBackend(configPath)
 	if err != nil {
 		return nil, err
@@ -768,6 +770,7 @@ func getNoRegistrarBackend() ([]core.ConfigBackend, error) {
 
 func getNoCAConfigBackend() ([]core.ConfigBackend, error) {
 
+	configPath := filepath.Join(getConfigPath(), configTestFile)
 	mockConfigBackend, err := getCustomBackend(configPath)
 	if err != nil {
 		return nil, err
@@ -800,6 +803,7 @@ func getNoCAConfigBackend() ([]core.ConfigBackend, error) {
 
 func getEmbeddedRegistrarConfigBackend() ([]core.ConfigBackend, error) {
 
+	configPath := filepath.Join(getConfigPath(), configTestFile)
 	mockConfigBackend, err := getCustomBackend(configPath)
 	if err != nil {
 		return nil, err

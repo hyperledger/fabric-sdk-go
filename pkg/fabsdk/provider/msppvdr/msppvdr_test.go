@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package msppvdr
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
@@ -15,6 +16,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defcore"
 	"github.com/hyperledger/fabric-sdk-go/pkg/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
+	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -22,7 +24,8 @@ func TestCreateMSPProvider(t *testing.T) {
 
 	coreFactory := defcore.NewProviderFactory()
 
-	configBackend, err := config.FromFile("../../../../test/fixtures/config/config_test.yaml")()
+	configPath := filepath.Join(metadata.GetProjectPath(), metadata.SDKConfigPath, "config_test.yaml")
+	configBackend, err := config.FromFile(configPath)()
 	if err != nil {
 		t.Fatalf(err.Error())
 	}

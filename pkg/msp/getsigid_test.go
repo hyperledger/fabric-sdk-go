@@ -9,6 +9,7 @@ package msp
 import (
 	"fmt"
 	"math/rand"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"testing"
@@ -99,7 +100,8 @@ func TestGetSigningIdentity(t *testing.T) {
 }
 
 func getConfigs(t *testing.T) (core.CryptoSuiteConfig, providersFab.EndpointConfig, msp.IdentityConfig, providersFab.OrganizationConfig) {
-	configBackend, err := config.FromFile("../../pkg/core/config/testdata/config_test.yaml")()
+	configPath := filepath.Join(getConfigPath(), configTestFile)
+	configBackend, err := config.FromFile(configPath)()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -166,7 +168,8 @@ func checkSigningIdentity(mgr msp.IdentityManager, user string) error {
 
 func TestGetSigningIdentityInvalidOrg(t *testing.T) {
 
-	configBackend, err := config.FromFile("../../pkg/core/config/testdata/config_test.yaml")()
+	configPath := filepath.Join(getConfigPath(), configTestFile)
+	configBackend, err := config.FromFile(configPath)()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -192,7 +195,8 @@ func TestGetSigningIdentityInvalidOrg(t *testing.T) {
 
 func TestGetSigningIdentityFromEmbeddedCryptoConfig(t *testing.T) {
 
-	configBackend, err := config.FromFile("../../pkg/core/config/testdata/config_test_embedded_pems.yaml")()
+	configPath := filepath.Join(getConfigPath(), configEmbeddedUsersTestFile)
+	configBackend, err := config.FromFile(configPath)()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -219,7 +223,8 @@ func TestGetSigningIdentityFromEmbeddedCryptoConfig(t *testing.T) {
 
 func TestGetSigningIdentityFromMSPDir(t *testing.T) {
 
-	configBackend, err := config.FromFile("../../pkg/core/config/testdata/config_test_msp_only.yaml")()
+	configPath := filepath.Join(getConfigPath(), configMSPOnly)
+	configBackend, err := config.FromFile(configPath)()
 	if err != nil {
 		t.Fatal(err)
 	}

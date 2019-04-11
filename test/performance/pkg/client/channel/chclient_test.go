@@ -32,11 +32,11 @@ import (
 
 const (
 	channelID         = "myChannel"
-	peerTLSServerCert = "${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/fabric/v1/crypto-config/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/server.crt"
-	peerTLSServerKey  = "${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/fabric/v1/crypto-config/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/server.key"
+	peerTLSServerCert = "${FABRIC_SDK_GO_PROJECT_PATH}/test/fixtures/fabric/v1/crypto-config/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/server.crt"
+	peerTLSServerKey  = "${FABRIC_SDK_GO_PROJECT_PATH}/test/fixtures/fabric/v1/crypto-config/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/server.key"
 
-	ordererTLSServerCert = "${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/fabric/v1/crypto-config/ordererOrganizations/example.com/orderers/orderer.example.com/tls/server.crt"
-	ordererTLSServerKey  = "${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/fabric/v1/crypto-config/ordererOrganizations/example.com/orderers/orderer.example.com/tls/server.key"
+	ordererTLSServerCert = "${FABRIC_SDK_GO_PROJECT_PATH}/test/fixtures/fabric/v1/crypto-config/ordererOrganizations/example.com/orderers/orderer.example.com/tls/server.crt"
+	ordererTLSServerKey  = "${FABRIC_SDK_GO_PROJECT_PATH}/test/fixtures/fabric/v1/crypto-config/ordererOrganizations/example.com/orderers/orderer.example.com/tls/server.key"
 
 	testhost          = "peer0.org1.example.com"
 	testport          = 7051

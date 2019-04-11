@@ -15,7 +15,7 @@ import (
 	"go/parser"
 	"go/token"
 	"os"
-	"path"
+	"path/filepath"
 	"strings"
 )
 
@@ -32,7 +32,7 @@ func main() {
 	flag.Parse()
 
 	if len(*filename) == 0 || len(*filtersFlag) == 0 {
-		fmt.Printf("Usage of %s:\n", path.Base(os.Args[0]))
+		fmt.Printf("Usage of %s:\n", filepath.Base(os.Args[0]))
 		flag.PrintDefaults()
 		return
 	}

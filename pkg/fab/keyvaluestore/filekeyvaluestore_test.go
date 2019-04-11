@@ -11,7 +11,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
@@ -30,7 +30,7 @@ func TestFKVSWithCustomKeySerializer(t *testing.T) {
 		if !ok {
 			return "", errors.New("converting key to string failed")
 		}
-		return path.Join(storePath, fmt.Sprintf("mypath/%s/valuefile", keyString)), nil
+		return filepath.Join(storePath, fmt.Sprintf("mypath/%s/valuefile", keyString)), nil
 	}
 	testFKVS(t, keySerializer)
 }

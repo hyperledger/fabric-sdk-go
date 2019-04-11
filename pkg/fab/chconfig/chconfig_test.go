@@ -7,6 +7,7 @@ package chconfig
 
 import (
 	reqContext "context"
+	"path/filepath"
 	"testing"
 
 	"time"
@@ -18,6 +19,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/orderer"
 	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
+	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 	"github.com/pkg/errors"
 
 	"strings"
@@ -30,8 +32,8 @@ import (
 )
 
 const (
-	channelID          = "testChannel"
-	configTestFilePath = "../../core/config/testdata/config_test.yaml"
+	channelID      = "testChannel"
+	configTestFile = "config_test.yaml"
 )
 
 func TestChannelConfigWithPeer(t *testing.T) {
@@ -276,7 +278,8 @@ func testResolveOptsDefaultValues(t *testing.T, channelID string) {
 	user := mspmocks.NewMockSigningIdentity("test", "test")
 	ctx := mocks.NewMockContext(user)
 
-	backends, err := config.FromFile(configTestFilePath)()
+	configPath := filepath.Join(metadata.GetProjectPath(), "pkg", "core", "config", "testdata", configTestFile)
+	backends, err := config.FromFile(configPath)()
 	if err != nil {
 		t.Fatal("supposed to get valid backends")
 	}

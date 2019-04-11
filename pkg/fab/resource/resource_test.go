@@ -10,7 +10,7 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -33,7 +33,7 @@ const testAddress = "127.0.0.1:0"
 func TestSignChannelConfig(t *testing.T) {
 	ctx := setupContext()
 
-	configTx, err := ioutil.ReadFile(path.Join("../../../", metadata.ChannelConfigPath, "mychannel.tx"))
+	configTx, err := ioutil.ReadFile(filepath.Join(metadata.GetProjectPath(), metadata.ChannelConfigPath, "mychannel.tx"))
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -52,7 +52,7 @@ func TestSignChannelConfig(t *testing.T) {
 func TestCreateChannel(t *testing.T) {
 	ctx := setupContext()
 
-	configTx, err := ioutil.ReadFile(path.Join("../../../", metadata.ChannelConfigPath, "mychannel.tx"))
+	configTx, err := ioutil.ReadFile(filepath.Join(metadata.GetProjectPath(), metadata.ChannelConfigPath, "mychannel.tx"))
 	if err != nil {
 		t.Fatalf(err.Error())
 	}

@@ -9,19 +9,22 @@ SPDX-License-Identifier: Apache-2.0
 package fabsdk
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
 	configImpl "github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/logging/api"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/logging/modlog"
+	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 )
 
 func TestDefLoggerFactory(t *testing.T) {
 	// Cleanup logging singleton
 	logging.UnsafeReset()
 
-	_, err := New(configImpl.FromFile(sdkConfigFile))
+	configPath := filepath.Join(metadata.GetProjectPath(), metadata.SDKConfigPath, sdkConfigFile)
+	_, err := New(configImpl.FromFile(configPath))
 	if err != nil {
 		t.Fatalf("Error initializing SDK: %s", err)
 	}
@@ -53,7 +56,8 @@ func TestOptLoggerFactory(t *testing.T) {
 
 	lf := NewMockLoggerFactory()
 
-	_, err := New(configImpl.FromFile(sdkConfigFile),
+	configPath := filepath.Join(metadata.GetProjectPath(), metadata.SDKConfigPath, sdkConfigFile)
+	_, err := New(configImpl.FromFile(configPath),
 		WithLoggerPkg(lf))
 	if err != nil {
 		t.Fatalf("Error initializing SDK: %s", err)

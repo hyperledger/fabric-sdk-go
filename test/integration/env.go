@@ -15,11 +15,11 @@ import (
 )
 
 const (
-	configPath = "${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/config/config_test.yaml"
+	configPath = "${FABRIC_SDK_GO_PROJECT_PATH}/test/fixtures/config/config_test.yaml"
 	//entityMatcherLocal config file containing entity matchers for local test
-	entityMatcherLocal = "${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test//fixtures/config/overrides/local_entity_matchers.yaml"
+	entityMatcherLocal = "${FABRIC_SDK_GO_PROJECT_PATH}/test//fixtures/config/overrides/local_entity_matchers.yaml"
 	//ConfigPathSingleOrg single org version of 'configPath' for testing discovery
-	ConfigPathSingleOrg = "${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/test/fixtures/config/config_e2e_single_org.yaml"
+	ConfigPathSingleOrg = "${FABRIC_SDK_GO_PROJECT_PATH}/test/fixtures/config/config_e2e_single_org.yaml"
 )
 
 // ConfigBackend contains config backend for integration tests

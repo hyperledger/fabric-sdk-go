@@ -9,7 +9,7 @@ package keyvaluestore
 import (
 	"io/ioutil"
 	"os"
-	"path"
+	"path/filepath"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/pkg/errors"
@@ -89,7 +89,7 @@ func New(opts *FileKeyValueStoreOptions) (*FileKeyValueStore, error) {
 			if !ok {
 				return "", errors.New("converting key to string failed")
 			}
-			return path.Join(opts.Path, keyString), nil
+			return filepath.Join(opts.Path, keyString), nil
 		}
 	}
 	if opts.Marshaller == nil {
@@ -142,7 +142,7 @@ func (fkvs *FileKeyValueStore) Store(key interface{}, value interface{}) error {
 	if err != nil {
 		return err
 	}
-	err = os.MkdirAll(path.Dir(file), newDirMode)
+	err = os.MkdirAll(filepath.Dir(file), newDirMode)
 	if err != nil {
 		return err
 	}

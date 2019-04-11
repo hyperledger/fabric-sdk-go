@@ -69,15 +69,6 @@ func TestNewPeerEndorserMutualTLS(t *testing.T) {
 
 	config := mockfab.DefaultMockConfig(mockCtrl)
 
-	//mutualTLSCerts := apiconfig.MutualTLSConfig{
-	//	Client: struct {
-	//		KeyPem   string
-	//		Keyfile  string
-	//		CertPem  string
-	//		Certfile string
-	//	}{KeyPem: "", Keyfile: "../../../test/fixtures/config/mutual_tls/client_sdk_go-key.pem", CertPem: "", Certfile: "../../../test/fixtures/config/mutual_tls/client_sdk_go.pem"},
-	//}
-
 	url := "grpcs://0.0.0.0:1234"
 	conn, err := newPeerEndorser(getPeerEndorserRequest(url, mockfab.GoodCert, "", config, kap, false, false))
 

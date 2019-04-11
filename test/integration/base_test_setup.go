@@ -8,9 +8,7 @@ package integration
 
 import (
 	"fmt"
-	"go/build"
 	"os"
-	"path"
 	"path/filepath"
 	"testing"
 
@@ -167,39 +165,30 @@ func (setup *BaseSetupImpl) Initialize(sdk *fabsdk.FabricSDK) error {
 // GetDeployPath returns the path to the chaincode fixtures
 func GetDeployPath() string {
 	const ccPath = "test/fixtures/testdata"
-	return path.Join(goPath(), "src", metadata.Project, ccPath)
+	return filepath.Join(metadata.GetProjectPath(), ccPath)
 }
 
 // GetChannelConfigPath returns the path to the named channel config file
 func GetChannelConfigPath(filename string) string {
-	return path.Join(goPath(), "src", metadata.Project, metadata.ChannelConfigPath, filename)
+	return filepath.Join(metadata.GetProjectPath(), metadata.ChannelConfigPath, filename)
 }
 
 // GetConfigPath returns the path to the named config fixture file
 func GetConfigPath(filename string) string {
 	const configPath = "test/fixtures/config"
-	return path.Join(goPath(), "src", metadata.Project, configPath, filename)
+	return filepath.Join(metadata.GetProjectPath(), configPath, filename)
 }
 
 // GetConfigOverridesPath returns the path to the named config override fixture file
 func GetConfigOverridesPath(filename string) string {
 	const configPath = "test/fixtures/config"
-	return path.Join(goPath(), "src", metadata.Project, configPath, "overrides", filename)
+	return filepath.Join(metadata.GetProjectPath(), configPath, "overrides", filename)
 }
 
 // GetCryptoConfigPath returns the path to the named crypto-config override fixture file
 func GetCryptoConfigPath(filename string) string {
 	const configPath = "test/fixtures/fabric/v1/crypto-config"
-	return path.Join(goPath(), "src", metadata.Project, configPath, filename)
-}
-
-// goPath returns the current GOPATH. If the system
-// has multiple GOPATHs then the first is used.
-func goPath() string {
-	gpDefault := build.Default.GOPATH
-	gps := filepath.SplitList(gpDefault)
-
-	return gps[0]
+	return filepath.Join(metadata.GetProjectPath(), configPath, filename)
 }
 
 // OrgContext provides SDK client context for a given org

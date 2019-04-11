@@ -8,7 +8,7 @@ package msp
 
 import (
 	"fmt"
-	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
@@ -19,7 +19,7 @@ import (
 
 // NewFileCertStore ...
 func NewFileCertStore(cryptoConfigMSPPath string) (core.KVStore, error) {
-	_, orgName := path.Split(path.Dir(path.Dir(path.Dir(cryptoConfigMSPPath))))
+	_, orgName := filepath.Split(filepath.Dir(filepath.Dir(filepath.Dir(cryptoConfigMSPPath))))
 	opts := &keyvaluestore.FileKeyValueStoreOptions{
 		Path: cryptoConfigMSPPath,
 		KeySerializer: func(key interface{}) (string, error) {
@@ -33,8 +33,8 @@ func NewFileCertStore(cryptoConfigMSPPath string) (core.KVStore, error) {
 
 			// TODO: refactor to case insensitive or remove eventually.
 			r := strings.NewReplacer("{userName}", ck.ID, "{username}", ck.ID)
-			certDir := path.Join(r.Replace(cryptoConfigMSPPath), "signcerts")
-			return path.Join(certDir, fmt.Sprintf("%s@%s-cert.pem", ck.ID, orgName)), nil
+			certDir := filepath.Join(r.Replace(cryptoConfigMSPPath), "signcerts")
+			return filepath.Join(certDir, fmt.Sprintf("%s@%s-cert.pem", ck.ID, orgName)), nil
 		},
 	}
 	return keyvaluestore.New(opts)

@@ -7,9 +7,11 @@ SPDX-License-Identifier: Apache-2.0
 package fab
 
 import (
+	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
@@ -18,12 +20,13 @@ import (
 )
 
 const (
-	sampleMatchersOverrideAll      = "../core/config/testdata/matcher-samples/matchers_sample1.yaml"
-	sampleMatchersOverridePartial  = "../core/config/testdata/matcher-samples/matchers_sample2.yaml"
-	sampleMatchersURLMapping       = "../core/config/testdata/matcher-samples/matchers_sample3.yaml"
-	sampleMatchersHostNameOverride = "../core/config/testdata/matcher-samples/matchers_sample4.yaml"
-	sampleMatchersDefaultConfigs   = "../core/config/testdata/matcher-samples/matchers_sample5.yaml"
-	sampleMatchersIgnoreEndpoint   = "../core/config/testdata/matcher-samples/matchers_sample6.yaml"
+	sampleMatchersOverrideAll      = "matchers_sample1.yaml"
+	sampleMatchersOverridePartial  = "matchers_sample2.yaml"
+	sampleMatchersURLMapping       = "matchers_sample3.yaml"
+	sampleMatchersHostNameOverride = "matchers_sample4.yaml"
+	sampleMatchersDefaultConfigs   = "matchers_sample5.yaml"
+	sampleMatchersIgnoreEndpoint   = "matchers_sample6.yaml"
+	matchersDir                    = "matcher-samples"
 
 	actualPeerURL                 = "peer0.org1.example.com:7051"
 	actualPeerHostNameOverride    = "peer0.org1.example.com"
@@ -38,13 +41,19 @@ const (
 	testChannelID = "matcherchannel"
 )
 
+func getConfigPath() string {
+	return filepath.Join(metadata.GetProjectPath(), "pkg", "core", "config", "testdata")
+}
+
 //TestAllOptionsOverride
 //Scenario: Actual peer/orderer config are overridden using entity matchers.
 // Endpoint config matches given URL/name with all available entity matcher patterns first to get the
 //overrided values, rest of the options are fetched from mapped host.
 //If no entity matcher provided, then it falls back to exact match in endpoint configuration.
 func TestAllOptionsOverride(t *testing.T) {
-	backends, err := getBackendsFromFiles(sampleMatchersOverrideAll, configTestFilePath)
+	matcherPath := filepath.Join(getConfigPath(), matchersDir, sampleMatchersOverrideAll)
+	configPath := filepath.Join(getConfigPath(), configTestFile)
+	backends, err := getBackendsFromFiles(matcherPath, configPath)
 	assert.Nil(t, err, "not supposed to get error")
 	assert.Equal(t, 2, len(backends))
 
@@ -90,7 +99,9 @@ func TestAllOptionsOverride(t *testing.T) {
 //Scenario: Entity matchers overriding only few options (URLs) in Peer/Orderer config. Options which are not overridden
 // are fetched from mapped host entity.
 func TestPartialOptionsOverride(t *testing.T) {
-	backends, err := getBackendsFromFiles(sampleMatchersOverridePartial, configTestFilePath)
+	configPath := filepath.Join(getConfigPath(), configTestFile)
+	matcherPath := filepath.Join(getConfigPath(), matchersDir, sampleMatchersOverridePartial)
+	backends, err := getBackendsFromFiles(matcherPath, configPath)
 	assert.Nil(t, err, "not supposed to get error")
 	assert.Equal(t, 2, len(backends))
 
@@ -132,7 +143,9 @@ func TestPartialOptionsOverride(t *testing.T) {
 //Scenario: Entity matchers overriding only few options(hostname overrides) in Peer/Orderer config. Options which are not overridden
 // are fetched from mapped host entity.
 func TestOnlyHostNameOptionsOverride(t *testing.T) {
-	backends, err := getBackendsFromFiles(sampleMatchersHostNameOverride, configTestFilePath)
+	configPath := filepath.Join(getConfigPath(), configTestFile)
+	matcherPath := filepath.Join(getConfigPath(), matchersDir, sampleMatchersHostNameOverride)
+	backends, err := getBackendsFromFiles(matcherPath, configPath)
 	assert.Nil(t, err, "not supposed to get error")
 	assert.Equal(t, 2, len(backends))
 
@@ -173,7 +186,9 @@ func TestOnlyHostNameOptionsOverride(t *testing.T) {
 //TestURLMapping
 //Scenario:  A URL based entity pattern is used to return config entities with customized URLs, host overrides etc
 func TestURLMapping(t *testing.T) {
-	backends, err := getBackendsFromFiles(sampleMatchersURLMapping, configTestFilePath)
+	configPath := filepath.Join(getConfigPath(), configTestFile)
+	matcherPath := filepath.Join(getConfigPath(), matchersDir, sampleMatchersURLMapping)
+	backends, err := getBackendsFromFiles(matcherPath, configPath)
 	assert.Nil(t, err, "not supposed to get error")
 	assert.Equal(t, 2, len(backends))
 
@@ -218,7 +233,9 @@ func TestURLMapping(t *testing.T) {
 }
 
 func TestPeerMatchersWithDefaults(t *testing.T) {
-	backends, err := getBackendsFromFiles(sampleMatchersDefaultConfigs, configTestFilePath)
+	configPath := filepath.Join(getConfigPath(), configTestFile)
+	matcherPath := filepath.Join(getConfigPath(), matchersDir, sampleMatchersDefaultConfigs)
+	backends, err := getBackendsFromFiles(matcherPath, configPath)
 	assert.Nil(t, err, "not supposed to get error")
 	assert.Equal(t, 2, len(backends))
 
@@ -263,7 +280,9 @@ func TestPeerMatchersWithDefaults(t *testing.T) {
 }
 
 func TestOrdererMatchersWithDefaults(t *testing.T) {
-	backends, err := getBackendsFromFiles(sampleMatchersDefaultConfigs, configTestFilePath)
+	configPath := filepath.Join(getConfigPath(), configTestFile)
+	matcherPath := filepath.Join(getConfigPath(), matchersDir, sampleMatchersDefaultConfigs)
+	backends, err := getBackendsFromFiles(matcherPath, configPath)
 	assert.Nil(t, err, "not supposed to get error")
 	assert.Equal(t, 2, len(backends))
 
@@ -346,7 +365,9 @@ func getBackendsFromFiles(files ...string) ([]core.ConfigBackend, error) {
 
 //TestDefaultPeerForNonExistingURL tests default peerConfig result for search by URL scenario
 func TestDefaultPeerForNonExistingURL(t *testing.T) {
-	backends, err := getBackendsFromFiles(sampleMatchersDefaultConfigs, configTestFilePath)
+	configPath := filepath.Join(getConfigPath(), configTestFile)
+	matcherPath := filepath.Join(getConfigPath(), matchersDir, sampleMatchersDefaultConfigs)
+	backends, err := getBackendsFromFiles(matcherPath, configPath)
 	assert.Nil(t, err, "not supposed to get error")
 	assert.Equal(t, 2, len(backends))
 
@@ -386,7 +407,9 @@ func TestDefaultPeerForNonExistingURL(t *testing.T) {
 
 //TestDefaultOrdererForNonExistingURL tests default ordererConfig result for search by URL scenario
 func TestDefaultOrdererForNonExistingURL(t *testing.T) {
-	backends, err := getBackendsFromFiles(sampleMatchersDefaultConfigs, configTestFilePath)
+	configPath := filepath.Join(getConfigPath(), configTestFile)
+	matcherPath := filepath.Join(getConfigPath(), matchersDir, sampleMatchersDefaultConfigs)
+	backends, err := getBackendsFromFiles(matcherPath, configPath)
 	assert.Nil(t, err, "not supposed to get error")
 	assert.Equal(t, 2, len(backends))
 
@@ -437,7 +460,9 @@ func TestDefaultOrdererForNonExistingURL(t *testing.T) {
 func TestMatchersIgnoreEndpoint(t *testing.T) {
 
 	//prepare backends for test
-	backends, err := getBackendsFromFiles(sampleMatchersIgnoreEndpoint, configTestFilePath)
+	configPath := filepath.Join(getConfigPath(), configTestFile)
+	matcherPath := filepath.Join(getConfigPath(), matchersDir, sampleMatchersIgnoreEndpoint)
+	backends, err := getBackendsFromFiles(matcherPath, configPath)
 	assert.Nil(t, err, "not supposed to get error")
 	assert.Equal(t, 2, len(backends))
 

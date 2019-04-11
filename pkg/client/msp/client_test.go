@@ -12,6 +12,7 @@ import (
 	"math/rand"
 	"net"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"testing"
@@ -27,13 +28,14 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	mspImpl "github.com/hyperledger/fabric-sdk-go/pkg/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
+	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 const (
 	caServerURLListen = "http://localhost:0"
-	configPath        = "../../core/config/testdata/config_test.yaml"
+	configFile        = "config_test.yaml"
 )
 
 var caServerURL string
@@ -211,6 +213,7 @@ func TestMSPWithAttributeRequests(t *testing.T) {
 
 func TestWithNonExistentOrganization(t *testing.T) {
 	// Instantiate the SDK
+	configPath := filepath.Join(metadata.GetProjectPath(), metadata.SDKConfigPath, configFile)
 	sdk, err := fabsdk.New(config.FromFile(configPath))
 	if err != nil {
 		t.Fatalf("SDK init failed: %s", err)
@@ -466,6 +469,7 @@ func (f *testFixture) setup() *fabsdk.FabricSDK {
 		caServerURL = "http://" + lis.Addr().String()
 	}
 
+	configPath := filepath.Join(metadata.GetProjectPath(), metadata.SDKConfigPath, configFile)
 	backend, err := config.FromFile(configPath)()
 	if err != nil {
 		panic(err)

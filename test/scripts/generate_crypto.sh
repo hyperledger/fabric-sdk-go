@@ -6,7 +6,7 @@
 #
 
 CRYPTOGEN_CMD="${CRYPTOGEN_CMD:-cryptogen}"
-FIXTURES_PATH="${FIXTURES_PATH:-/opt/gopath/src/github.com/hyperledger/fabric-sdk-go/test/fixtures}"
+FIXTURES_PATH="${FIXTURES_PATH:-/opt/workspace/fabric-sdk-go/test/fixtures}"
 CONFIG_DIR="${CONFIG_DIR:-config}"
 
 if [ -z "$FABRIC_VERSION_DIR" ]; then

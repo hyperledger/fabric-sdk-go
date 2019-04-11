@@ -7,14 +7,18 @@ SPDX-License-Identifier: Apache-2.0
 package staticdiscovery
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	fabImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
+	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 	"github.com/stretchr/testify/assert"
 )
+
+const configFile = "config_test.yaml"
 
 func TestStaticDiscovery(t *testing.T) {
 
@@ -45,7 +49,8 @@ func TestStaticDiscoveryWhenChannelIsEmpty(t *testing.T) {
 }
 
 func TestStaticLocalDiscovery(t *testing.T) {
-	configBackend, err := config.FromFile("../../../../../test/fixtures/config/config_test.yaml")()
+	configPath := filepath.Join(metadata.GetProjectPath(), metadata.SDKConfigPath, configFile)
+	configBackend, err := config.FromFile(configPath)()
 	assert.NoError(t, err)
 
 	config1, err := fabImpl.ConfigFromBackend(configBackend...)

@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package defmsp
 
 import (
+	"path/filepath"
 	"testing"
 
 	"reflect"
@@ -20,6 +21,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defcore"
 	mspimpl "github.com/hyperledger/fabric-sdk-go/pkg/msp"
+	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -105,7 +107,8 @@ func TestCreateIdentityManager(t *testing.T) {
 
 	coreFactory := defcore.NewProviderFactory()
 
-	configBackend, err := config.FromFile("../../../../test/fixtures/config/config_test.yaml")()
+	configPath := filepath.Join(metadata.GetProjectPath(), metadata.SDKConfigPath, "config_test.yaml")
+	configBackend, err := config.FromFile(configPath)()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -154,7 +157,8 @@ func TestCreateIdentityManager(t *testing.T) {
 
 func TestCreateUserStoreWithoutCredentialStorePath(t *testing.T) {
 
-	configBackend, err := config.FromFile("../../../core/config/testdata/config_test_embedded_pems.yaml")()
+	configPath := filepath.Join(metadata.GetProjectPath(), "pkg", "core", "config", "testdata", "config_test_embedded_pems.yaml")
+	configBackend, err := config.FromFile(configPath)()
 	if err != nil {
 		t.Fatal(err)
 	}

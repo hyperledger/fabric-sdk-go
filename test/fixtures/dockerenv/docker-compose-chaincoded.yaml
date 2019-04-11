@@ -28,14 +28,15 @@ services:
       - DOCKER_HOST=http://dockerd.example.com:2375
       - CHAINCODED_VERBOSE
       - CORE_CHAINCODE_LOGGING_LEVEL
-      - GO111MODULE
+      - CHAINCODE_PATH=/opt/chaincodes
+      - CHAINCODED_PATH=/opt/chaincoded
     volumes:
       - ${GOPATH}/pkg/mod:/opt/gopath/pkg/mod
-      - ../../../scripts/_go/src/chaincoded:/opt/gopath/src/chaincoded
-      - ../../../:/opt/gopath/src/github.com/hyperledger/fabric-sdk-go
-      - ../../../test/fixtures/testdata/src/github.com/example_cc:/opt/gopath/src/github.com/example_cc
-      - ../../../test/fixtures/testdata/src/github.com/example_pvt_cc:/opt/gopath/src/github.com/example_pvt_cc
-    command: /opt/gopath/src/github.com/hyperledger/fabric-sdk-go/test/scripts/chaincoded.sh
+      - ../../../test/scripts:/opt/scripts
+      - ../../../scripts/_go/src/chaincoded:/opt/chaincoded
+      - ../../../test/fixtures/testdata/src/github.com/example_cc:/opt/chaincodes/github.com/example_cc
+      - ../../../test/fixtures/testdata/src/github.com/example_pvt_cc:/opt/chaincodes/github.com/example_pvt_cc
+    command: /opt/scripts/chaincoded.sh
     #comment out logging.driver in order to render the debug logs
     #logging:
     #  driver: none

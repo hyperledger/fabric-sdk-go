@@ -11,7 +11,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
@@ -19,7 +19,7 @@ import (
 )
 
 var storePathRoot = "/tmp/testcertfileuserstore"
-var storePath = path.Join(storePathRoot, "-certs")
+var storePath = filepath.Join(storePathRoot, "-certs")
 
 var testCert1 = `-----BEGIN CERTIFICATE-----
 MIICGTCCAcCgAwIBAgIRALR/1GXtEud5GQL2CZykkOkwCgYIKoZIzj0EAwIwczEL
@@ -142,7 +142,7 @@ func checkStoreValue(store *CertFileUserStore, user *msp.UserData, expected []by
 	if err = compare(v.EnrollmentCertificate, expected); err != nil {
 		return err
 	}
-	file := path.Join(storePath, storeKey)
+	file := filepath.Join(storePath, storeKey)
 	if err != nil {
 		return err
 	}

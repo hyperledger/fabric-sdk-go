@@ -110,7 +110,7 @@ orderers:
 
     tlsCACerts:
       # Certificate location absolute path
-      path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/pkg/core/config/testdata/certs/ca.crt
+      path: ${FABRIC_SDK_GO_PROJECT_PATH}/pkg/core/config/testdata/certs/ca.crt
 
   orderer.example.com:
     url: orderer.example.com:7050
@@ -143,7 +143,7 @@ peers:
 
     tlsCACerts:
       # Certificate location absolute path
-      path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/org1.example.com/tlsca/tlsca.org1.example.com-cert.pem
+      path: ${FABRIC_SDK_GO_PROJECT_PATH}/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/org1.example.com/tlsca/tlsca.org1.example.com-cert.pem
 
   peer0.org1.example.com:
     # this URL is used to send endorsement and query requests
@@ -183,13 +183,13 @@ certificateAuthorities:
     url: https://ca.org1.example.com:7054
     tlsCACerts:
       # Comma-Separated list of paths
-      path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/pkg/core/config/testdata/certs/ca.crt
+      path: ${FABRIC_SDK_GO_PROJECT_PATH}/pkg/core/config/testdata/certs/ca.crt
       # Client key and cert for SSL handshake with Fabric CA
       client:
         key:
-          path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/pkg/core/config/testdata/certs/client_sdk_go-key.pem
+          path: ${FABRIC_SDK_GO_PROJECT_PATH}/pkg/core/config/testdata/certs/client_sdk_go-key.pem
         cert:
-          path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/pkg/core/config/testdata/certs/client_sdk_go.pem
+          path: ${FABRIC_SDK_GO_PROJECT_PATH}/pkg/core/config/testdata/certs/client_sdk_go.pem
 
     # Fabric-CA supports dynamic user enrollment via REST APIs. A "root" user, a.k.a registrar, is
     # needed to enroll and invoke new users.
@@ -203,13 +203,13 @@ certificateAuthorities:
     url: https://ca.org2.example.com:8054
     tlsCACerts:
       # Comma-Separated list of paths
-      path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/pkg/core/config/testdata/certs/ca.crt
+      path: ${FABRIC_SDK_GO_PROJECT_PATH}/pkg/core/config/testdata/certs/ca.crt
       # Client key and cert for SSL handshake with Fabric CA
       client:
         key:
-          path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/pkg/core/config/testdata/certs/client_sdk_go-key.pem
+          path: ${FABRIC_SDK_GO_PROJECT_PATH}/pkg/core/config/testdata/certs/client_sdk_go-key.pem
         cert:
-          path: ${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/pkg/core/config/testdata/certs/client_sdk_go.pem
+          path: ${FABRIC_SDK_GO_PROJECT_PATH}/pkg/core/config/testdata/certs/client_sdk_go.pem
 
      # Fabric-CA supports dynamic user enrollment via REST APIs. A "root" user, a.k.a registrar, is
      # needed to enroll and invoke new users.

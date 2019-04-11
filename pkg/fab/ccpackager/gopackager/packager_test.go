@@ -12,7 +12,7 @@ import (
 	"compress/gzip"
 	"io"
 	"os"
-	"path"
+	"path/filepath"
 	"testing"
 
 	"strings"
@@ -25,7 +25,7 @@ func TestNewCCPackage(t *testing.T) {
 	pwd, err := os.Getwd()
 	assert.Nil(t, err, "error from os.Getwd %s", err)
 
-	ccPackage, err := NewCCPackage("github.com", path.Join(pwd, "testdata"))
+	ccPackage, err := NewCCPackage("github.com", filepath.Join(pwd, "testdata"))
 	assert.Nil(t, err, "error from Create %s", err)
 
 	r := bytes.NewReader(ccPackage.Code)
@@ -77,7 +77,7 @@ func TestBadPackagePathGoLangCC(t *testing.T) {
 		t.Fatalf("error from os.Getwd %s", err)
 	}
 
-	_, err = NewCCPackage("github.com", path.Join(pwd, "testdata/fixturesABC"))
+	_, err = NewCCPackage("github.com", filepath.Join(pwd, "testdata", "fixturesABC"))
 	if err == nil {
 		t.Fatalf("error expected from Create %s", err)
 	}
@@ -86,7 +86,7 @@ func TestBadPackagePathGoLangCC(t *testing.T) {
 // Test isSource set to true for any go readable files used in ChainCode packaging
 func TestIsSourcePath(t *testing.T) {
 	keep = []string{}
-	isSrcVal := isSource("../")
+	isSrcVal := isSource(filepath.Join(".."))
 
 	if isSrcVal {
 		t.Fatalf("error expected when calling isSource %v", isSrcVal)

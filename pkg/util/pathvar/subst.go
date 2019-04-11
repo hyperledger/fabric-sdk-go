@@ -72,6 +72,8 @@ func substVar(s string, noMatch string, sep string) (string, string) {
 func lookupVar(v string) (string, bool) {
 	// TODO: optimize if the number of variable names grows
 	switch v {
+	case "FABRIC_SDK_GO_PROJECT_PATH":
+		return metadata.GetProjectPath(), true
 	case "GOPATH":
 		return goPath(), true
 	case "CRYPTOCONFIG_FIXTURES_PATH":

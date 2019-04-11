@@ -13,7 +13,7 @@ ENV GOPATH=/opt/gopath \
     PATH=$PATH:/opt/go/bin:/opt/gopath/bin
 
 COPY test/fixtures/softhsm2/install-softhsm2.sh /tmp
-COPY scripts/_go/src/pkcs11helper /opt/gopath/src/pkcs11helper
+COPY scripts/_go/src/pkcs11helper /opt/workspace/pkcs11helper
 RUN bash /tmp/install-softhsm2.sh
 CMD ["/bin/bash"]
 

@@ -24,7 +24,7 @@ import (
 )
 
 const (
-	configPath = "${GOPATH}/src/github.com/hyperledger/fabric-sdk-go/pkg/core/config/testdata/config_test.yaml"
+	configPath = "${FABRIC_SDK_GO_PROJECT_PATH}/pkg/core/config/testdata/config_test.yaml"
 )
 
 type testFixture struct {

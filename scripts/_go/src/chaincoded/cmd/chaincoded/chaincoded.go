@@ -19,7 +19,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
-	"path"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"sync"
@@ -119,9 +119,9 @@ func launchChaincode(ccParams *chaincodeParams, tlsPath string, done chan struct
 }
 
 func createChaincodeCmd(ccParams *chaincodeParams, tlsPath string) *exec.Cmd {
-	rootCertFile := path.Join(tlsPath, "peer.crt")
-	keyPath := path.Join(tlsPath, "client.key")
-	certPath := path.Join(tlsPath, "client.crt")
+	rootCertFile := filepath.Join(tlsPath, "peer.crt")
+	keyPath := filepath.Join(tlsPath, "client.key")
+	certPath := filepath.Join(tlsPath, "client.crt")
 
 	cmd := exec.Command(ccParams.chaincodeBinary(), tlsPath)
 	cmd.Stderr = os.Stderr
@@ -206,7 +206,7 @@ func (d *chaincoded) handleUploadToContainerRequest(w http.ResponseWriter, r *ht
 		return
 	}
 
-	tlsPath := path.Join(tmpDir, "etc", "hyperledger", "fabric")
+	tlsPath := filepath.Join(tmpDir, "etc", "hyperledger", "fabric")
 	d.wg.Add(1)
 	go func() {
 		defer d.wg.Done()
@@ -271,7 +271,7 @@ func extractArchive(in io.Reader, basePath string) error {
 
 		switch hdr.Typeflag {
 		case tar.TypeDir:
-			outPath := path.Join(basePath, hdr.Name)
+			outPath := filepath.Join(basePath, hdr.Name)
 
 			if err := os.Mkdir(outPath, 0755); err != nil {
 				return err
@@ -279,9 +279,9 @@ func extractArchive(in io.Reader, basePath string) error {
 		case 0:
 			fallthrough
 		case tar.TypeReg:
-			outPath := path.Join(basePath, hdr.Name)
+			outPath := filepath.Join(basePath, hdr.Name)
 
-			dir := path.Dir(outPath)
+			dir := filepath.Dir(outPath)
 			if err := os.MkdirAll(dir, 0755); err != nil {
 				return err
 			}

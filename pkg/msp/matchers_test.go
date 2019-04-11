@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package msp
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
@@ -15,9 +16,10 @@ import (
 )
 
 const (
-	sampleMatchersOverrideAll    = "../core/config/testdata/matcher-samples/matchers_sample1.yaml"
-	sampleMatchersRegexReplace   = "../core/config/testdata/matcher-samples/matchers_sample3.yaml"
-	sampleMatchersIgnoreEndpoint = "../core/config/testdata/matcher-samples/matchers_sample6.yaml"
+	sampleMatchersOverrideAll    = "matchers_sample1.yaml"
+	sampleMatchersRegexReplace   = "matchers_sample3.yaml"
+	sampleMatchersIgnoreEndpoint = "matchers_sample6.yaml"
+	sampleMatchersDir            = "matcher-samples"
 
 	actualCAURL    = "https://ca.org1.example.com:7054"
 	overridedCAURL = "https://ca.org1.example.com:8888"
@@ -31,15 +33,18 @@ const (
 func TestCAURLOverride(t *testing.T) {
 
 	//Test basic entity matcher
-	testCAEntityMatcher(t, sampleMatchersOverrideAll)
+	matcherPath := filepath.Join(getConfigPath(), sampleMatchersDir, sampleMatchersOverrideAll)
+	testCAEntityMatcher(t, matcherPath)
 
 	//Test entity matcher with regex replace feature '$'
-	testCAEntityMatcher(t, sampleMatchersRegexReplace)
+	matcherPath = filepath.Join(getConfigPath(), sampleMatchersDir, sampleMatchersRegexReplace)
+	testCAEntityMatcher(t, matcherPath)
 }
 
 func testCAEntityMatcher(t *testing.T, configPath string) {
 	//Without entity matcher
-	backends, err := getBackendsFromFiles(configTestFilePath)
+	configTestPath := filepath.Join(getConfigPath(), configTestFile)
+	backends, err := getBackendsFromFiles(configTestPath)
 	assert.Nil(t, err, "not supposed to get error")
 	assert.Equal(t, 1, len(backends))
 
@@ -54,7 +59,7 @@ func testCAEntityMatcher(t *testing.T, configPath string) {
 	assert.Equal(t, actualTargetServerName, caConfig.GRPCOptions["ssl-target-name-override"])
 
 	//Using entity matcher to override CA URL
-	backends, err = getBackendsFromFiles(configPath, configTestFilePath)
+	backends, err = getBackendsFromFiles(configPath, configTestPath)
 	assert.Nil(t, err, "not supposed to get error")
 	assert.Equal(t, 2, len(backends))
 
@@ -73,7 +78,9 @@ func testCAEntityMatcher(t *testing.T, configPath string) {
 // If marked 'IgnoreEndpoint: true' then corresponding CA will be ignored
 func TestCAEntityMatcherIgnoreEndpoint(t *testing.T) {
 	//Without entity matcher
-	backends, err := getBackendsFromFiles(sampleMatchersIgnoreEndpoint, configTestFilePath)
+	configTestPath := filepath.Join(getConfigPath(), configTestFile)
+	matcherPath := filepath.Join(getConfigPath(), sampleMatchersDir, sampleMatchersIgnoreEndpoint)
+	backends, err := getBackendsFromFiles(matcherPath, configTestPath)
 	assert.Nil(t, err, "not supposed to get error")
 	assert.Equal(t, 2, len(backends))
 

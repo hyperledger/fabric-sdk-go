@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package discovery
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/discovery/staticdiscovery"
@@ -15,7 +16,10 @@ import (
 	fabImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab"
 	mocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
+	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 )
+
+const configFile = "config_test.yaml"
 
 type mockFilter struct {
 	called bool
@@ -29,7 +33,7 @@ func (df *mockFilter) Accept(peer fab.Peer) bool {
 
 func TestDiscoveryFilter(t *testing.T) {
 
-	configBackend, err := config.FromFile("../../../../test/fixtures/config/config_test.yaml")()
+	configBackend, err := config.FromFile(filepath.Join(metadata.GetProjectPath(), metadata.SDKConfigPath, configFile))()
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
