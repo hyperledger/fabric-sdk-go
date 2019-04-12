@@ -3,7 +3,7 @@
     
     Under the directory where this file resides, the test commands are run as shown under the below comments: 
 	(
-	    * Benchmark is using Go's test command with -bench=ExecuteTx
+	    * Benchmark is using Go's test command with -bench=Call* (or CallExecuteTx* or CallQuery*)
 	    * the -run=notest flag means execute a non-existant 'notest' in the current folder
 	        This will avoid running normal unit tests along with the benchmarks
 	    * by default, the benchmark tool decides when it collected enough information and stops
@@ -39,87 +39,102 @@
         This means in order to collect metrics data via the Prometheus report, the below sample commands were updated to include `-tags pprof`
 	)
 
-$ go test -tags pprof -run=notest -bench=ExecuteTx*
-goos: darwin
-goarch: amd64
-pkg: github.com/hyperledger/fabric-sdk-go/test/performance/pkg/client/channel
-BenchmarkExecuteTx-8           	    1000	   1318277 ns/op	  219871 B/op	    3023 allocs/op
-BenchmarkExecuteTxParallel-8   	    3000	    527525 ns/op	  218158 B/op	    3008 allocs/op
-PASS
-ok  	github.com/hyperledger/fabric-sdk-go/test/performance/pkg/client/channel	4.027s
-$ go test -tags pprof -run=notest -bench=ExecuteTx* -benchtime=10s
-goos: darwin
-goarch: amd64
-pkg: github.com/hyperledger/fabric-sdk-go/test/performance/pkg/client/channel
-BenchmarkExecuteTx-8           	   10000	   1310724 ns/op	  219738 B/op	    3023 allocs/op
-BenchmarkExecuteTxParallel-8   	   30000	    475787 ns/op	  218055 B/op	    3008 allocs/op
-PASS
-ok  	github.com/hyperledger/fabric-sdk-go/test/performance/pkg/client/channel	37.898s
-$ go test -tags pprof -run=notest -bench=ExecuteTx* -benchtime=30s
-goos: darwin
-goarch: amd64
-pkg: github.com/hyperledger/fabric-sdk-go/test/performance/pkg/client/channel
-BenchmarkExecuteTx-8           	   30000	   1308714 ns/op	  219803 B/op	    3023 allocs/op
-BenchmarkExecuteTxParallel-8   	  100000	    510626 ns/op	  218082 B/op	    3008 allocs/op
-PASS
-ok  	github.com/hyperledger/fabric-sdk-go/test/performance/pkg/client/channel	114.451s
-$ go test -tags pprof -run=notest -bench=ExecuteTx* -benchtime=60s
-goos: darwin
-goarch: amd64
-pkg: github.com/hyperledger/fabric-sdk-go/test/performance/pkg/client/channel
-BenchmarkExecuteTx-8           	  100000	   1308884 ns/op	  219786 B/op	    3023 allocs/op
-BenchmarkExecuteTxParallel-8   	  200000	    499403 ns/op	  218031 B/op	    3008 allocs/op
-PASS
-ok  	github.com/hyperledger/fabric-sdk-go/test/performance/pkg/client/channel	249.928s
-$ go test -tags pprof -run=notest -bench=ExecuteTx* -benchtime=120s
-goos: darwin
-goarch: amd64
-pkg: github.com/hyperledger/fabric-sdk-go/test/performance/pkg/client/channel
-BenchmarkExecuteTx-8           	  200000	   1298885 ns/op	  219818 B/op	    3023 allocs/op
-BenchmarkExecuteTxParallel-8   	  500000	    501436 ns/op	  218011 B/op	    3008 allocs/op
-PASS
-ok  	github.com/hyperledger/fabric-sdk-go/test/performance/pkg/client/channel	529.397s
+##### - Benchmark command examples:
+    $ go test -tags pprof -run=notest -bench=Call*
+    goos: darwin
+    goarch: amd64
+    pkg: github.com/hyperledger/fabric-sdk-go/test/performance/pkg/client/channel
+    BenchmarkCallExecuteTx-8           	    1000	   1261314 ns/op	  208093 B/op	    3037 allocs/op
+    BenchmarkCallQuery-8               	    2000	    975568 ns/op	  154871 B/op	    2429 allocs/op
+    BenchmarkCallExecuteTxParallel-8   	    3000	    444365 ns/op	  208302 B/op	    3019 allocs/op
+    BenchmarkCallQueryTxParallel-8     	    5000	    319143 ns/op	  154845 B/op	    2424 allocs/op
+    PASS
+    ok  	github.com/hyperledger/fabric-sdk-go/test/performance/pkg/client/channel	6.618s
 
-#Benchmark data (using Prometheus report)
-The Channel Client's Execute and Query functions have been amended to collect metric counts and time spent executing these functions.
+    $ go test -tags pprof -run=notest -bench=Call* -benchtime=10s
+    goos: darwin
+    goarch: amd64
+    pkg: github.com/hyperledger/fabric-sdk-go/test/performance/pkg/client/channel
+    BenchmarkCallExecuteTx-8           	   10000	   1319398 ns/op	  208059 B/op	    3038 allocs/op
+    BenchmarkCallQuery-8               	   10000	   1024998 ns/op	  154866 B/op	    2429 allocs/op
+    BenchmarkCallExecuteTxParallel-8   	   30000	    564144 ns/op	  208060 B/op	    3015 allocs/op
+    BenchmarkCallQueryTxParallel-8     	   50000	    386486 ns/op	  154849 B/op	    2424 allocs/op
+    PASS
+    ok  	github.com/hyperledger/fabric-sdk-go/test/performance/pkg/client/channel	68.788s
+    
+    $ go test -tags pprof -run=notest -bench=Call* -benchtime=30s
+    goos: darwin
+    goarch: amd64
+    pkg: github.com/hyperledger/fabric-sdk-go/test/performance/pkg/client/channel
+    BenchmarkCallExecuteTx-8           	   30000	   1295530 ns/op	  208024 B/op	    3038 allocs/op
+    BenchmarkCallQuery-8               	   50000	   1027276 ns/op	  154858 B/op	    2429 allocs/op
+    BenchmarkCallExecuteTxParallel-8   	  100000	    529863 ns/op	  208115 B/op	    3016 allocs/op
+    BenchmarkCallQueryTxParallel-8     	  100000	    380491 ns/op	  154854 B/op	    2424 allocs/op
+    PASS
+    ok  	github.com/hyperledger/fabric-sdk-go/test/performance/pkg/client/channel	213.246s
 
-In order to support collecting the data, make sure to start the data collector server. An example of starting a data collector server is found 
-in this benchmark (reference chClient.StartOperationsSystem() call)
+    $ go test -tags pprof -run=notest -bench=Call* -benchtime=60s
+    goos: darwin
+    goarch: amd64
+    pkg: github.com/hyperledger/fabric-sdk-go/test/performance/pkg/client/channel
+    BenchmarkCallExecuteTx-8           	  100000	   1304653 ns/op	  208043 B/op	    3038 allocs/op
+    BenchmarkCallQuery-8               	  100000	    988127 ns/op	  154850 B/op	    2429 allocs/op
+    BenchmarkCallExecuteTxParallel-8   	  200000	    500477 ns/op	  208150 B/op	    3017 allocs/op
+    BenchmarkCallQueryTxParallel-8     	  200000	    360922 ns/op	  154797 B/op	    2424 allocs/op
+    PASS
+    ok  	github.com/hyperledger/fabric-sdk-go/test/performance/pkg/client/channel	433.668s
 
-then start the Prometheus Docker container (an example docker compose config file is found at:
-fabric-sdk-go/test/performance/prometheus
-)
+    $ go test -tags pprof -run=notest -bench=Call* -benchtime=120s -timeout 30m
+    goos: darwin
+    goarch: amd64
+    pkg: github.com/hyperledger/fabric-sdk-go/test/performance/pkg/client/channel
+    BenchmarkCallExecuteTx-8           	  200000	   1286497 ns/op	  208050 B/op	    3038 allocs/op
+    BenchmarkCallQuery-8               	  200000	    991448 ns/op	  154846 B/op	    2429 allocs/op
+    BenchmarkCallExecuteTxParallel-8   	  500000	    510610 ns/op	  208140 B/op	    3017 allocs/op
+    BenchmarkCallQueryTxParallel-8     	  500000	    365202 ns/op	  154773 B/op	    2424 allocs/op
+    PASS
+    ok  	github.com/hyperledger/fabric-sdk-go/test/performance/pkg/client/channel	926.270s
+    
+###Benchmark data (using Prometheus report)
+    The Channel Client's Execute and Query functions have been amended to collect metric counts and time spent executing these functions.
+    
+    In order to support collecting the data, make sure to start the data collector server. An example of starting a data collector server is found 
+    in this benchmark (reference chClient.StartOperationsSystem() call)
+    
+    then start the Prometheus Docker container (an example docker compose config file is found at:
+    fabric-sdk-go/test/performance/prometheus
+    )
+    
+    Finally run your sdk client and the perf data will be collected by the prometheus server. Navigate to 
+    127.0.0.1:9095
+    to view the report. 
+    
+    Make sure the Go client is running and some channel communication activity has occurred with a peer in order 
+    to see collected performance data.
+    
+    
+    For the purpose of this channel client benchmark, once the Prometheus docker container is started, run the benchmark with long enough
+    run times and navigate to the address above to see data being collected 
+    (run with -benchtime=300s will show this data on the report as an example)
+    
+    If you would like to collect perf data into your version of Prometheus server (example dedicated performance environment),
+    make sure to create new metrics instances and register them the same way as in the channel client package.
+    ie look at: "github.com/hyperledger/fabric-sdk-go/pkg/client/channel/chclientrun.go" to see how ClientMetrics is created and 
+    metrics added in the code. 
+    "github.com/hyperledger/fabric-sdk-go/pkg/client/channel/metrics.go" creates metrics structures to be used in the file above.
+    
+    currently, only channel client is configured with performance metrics (and operations system like Fabric).
+    To setup data collection in your client application, see this file for more details: 
+    fabric-sdk-go/pkg/client/channel/chclient.go
+    
+    The file fabric-sdk-go/test/performance/pkg/client/channel/chclient_fixture_test.go is loading metrics configs from the file referenced in `configPath` variable.
 
-Finally run your sdk client and the perf data will be collected by the prometheus server. Navigate to 
-127.0.0.1:9095
-to view the report. 
-
-Make sure the Go client is running and some channel communication activity has occurred with a peer in order 
-to see collected performance data.
-
-
-For the purpose of this channel client benchmark, once the Prometheus docker container is started, run the benchmark with long enough
-run times and navigate to the address above to see data being collected 
-(run with -benchtime=300s will show this data on the report as an example)
-
-If you would like to collect perf data into your version of Prometheus server (example dedicated performance environment),
-make sure to create new metrics instances and register them the same way as in the channel client package.
-ie look at: "github.com/hyperledger/fabric-sdk-go/pkg/client/channel/chclientrun.go" to see how ClientMetrics is created and 
-metrics added in the code. 
-"github.com/hyperledger/fabric-sdk-go/pkg/client/channel/metrics.go" creates metrics structures to be used in the file above.
-
-currently, only channel client is configured with performance metrics (and operations system like Fabric).
-To setup data collection in your client application, see this file for more details: 
-fabric-sdk-go/pkg/client/channel/chclient.go
-
-The file fabric-sdk-go/test/performance/pkg/client/channel/chclient_fixture_test.go is loading metrics configs from the file referenced in `configPath` variable.
-
-#Benchmark CPU & Memory performance analysis
+###Benchmark CPU & Memory performance analysis
     In order to generate profiling data for the chClient benchmark, the go test command can be extended to generate these.
     Note: If the below command complains about cpu.out or mem.out files are missing, create these files with empty content
      prior to running the command:
     
-go test -v -tags pprof -run=notest -bench=ExecuteTx -benchtime=1s -outputdir ./bench1s -cpuprofile cpu.out -memprofilerate 1 -memprofile mem.out
+    $ go test -v -tags pprof -run=notest -bench=Call -benchtime=1s -outputdir ./bench1s -cpuprofile cpu.out -memprofilerate 1 -memprofile mem.out
 
     once ./bench1s has a valid cpu.out and mem.out content, then we can use go pprof command to examine the perf data.
     
@@ -127,17 +142,17 @@ go test -v -tags pprof -run=notest -bench=ExecuteTx -benchtime=1s -outputdir ./b
     
     
     * For CPU perf data analysis:
-go tool pprof benchmark.test ./bench1s/cpu.out 
+    $ go tool pprof benchmark.test ./bench1s/cpu.out 
 
     * For Memory - allocation data analysis (count by number of allocation):
-go tool pprof --inuse_objects benchmark.test ./bench1s/mem.out 
+    $ go tool pprof --inuse_objects benchmark.test ./bench1s/mem.out 
 
     * For Memory - total allocation data analysis:
-go tool pprof --alloc_space benchmark.test ./bench1s/mem.out
+    $ go tool pprof --alloc_space benchmark.test ./bench1s/mem.out
 
 
     to generate the PDF report from the go tool pprof cli, simply execute:
-pdf
+    $ pdf
     
     or in svg format simply run:
-svg
+    $ svg

@@ -24,6 +24,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/chpvdr"
 	"github.com/hyperledger/fabric-sdk-go/pkg/util/pathvar"
+	"github.com/stretchr/testify/require"
 
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/core/common/ccprovider"
@@ -56,21 +57,35 @@ var (
 	ordererURL         = fmt.Sprintf("%s:%d", testBrodcasthost, testBroadcastport)
 )
 
-func BenchmarkExecuteTx(b *testing.B) {
+func BenchmarkCallExecuteTx(b *testing.B) {
 	// report memory allocations for this benchmark
 	b.ReportAllocs()
 
 	// using channel Client, let's start the benchmark
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		chClient.Execute(chRq)
-		//require.NoError(b, err, "expected no error for valid channel client invoke")
+		_, err := chClient.Execute(chRq)
+		require.NoError(b, err, "expected no error for valid channel client Execute invoke")
 
 		//b.Logf("Execute Responses: %s", resp.Responses)
 	}
 }
 
-func BenchmarkExecuteTxParallel(b *testing.B) {
+func BenchmarkCallQuery(b *testing.B) {
+	// report memory allocations for this benchmark
+	b.ReportAllocs()
+
+	// using channel Client, let's start the benchmark
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		_, err := chClient.Query(chRq)
+		require.NoError(b, err, "expected no error for valid channel client Query invoke")
+
+		//b.Logf("Query Responses: %s", resp.Responses)
+	}
+}
+
+func BenchmarkCallExecuteTxParallel(b *testing.B) {
 	// report memory allocations for this benchmark
 	b.ReportAllocs()
 
@@ -79,8 +94,25 @@ func BenchmarkExecuteTxParallel(b *testing.B) {
 
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			chClient.Execute(chRq)
-			//require.NoError(b, err, "expected no error for valid channel client parallel invoke")
+			_, err := chClient.Execute(chRq)
+			require.NoError(b, err, "expected no error for valid channel client parallel Execute invoke")
+
+			//b.Logf("Execute Responses: %s", resp.Responses)
+		}
+	})
+}
+
+func BenchmarkCallQueryTxParallel(b *testing.B) {
+	// report memory allocations for this benchmark
+	b.ReportAllocs()
+
+	// using channel Client, let's start the benchmark
+	b.ResetTimer()
+
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			_, err := chClient.Query(chRq)
+			require.NoError(b, err, "expected no error for valid channel client parallel Query invoke")
 
 			//b.Logf("Execute Responses: %s", resp.Responses)
 		}
