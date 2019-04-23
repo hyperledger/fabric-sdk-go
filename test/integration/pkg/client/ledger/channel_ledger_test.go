@@ -339,4 +339,12 @@ func testQueryConfigBlock(t *testing.T, ledgerClient *ledger.Client, targets []s
 		t.Fatal("QueryConfig config data is nil")
 	}
 
+	block, err := ledgerClient.QueryConfigBlock(ledger.WithTargetEndpoints(targets...))
+	if err != nil {
+		t.Fatalf("QueryConfigBlock return error: %s", err)
+	}
+
+	if block == nil {
+		t.Fatal("QueryConfigBlock block is nil")
+	}
 }

@@ -276,6 +276,21 @@ func TestQueryConfig(t *testing.T) {
 
 }
 
+func TestQueryConfigBlock(t *testing.T) {
+	peer := mocks.MockPeer{MockName: "Peer1", MockURL: "http://peer1.com", MockRoles: []string{}, MockCert: nil, Status: 200, MockMSP: "test"}
+	lc := setupLedgerClient([]fab.Peer{&peer}, t)
+
+	_, err := lc.QueryConfigBlock(WithTargets(&peer), WithTargetFilter(&mspFilter{mspID: "test"}))
+	expected := "If targets are provided, filter cannot be provided"
+	if err == nil || !strings.Contains(err.Error(), expected) {
+		t.Fatalf("Test ledger query config should have failed with '%s'", expected)
+	}
+
+	block, err := lc.QueryConfigBlock()
+	assert.NoError(t, err)
+	assert.NotNil(t, block)
+}
+
 func setupTestChannelService(ctx context.Client, orderers []fab.Orderer) (fab.ChannelService, error) {
 	chProvider, err := fcmocks.NewMockChannelProvider(ctx)
 	if err != nil {
