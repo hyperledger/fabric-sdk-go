@@ -16,6 +16,7 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protoutil"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
+	ctxprovider "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
@@ -172,10 +173,16 @@ func broadcastEnvelope(reqCtx reqContext.Context, envelope *fab.SignedEnvelope, 
 	randOrderers := []fab.Orderer{}
 	randOrderers = append(randOrderers, orderers...)
 
+	// get a context client instance to create child contexts with timeout read from the config in sendBroadcast()
+	ctxClient, ok := context.RequestClientContext(reqCtx)
+	if !ok {
+		return nil, errors.New("failed get client context from reqContext for SendTransaction")
+	}
+
 	// Iterate them in a random order and try broadcasting 1 by 1
 	var errResp error
 	for _, i := range rand.Perm(len(randOrderers)) {
-		resp, err := sendBroadcast(reqCtx, envelope, randOrderers[i])
+		resp, err := sendBroadcast(reqCtx, envelope, randOrderers[i], ctxClient)
 		if err != nil {
 			errResp = err
 		} else {
@@ -185,11 +192,16 @@ func broadcastEnvelope(reqCtx reqContext.Context, envelope *fab.SignedEnvelope, 
 	return nil, errResp
 }
 
-func sendBroadcast(reqCtx reqContext.Context, envelope *fab.SignedEnvelope, orderer fab.Orderer) (*fab.TransactionResponse, error) {
-	logger.Debugf("Broadcasting envelope to orderer :%s\n", orderer.URL())
+func sendBroadcast(reqCtx reqContext.Context, envelope *fab.SignedEnvelope, orderer fab.Orderer, client ctxprovider.Client) (*fab.TransactionResponse, error) {
+	logger.Debugf("Broadcasting envelope to orderer: %s\n", orderer.URL())
+	// create a childContext for this SendBroadcast orderer using the config's timeout value
+	// the parent context (reqCtx) should not have a timeout value
+	childCtx, cancel := context.NewRequest(client, context.WithTimeoutType(fab.OrdererResponse), context.WithParent(reqCtx))
+	defer cancel()
+
 	// Send request
-	if _, err := orderer.SendBroadcast(reqCtx, envelope); err != nil {
-		logger.Debugf("Receive Error Response from orderer :%s\n", err)
+	if _, err := orderer.SendBroadcast(childCtx, envelope); err != nil {
+		logger.Debugf("Receive Error Response from orderer: %s\n", err)
 		return nil, errors.Wrapf(err, "calling orderer '%s' failed", orderer.URL())
 	}
 

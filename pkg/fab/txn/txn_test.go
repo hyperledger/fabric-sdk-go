@@ -11,12 +11,12 @@ import (
 	"fmt"
 	"os"
 	"strconv"
-	"strings"
 	"testing"
 	"time"
 
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
@@ -34,10 +34,8 @@ func TestNewTransaction(t *testing.T) {
 	}
 	//Test Empty proposal response scenario
 	_, err := New(txnReq)
-
-	if err == nil || err.Error() != "at least one proposal response is necessary" {
-		t.Fatal("Proposal response was supposed to fail in Create Transaction, for empty proposal response scenario")
-	}
+	require.Error(t, err, "Proposal response was supposed to fail in Create Transaction, for empty proposal response scenario")
+	require.Equalf(t, "at least one proposal response is necessary", err.Error(), "Proposal response was supposed to fail in Create Transaction, for empty proposal response scenario, got: \n \"%s\"", err.Error())
 
 	//Test invalid proposal header scenario
 
@@ -60,10 +58,8 @@ func TestNewTransaction(t *testing.T) {
 		ProposalResponses: []*fab.TransactionProposalResponse{&proposalResp},
 	}
 	_, err = New(txnReq)
-
-	if err == nil || !strings.Contains(err.Error(), "unmarshal") {
-		t.Fatal("Proposal response was supposed to fail in Create Transaction, invalid proposal header scenario")
-	}
+	require.Error(t, err, "Proposal response was supposed to fail in Create Transaction, invalid proposal header scenario")
+	require.Containsf(t, err.Error(), "unmarshal", "Proposal response was supposed to fail in Create Transaction, invalid proposal header scenario - %s", err.Error())
 
 	//Test invalid proposal payload scenario
 	proposal = fab.TransactionProposal{
@@ -81,9 +77,8 @@ func TestNewTransaction(t *testing.T) {
 		ProposalResponses: []*fab.TransactionProposalResponse{&proposalResp},
 	}
 	_, err = New(txnReq)
-	if err == nil || !strings.Contains(err.Error(), "unmarshal") {
-		t.Fatal("Proposal response was supposed to fail in Create Transaction, invalid proposal payload scenario")
-	}
+	require.Error(t, err, "Proposal response was supposed to fail in Create Transaction, invalid proposal payload scenario")
+	require.Containsf(t, err.Error(), "unmarshal", "Proposal response was supposed to fail in Create Transaction, invalid proposal payload scenario - %s", err.Error())
 
 	//Test proposal response
 	proposal = fab.TransactionProposal{
@@ -101,9 +96,8 @@ func TestNewTransaction(t *testing.T) {
 		ProposalResponses: []*fab.TransactionProposalResponse{&proposalResp},
 	}
 	_, err = New(txnReq)
-	if err == nil || err.Error() != "proposal response was not successful, error code 99, msg success" {
-		t.Fatal("Proposal response was supposed to fail in Create Transaction")
-	}
+	require.Error(t, err, "Proposal response was supposed to fail in Create Transaction")
+	require.Equalf(t, "proposal response was not successful, error code 99, msg success", err.Error(), "Proposal response was supposed to fail in Create Transaction, got: \n \"%s\"", err.Error())
 
 	//Test repeated field header nil scenario
 	checkRepeatedFieldHeader(proposal, th, proposalResp, txnReq, t)
@@ -126,9 +120,8 @@ func checkRepeatedFieldHeader(proposal fab.TransactionProposal, th TransactionHe
 		ProposalResponses: []*fab.TransactionProposalResponse{&proposalResp},
 	}
 	_, err := New(txnReq)
-	if err == nil || !strings.Contains(err.Error(), "proto: repeated field Endorsements has nil element") {
-		t.Fatalf("Proposal response was supposed to fail in Create Transaction [%s]", err)
-	}
+	require.Error(t, err, "Proposal response was supposed to fail in Create Transaction")
+	require.Containsf(t, err.Error(), "proto: repeated field Endorsements has nil element", "Proposal response was supposed to fail in Create Transaction - %s", err.Error())
 }
 
 func TestBroadcastEnvelope(t *testing.T) {
@@ -152,10 +145,7 @@ func TestBroadcastEnvelope(t *testing.T) {
 	defer cancel()
 
 	res, err := broadcastEnvelope(reqCtx, sigEnvelope, orderers)
-
-	if err != nil {
-		t.Fatalf("Test Broadcast Envelope Failed, cause %s %+v", err, res)
-	}
+	require.NoErrorf(t, err, "Test Broadcast Envelope Failed, resp: %+v", res)
 
 	// Ensure only 1 orderer was selected for broadcast
 	firstSelected := 0
@@ -169,10 +159,7 @@ func TestBroadcastEnvelope(t *testing.T) {
 		case <-time.After(time.Second):
 		}
 	}
-
-	if firstSelected+secondSelected != 1 {
-		t.Fatalf("Both or none orderers were selected for broadcast: %d", firstSelected+secondSelected)
-	}
+	require.Equalf(t, 1, firstSelected+secondSelected, "Both or none orderers were selected for broadcast: %d", firstSelected+secondSelected)
 
 	// Now make 1 of them fail and repeatedly broadcast
 	broadcastCount := 50
@@ -181,9 +168,8 @@ func TestBroadcastEnvelope(t *testing.T) {
 	}
 	// It should always succeed even though one of them has failed
 	for i := 0; i < broadcastCount; i++ {
-		if res, err1 := broadcastEnvelope(reqCtx, sigEnvelope, orderers); err1 != nil {
-			t.Fatalf("Test Broadcast Envelope Failed, cause %s %+v", err1, res)
-		}
+		resp, err1 := broadcastEnvelope(reqCtx, sigEnvelope, orderers)
+		require.NoErrorf(t, err1, "Test Broadcast Envelope Failed, resp: %+v", resp)
 	}
 
 	// Now, fail both and ensure any attempt fails
@@ -197,15 +183,59 @@ func checkBroadcastCount(broadcastCount int, orderer1 *mocks.MockOrderer, ordere
 	}
 	for i := 0; i < broadcastCount; i++ {
 		_, err1 := broadcastEnvelope(reqCtx, sigEnvelope, orderers)
-		if !strings.Contains(err1.Error(), "Service Unavailable") {
-			t.Fatal("Test Broadcast failed but didn't return the correct reason(should contain 'Service Unavailable')")
-		}
+		require.Contains(t, err1.Error(), "Service Unavailable", "Test Broadcast failed but didn't return the correct reason")
 	}
 	emptyOrderers := []fab.Orderer{}
 	_, err := broadcastEnvelope(reqCtx, sigEnvelope, emptyOrderers)
-	if err == nil || err.Error() != "orderers not set" {
-		t.Fatal("orderers not set validation on broadcast envelope is not working as expected")
+	require.Error(t, err, "Test empty orderers slice validation on broadcast envelope is not working as expected")
+	require.Equalf(t, "orderers not set", err.Error(), "Test empty orderers slice validation on broadcast envelope is not working as expected, got: \n \"%s\"", err.Error())
+}
+
+func TestBroadcastPayloadWithOrdererDialFailure(t *testing.T) {
+	ordererAddr := "127.0.0.1:0"
+	//Create mock orderers
+	orderer1 := mocks.NewMockGrpcOrderer(ordererAddr, nil)
+	orderer1.Start()
+	orderer2 := mocks.NewMockGrpcOrderer(ordererAddr, nil)
+	orderer2.Start()
+	orderer3 := mocks.NewMockGrpcOrderer(ordererAddr, nil)
+	orderer3.Start()
+
+	orderers := []fab.Orderer{orderer1, orderer2, orderer3}
+
+	sigEnvelope := &fab.SignedEnvelope{
+		Signature: []byte(""),
+		Payload:   []byte(""),
 	}
+	user := mspmocks.NewMockSigningIdentity("test", "1234")
+	ctx := mocks.NewMockContext(user)
+	parentCtx, cancel := context.NewRequest(ctx, context.WithTimeout(5*time.Second)) // parentContext has 5 sec timeout
+	defer cancel()
+
+	_, err := broadcastEnvelope(parentCtx, sigEnvelope, orderers)
+	require.NoError(t, err, "BroadCastEnvelope to running orderers returned a connection error")
+
+	// stop orderer2 and try again (orderer1 and orderer3 should successfully connect)
+	orderer2.Stop()
+	_, err = broadcastEnvelope(parentCtx, sigEnvelope, orderers)
+	require.NoError(t, err, "BroadCastEnvelope to running orderer1 and orderer3 returned a connection error")
+
+	// stop orderer1 and try again (only orderer3 should successfully connect)
+	orderer1.Stop()
+	_, err = broadcastEnvelope(parentCtx, sigEnvelope, orderers)
+	require.NoError(t, err, "BroadCastEnvelope to running orderer3 returned a connection error")
+
+	// now try a new parent context using 1 nano second timeout to force 'context deadline exceeded'
+	orderer1.Start()
+	orderer2.Start()
+	parentCtx, cancel2 := context.NewRequest(ctx, context.WithTimeout(1*time.Nanosecond))
+	defer cancel2()
+	_, err = broadcastEnvelope(parentCtx, sigEnvelope, orderers)
+	require.Error(t, err, "BroadCastEnvelope to running orderers returned no error with 1 nano second context deadline")
+
+	orderer1.Stop()
+	orderer2.Stop()
+	orderer3.Stop()
 }
 
 func TestSendTransaction(t *testing.T) {
@@ -219,9 +249,9 @@ func TestSendTransaction(t *testing.T) {
 	response, err := Send(reqCtx, nil, nil)
 
 	//Expect orderer is nil error
-	if response != nil || err == nil || err.Error() != "orderers is nil" {
-		t.Fatal("Test SendTransaction failed, it was supposed to fail with 'orderers is nil' error")
-	}
+	require.Nil(t, response, "Test SendTransaction failed, it was supposed to fail with 'orderers is nil' error")
+	require.Error(t, err, "Test SendTransaction failed, it was supposed to fail with 'orderers is nil' error")
+	require.Equalf(t, "orderers is nil", err.Error(), "Test SendTransaction failed, it was supposed to fail with 'orderers is nil' error, got: \n \"%s\"", err.Error())
 
 	//Create mock orderer
 	orderer := mocks.NewMockOrderer("", nil)
@@ -231,9 +261,9 @@ func TestSendTransaction(t *testing.T) {
 	response, err = Send(reqCtx, nil, orderers)
 
 	//Expect tx is nil error
-	if response != nil || err == nil || err.Error() != "transaction is nil" {
-		t.Fatal("Test SendTransaction failed, it was supposed to fail with 'transaction is nil' error")
-	}
+	require.Nil(t, response, "Test SendTransaction failed, it was supposed to fail with 'transaction is nil' error")
+	require.Error(t, err, "Test SendTransaction failed, it was supposed to fail with 'transaction is nil' error")
+	require.Equalf(t, "transaction is nil", err.Error(), "Test SendTransaction failed, it was supposed to fail with 'transaction is nil' error, got: \n \"%s\"", err.Error())
 
 	testSendTransaction(reqCtx, orderers, t)
 }
@@ -249,9 +279,10 @@ func testSendTransaction(reqCtx reqContext.Context, orderers []fab.Orderer, t *t
 	//Call Send Transaction with nil proposal
 	response, err := Send(reqCtx, &txn, orderers)
 	//Expect proposal is nil error
-	if response != nil || err == nil || err.Error() != "proposal is nil" {
-		t.Fatal("Test SendTransaction failed, it was supposed to fail with 'proposal is nil' error")
-	}
+	require.Nil(t, response, "Test SendTransaction failed, it was supposed to fail with 'proposal is nil' error")
+	require.Error(t, err, "Test SendTransaction failed, it was supposed to fail with 'proposal is nil' error")
+	require.Equalf(t, "proposal is nil", err.Error(), "Test SendTransaction failed, it was supposed to fail with 'proposal is nil' error, got: \n \"%s\"", err.Error())
+
 	//Create tx with improper proposal header
 	txn = fab.Transaction{
 		Proposal: &fab.TransactionProposal{
@@ -262,9 +293,10 @@ func testSendTransaction(reqCtx reqContext.Context, orderers []fab.Orderer, t *t
 	//Call Send Transaction
 	response, err = Send(reqCtx, &txn, orderers)
 	//Expect header unmarshal error
-	if response != nil || err == nil || !strings.Contains(err.Error(), "unmarshal") {
-		t.Fatal("Test SendTransaction failed, it was supposed to fail with '...unmarshal...' error")
-	}
+	require.Nil(t, response, "Test SendTransaction failed, it was supposed to fail with '...unmarshal...' error")
+	require.Error(t, err, "Test SendTransaction failed, it was supposed to fail with '...unmarshal...' error")
+	require.Containsf(t, err.Error(), "unmarshal", "Test SendTransaction failed with a wrong error, got: \n \"%s\"", err.Error())
+
 	//Create tx with proper proposal header
 	txn = fab.Transaction{
 		Proposal: &fab.TransactionProposal{
@@ -274,9 +306,8 @@ func testSendTransaction(reqCtx reqContext.Context, orderers []fab.Orderer, t *t
 	}
 	//Call Send Transaction
 	response, err = Send(reqCtx, &txn, orderers)
-	if response == nil || err != nil {
-		t.Fatalf("Test SendTransaction failed, reason : '%s'", err)
-	}
+	require.NotNil(t, response, "Test valid SendTransaction did not return a valid response")
+	require.NoError(t, err, "Test valid SendTransaction failed")
 }
 
 func TestBuildChannelHeader(t *testing.T) {
@@ -292,11 +323,8 @@ func TestBuildChannelHeader(t *testing.T) {
 		TxnHeader:   txnid,
 	}
 	header, err := CreateChannelHeader(common.HeaderType_CHAINCODE_PACKAGE, o)
-
-	if err != nil || header == nil {
-		t.Fatalf("Test Build Channel Header failed, cause : '%s'", err)
-	}
-
+	require.NotNil(t, header, "Test Build Channel returned an empty Header")
+	require.NoError(t, err, "Test Build Channel Header failed")
 }
 
 func TestSignPayload(t *testing.T) {
@@ -306,10 +334,8 @@ func TestSignPayload(t *testing.T) {
 	payload := common.Payload{}
 
 	signedEnv, err := signPayload(ctx, &payload)
-
-	if err != nil || signedEnv == nil {
-		t.Fatal("Test Sign Payload Failed")
-	}
+	require.NotNil(t, signedEnv, "Test Sign Payload returned an empty signature")
+	require.NoError(t, err, "Test Sign Payload failed")
 }
 
 func TestConcurrentOrderers(t *testing.T) {
@@ -337,9 +363,7 @@ func TestConcurrentOrderers(t *testing.T) {
 	defer cancel()
 
 	_, err = Send(reqCtx, &txn, orderers)
-	if err != nil {
-		t.Fatalf("SendTransaction returned error: %s", err)
-	}
+	require.NoError(t, err, "SendTransaction returned error")
 }
 
 func setupMassiveTestOrderer(numberOfOrderers int) []fab.Orderer {

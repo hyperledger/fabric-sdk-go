@@ -194,7 +194,7 @@ func (cc *CachingConnector) createConn(ctx context.Context, target string, opts 
 	logger.Debugf("creating connection [%s]", target)
 	conn, err := grpc.DialContext(ctx, target, opts...)
 	if err != nil {
-		return nil, errors.WithMessage(err, "dialing peer failed")
+		return nil, errors.WithMessage(err, "dialing node failed")
 	}
 
 	logger.Debugf("storing connection [%s]", target)

@@ -176,13 +176,5 @@ func (t *Transactor) CreateTransaction(request fab.TransactionRequest) (*fab.Tra
 
 // SendTransaction send a transaction to the chain’s orderer service (one or more orderer endpoints) for consensus and committing to the ledger.
 func (t *Transactor) SendTransaction(tx *fab.Transaction) (*fab.TransactionResponse, error) {
-	ctx, ok := contextImpl.RequestClientContext(t.reqCtx)
-	if !ok {
-		return nil, errors.New("failed get client context from reqContext for SendTransaction")
-	}
-
-	reqCtx, cancel := contextImpl.NewRequest(ctx, contextImpl.WithTimeoutType(fab.OrdererResponse), contextImpl.WithParent(t.reqCtx))
-	defer cancel()
-
-	return txn.Send(reqCtx, tx, t.orderers)
+	return txn.Send(t.reqCtx, tx, t.orderers)
 }
