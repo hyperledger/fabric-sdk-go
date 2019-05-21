@@ -1,23 +1,21 @@
-From 4f46791ad0248604a813ec6583c2a868404082b0 Mon Sep 17 00:00:00 2001
-From: Sudesh Shetty <sudesh.shetty@securekey.com>
-Date: Mon, 27 Nov 2017 11:34:49 -0500
+From 7720fc067163e97703b46e81291c2818da98291e Mon Sep 17 00:00:00 2001
+From: Aleksandar Likic <aleksandar.likic@securekey.com>
+Date: Tue, 14 May 2019 10:58:13 -0400
 Subject: [PATCH] cryptosuite
 
-Copyright SecureKey Technologies Inc. All Rights Reserved.
-SPDX-License-Identifier: Apache-2.0
-
-Signed-off-by: Sudesh Shetty <sudesh.shetty@securekey.com>
+Change-Id: I6cce48953e824ff18b679b8e0c1dc268d97fd200
+Signed-off-by: Aleksandar Likic <aleksandar.likic@securekey.com>
 ---
- .../cryptosuitebridge/cryptosuitebridge.go         | 116 +++++++++++++++++++++
- 1 file changed, 116 insertions(+)
+ .../cryptosuitebridge/cryptosuitebridge.go    | 120 ++++++++++++++++++
+ 1 file changed, 120 insertions(+)
  create mode 100644 sdkpatch/cryptosuitebridge/cryptosuitebridge.go
 
 diff --git a/sdkpatch/cryptosuitebridge/cryptosuitebridge.go b/sdkpatch/cryptosuitebridge/cryptosuitebridge.go
 new file mode 100644
-index 0000000..a260c06
+index 000000000..fe1eba48a
 --- /dev/null
 +++ b/sdkpatch/cryptosuitebridge/cryptosuitebridge.go
-@@ -0,0 +1,116 @@
+@@ -0,0 +1,120 @@
 +/*
 +Copyright SecureKey Technologies Inc. All Rights Reserved.
 +
@@ -30,11 +28,10 @@ index 0000000..a260c06
 +	"crypto"
 +	"crypto/ecdsa"
 +
-+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 +	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp"
 +	cspsigner "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/signer"
-+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/sw"
-+   "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/utils"
++	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/utils"
++	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 +	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite"
 +)
 +
@@ -94,6 +91,11 @@ index 0000000..a260c06
 +	return &bccsp.SHA256Opts{}
 +}
 +
++//GetSHA3256Opts returns options relating to SHA-256.
++func GetSHA3256Opts() core.HashOpts {
++	return &bccsp.SHA3_256Opts{}
++}
++
 +//GetRSA2048KeyGenOpts returns options for RSA key generation at 2048 security.
 +func GetRSA2048KeyGenOpts(ephemeral bool) core.KeyGenOpts {
 +	return &bccsp.RSA2048KeyGenOpts{Temporary: ephemeral}
@@ -135,5 +137,5 @@ index 0000000..a260c06
 +	return &bccsp.ECDSAPrivateKeyImportOpts{Temporary: ephemeral}
 +}
 -- 
-2.7.4
+2.20.1 (Apple Git-117)
 

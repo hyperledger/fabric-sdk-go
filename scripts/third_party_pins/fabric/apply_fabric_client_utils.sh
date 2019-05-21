@@ -35,8 +35,12 @@ declare -a PKGS=(
 
     "common/crypto"
     "common/errors"
+    "common/genesis"
     "common/util"
+    "common/capabilities"
     "common/channelconfig"
+    "common/configtx"
+    "common/policies"
     "common/ledger"
     "common/metrics"
     "common/metrics/disabled"
@@ -44,6 +48,14 @@ declare -a PKGS=(
     "common/metrics/prometheus"
     "common/metrics/statsd"
     "common/metrics/statsd/goruntime"
+
+    "common/tools/protolator"
+    "common/tools/protolator/protoext"
+    "common/tools/protolator/protoext/commonext"
+    "common/tools/protolator/protoext/ledger/rwsetext"
+    "common/tools/protolator/protoext/mspext"
+    "common/tools/protolator/protoext/ordererext"
+    "common/tools/protolator/protoext/peerext"
 
     "core/comm"
     "core/middleware"
@@ -59,6 +71,7 @@ declare -a PKGS=(
     "core/ledger/util"
 
     "msp"
+    "msp/cache"
 
     "protoutil"
 
@@ -67,6 +80,13 @@ declare -a PKGS=(
 
     "gossip/util"
     "gossip/protoext"
+
+    "sdkinternal/configtxgen/encoder"
+    "sdkinternal/configtxgen/localconfig"
+    "sdkinternal/configtxlator/update"
+
+    "sdkinternal/pkg/identity"
+
 )
 
 declare -a FILES=(
@@ -118,14 +138,35 @@ declare -a FILES=(
 
     "core/comm/config.go"
 
+    "common/configtx/configtx.go"
+
+
+    "common/capabilities/application.go"
+    "common/capabilities/capabilities.go"
+    "common/capabilities/channel.go"
+    "common/capabilities/orderer.go"
+
+    "common/genesis/genesis.go"
+
     "common/crypto/random.go"
 
+    "common/channelconfig/application.go"
+    "common/channelconfig/consortium.go"
+    "common/channelconfig/consortiums.go"
     "common/channelconfig/applicationorg.go"
     "common/channelconfig/channel.go"
     "common/channelconfig/util.go"
     "common/channelconfig/orderer.go"
-
     "common/channelconfig/organization.go"
+    "common/channelconfig/msp.go"
+    "common/channelconfig/api.go"
+    "common/channelconfig/standardvalues.go"
+    "common/channelconfig/acls.go"
+    "common/channelconfig/bundle.go"
+
+    "common/policies/policy.go"
+    "common/policies/util.go"
+    "common/policies/implicitmetaparser.go"
 
     "common/ledger/ledger_interface.go"
 
@@ -136,6 +177,26 @@ declare -a FILES=(
     "common/metrics/statsd/goruntime/collector.go"
     "common/metrics/statsd/goruntime/metrics.go"
     "common/metrics/statsd/provider.go"
+
+    "common/tools/protolator/api.go"
+    "common/tools/protolator/dynamic.go"
+    "common/tools/protolator/json.go"
+    "common/tools/protolator/nested.go"
+    "common/tools/protolator/statically_opaque.go"
+    "common/tools/protolator/variably_opaque.go"
+    "common/tools/protolator/protoext/decorate.go"
+    "common/tools/protolator/protoext/commonext/common.go"
+    "common/tools/protolator/protoext/commonext/configtx.go"
+    "common/tools/protolator/protoext/commonext/configuration.go"
+    "common/tools/protolator/protoext/commonext/policies.go"
+    "common/tools/protolator/protoext/ledger/rwsetext/rwset.go"
+    "common/tools/protolator/protoext/mspext/msp_config.go"
+    "common/tools/protolator/protoext/mspext/msp_principal.go"
+    "common/tools/protolator/protoext/ordererext/configuration.go"
+    "common/tools/protolator/protoext/peerext/configuration.go"
+    "common/tools/protolator/protoext/peerext/proposal.go"
+    "common/tools/protolator/protoext/peerext/proposal_response.go"
+    "common/tools/protolator/protoext/peerext/transaction.go"
 
     "core/middleware/chain.go"
     "core/middleware/request_id.go"
@@ -164,11 +225,15 @@ declare -a FILES=(
     "msp/mspmgrimpl.go"
     "msp/mspimplsetup.go"
     "msp/mspimplvalidate.go"
+    "msp/cache/cache.go"
+    "msp/cache/second_chance.go"
 
+    "protoutil/blockutils.go"
     "protoutil/commonutils.go"
     "protoutil/proputils.go"
     "protoutil/signeddata.go"
     "protoutil/txutils.go"
+    "protoutil/configtxutils.go"
 
     "discovery/client/api.go"
     "discovery/client/client.go"
@@ -181,6 +246,14 @@ declare -a FILES=(
     "gossip/protoext/message.go"
     "gossip/protoext/stringers.go"
     "gossip/util/misc.go"
+
+    "sdkinternal/configtxgen/encoder/encoder.go"
+    "sdkinternal/configtxgen/localconfig/config.go"
+    "sdkinternal/configtxlator/update/update.go"
+    "sdkinternal/configtxlator/update/update.go"
+
+    "sdkinternal/pkg/identity/identity.go"
+
 )
 
 # Create directory structure for packages
@@ -200,7 +273,7 @@ gofilter() {
 
 echo "Modifying go source files"
 FILTER_FILENAME="bccsp/pkcs11/impl.go"
-sed -i'' -e '/"math\/big"/a sdkp11 "github.com\/hyperledger\/fabric-sdk-go\/pkg\/core\/cryptosuite\/common\/pkcs11"' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e '/"github.com\/hyperledger\/fabric\/bccsp"/a sdkp11 "github.com\/hyperledger\/fabric-sdk-go\/pkg\/core\/cryptosuite\/common\/pkcs11"' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 START_LINE=`grep -n "lib := opts.Library" "${TMP_PROJECT_PATH}/${FILTER_FILENAME}" | head -n 1 | awk -F':' '{print $1}'`
 for i in {1..12}
 do
@@ -301,46 +374,33 @@ FILTER_FN="GetRandomNonce,GetRandomBytes"
 gofilter
 
 FILTER_FILENAME="common/util/utils.go"
-FILTER_FN="CreateUtcTimestamp,ConcatenateBytes,GenerateBytesUUID,GenerateIntUUID,GenerateUUID,idBytesToStr"
+sed -i'' -e 's/factory\.GetDefault/cryptosuitebridge.GetDefault/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/\&bccsp\.SHA256Opts{}/cryptosuitebridge.GetSHA256Opts()/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/\&bccsp\.SHA3_56Opts{}/cryptosuitebridge.GetSHA356Opts()/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e '/"crypto\/rand"/ a \
+"github.com\/hyperledger\/fabric\/sdkpatch\/cryptosuitebridge"\
+' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+FILTER_FN="CreateUtcTimestamp,ConcatenateBytes,GenerateBytesUUID,GenerateIntUUID,GenerateUUID,idBytesToStr,ComputeSHA256,ComputeSHA3256"
 gofilter
 
 FILTER_FILENAME="core/comm/config.go"
 sed -i'' -e 's/flogging\.FabricLogger/flogging.Logger/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 
-FILTER_FILENAME="common/channelconfig/applicationorg.go"
-FILTER_FN=
-gofilter
-
-FILTER_FILENAME="common/channelconfig/channel.go"
+FILTER_FILENAME="common/channelconfig/bundle.go"
 FILTER_FN=
 gofilter
 
 FILTER_FILENAME="common/channelconfig/util.go"
-FILTER_FN=
-gofilter
 sed -i'' -e 's/"github.com\/hyperledger\/fabric\/bccsp"/bccsp "github.com\/hyperledger\/fabric-sdk-go\/internal\/github.com\/hyperledger\/fabric\/sdkpatch\/cryptosuitebridge"/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
-
-FILTER_FILENAME="common/channelconfig/orderer.go"
-FILTER_FN=
-gofilter
-
-FILTER_FILENAME="common/channelconfig/organization.go"
-FILTER_FN=
-gofilter
 
 FILTER_FILENAME="core/ledger/kvledger/txmgmt/version/version.go"
 FILTER_FN=
 gofilter
 
-FILTER_FILENAME="protoutil/commonutils.go"
-FILTER_FN="UnmarshalChannelHeader,MarshalOrPanic,UnmarshalChannelHeader,MakeChannelHeader,MakePayloadHeader,ExtractPayload"
-FILTER_FN+=",Marshal,ExtractEnvelope,ExtractEnvelopeOrPanic,ExtractPayloadOrPanic"
-gofilter
-
 FILTER_FILENAME="protoutil/proputils.go"
 FILTER_FN="GetHeader,GetChaincodeProposalPayload,GetSignatureHeader,GetChaincodeHeaderExtension,GetBytesChaincodeActionPayload"
 FILTER_FN+=",GetBytesTransaction,GetBytesPayload,GetHeader,GetBytesProposalResponsePayload,GetBytesProposal"
-FILTER_FN+=",CreateChaincodeProposalWithTxIDNonceAndTransient"
+FILTER_FN+=",CreateChaincodeProposalWithTxIDNonceAndTransient,ComputeTxID"
 FILTER_FN+=",GetTransaction,GetPayload,GetBytesChaincodeProposalPayload"
 FILTER_FN+=",GetChaincodeActionPayload,GetProposalResponsePayload,GetChaincodeAction,GetChaincodeEvents,GetBytesChaincodeEvent,GetBytesEnvelope"
 gofilter
@@ -348,24 +408,14 @@ sed -i'' -e 's/"github.com\/hyperledger\/fabric\/bccsp\/factory"/factory "github
 sed -i'' -e 's/&bccsp.SHA256Opts{}/factory.GetSHA256Opts()/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 
 FILTER_FILENAME="protoutil/txutils.go"
-FILTER_FN="GetBytesProposalPayloadForTx,GetEnvelopeFromBlock,GetPayloads"
+FILTER_FN="GetBytesProposalPayloadForTx,GetEnvelopeFromBlock,GetPayloads,CreateSignedEnvelope,CreateSignedEnvelopeWithTLSBinding"
 gofilter
 
-FILTER_FILENAME="discovery/client/signer.go"
-cat >> ${TMP_PROJECT_PATH}/${FILTER_FILENAME} <<EOF
+FILTER_FILENAME="protoutil/configtxutils.go"
+FILTER_FN="NewConfigGroup"
+gofilter
 
-func computeSHA256(data []byte) (hash []byte) {
-	hash, err := factory.GetDefault().Hash(data, factory.GetSHA256Opts())
-	if err != nil {
-		panic(fmt.Errorf("Failed computing SHA256 on [% x]", data))
-	}
-	return
-}
-EOF
-sed -i'' -e 's/util\.ComputeSHA256/computeSHA256/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
-sed -i'' -e 's/"github.com\/hyperledger\/fabric\/common\/util"/factory "github.com\/hyperledger\/fabric-sdk-go\/internal\/github.com\/hyperledger\/fabric\/sdkpatch\/cryptosuitebridge"/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
-
-FILTER_FILENAME="msp/factory.go"
+FILTER_FILENAME="common/policies/policy.go"
 FILTER_FN=
 gofilter
 
@@ -375,7 +425,7 @@ gofilter
 sed -i'' -e 's/"github.com\/hyperledger\/fabric\/bccsp\/utils"/utils "github.com\/hyperledger\/fabric-sdk-go\/internal\/github.com\/hyperledger\/fabric\/sdkpatch\/cryptosuitebridge"/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 
 FILTER_FILENAME="msp/configbuilder.go"
-FILTER_FN=
+FILTER_FN="GetVerifyingMspConfig,getMspConfig,getPemMaterialFromDir,readFile,readPemFile"
 gofilter
 
 FILTER_FILENAME="msp/identities.go"
@@ -392,9 +442,13 @@ sed -i'' -e 's/bccsp.HashOpts/core.HashOpts/g' "${TMP_PROJECT_PATH}/${FILTER_FIL
 sed -i'' -e 's/\"go.uber.org\/zap\/zapcore/logging\"github.com\/hyperledger\/fabric-sdk-go\/internal\/github.com\/hyperledger\/fabric\/sdkpatch\/logbridge/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e 's/zapcore.DebugLevel/logging.DEBUG/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 
-FILTER_FILENAME="msp/msp.go"
-FILTER_FN=
-gofilter
+FILTER_FILENAME="msp/factory.go"
+sed -i'' -e '/func New(/ a\
+cs := cryptosuite.GetDefault()\
+' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/newBccspMsp(MSPv1_0)/NewBccspMsp(MSPv1_0, cs)/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/newBccspMsp(MSPv1_1)/NewBccspMsp(MSPv1_1, cs)/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/newBccspMsp(MSPv1_3)/NewBccspMsp(MSPv1_3, cs)/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 
 FILTER_FILENAME="msp/mspimpl.go"
 FILTER_FN="sanitizeCert,SatisfiesPrincipal,Validate,getCertificationChainIdentifier,DeserializeIdentity,deserializeIdentityInternal"
@@ -448,6 +502,10 @@ FILTER_FILENAME="gossip/util/misc.go"
 FILTER_FN="GetRandomIndices,RandomInt,IndexInSlice,numbericEqual,RandomUInt64"
 gofilter
 
+FILTER_FILENAME="sdkinternal/configtxgen/localconfig/config.go"
+FILTER_FN=
+gofilter
+
 # Split BCCSP factory into subpackages
 mkdir ${TMP_PROJECT_PATH}/bccsp/factory/sw
 mkdir ${TMP_PROJECT_PATH}/bccsp/factory/pkcs11
@@ -481,22 +539,15 @@ FILTER_TYPE="IMPORT,CONST"
 # Allow no declarations
 FILTER_GEN=
 
-FILTER_FILENAME="common/channelconfig/applicationorg.go"
-gofilter
-
-FILTER_FILENAME="common/channelconfig/channel.go"
-gofilter
-
-FILTER_FILENAME="common/channelconfig/util.go"
-gofilter
-
-FILTER_FILENAME="common/channelconfig/orderer.go"
-gofilter
-
-FILTER_FILENAME="common/channelconfig/organization.go"
-gofilter
-
 FILTER_FILENAME="common/util/utils.go"
+gofilter
+
+FILTER_FILENAME="common/channelconfig/bundle.go"
+FILTER_GEN="logger"
+gofilter
+
+FILTER_FILENAME="sdkinternal/configtxgen/localconfig/config.go"
+FILTER_GEN="TopLevel,Profile,Policy,Consortium,Application,Resources,Organization,AnchorPeer,Orderer,BatchSize,Kafka"
 gofilter
 
 # Apply patching

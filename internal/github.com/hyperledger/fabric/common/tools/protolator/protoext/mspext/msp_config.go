@@ -1,0 +1,42 @@
+/*
+Copyright IBM Corp. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+/*
+Notice: This file has been modified for Hyperledger Fabric SDK Go usage.
+Please review third_party pinning scripts and patches for more details.
+*/
+
+package mspext
+
+import (
+	"fmt"
+
+	"github.com/golang/protobuf/proto"
+	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/msp"
+)
+
+type MSPConfig struct{ *msp.MSPConfig }
+
+func (mc *MSPConfig) Underlying() proto.Message {
+	return mc.MSPConfig
+}
+
+func (mc *MSPConfig) VariablyOpaqueFields() []string {
+	return []string{"config"}
+}
+
+func (mc *MSPConfig) VariablyOpaqueFieldProto(name string) (proto.Message, error) {
+	if name != mc.VariablyOpaqueFields()[0] {
+		return nil, fmt.Errorf("not a marshaled field: %s", name)
+	}
+	switch mc.Type {
+	case 0:
+		return &msp.FabricMSPConfig{}, nil
+	case 1:
+		return &msp.IdemixMSPConfig{}, nil
+	default:
+		return nil, fmt.Errorf("unable to decode MSP type: %v", mc.Type)
+	}
+}

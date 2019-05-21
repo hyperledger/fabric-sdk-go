@@ -214,3 +214,12 @@ var mspTypeStrings = map[ProviderType]string{
 	FABRIC: "bccsp",
 	IDEMIX: "idemix",
 }
+
+// ProviderTypeToString returns a string that represents the ProviderType integer
+func ProviderTypeToString(id ProviderType) string {
+	if res, found := mspTypeStrings[id]; found {
+		return res
+	}
+
+	return ""
+}

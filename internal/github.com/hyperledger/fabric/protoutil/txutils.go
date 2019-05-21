@@ -12,6 +12,7 @@ package protoutil
 
 import (
 	"github.com/golang/protobuf/proto"
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/sdkinternal/pkg/identity"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 	"github.com/pkg/errors"
@@ -52,6 +53,71 @@ func GetEnvelopeFromBlock(data []byte) (*common.Envelope, error) {
 	env := &common.Envelope{}
 	if err = proto.Unmarshal(data, env); err != nil {
 		return nil, errors.Wrap(err, "error unmarshaling Envelope")
+	}
+
+	return env, nil
+}
+
+// CreateSignedEnvelope creates a signed envelope of the desired type, with
+// marshaled dataMsg and signs it
+func CreateSignedEnvelope(
+	txType common.HeaderType,
+	channelID string,
+	signer identity.SignerSerializer,
+	dataMsg proto.Message,
+	msgVersion int32,
+	epoch uint64,
+) (*common.Envelope, error) {
+	return CreateSignedEnvelopeWithTLSBinding(txType, channelID, signer, dataMsg, msgVersion, epoch, nil)
+}
+
+// CreateSignedEnvelopeWithTLSBinding creates a signed envelope of the desired
+// type, with marshaled dataMsg and signs it. It also includes a TLS cert hash
+// into the channel header
+func CreateSignedEnvelopeWithTLSBinding(
+	txType common.HeaderType,
+	channelID string,
+	signer identity.SignerSerializer,
+	dataMsg proto.Message,
+	msgVersion int32,
+	epoch uint64,
+	tlsCertHash []byte,
+) (*common.Envelope, error) {
+	payloadChannelHeader := MakeChannelHeader(txType, msgVersion, channelID, epoch)
+	payloadChannelHeader.TlsCertHash = tlsCertHash
+	var err error
+	payloadSignatureHeader := &common.SignatureHeader{}
+
+	if signer != nil {
+		payloadSignatureHeader, err = NewSignatureHeader(signer)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	data, err := proto.Marshal(dataMsg)
+	if err != nil {
+		return nil, errors.Wrap(err, "error marshaling")
+	}
+
+	paylBytes := MarshalOrPanic(
+		&common.Payload{
+			Header: MakePayloadHeader(payloadChannelHeader, payloadSignatureHeader),
+			Data:   data,
+		},
+	)
+
+	var sig []byte
+	if signer != nil {
+		sig, err = signer.Sign(paylBytes)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	env := &common.Envelope{
+		Payload:   paylBytes,
+		Signature: sig,
 	}
 
 	return env, nil

@@ -59,6 +59,7 @@ cp -R ${TMP_PROJECT_PATH}/internal/* ${TMP_PROJECT_PATH}/sdkinternal/
 # fabric client utils
 echo "Pinning and patching fabric client utils..."
 declare -a CLIENT_UTILS_IMPORT_SUBSTS=(
+    's/\"github.com\/hyperledger\/fabric\/internal/\"github.com\/hyperledger\/fabric-sdk-go\/internal\/github.com\/hyperledger\/fabric\/sdkinternal/g'
     's/[[:space:]]logging[[:space:]]\"github.com/\"github.com/g'
     's/\"github.com\/hyperledger\/fabric\/common\/flogging\/httpadmin/\"github.com\/hyperledger\/fabric-sdk-go\/internal\/github.com\/hyperledger\/fabric\/sdkpatch\/logbridge\/httpadmin/g'
     's/\"github.com\/hyperledger\/fabric\/common\/flogging/flogging\"github.com\/hyperledger\/fabric-sdk-go\/internal\/github.com\/hyperledger\/fabric\/sdkpatch\/logbridge/g'
