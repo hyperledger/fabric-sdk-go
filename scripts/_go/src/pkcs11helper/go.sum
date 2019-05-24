@@ -1,8 +1,2 @@
-github.com/mattn/go-runewidth v0.0.2 h1:UnlwIPBGaTZfPQ6T1IGzPI0EkYAQmT9fAEJ/poFC63o=
-github.com/mattn/go-runewidth v0.0.2/go.mod h1:LwmH8dsx7+W8Uxz3IHJYH5QSwggIsqBzpuz5H//U1FU=
-github.com/miekg/pkcs11 v0.0.0-20171207072458-57296583125b h1:uumfVsC21COkmPFmtJvv+HHeZPZgkO/lKynUEQu52yg=
-github.com/miekg/pkcs11 v0.0.0-20171207072458-57296583125b/go.mod h1:WCBAbTOdfhHhz7YXujeZMF7owC4tPb1naKFsgfUISjo=
 github.com/miekg/pkcs11 v0.0.0-20190329070431-55f3fac3af27 h1:XA/VH+SzpYyukhgh7v2mTp8rZoKKITXR/x3FIizVEXs=
 github.com/miekg/pkcs11 v0.0.0-20190329070431-55f3fac3af27/go.mod h1:WCBAbTOdfhHhz7YXujeZMF7owC4tPb1naKFsgfUISjo=
-github.com/olekukonko/tablewriter v0.0.0-20180105111133-96aac992fc8b h1:LGItPaClbzopugAomw5VFKnG3h1dUr9QW5KOU+m8gu0=
-github.com/olekukonko/tablewriter v0.0.0-20180105111133-96aac992fc8b/go.mod h1:vsDQFd/mU46D+Z4whnwzcISnGGzXWMclvtLoiIKAKIo=

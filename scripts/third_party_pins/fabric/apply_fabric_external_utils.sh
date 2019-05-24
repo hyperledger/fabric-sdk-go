@@ -51,6 +51,19 @@ FILTER_FILENAME="internal/protoutil/commonutils.go"
 FILTER_FN="MarshalOrPanic"
 gofilter
 
+echo "Filtering Go sources for allowed declarations ..."
+FILTERS_ENABLED="gen,type"
+FILTER_TYPE="IMPORT,CONST"
+# Allow no declarations
+FILTER_GEN=
+
+FILTER_FILENAME="common/util/utils.go"
+gofilter
+
+FILTER_FILENAME="common/channelconfig/bundle.go"
+FILTER_GEN="logger"
+gofilter
+
 # Apply patching
 echo "Patching import paths on upstream project ..."
 WORKING_DIR=$TMP_PROJECT_PATH FILES="${FILES[@]}" IMPORT_SUBSTS="${IMPORT_SUBSTS[@]}" scripts/third_party_pins/common/apply_import_patching.sh

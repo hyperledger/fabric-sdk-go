@@ -77,6 +77,11 @@ func GetSHA256Opts() core.HashOpts {
 	return &bccsp.SHA256Opts{}
 }
 
+//GetSHA3256Opts returns options relating to SHA-256.
+func GetSHA3256Opts() core.HashOpts {
+	return &bccsp.SHA3_256Opts{}
+}
+
 //GetRSA2048KeyGenOpts returns options for RSA key generation at 2048 security.
 func GetRSA2048KeyGenOpts(ephemeral bool) core.KeyGenOpts {
 	return &bccsp.RSA2048KeyGenOpts{Temporary: ephemeral}

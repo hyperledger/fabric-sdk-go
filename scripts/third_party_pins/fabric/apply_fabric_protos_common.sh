@@ -31,6 +31,7 @@ declare -a PKGS=(
     "protos/ledger/rwset"
     "protos/ledger/rwset/kvrwset"
     "protos/orderer"
+    "protos/orderer/etcdraft"
 
     "protos/token"
 )
@@ -54,14 +55,15 @@ declare -a FILES=(
     "protos/peer/transaction.pb.go"
     "protos/peer/signed_cc_dep_spec.pb.go"
 
-    "protos/msp/identities.pb.go"
     "protos/msp/msp_config.pb.go"
+    "protos/msp/identities.pb.go"
     "protos/msp/msp_principal.pb.go"
 
     "protos/ledger/rwset/rwset.pb.go"
     "protos/ledger/rwset/kvrwset/kv_rwset.pb.go"
 
     "protos/orderer/configuration.pb.go"
+    "protos/orderer/etcdraft/configuration.pb.go"
 
     "protos/token/operations.pb.go"
     "protos/token/prover.pb.go"
