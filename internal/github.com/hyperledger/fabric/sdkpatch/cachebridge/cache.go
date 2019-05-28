@@ -70,10 +70,12 @@ func timeTrack(start time.Time, msg string) {
 }
 
 func ClearAllSession() {
+	logger.Debugf("Clearing all sessions")
 	sessionCache.DeleteAll()
 }
 
 func ClearSession(key string) {
+	logger.Debugf("Clearing session for key : '%s'", key)
 	sessionCache.Delete(&SessionCacheKey{SessionID: key})
 }
 

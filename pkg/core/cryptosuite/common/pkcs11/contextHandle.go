@@ -36,6 +36,7 @@ func ReloadPKCS11ContextHandle(lib, label, pin string, opts ...Options) (*Contex
 
 //LoadContextAndLogin loads Context handle and performs login
 func LoadContextAndLogin(lib, pin, label string) (*ContextHandle, error) {
+	logger.Debugf("Loading context and performing login for [%s-%s]", lib, label)
 	pkcs11Context, err := LoadPKCS11ContextHandle(lib, label, pin)
 	if err != nil {
 		return nil, err
@@ -128,6 +129,8 @@ func (handle *ContextHandle) ReturnSession(session mPkcs11.SessionHandle) {
 		return
 	}
 
+	logger.Debugf("Returning session : %d", session)
+
 	select {
 	case handle.sessions <- session:
 		// returned session back to session cache
@@ -150,14 +153,14 @@ func (handle *ContextHandle) GetSession() (session mPkcs11.SessionHandle) {
 		logger.Debugf("Reusing existing pkcs11 session %+v on slot %d\n", session, handle.slot)
 
 	default:
-
+		logger.Debug("opening a new session since cache is empty/full")
 		// cache is empty (or completely in use), create a new session
 		s, err := handle.OpenSession()
 		if err != nil {
 			handle.lock.RUnlock()
 			panic(fmt.Errorf("OpenSession failed [%s]", err))
 		}
-		logger.Debugf("Created new pkcs11 session %+v on slot %d\n", s, handle.slot)
+		logger.Debugf("Created new pkcs11 session %+v on slot %d", s, handle.slot)
 		session = s
 		cachebridge.ClearSession(fmt.Sprintf("%d", session))
 	}
@@ -446,6 +449,9 @@ func (handle *ContextHandle) sendNotification() {
 
 //disposePKCS11Ctx disposes mPkcs11.Ctx object
 func (handle *ContextHandle) disposePKCS11Ctx() {
+
+	logger.Debugf("Disposing pkcs11 ctx for [%s, %s]", handle.lib, handle.label)
+
 	//ignore error on close all sessions
 	err := handle.ctx.CloseAllSessions(handle.slot)
 	if err != nil {
@@ -578,6 +584,7 @@ func newCtxCache() *lazycache.Cache {
 func finalizer() lazyref.Finalizer {
 	return func(v interface{}) {
 		if handle, ok := v.(*ContextHandle); ok {
+			logger.Debugf("Finalizing pkcs11 ctx for [%s, %s]", handle.lib, handle.label)
 			err := handle.ctx.CloseAllSessions(handle.slot)
 			if err != nil {
 				logger.Warnf("unable to close all sessions in finalizer for [%s, %s] : %s", handle.lib, handle.label, err)
