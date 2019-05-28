@@ -19,6 +19,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/sdkinternal/configtxgen/localconfig"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource/genesisconfig"
+	cb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 )
 
 // See https://github.com/hyperledger/fabric/blob/be235fd3a236f792a525353d9f9586c8b0d4a61a/cmd/configtxgen/main.go
@@ -33,7 +34,7 @@ func CreateGenesisBlock(config *genesisconfig.Profile, channelID string) ([]byte
 	if err != nil {
 		return nil, errors.WithMessage(err, "could not create bootstrapper")
 	}
-	logger.Info("Generating genesis block")
+	logger.Debug("Generating genesis block")
 	if config.Orderer == nil {
 		return nil, errors.Errorf("refusing to generate block which is missing orderer section")
 	}
@@ -41,7 +42,7 @@ func CreateGenesisBlock(config *genesisconfig.Profile, channelID string) ([]byte
 		logger.Warn("Genesis block does not contain a consortiums group definition.  This block cannot be used for orderer bootstrap.")
 	}
 	genesisBlock := pgen.GenesisBlockForChannel(channelID)
-	logger.Info("Writing genesis block")
+	logger.Debug("Writing genesis block")
 	return protoutil.Marshal(genesisBlock)
 }
 
@@ -60,7 +61,7 @@ func genesisToLocalConfig(config *genesisconfig.Profile) (*localconfig.Profile, 
 
 // InspectGenesisBlock inspects a block
 func InspectGenesisBlock(data []byte) (string, error) {
-	logger.Info("Parsing genesis block")
+	logger.Debug("Parsing genesis block")
 	block, err := protoutil.UnmarshalBlock(data)
 	if err != nil {
 		return "", fmt.Errorf("error unmarshaling to block: %s", err)
@@ -69,6 +70,48 @@ func InspectGenesisBlock(data []byte) (string, error) {
 	err = protolator.DeepMarshalJSON(&buf, block)
 	if err != nil {
 		return "", fmt.Errorf("malformed block contents: %s", err)
+	}
+	return buf.String(), nil
+}
+
+// CreateChannelCreateTx creates a Fabric transaction for creating a channel
+func CreateChannelCreateTx(conf, baseProfile *genesisconfig.Profile, channelID string) ([]byte, error) {
+	logger.Debug("Generating new channel configtx")
+
+	localConf, err := genesisToLocalConfig(conf)
+	if err != nil {
+		return nil, err
+	}
+	localBaseProfile, err := genesisToLocalConfig(baseProfile)
+	if err != nil {
+		return nil, err
+	}
+
+	var configtx *cb.Envelope
+	if baseProfile == nil {
+		configtx, err = encoder.MakeChannelCreationTransaction(channelID, nil, localConf)
+	} else {
+		configtx, err = encoder.MakeChannelCreationTransactionWithSystemChannelContext(channelID, nil, localConf, localBaseProfile)
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	logger.Debug("Writing new channel tx")
+	return protoutil.Marshal(configtx)
+}
+
+// InspectChannelCreateTx inspects a Fabric transaction for creating a channel
+func InspectChannelCreateTx(data []byte) (string, error) {
+	logger.Debug("Parsing transaction")
+	env, err := protoutil.UnmarshalEnvelope(data)
+	if err != nil {
+		return "", fmt.Errorf("Error unmarshaling envelope: %s", err)
+	}
+	var buf bytes.Buffer
+	err = protolator.DeepMarshalJSON(&buf, env)
+	if err != nil {
+		return "", fmt.Errorf("malformed transaction contents: %s", err)
 	}
 	return buf.String(), nil
 }
