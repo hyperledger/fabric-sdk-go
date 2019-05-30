@@ -11,14 +11,19 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/golang/protobuf/proto"
+
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/channelconfig"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/tools/protolator"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protoutil"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/sdkinternal/configtxgen/encoder"
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/sdkinternal/configtxlator/update"
 	"github.com/pkg/errors"
 
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/sdkinternal/configtxgen/localconfig"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource/genesisconfig"
+	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	cb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 )
 
@@ -38,12 +43,17 @@ func CreateGenesisBlock(config *genesisconfig.Profile, channelID string) ([]byte
 	if config.Orderer == nil {
 		return nil, errors.Errorf("refusing to generate block which is missing orderer section")
 	}
-	if config.Consortiums == nil {
-		logger.Warn("Genesis block does not contain a consortiums group definition.  This block cannot be used for orderer bootstrap.")
-	}
 	genesisBlock := pgen.GenesisBlockForChannel(channelID)
 	logger.Debug("Writing genesis block")
 	return protoutil.Marshal(genesisBlock)
+}
+
+// CreateGenesisBlock creates a genesis block for a channel
+func CreateGenesisBlockForOrderer(config *genesisconfig.Profile, channelID string) ([]byte, error) {
+	if config.Consortiums == nil {
+		return nil, errors.Errorf("Genesis block does not contain a consortiums group definition. This block cannot be used for orderer bootstrap.")
+	}
+	return CreateGenesisBlock(config, channelID)
 }
 
 func genesisToLocalConfig(config *genesisconfig.Profile) (*localconfig.Profile, error) {
@@ -59,8 +69,11 @@ func genesisToLocalConfig(config *genesisconfig.Profile) (*localconfig.Profile, 
 	return c, nil
 }
 
-// InspectGenesisBlock inspects a block
-func InspectGenesisBlock(data []byte) (string, error) {
+// InspectBlock inspects a block
+func InspectBlock(data []byte) (string, error) {
+	if len(data) == 0 {
+		return "", fmt.Errorf("missing block")
+	}
 	logger.Debug("Parsing genesis block")
 	block, err := protoutil.UnmarshalBlock(data)
 	if err != nil {
@@ -114,4 +127,53 @@ func InspectChannelCreateTx(data []byte) (string, error) {
 		return "", fmt.Errorf("malformed transaction contents: %s", err)
 	}
 	return buf.String(), nil
+}
+
+// CreateAnchorPeersUpdate creates an anchor peers update transaction
+func CreateAnchorPeersUpdate(conf *genesisconfig.Profile, channelID string, asOrg string) (*common.Envelope, error) {
+	logger.Debug("Generating anchor peer update")
+	if asOrg == "" {
+		return nil, fmt.Errorf("Must specify an organization to update the anchor peer for")
+	}
+
+	if conf.Application == nil {
+		return nil, fmt.Errorf("Cannot update anchor peers without an application section")
+	}
+
+	localConf, err := genesisToLocalConfig(conf)
+	if err != nil {
+		return nil, err
+	}
+
+	original, err := encoder.NewChannelGroup(localConf)
+	if err != nil {
+		return nil, errors.WithMessage(err, "error parsing profile as channel group")
+	}
+	original.Groups[channelconfig.ApplicationGroupKey].Version = 1
+
+	updated := proto.Clone(original).(*cb.ConfigGroup)
+
+	originalOrg, ok := original.Groups[channelconfig.ApplicationGroupKey].Groups[asOrg]
+	if !ok {
+		return nil, errors.Errorf("org with name '%s' does not exist in config", asOrg)
+	}
+
+	if _, ok = originalOrg.Values[channelconfig.AnchorPeersKey]; !ok {
+		return nil, errors.Errorf("org '%s' does not have any anchor peers defined", asOrg)
+	}
+
+	delete(originalOrg.Values, channelconfig.AnchorPeersKey)
+
+	updt, err := update.Compute(&cb.Config{ChannelGroup: original}, &cb.Config{ChannelGroup: updated})
+	if err != nil {
+		return nil, errors.WithMessage(err, "could not compute update")
+	}
+	updt.ChannelId = channelID
+
+	newConfigUpdateEnv := &cb.ConfigUpdateEnvelope{
+		ConfigUpdate: protoutil.MarshalOrPanic(updt),
+	}
+
+	return protoutil.CreateSignedEnvelope(cb.HeaderType_CONFIG_UPDATE, channelID, nil, newConfigUpdateEnv, 0, 0)
+
 }
