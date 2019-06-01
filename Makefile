@@ -28,7 +28,6 @@ DOCKER_COMPOSE_CMD ?= docker-compose
 FABRIC_STABLE_VERSION           := 1.4.1
 FABRIC_STABLE_VERSION_MINOR     := 1.4
 FABRIC_STABLE_VERSION_MAJOR     := 1
-FABRIC_BASEIMAGE_STABLE_VERSION := 0.4.15
 
 FABRIC_PRERELEASE_VERSION       :=
 FABRIC_PRERELEASE_VERSION_MINOR :=
@@ -53,11 +52,6 @@ GOLANGCI_LINT_VER ?= v1.16.0
 
 # Fabric tool versions (overridable)
 FABRIC_TOOLS_VERSION ?= $(FABRIC_STABLE_VERSION)
-FABRIC_BASE_VERSION  ?= $(FABRIC_BASEIMAGE_STABLE_VERSION)
-
-# Fabric base docker image (overridable)
-FABRIC_BASE_IMAGE   ?= hyperledger/fabric-baseimage
-FABRIC_BASE_TAG     ?= $(FABRIC_ARCH)-$(FABRIC_BASE_VERSION)
 
 # Fabric tools docker image (overridable)
 FABRIC_TOOLS_IMAGE ?= hyperledger/fabric-tools
@@ -67,6 +61,10 @@ FABRIC_TOOLS_TAG   ?= $(FABRIC_ARCH)-$(FABRIC_TOOLS_VERSION)
 FABRIC_RELEASE_REGISTRY     ?=
 FABRIC_DEV_REGISTRY         ?= nexus3.hyperledger.org:10001
 FABRIC_DEV_REGISTRY_PRE_CMD ?= docker login -u docker -p docker nexus3.hyperledger.org:10001
+
+# Base image variables for socat and softshm builds
+BASE_UBUNTU_VERSION = "xenial"
+BASE_GO_VERSION = "1.12.5"
 
 # Upstream fabric patching (overridable)
 THIRDPARTY_FABRIC_CA_BRANCH ?= master
@@ -279,15 +277,14 @@ lint-all: version populate-noforce
 .PHONY: build-softhsm2-image
 build-softhsm2-image:
 	 @$(DOCKER_CMD) build --no-cache -q -t "fabsdkgo-softhsm2" \
-		--build-arg FABRIC_BASE_IMAGE=$(FABRIC_BASE_IMAGE) \
-		--build-arg FABRIC_BASE_TAG=$(FABRIC_BASE_TAG) \
+		--build-arg BASE_UBUNTU_VERSION=$(BASE_UBUNTU_VERSION) \
+		--build-arg BASE_GO_VERSION=$(BASE_GO_VERSION) \
 		-f $(FIXTURE_SOFTHSM2_PATH)/Dockerfile .
 
 .PHONY: build-socat-image
 build-socat-image:
 	 @$(DOCKER_CMD) build --no-cache -q -t "fabsdkgo-socat" \
-		--build-arg FABRIC_BASE_IMAGE=$(FABRIC_BASE_IMAGE) \
-		--build-arg FABRIC_BASE_TAG=$(FABRIC_BASE_TAG) \
+		--build-arg BASE_UBUNTU_VERSION=$(BASE_UBUNTU_VERSION) \
 		-f $(FIXTURE_SOCAT_PATH)/Dockerfile .
 
 .PHONY: unit-test
