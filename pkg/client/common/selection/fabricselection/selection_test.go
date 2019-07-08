@@ -166,7 +166,36 @@ func TestSelection(t *testing.T) {
 	})
 
 	t.Run("Peer Filter", func(t *testing.T) {
-		testSelectionPeerFilter(t, service)
+		endorsers, err := service.GetEndorsersForChaincode([]*fab.ChaincodeCall{{ID: cc1}},
+			options.WithPeerFilter(func(peer fab.Peer) bool {
+				return peer.(fab.PeerState).BlockHeight() > 1001
+			}),
+		)
+
+		assert.NoError(t, err)
+		assert.Equalf(t, 4, len(endorsers), "Expecting 4 endorser")
+
+		// Ensure the endorsers all have a block height > 1001
+		for _, endorser := range endorsers {
+			blockHeight := endorser.(fab.PeerState).BlockHeight()
+			assert.Truef(t, blockHeight > 1001, "Expecting block height to be > 1001")
+		}
+	})
+
+	t.Run("Default Peer Filter", func(t *testing.T) {
+		var prev fab.Peer
+		for i := 0; i < 6; i++ {
+			endorsers, err := service.GetEndorsersForChaincode([]*fab.ChaincodeCall{{ID: cc1}})
+			assert.NoError(t, err)
+			assert.Equalf(t, 6, len(endorsers), "Expecting 6 endorser")
+
+			// Ensure that we get a different endorser as the first peer each time GetEndorsersForChaincode is called in
+			// order to know that the default balancer (round-robin) is working.
+			if prev != nil {
+				require.NotEqual(t, prev, endorsers[0])
+			}
+			prev = endorsers[0]
+		}
 	})
 
 	t.Run("Block Height Sorter Round Robin", func(t *testing.T) {
@@ -276,23 +305,6 @@ func testSelectionCCtoCC(t *testing.T, service *Service) {
 	endorsers, err := service.GetEndorsersForChaincode([]*fab.ChaincodeCall{cc1ChaincodeCall, cc2ChaincodeCall})
 	assert.NoError(t, err)
 	assert.Equalf(t, 6, len(endorsers), "Expecting 6 endorser")
-}
-
-func testSelectionPeerFilter(t *testing.T, service *Service) {
-	endorsers, err := service.GetEndorsersForChaincode([]*fab.ChaincodeCall{{ID: cc1}},
-		options.WithPeerFilter(func(peer fab.Peer) bool {
-			return peer.(fab.PeerState).BlockHeight() > 1001
-		}),
-	)
-
-	assert.NoError(t, err)
-	assert.Equalf(t, 4, len(endorsers), "Expecting 4 endorser")
-
-	// Ensure the endorsers all have a block height > 1001
-	for _, endorser := range endorsers {
-		blockHeight := endorser.(fab.PeerState).BlockHeight()
-		assert.Truef(t, blockHeight > 1001, "Expecting block height to be > 1001")
-	}
 }
 
 func testSelectionDistribution(t *testing.T, service *Service, balancer balancer.Balancer, tolerance int) {

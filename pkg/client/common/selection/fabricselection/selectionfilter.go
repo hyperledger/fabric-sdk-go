@@ -31,13 +31,9 @@ var noFilter = func(fab.Peer) bool {
 	return true
 }
 
-func newFilter(channelID string, ctx contextAPI.Client, peers []fab.Peer, filter options.PeerFilter, sorter options.PeerSorter) *selectionFilter {
+func newFilter(ctx contextAPI.Client, peers []fab.Peer, filter options.PeerFilter, sorter options.PeerSorter) *selectionFilter {
 	if filter == nil {
 		filter = noFilter
-	}
-
-	if sorter == nil {
-		sorter = resolvePeerSorter(channelID, ctx)
 	}
 
 	return &selectionFilter{

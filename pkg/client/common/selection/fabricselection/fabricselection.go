@@ -79,6 +79,7 @@ type Service struct {
 	chResponseCache *lazycache.Cache
 	retryOpts       retry.Opts
 	errHandler      fab.ErrorHandler
+	peerSorter      soptions.PeerSorter
 }
 
 // New creates a new dynamic selection service using Fabric's Discovery Service
@@ -111,6 +112,7 @@ func New(ctx contextAPI.Client, channelID string, discovery fab.DiscoveryService
 		discClient:      discoveryClient,
 		retryOpts:       options.retryOpts,
 		errHandler:      options.errHandler,
+		peerSorter:      resolvePeerSorter(channelID, ctx),
 	}
 
 	s.chResponseCache = lazycache.NewWithData(
@@ -158,6 +160,10 @@ func (s *Service) GetEndorsersForChaincode(chaincodes []*fab.ChaincodeCall, opts
 	params := soptions.Params{RetryOpts: s.retryOpts}
 	coptions.Apply(&params, opts)
 
+	if params.PeerSorter == nil {
+		params.PeerSorter = s.peerSorter
+	}
+
 	chResponse, err := s.getChannelResponse(chaincodes, params.RetryOpts)
 	if err != nil {
 		return nil, errors.Wrapf(err, "error getting channel response for channel [%s]", s.channelID)
@@ -190,7 +196,7 @@ func (s *Service) getEndorsers(chaincodes []*fab.ChaincodeCall, chResponse discc
 		return nil, errors.Wrapf(err, "error getting peers from discovery service for channel [%s]", s.channelID)
 	}
 
-	endpoints, err := chResponse.Endorsers(asInvocationChain(chaincodes), newFilter(s.channelID, s.ctx, peers, peerFilter, sorter))
+	endpoints, err := chResponse.Endorsers(asInvocationChain(chaincodes), newFilter(s.ctx, peers, peerFilter, sorter))
 	if err != nil && newDiscoveryError(err).isTransient() {
 		return nil, status.New(status.DiscoveryServerStatus, int32(status.QueryEndorsers), fmt.Sprintf("error getting endorsers: %s", err), []interface{}{})
 	}
