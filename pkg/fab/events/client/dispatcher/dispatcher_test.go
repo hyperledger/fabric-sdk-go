@@ -506,3 +506,21 @@ func TestOpts(t *testing.T) {
 		require.NotNil(t, params.peerResolverProvider)
 	})
 }
+
+func TestDisconnectedEvent(t *testing.T) {
+	t.Run("Fatal", func(t *testing.T) {
+		err := errors.New("injected error")
+		evt := NewFatalDisconnectedEvent(err)
+		require.NotNil(t, evt)
+		require.NotNil(t, evt.Err)
+		require.True(t, evt.Err.IsFatal())
+	})
+
+	t.Run("Non-fatal", func(t *testing.T) {
+		err := errors.New("injected error")
+		evt := NewDisconnectedEvent(err)
+		require.NotNil(t, evt)
+		require.NotNil(t, evt.Err)
+		require.False(t, evt.Err.IsFatal())
+	})
+}

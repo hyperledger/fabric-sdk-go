@@ -308,7 +308,7 @@ func (ed *Dispatcher) disconnect() error {
 	}
 
 	// Send a DisconnectedEvent. This will trigger a reconnect.
-	eventch <- NewDisconnectedEvent(nil)
+	eventch <- NewDisconnectedEvent(errors.New("event client was forced to disconnect"))
 	return nil
 }
 
