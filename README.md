@@ -37,7 +37,7 @@ You're good to go, happy coding! Check out the examples for usage demonstrations
 ### Current Compatibility
 The SDK's integration tests run against three tagged Fabric versions:
 - prev (currently v1.3.0)
-- stable (currently v1.4.0)
+- stable (currently v1.4.2)
 - prerelease (currently disabled)
 
 Additionally for development purposes integration tests also run against the devstable Fabric version as needed.
@@ -94,7 +94,7 @@ If you want to contribute to the Go SDK, please run the test suite and submit pa
 
 You need:
 
-- Go 1.11
+- Go 1.12
 - Make
 - Docker
 - Docker Compose

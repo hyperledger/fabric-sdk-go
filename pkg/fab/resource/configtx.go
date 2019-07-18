@@ -48,7 +48,7 @@ func CreateGenesisBlock(config *genesisconfig.Profile, channelID string) ([]byte
 	return protoutil.Marshal(genesisBlock)
 }
 
-// CreateGenesisBlock creates a genesis block for a channel
+// CreateGenesisBlockForOrderer creates a genesis block for a channel
 func CreateGenesisBlockForOrderer(config *genesisconfig.Profile, channelID string) ([]byte, error) {
 	if config.Consortiums == nil {
 		return nil, errors.Errorf("Genesis block does not contain a consortiums group definition. This block cannot be used for orderer bootstrap.")

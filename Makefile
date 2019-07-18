@@ -25,7 +25,7 @@ DOCKER_CMD         ?= docker
 DOCKER_COMPOSE_CMD ?= docker-compose
 
 # Fabric versions used in the Makefile
-FABRIC_STABLE_VERSION           := 1.4.1
+FABRIC_STABLE_VERSION           := 1.4.2
 FABRIC_STABLE_VERSION_MINOR     := 1.4
 FABRIC_STABLE_VERSION_MAJOR     := 1
 
@@ -48,7 +48,7 @@ FABRIC_SDKGO_TEST_CHANGED  ?= false
 FABRIC_SDKGO_TESTRUN_ID    ?= $(shell date +'%Y%m%d%H%M%S')
 
 # Dev tool versions (overridable)
-GOLANGCI_LINT_VER ?= v1.16.0
+GOLANGCI_LINT_VER ?= v1.17.1
 
 # Fabric tool versions (overridable)
 FABRIC_TOOLS_VERSION ?= $(FABRIC_STABLE_VERSION)
