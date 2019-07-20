@@ -37,6 +37,40 @@ services:
         aliases:
           - ca.org1.example.com
 
+  org1tlsca:
+    # NOTE: Cheating a bit with certs (re-using from other nodes) as Fabric's cryptogen tool
+    # generates keys for only one CA instance per org. The goal is just to demonstrate that the SDK
+    # can handle multiple CA instances per org.
+    image: ${FABRIC_DOCKER_REGISTRY}${FABRIC_CA_FIXTURE_IMAGE}:${FABRIC_ARCH}${FABRIC_ARCH_SEP}${FABRIC_CA_FIXTURE_TAG}
+    environment:
+      - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
+      - FABRIC_CA_SERVER_CA_NAME=tlsca.org1.example.com
+      - FABRIC_CA_SERVER_CA_CERTFILE=/etc/hyperledger/fabric-ca-server-config/ca.org1.example.com-cert.pem
+      - FABRIC_CA_SERVER_CA_KEYFILE=${ORG1TLSCA_FABRIC_CA_SERVER_CA_KEYFILE}
+      - FABRIC_CA_SERVER_TLS_ENABLED=true
+      - FABRIC_CA_SERVER_TLS_CERTFILE=/etc/hyperledger/tls/peer/server.crt
+      - FABRIC_CA_SERVER_TLS_KEYFILE=/etc/hyperledger/tls/peer/server.key
+      - FABRIC_CA_SERVER_TLS_CLIENTAUTH_TYPE
+      - FABRIC_CA_SERVER_TLS_CERTFILES
+      - FABRIC_CA_SERVER_CFG_AFFILIATIONS_ALLOWREMOVE=true
+      - FABRIC_CA_SERVER_CFG_IDENTITIES_ALLOWREMOVE=true
+      # TODO below env variable added to test Compatibility mode - remove when Fabric v1.3 is not supported anymore
+      - FABRIC_CA_SERVER_COMPATIBILITY_MODE_V1_3=false
+    #comment out logging.driver in order to render the debug logs
+    logging:
+      driver: none
+    ports:
+      - "7154:7154"
+    command: sh -c 'fabric-ca-server start -b admin2:adminpw2 -d -p 7154'
+    volumes:
+      - ../fabric/${FABRIC_CRYPTOCONFIG_VERSION}/crypto-config/peerOrganizations/org1.example.com/tlsca/:/etc/hyperledger/fabric-ca-server-config/
+      - ../fabric/${FABRIC_CRYPTOCONFIG_VERSION}/crypto-config/peerOrganizations/org1.example.com/peers/ca.org1.example.com/tls:/etc/hyperledger/tls/peer
+      - ../fabric/${FABRIC_CRYPTOCONFIG_VERSION}/crypto-config/peerOrganizations/tls.example.com/tlsca:/etc/hyperledger/tlsca
+    networks:
+      default:
+        aliases:
+          - ca.org1.example.com
+
   org2ca1:
     image: ${FABRIC_DOCKER_REGISTRY}${FABRIC_CA_FIXTURE_IMAGE}:${FABRIC_ARCH}${FABRIC_ARCH_SEP}${FABRIC_CA_FIXTURE_TAG}
     environment:

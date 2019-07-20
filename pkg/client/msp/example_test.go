@@ -81,6 +81,24 @@ func ExampleWithOrg() {
 	// Output: msp client created with org
 }
 
+func ExampleWithCAInstance() {
+
+	ctx := mockClientProvider()
+
+	// Create msp client
+	c, err := New(ctx, WithCAInstance("tlsca.org1.example.com"))
+	if err != nil {
+		fmt.Println("failed to create msp client")
+		return
+	}
+
+	if c != nil {
+		fmt.Println("msp client created with CA Instance")
+	}
+
+	// Output: msp client created with CA Instance
+}
+
 func ExampleWithSecret() {
 
 	ctx := mockClientProvider()

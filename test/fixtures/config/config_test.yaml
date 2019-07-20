@@ -281,6 +281,7 @@ organizations:
     # Fabric-CA servers.
     certificateAuthorities:
       - ca.org1.example.com
+      - tlsca.org1.example.com
 
   # the profile will contain public information about organizations other than the one it belongs to.
   # These are necessary information to make transaction lifecycles work, including MSP IDs and
@@ -438,6 +439,26 @@ certificateAuthorities:
       enrollSecret: adminpw
     # [Optional] The optional name of the CA.
     caName: ca.org1.example.com
+  tlsca.org1.example.com:
+    # [Optional] Default: Infer from hostname
+    url: https://ca.org1.example.com:7154
+    tlsCACerts:
+      # Comma-Separated list of paths
+      path: ${FABRIC_SDK_GO_PROJECT_PATH}/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/org1.example.com/tlsca/tlsca.org1.example.com-cert.pem
+      # Client key and cert for SSL handshake with Fabric CA
+      client:
+        key:
+          path: ${FABRIC_SDK_GO_PROJECT_PATH}/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/tls.example.com/users/User1@tls.example.com/tls/client.key
+        cert:
+          path: ${FABRIC_SDK_GO_PROJECT_PATH}/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/tls.example.com/users/User1@tls.example.com/tls/client.crt
+
+    # Fabric-CA supports dynamic user enrollment via REST APIs. A "root" user, a.k.a registrar, is
+    # needed to enroll and invoke new users.
+    registrar:
+      enrollId: admin2
+      enrollSecret: adminpw2
+    # [Optional] The optional name of the CA.
+    caName: tlsca.org1.example.com
   ca.org2.example.com:
     url: https://ca.org2.example.com:8054
     # [Optional] The optional server name for target override

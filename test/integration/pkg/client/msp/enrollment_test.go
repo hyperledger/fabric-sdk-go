@@ -37,9 +37,26 @@ func TestRegisterEnroll(t *testing.T) {
 
 	ctxProvider := sdk.Context()
 
+	// Test with the default org CA
+	testRegisterEnrollWithCAInstance(t, ctxProvider, "")
+
+	// Test with the second org CA instance
+	testRegisterEnrollWithCAInstance(t, ctxProvider, "tlsca.org1.example.com")
+
+}
+
+func createMspClient(t *testing.T, ctxProvider context.ClientProvider, caInstance string) (*msp.Client, error) {
 	// Get the Client.
 	// Without WithOrg option, uses default client organization.
-	mspClient, err := msp.New(ctxProvider)
+	if caInstance == "" {
+		return msp.New(ctxProvider)
+	} else {
+		return msp.New(ctxProvider, msp.WithCAInstance(caInstance))
+	}
+}
+func testRegisterEnrollWithCAInstance(t *testing.T, ctxProvider context.ClientProvider, caInstance string) {
+
+	mspClient, err := createMspClient(t, ctxProvider, caInstance)
 	if err != nil {
 		t.Fatalf("failed to create CA client: %s", err)
 	}
@@ -48,7 +65,7 @@ func TestRegisterEnroll(t *testing.T) {
 	// we have to enroll the CA registrar first. Otherwise,
 	// CA operations that require the registrar's identity
 	// will be rejected by the CA.
-	registrarEnrollID, registrarEnrollSecret := getRegistrarEnrollmentCredentials(t, ctxProvider)
+	registrarEnrollID, registrarEnrollSecret := getRegistrarEnrollmentCredentialsWithCAInstance(t, ctxProvider, caInstance)
 	err = mspClient.Enroll(registrarEnrollID, msp.WithSecret(registrarEnrollSecret))
 	if err != nil {
 		t.Fatalf("Enroll failed: %s", err)
@@ -252,6 +269,11 @@ func TestEnrollWithProfile(t *testing.T) {
 
 func getRegistrarEnrollmentCredentials(t *testing.T, ctxProvider context.ClientProvider) (string, string) {
 
+	return getRegistrarEnrollmentCredentialsWithCAInstance(t, ctxProvider, "")
+}
+
+func getRegistrarEnrollmentCredentialsWithCAInstance(t *testing.T, ctxProvider context.ClientProvider, caName string) (string, string) {
+
 	ctx, err := ctxProvider()
 	if err != nil {
 		t.Fatalf("failed to get context: %s", err)
@@ -259,7 +281,11 @@ func getRegistrarEnrollmentCredentials(t *testing.T, ctxProvider context.ClientP
 
 	myOrg := ctx.IdentityConfig().Client().Organization
 
-	caConfig, ok := ctx.IdentityConfig().CAConfig(myOrg)
+	if caName == "" {
+		caName = ctx.EndpointConfig().NetworkConfig().Organizations[myOrg].CertificateAuthorities[0]
+	}
+
+	caConfig, ok := ctx.IdentityConfig().CAConfig(caName)
 	if !ok {
 		t.Fatal("CAConfig failed")
 	}

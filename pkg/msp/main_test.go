@@ -31,6 +31,8 @@ import (
 
 const (
 	org1               = "Org1"
+	org1CA             = "ca.org1.example.com"
+	org2CA             = "ca.org2.example.com"
 	caServerURLListen  = "http://127.0.0.1:0"
 	dummyUserStorePath = "/tmp/userstore"
 )

@@ -119,7 +119,7 @@ func TestTLSCAConfigFromPems(t *testing.T) {
 	assert.Nil(t, err, "Failed to initialize endpoint config , reason: %s", err)
 
 	identityConfig := config.(*IdentityConfig)
-	certPem, _ := identityConfig.CAClientCert(org1)
+	certPem, _ := identityConfig.CAClientCert("ca-org1")
 	certConfig := endpoint.TLSConfig{Pem: string(certPem)}
 
 	err = certConfig.LoadBytes()
@@ -146,7 +146,7 @@ func TestTLSCAConfigFromPems(t *testing.T) {
 	_, err = endpointConfig.TLSCACertPool().Get()
 	assert.Nil(t, err, "TLSCACertPool failed %s", err)
 
-	keyPem, ok := identityConfig.CAClientKey(org1)
+	keyPem, ok := identityConfig.CAClientKey("ca-org1")
 	assert.True(t, ok, "CAClientKey supposed to succeed")
 
 	keyConfig := endpoint.TLSConfig{Pem: string(keyPem)}
@@ -214,22 +214,22 @@ SQtE5YgdxkUCIHReNWh/pluHTxeGu2jNCH1eh6o2ajSGeeizoapvdJbN
 	checkPeerPem(org1, endpointConfig, peer0, t)
 
 	// get CA Server cert pems (embedded) for org1
-	checkCAServerCerts("org1", idConfig, t)
+	checkCAServerCerts(org1CA, idConfig, t)
 
 	// get the client cert pem (embedded) for org1
-	checkClientCert(idConfig, "org1", t)
+	checkCAClientCert(idConfig, org1CA, t)
 
 	// get CA Server certs paths for org1
-	checkCAServerCerts("org1", idConfig, t)
+	checkCAServerCerts(org1CA, idConfig, t)
 
 	// get the client cert path for org1
-	checkClientCert(idConfig, "org1", t)
+	checkCAClientCert(idConfig, org1CA, t)
 
 	// get the client key pem (embedded) for org1
-	checkClientKey(idConfig, "org1", t)
+	checkCAClientKey(idConfig, org1CA, t)
 
 	// get the client key file path for org1
-	checkClientKey(idConfig, "org1", t)
+	checkCAClientKey(idConfig, org1CA, t)
 }
 
 func checkPeerPem(org string, endpointConfig fabImpl.EndpointConfig, peer string, t *testing.T) {
@@ -259,20 +259,20 @@ O94CDp7l2k7hMQI0zQ==
 
 }
 
-func checkCAServerCerts(org string, idConfig *IdentityConfig, t *testing.T) {
-	certs, ok := idConfig.CAServerCerts(org)
+func checkCAServerCerts(caName string, idConfig *IdentityConfig, t *testing.T) {
+	certs, ok := idConfig.CAServerCerts(caName)
 	assert.True(t, ok, "Failed to load CAServerCertPems from config.")
 	assert.NotEmpty(t, certs, "Got empty PEM certs for CAServerCertPems")
 }
 
-func checkClientCert(idConfig *IdentityConfig, org string, t *testing.T) {
-	cert, ok := idConfig.CAClientCert(org)
+func checkCAClientCert(idConfig *IdentityConfig, caName string, t *testing.T) {
+	cert, ok := idConfig.CAClientCert(caName)
 	assert.True(t, ok, "Failed to load CAClientCertPem from config.")
 	assert.NotEmpty(t, cert, "Invalid cert")
 }
 
-func checkClientKey(idConfig *IdentityConfig, org string, t *testing.T) {
-	key, ok := idConfig.CAClientKey(org)
+func checkCAClientKey(idConfig *IdentityConfig, caName string, t *testing.T) {
+	key, ok := idConfig.CAClientKey(caName)
 	assert.True(t, ok, "Failed to load CAClientKeyPem from config.")
 	assert.NotEmpty(t, key, "Invalid key")
 }
@@ -315,17 +315,17 @@ func TestCAConfigCryptoFiles(t *testing.T) {
 	identityConfig := config.(*IdentityConfig)
 
 	//Testing CA Client File Location
-	certfile, ok := identityConfig.CAClientCert(org1)
+	certfile, ok := identityConfig.CAClientCert(org1CA)
 	assert.True(t, ok, "CA Cert file location read failed ")
 	assert.True(t, len(certfile) > 0)
 
 	//Testing CA Key File Location
-	keyFile, ok := identityConfig.CAClientKey(org1)
+	keyFile, ok := identityConfig.CAClientKey(org1CA)
 	assert.True(t, ok, "CA Key file location read failed ")
 	assert.True(t, len(keyFile) > 0)
 
 	//Testing CA Server Cert Files
-	sCertFiles, ok := identityConfig.CAServerCerts(org1)
+	sCertFiles, ok := identityConfig.CAServerCerts(org1CA)
 	assert.True(t, ok, "Getting CA server cert files failed")
 	assert.True(t, len(sCertFiles) > 0)
 
@@ -348,7 +348,7 @@ func TestCAConfig(t *testing.T) {
 	//Test Crypto config path
 
 	//Testing CAConfig
-	caConfig, ok := identityConfig.CAConfig(org1)
+	caConfig, ok := identityConfig.CAConfig(org1CA)
 	assert.True(t, ok, "Get CA Config failed")
 	assert.NotNil(t, caConfig, "Get CA Config failed")
 	assert.Equal(t, 1, len(caConfig.GRPCOptions))
@@ -388,7 +388,7 @@ func TestCACertAndKeys(t *testing.T) {
 	if err != nil {
 		t.Fatal("Failed to get config backend")
 	}
-	orgIDs := []string{"org1", "org2"}
+	caNames := []string{"ca-org1", "ca-org2"}
 
 	config, err := ConfigFromBackend(backend...)
 	if err != nil {
@@ -396,16 +396,16 @@ func TestCACertAndKeys(t *testing.T) {
 	}
 	identityConfig := config.(*IdentityConfig)
 
-	for _, orgID := range orgIDs {
-		val, ok := identityConfig.CAClientCert(orgID)
+	for _, caName := range caNames {
+		val, ok := identityConfig.CAClientCert(caName)
 		assert.True(t, ok, "identityConfig.CAClientCert not supposed to return failure")
 		assert.True(t, len(val) > 0, "identityConfig.CAClientCert supposed to return valid cert")
 
-		val, ok = identityConfig.CAClientKey(orgID)
+		val, ok = identityConfig.CAClientKey(caName)
 		assert.True(t, ok, "identityConfig.CAClientKey not supposed to return failure")
 		assert.True(t, len(val) > 0, "identityConfig.CAClientKey supposed to return valid key")
 
-		vals, ok := identityConfig.CAServerCerts(orgID)
+		vals, ok := identityConfig.CAServerCerts(caName)
 		assert.True(t, ok, "identityConfig.CAClientKey not supposed to return failure")
 		assert.True(t, len(vals) > 0, "identityConfig.CAClientKey supposed to return server certs")
 		for _, v := range vals {
@@ -461,14 +461,14 @@ func TestIdentityConfigWithMultipleBackends(t *testing.T) {
 	assert.Equal(t, client.Organization, "org1")
 
 	//CA Config
-	caConfig, ok := identityConfig.CAConfig("org1")
-	assert.True(t, ok, "identityConfig.CAConfig(org1) should have been successful for multiple backends")
+	caConfig, ok := identityConfig.CAConfig("ca.org1.example.com")
+	assert.True(t, ok, "identityConfig.CAConfig(ca.org1.example.com) should have been successful for multiple backends")
 	assert.Equal(t, caConfig.URL, "https://ca.org1.example.com:7054")
 	assert.Equal(t, 1, len(caConfig.GRPCOptions))
 	assert.Equal(t, "ca.org1.example.com", caConfig.GRPCOptions["ssl-target-name-override"])
 
-	caConfig, ok = identityConfig.CAConfig("org2")
-	assert.True(t, ok, "identityConfig.CAConfig(org2) should have been successful for multiple backends")
+	caConfig, ok = identityConfig.CAConfig("ca.org2.example.com")
+	assert.True(t, ok, "identityConfig.CAConfig(ca.org2.example.com) should have been successful for multiple backends")
 	assert.Equal(t, caConfig.URL, "https://ca.org2.example.com:8054")
 }
 

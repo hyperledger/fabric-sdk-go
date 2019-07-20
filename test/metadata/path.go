@@ -26,6 +26,17 @@ func GetProjectPath() string {
 }
 
 func getProjectPath() string {
+
+	// If the current dir is in another module (not root),
+	// e.g. when testing within an IDE,
+	// the search for the first "go.mod" will hit a non-root file.
+	// In that case, set the FABRIC_SDK_GO_PROJECT_PATH environment
+	// variable to the correct project root
+	val, ok := os.LookupEnv("FABRIC_SDK_GO_PROJECT_PATH")
+	if ok {
+		return val
+	}
+
 	if len(ProjectPath) > 0 {
 		return filepath.Clean(ProjectPath)
 	}

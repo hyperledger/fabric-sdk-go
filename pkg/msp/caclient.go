@@ -23,7 +23,7 @@ var logger = logging.NewLogger("fabsdk/msp")
 // CAClientImpl implements api/msp/CAClient
 type CAClientImpl struct {
 	orgName         string
-	caName          string // Currently, an organization can be associated with only one CA
+	caName          string
 	orgMSPID        string
 	cryptoSuite     core.CryptoSuite
 	identityManager msp.IdentityManager
@@ -32,8 +32,23 @@ type CAClientImpl struct {
 	registrar       msp.EnrollCredentials
 }
 
+// CAClientOption describes a functional parameter for NewCAClient
+type CAClientOption func(*caClientOption) error
+
+type caClientOption struct {
+	caName string
+}
+
+// WithCAInstance allows for specifying optional CA name (within the CA server instance)
+func WithCAInstance(caname string) CAClientOption {
+	return func(o *caClientOption) error {
+		o.caName = caname
+		return nil
+	}
+}
+
 // NewCAClient creates a new CA CAClient instance
-func NewCAClient(orgName string, ctx contextApi.Client) (*CAClientImpl, error) {
+func NewCAClient(orgName string, ctx contextApi.Client, opts ...CAClientOption) (*CAClientImpl, error) {
 
 	if orgName == "" {
 		orgName = ctx.IdentityConfig().Client().Organization
@@ -41,6 +56,11 @@ func NewCAClient(orgName string, ctx contextApi.Client) (*CAClientImpl, error) {
 
 	if orgName == "" {
 		return nil, errors.New("organization is missing")
+	}
+
+	options, err := processCAClientOptions(opts...)
+	if err != nil {
+		return nil, err
 	}
 
 	netConfig := ctx.EndpointConfig().NetworkConfig()
@@ -53,22 +73,17 @@ func NewCAClient(orgName string, ctx contextApi.Client) (*CAClientImpl, error) {
 		return nil, errors.New("no CAs configured")
 	}
 
-	var adapter *fabricCAAdapter
-	var registrar msp.EnrollCredentials
-	var err error
-
-	// Currently, an organization can be associated with only one CA
-	caName := orgConfig.CertificateAuthorities[0]
-	caConfig, ok := ctx.IdentityConfig().CAConfig(orgName)
-	if ok {
-		adapter, err = newFabricCAAdapter(orgName, ctx.CryptoSuite(), ctx.IdentityConfig())
-		if err == nil {
-			registrar = caConfig.Registrar
-		} else {
-			return nil, errors.Wrapf(err, "error initializing CA [%s]", caName)
-		}
-	} else {
+	caName := options.caName
+	if caName == "" {
+		caName = orgConfig.CertificateAuthorities[0]
+	}
+	caConfig, ok := ctx.IdentityConfig().CAConfig(caName)
+	if !ok {
 		return nil, errors.Errorf("error initializing CA [%s]", caName)
+	}
+	adapter, err := newFabricCAAdapter(caName, ctx.CryptoSuite(), ctx.IdentityConfig())
+	if err != nil {
+		return nil, errors.Wrapf(err, "error initializing CA [%s]", caName)
 	}
 
 	identityManager, ok := ctx.IdentityManager(orgName)
@@ -84,9 +99,21 @@ func NewCAClient(orgName string, ctx contextApi.Client) (*CAClientImpl, error) {
 		identityManager: identityManager,
 		userStore:       ctx.UserStore(),
 		adapter:         adapter,
-		registrar:       registrar,
+		registrar:       caConfig.Registrar,
 	}
 	return mgr, nil
+}
+
+func processCAClientOptions(opts ...CAClientOption) (*caClientOption, error) {
+	options := caClientOption{}
+
+	for _, param := range opts {
+		err := param(&options)
+		if err != nil {
+			return nil, errors.WithMessage(err, "failed to create CA Client")
+		}
+	}
+	return &options, nil
 }
 
 // Enroll a registered user in order to receive a signed X509 certificate.

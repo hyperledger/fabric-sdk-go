@@ -46,7 +46,7 @@ func ConfigFromBackend(coreBackend ...core.ConfigBackend) (msp.IdentityConfig, e
 // IdentityConfig represents the identity configuration for the client
 type IdentityConfig struct {
 	client              *msp.ClientConfig
-	caConfigsByOrg      map[string][]*msp.CAConfig
+	caConfigs           map[string]*msp.CAConfig
 	backend             *lookup.ConfigLookup
 	caKeyStorePath      string
 	credentialStorePath string
@@ -118,44 +118,38 @@ func (c *IdentityConfig) Client() *msp.ClientConfig {
 }
 
 // CAConfig returns the CA configuration.
-func (c *IdentityConfig) CAConfig(org string) (*msp.CAConfig, bool) {
-	caConfigs, ok := c.caConfigsByOrg[strings.ToLower(org)]
-	if ok {
-		//for now, we're only loading the first Cert Authority by default.
-		return caConfigs[0], true
-	}
-	return nil, false
+func (c *IdentityConfig) CAConfig(caName string) (*msp.CAConfig, bool) {
+	cfg, ok := c.caConfigs[strings.ToLower(caName)]
+	return cfg, ok
 }
 
 //CAClientCert read configuration for the fabric CA client cert bytes for given org
-func (c *IdentityConfig) CAClientCert(org string) ([]byte, bool) {
-	caConfigs, ok := c.caConfigsByOrg[strings.ToLower(org)]
+func (c *IdentityConfig) CAClientCert(caName string) ([]byte, bool) {
+	cfg, ok := c.caConfigs[strings.ToLower(caName)]
 	if ok {
 		//for now, we're only loading the first Cert Authority by default.
-		return caConfigs[0].TLSCAClientCert, true
+		return cfg.TLSCAClientCert, true
 	}
-
 	return nil, false
 }
 
 //CAClientKey read configuration for the fabric CA client key bytes for given org
-func (c *IdentityConfig) CAClientKey(org string) ([]byte, bool) {
-	caConfigs, ok := c.caConfigsByOrg[strings.ToLower(org)]
+func (c *IdentityConfig) CAClientKey(caName string) ([]byte, bool) {
+	cfg, ok := c.caConfigs[strings.ToLower(caName)]
 	if ok {
 		//for now, we're only loading the first Cert Authority by default.
-		return caConfigs[0].TLSCAClientKey, true
+		return cfg.TLSCAClientKey, true
 	}
-
 	return nil, false
 }
 
 // CAServerCerts Read configuration option for the server certificates
 // will send a list of cert bytes for given org
-func (c *IdentityConfig) CAServerCerts(org string) ([][]byte, bool) {
-	caConfigs, ok := c.caConfigsByOrg[strings.ToLower(org)]
+func (c *IdentityConfig) CAServerCerts(caName string) ([][]byte, bool) {
+	cfg, ok := c.caConfigs[strings.ToLower(caName)]
 	if ok {
 		//for now, we're only loading the first Cert Authority by default.
-		return caConfigs[0].TLSCAServerCerts, true
+		return cfg.TLSCAServerCerts, true
 	}
 	return nil, false
 }
@@ -278,33 +272,24 @@ func (c *IdentityConfig) loadCATLSConfig(configEntity *identityConfigEntity) err
 
 func (c *IdentityConfig) loadAllCAConfigs(configEntity *identityConfigEntity) error {
 
-	caConfigsByOrg := make(map[string][]*msp.CAConfig)
+	configs := make(map[string]*msp.CAConfig)
 
-	for orgName, orgConfig := range configEntity.Organizations {
-		var caConfigs []*msp.CAConfig
-		for _, caName := range orgConfig.CertificateAuthorities {
-			if caName == "" {
-				continue
-			}
+	for _, ca := range configEntity.CertificateAuthorities {
 
-			matchedCaConfig, ok := c.tryMatchingCAConfig(configEntity, strings.ToLower(caName))
-			if !ok {
-				continue
-			}
-
-			logger.Debugf("Mapped Certificate Authority for [%s] to [%s]", orgName, caName)
-			mspCAConfig, err := c.getMSPCAConfig(caName, matchedCaConfig)
-			if err != nil {
-				return err
-			}
-			caConfigs = append(caConfigs, mspCAConfig)
+		matchedCaConfig, ok := c.tryMatchingCAConfig(configEntity, strings.ToLower(ca.CAName))
+		if !ok {
+			continue
 		}
-		if len(caConfigs) > 0 {
-			caConfigsByOrg[strings.ToLower(orgName)] = caConfigs
+
+		logger.Debugf("Mapped Certificate Authority [%s]", ca.CAName)
+		mspCAConfig, err := c.getMSPCAConfig(ca.CAName, matchedCaConfig)
+		if err != nil {
+			return err
 		}
+		configs[strings.ToLower(ca.CAName)] = mspCAConfig
 	}
 
-	c.caConfigsByOrg = caConfigsByOrg
+	c.caConfigs = configs
 	return nil
 }
 

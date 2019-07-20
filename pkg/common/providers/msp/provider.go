@@ -25,10 +25,10 @@ type IdentityManagerProvider interface {
 //IdentityConfig contains identity configurations
 type IdentityConfig interface {
 	Client() *ClientConfig
-	CAConfig(org string) (*CAConfig, bool)
-	CAServerCerts(org string) ([][]byte, bool)
-	CAClientKey(org string) ([]byte, bool)
-	CAClientCert(org string) ([]byte, bool)
+	CAConfig(caName string) (*CAConfig, bool)
+	CAServerCerts(caName string) ([][]byte, bool)
+	CAClientKey(caName string) ([]byte, bool)
+	CAClientCert(caName string) ([]byte, bool)
 	CAKeyStorePath() string
 	CredentialStorePath() string
 }

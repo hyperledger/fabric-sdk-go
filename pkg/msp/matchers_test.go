@@ -52,7 +52,7 @@ func testCAEntityMatcher(t *testing.T, configPath string) {
 	assert.Nil(t, err, "not supposed to get error")
 	assert.NotNil(t, config)
 
-	caConfig, ok := config.CAConfig("org1")
+	caConfig, ok := config.CAConfig("ca.org1.example.com")
 	assert.True(t, ok, "supposed to find caconfig")
 	assert.NotNil(t, caConfig)
 	assert.Equal(t, actualCAURL, caConfig.URL)
@@ -67,7 +67,7 @@ func testCAEntityMatcher(t *testing.T, configPath string) {
 	assert.Nil(t, err, "not supposed to get error")
 	assert.NotNil(t, config)
 
-	caConfig, ok = config.CAConfig("org1")
+	caConfig, ok = config.CAConfig("ca.org1.example.com")
 	assert.True(t, ok, "supposed to find caconfig")
 	assert.NotNil(t, caConfig)
 	assert.Equal(t, overridedCAURL, caConfig.URL)
@@ -88,18 +88,18 @@ func TestCAEntityMatcherIgnoreEndpoint(t *testing.T) {
 	assert.Nil(t, err, "not supposed to get error")
 	assert.NotNil(t, config)
 
-	caConfig, ok := config.CAConfig("org1")
+	caConfig, ok := config.CAConfig("ca.org1.example.com")
 	assert.True(t, ok)
 	assert.NotNil(t, caConfig)
-	caConfig, ok = config.CAConfig("org2")
+	caConfig, ok = config.CAConfig("ca.org2.example.com")
 	assert.False(t, ok)
 	assert.Nil(t, caConfig)
 
 	configImpl := config.(*IdentityConfig)
-	assert.Equal(t, 1, len(configImpl.caConfigsByOrg))
-	_, ok = configImpl.caConfigsByOrg["org1"]
+	assert.Equal(t, 1, len(configImpl.caConfigs))
+	_, ok = configImpl.caConfigs["ca.org1.example.com"]
 	assert.True(t, ok)
-	_, ok = configImpl.caConfigsByOrg["org2"]
+	_, ok = configImpl.caConfigs["ca.org2.example.com"]
 	assert.False(t, ok)
 }
 

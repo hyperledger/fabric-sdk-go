@@ -47,5 +47,7 @@ echo "Generating environment for docker ..."
 printf "#!/bin/bash\n" > ${FIXTURES_PATH}/${FABRIC_VERSION_DIR}/crypto-config/env.sh
 keyPath=$(ls ${FIXTURES_PATH}/${FABRIC_VERSION_DIR}/crypto-config/peerOrganizations/org1.example.com/ca/*_sk)
 printf "export ORG1CA1_FABRIC_CA_SERVER_CA_KEYFILE=/etc/hyperledger/fabric-ca-server-config/%s\n" ${keyPath##*/} >> ${FIXTURES_PATH}/${FABRIC_VERSION_DIR}/crypto-config/env.sh
+keyPath=$(ls ${FIXTURES_PATH}/${FABRIC_VERSION_DIR}/crypto-config/peerOrganizations/org1.example.com/tlsca/*_sk)
+printf "export ORG1TLSCA_FABRIC_CA_SERVER_CA_KEYFILE=/etc/hyperledger/fabric-ca-server-config/%s\n" ${keyPath##*/} >> ${FIXTURES_PATH}/${FABRIC_VERSION_DIR}/crypto-config/env.sh
 keyPath=$(ls ${FIXTURES_PATH}/${FABRIC_VERSION_DIR}/crypto-config/peerOrganizations/org2.example.com/ca/*_sk)
 printf "export ORG2CA1_FABRIC_CA_SERVER_CA_KEYFILE=/etc/hyperledger/fabric-ca-server-config/%s\n" ${keyPath##*/} >> ${FIXTURES_PATH}/${FABRIC_VERSION_DIR}/crypto-config/env.sh
