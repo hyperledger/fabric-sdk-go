@@ -381,6 +381,9 @@ func loadConfig(configItems *ChannelCfg, versionsGroup *common.ConfigGroup, grou
 		return nil
 	}
 
+	versionsGroup.Version = group.Version
+	versionsGroup.ModPolicy = group.ModPolicy
+
 	groups := group.GetGroups()
 	if groups != nil {
 		versionsGroup.Groups = make(map[string]*common.ConfigGroup)
