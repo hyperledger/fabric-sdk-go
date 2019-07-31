@@ -330,6 +330,19 @@ func (c *Client) QueryConfig(options ...RequestOption) (fab.ChannelCfg, error) {
 	return channelConfig.Query(reqCtx)
 }
 
+// QueryConfigBlock returns the current configuration block for the specified channel.
+func (c *Client) QueryConfigBlock(options ...RequestOption) (*common.Block, error) {
+	targets, opts, err := c.prepareRequestParams(options...)
+	if err != nil {
+		return nil, errors.WithMessage(err, "QueryConfigBlock failed to prepare request parameters")
+	}
+
+	reqCtx, cancel := c.createRequestContext(opts)
+	defer cancel()
+
+	return c.ledger.QueryConfigBlock(reqCtx, peersToTxnProcessors(targets), c.verifier)
+}
+
 //prepareRequestOpts Reads Opts from Option array
 func (c *Client) prepareRequestOpts(options ...RequestOption) (requestOptions, error) {
 	opts := requestOptions{}
