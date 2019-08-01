@@ -75,7 +75,7 @@ func (s *ChannelService) doQueryPeers() ([]fab.Peer, error) {
 	reqCtx, cancel := reqContext.NewRequest(ctx, reqContext.WithTimeout(s.responseTimeout))
 	defer cancel()
 
-	req := discclient.NewRequest().OfChannel(s.channelID).AddPeersQuery()
+	req := fabdiscovery.NewRequest().OfChannel(s.channelID).AddPeersQuery()
 	responses, err := s.discoveryClient().Send(reqCtx, req, targets...)
 	if err != nil {
 		if len(responses) == 0 {

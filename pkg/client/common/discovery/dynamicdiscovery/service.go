@@ -22,7 +22,7 @@ import (
 
 // DiscoveryClient is the client to the discovery service
 type DiscoveryClient interface {
-	Send(ctx context.Context, req *discclient.Request, targets ...fab.PeerConfig) ([]fabdiscovery.Response, error)
+	Send(ctx context.Context, req *fabdiscovery.Request, targets ...fab.PeerConfig) ([]fabdiscovery.Response, error)
 }
 
 const (

@@ -60,7 +60,7 @@ var defaultRetryOpts = retry.Opts{
 
 // DiscoveryClient is the client to the discovery service
 type DiscoveryClient interface {
-	Send(ctx context.Context, req *discclient.Request, targets ...fab.PeerConfig) ([]fabdiscovery.Response, error)
+	Send(ctx context.Context, req *fabdiscovery.Request, targets ...fab.PeerConfig) ([]fabdiscovery.Response, error)
 }
 
 // clientProvider is overridden by unit tests
@@ -224,7 +224,7 @@ func (s *Service) queryEndorsers(chaincodes []*fab.ChaincodeCall, retryOpts retr
 		return nil, errors.Errorf("no peers configured for channel [%s]", s.channelID)
 	}
 
-	req, err := discclient.NewRequest().OfChannel(s.channelID).AddEndorsersQuery(asChaincodeInterests(chaincodes))
+	req, err := fabdiscovery.NewRequest().OfChannel(s.channelID).AddEndorsersQuery(asChaincodeInterests(chaincodes))
 	if err != nil {
 		return nil, errors.Wrapf(err, "error creating endorser query request")
 	}
@@ -242,7 +242,7 @@ func (s *Service) queryEndorsers(chaincodes []*fab.ChaincodeCall, retryOpts retr
 	return chResponse.(discclient.ChannelResponse), nil
 }
 
-func (s *Service) query(req *discclient.Request, chaincodes []*fab.ChaincodeCall, targets []fab.PeerConfig) (discclient.ChannelResponse, error) {
+func (s *Service) query(req *fabdiscovery.Request, chaincodes []*fab.ChaincodeCall, targets []fab.PeerConfig) (discclient.ChannelResponse, error) {
 	logger.Debugf("Querying Discovery Service for endorsers for chaincodes: %#v on channel [%s]", chaincodes, s.channelID)
 	reqCtx, cancel := reqContext.NewRequest(s.ctx, reqContext.WithTimeout(s.responseTimeout))
 	defer cancel()

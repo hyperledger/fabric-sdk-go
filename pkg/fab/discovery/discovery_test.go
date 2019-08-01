@@ -14,7 +14,6 @@ import (
 	"testing"
 	"time"
 
-	discclient "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/discovery/client"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/multi"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/comm"
@@ -39,7 +38,7 @@ func TestDiscoveryClient(t *testing.T) {
 	client, err := New(clientCtx)
 	assert.NoError(t, err)
 
-	req := discclient.NewRequest().AddLocalPeersQuery().OfChannel(channelID).AddPeersQuery()
+	req := NewRequest().AddLocalPeersQuery().OfChannel(channelID).AddPeersQuery()
 
 	grpcOptions := map[string]interface{}{
 		"allow-insecure": true,

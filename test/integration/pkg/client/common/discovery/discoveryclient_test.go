@@ -56,7 +56,7 @@ func TestDiscoveryClientPeers(t *testing.T) {
 	reqCtx, cancel := context.NewRequest(ctx, context.WithTimeout(10*time.Second))
 	defer cancel()
 
-	req := discclient.NewRequest().OfChannel(orgChannelID).AddPeersQuery()
+	req := discovery.NewRequest().OfChannel(orgChannelID).AddPeersQuery()
 
 	peerCfg1, err := comm.NetworkPeerConfig(ctx.EndpointConfig(), peer0Org1)
 	require.NoErrorf(t, err, "error getting peer config for [%s]", peer0Org1)
@@ -121,7 +121,7 @@ func TestDiscoveryClientLocalPeers(t *testing.T) {
 	reqCtx, cancel := context.NewRequest(ctx, context.WithTimeout(10*time.Second))
 	defer cancel()
 
-	req := discclient.NewRequest().AddLocalPeersQuery()
+	req := discovery.NewRequest().AddLocalPeersQuery()
 
 	peerCfg1, err := comm.NetworkPeerConfig(ctx.EndpointConfig(), peer0Org1)
 	require.NoErrorf(t, err, "error getting peer config for [%s]", peer0Org1)
@@ -359,7 +359,7 @@ func setupOrgContext(t *testing.T) []*integration.OrgContext {
 }
 
 func sendEndorserQuery(t *testing.T, ctx contextAPI.Client, client *discovery.Client, interest *fabdiscovery.ChaincodeInterest, peerConfig fab.PeerConfig) (discclient.ChannelResponse, error) {
-	req, err := discclient.NewRequest().OfChannel(orgChannelID).AddEndorsersQuery(interest)
+	req, err := discovery.NewRequest().OfChannel(orgChannelID).AddEndorsersQuery(interest)
 	require.NoError(t, err, "error adding endorsers query")
 
 	reqCtx, cancel := context.NewRequest(ctx, context.WithTimeout(10*time.Second))

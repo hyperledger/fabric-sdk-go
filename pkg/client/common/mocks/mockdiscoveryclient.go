@@ -36,7 +36,7 @@ func NewMockDiscoveryClient() *MockDiscoveryClient {
 }
 
 // Send sends a Discovery request
-func (m *MockDiscoveryClient) Send(ctx reqcontext.Context, req *discclient.Request, targets ...fab.PeerConfig) ([]fabdiscovery.Response, error) {
+func (m *MockDiscoveryClient) Send(ctx reqcontext.Context, req *fabdiscovery.Request, targets ...fab.PeerConfig) ([]fabdiscovery.Response, error) {
 	return m.responses(), nil
 }
 
