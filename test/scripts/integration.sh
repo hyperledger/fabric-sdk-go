@@ -55,7 +55,6 @@ PKGS=($(${GO_CMD} list ${PROJECT_MODULE}/test/integration/... 2> /dev/null | \
       grep -v ^${PROJECT_MODULE}/test/integration/negative | \
       grep -v ^${PROJECT_MODULE}/test/integration\$ | \
       tr '\n' ' '))
-cd ${PWD_ORIG}
 
 if [ "$E2E_ONLY" == "true" ]; then
     echo "Including E2E tests only"
@@ -64,11 +63,11 @@ fi
 
 # Reduce tests to changed packages.
 if [ "${TEST_CHANGED_ONLY}" = true ]; then
-    # findChangedFiles assumes that the working directory contains the repo; so change to the repo directory.
-    PWD_ORIG=$(pwd)
+    # Find changed files across the project as these may be dependencies of the module.
+    PWD_ORIG_FIND=$(pwd)
     cd "${PROJECT_DIR}"
     findChangedFiles
-    cd ${PWD_ORIG}
+    cd "${PWD_ORIG_FIND}"
 
     if [[ "${CHANGED_FILES[@]}" =~ ( |^)(test/fixtures/|test/metadata/|test/scripts/|Makefile( |$)|go.mod( |$)|ci.properties( |$)) ]]; then
         echo "Test scripts, fixtures or metadata changed - running all tests"
@@ -108,7 +107,5 @@ GO_LDFLAGS="${GO_LDFLAGS} -X ${PROJECT_MODULE}/test/metadata.ChannelConfigPath=t
 GO_LDFLAGS="${GO_LDFLAGS} -X ${PROJECT_MODULE}/test/metadata.CryptoConfigPath=test/fixtures/fabric/${FABRIC_CRYPTOCONFIG_VERSION}/crypto-config"
 GO_LDFLAGS="${GO_LDFLAGS} -X ${PROJECT_MODULE}/fabric-sdk-go/test/metadata.TestRunID=${FABRIC_SDKGO_TESTRUN_ID}"
 
-PWD_ORIG=$(pwd)
-cd "${MODULE_PATH}"
 ${GO_CMD} test ${RACEFLAG} -tags "${GO_TAGS}" ${GO_TESTFLAGS} -ldflags="${GO_LDFLAGS}" ${PKGS[@]} -p 1 -timeout=40m configFile=${CONFIG_FILE} testLocal=${TEST_LOCAL}
 cd ${PWD_ORIG}

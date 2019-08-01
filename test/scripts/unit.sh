@@ -51,7 +51,11 @@ findPackages
 
 # Reduce unit tests to changed packages.
 if [ "${TEST_CHANGED_ONLY}" = true ]; then
+    # Find changed files across the project as these may be dependencies of the module.
+    PWD_ORIG_FIND=$(pwd)
+    cd "${PROJECT_DIR}"
     findChangedFiles
+    cd "${PWD_ORIG_FIND}"
 
     declare matcher='( |^)(test/fixtures/|test/metadata/|test/scripts/|Makefile( |$)|go.mod( |$)|golangci.yml( |$)|ci.properties( |$))'
     if [[ "${CHANGED_FILES[@]}" =~ ${matcher} ]]; then

@@ -52,11 +52,11 @@ declare -a PKGS=(
 
 # Reduce unit tests to changed packages.
 if [ "$TEST_CHANGED_ONLY" = true ]; then
-    # findChangedFiles assumes that the working directory contains the repo; so change to the repo directory.
-    PWD_ORIG=$(pwd)
+    # Find changed files across the project as these may be dependencies of the module.
+    PWD_ORIG_FIND=$(pwd)
     cd "${PROJECT_DIR}"
     findChangedFiles
-    cd ${PWD_ORIG}
+    cd "${PWD_ORIG_FIND}"
 
     if [[ "${CHANGED_FILES[@]}" =~ ( |^)(test/fixtures/|test/metadata/|test/scripts/|Makefile( |$)|go.mod( |$)|gometalinter.json( |$)|ci.properties( |$)) ]]; then
         echo "Test scripts, fixtures or metadata changed - running all tests"

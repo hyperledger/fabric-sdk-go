@@ -56,15 +56,15 @@ function findChangedPackages {
             declare matcher='^(.*)/testdata(.*)$'
 
             if [ "${DIR}" = "." ]; then
-                CHANGED_PKG+=("${REPO}")
+                CHANGED_PKG+=("${PROJECT_MODULE}")
 #            vendor is not currently included in the git repository
 #            also git list currently prints out packages including the vendor/ prefix.
 #            elif [[ "${DIR}" =~ ^vendor/(.*)$ ]]; then
 #                CHANGED_PKGS+=("${BASH_REMATCH[1]}")
             elif [[ "${DIR}" =~ ${matcher} ]]; then
-                CHANGED_PKGS+=("${REPO}/${BASH_REMATCH[1]}")
+                CHANGED_PKGS+=("${PROJECT_MODULE}/${BASH_REMATCH[1]}")
             else
-                CHANGED_PKGS+=("${REPO}/${DIR}")
+                CHANGED_PKGS+=("${PROJECT_MODULE}/${DIR}")
             fi
         fi
     done
@@ -152,15 +152,15 @@ function writePkgDeps {
     declare pkg=${1}
     declare key="PKGDEPS__${pkg//[-\.\/]/_}"
 
-    declare -a testImports=($(${GO_CMD} list -f '{{.TestImports}}' ${pkg} | tr -d '[]' | xargs | tr ' ' '\n' | \
-        grep "^${REPO}" | \
-        grep -v "^${REPO}/vendor/" | \
+    declare -a testImports=($(${GO_CMD} list -f '{{.TestImports}}' ${pkg} 2> /dev/null | tr -d '[]' | xargs | tr ' ' '\n' | \
+        grep "^${PROJECT_MODULE}" | \
+        grep -v "^${PROJECT_MODULE}/vendor/" | \
         sort -u | \
         tr '\n' ' '))
 
-    declare -a depsAndImports=($(${GO_CMD} list -f '{{.Deps}}' ${pkg} ${testImports[@]} | tr -d '[]' | xargs | tr ' ' '\n' | \
-        grep "^${REPO}" | \
-        grep -v "^${REPO}/vendor/" | \
+    declare -a depsAndImports=($(${GO_CMD} list -f '{{.Deps}}' ${pkg} ${testImports[@]} 2> /dev/null | tr -d '[]' | xargs | tr ' ' '\n' | \
+        grep "^${PROJECT_MODULE}" | \
+        grep -v "^${PROJECT_MODULE}/vendor/" | \
         sort -u | \
         tr '\n' ' ') ${testImports[@]})
 
