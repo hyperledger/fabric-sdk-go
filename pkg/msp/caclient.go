@@ -36,13 +36,13 @@ type CAClientImpl struct {
 type CAClientOption func(*caClientOption) error
 
 type caClientOption struct {
-	caName string
+	caID string
 }
 
 // WithCAInstance allows for specifying optional CA name (within the CA server instance)
-func WithCAInstance(caname string) CAClientOption {
+func WithCAInstance(caID string) CAClientOption {
 	return func(o *caClientOption) error {
-		o.caName = caname
+		o.caID = caID
 		return nil
 	}
 }
@@ -73,17 +73,17 @@ func NewCAClient(orgName string, ctx contextApi.Client, opts ...CAClientOption) 
 		return nil, errors.New("no CAs configured")
 	}
 
-	caName := options.caName
-	if caName == "" {
-		caName = orgConfig.CertificateAuthorities[0]
+	caID := options.caID
+	if caID == "" {
+		caID = orgConfig.CertificateAuthorities[0]
 	}
-	caConfig, ok := ctx.IdentityConfig().CAConfig(caName)
+	caConfig, ok := ctx.IdentityConfig().CAConfig(caID)
 	if !ok {
-		return nil, errors.Errorf("error initializing CA [%s]", caName)
+		return nil, errors.Errorf("error initializing CA [%s]", caID)
 	}
-	adapter, err := newFabricCAAdapter(caName, ctx.CryptoSuite(), ctx.IdentityConfig())
+	adapter, err := newFabricCAAdapter(caID, ctx.CryptoSuite(), ctx.IdentityConfig())
 	if err != nil {
-		return nil, errors.Wrapf(err, "error initializing CA [%s]", caName)
+		return nil, errors.Wrapf(err, "error initializing CA [%s]", caID)
 	}
 
 	identityManager, ok := ctx.IdentityManager(orgName)
@@ -93,7 +93,7 @@ func NewCAClient(orgName string, ctx contextApi.Client, opts ...CAClientOption) 
 
 	mgr := &CAClientImpl{
 		orgName:         orgName,
-		caName:          caName,
+		caName:          caConfig.CAName,
 		orgMSPID:        orgConfig.MSPID,
 		cryptoSuite:     ctx.CryptoSuite(),
 		identityManager: identityManager,

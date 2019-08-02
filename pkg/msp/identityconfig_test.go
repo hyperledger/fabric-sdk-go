@@ -461,14 +461,14 @@ func TestIdentityConfigWithMultipleBackends(t *testing.T) {
 	assert.Equal(t, client.Organization, "org1")
 
 	//CA Config
-	caConfig, ok := identityConfig.CAConfig("ca.org1.example.com")
-	assert.True(t, ok, "identityConfig.CAConfig(ca.org1.example.com) should have been successful for multiple backends")
-	assert.Equal(t, caConfig.URL, "https://ca.org1.example.com:7054")
+	caConfig, ok := identityConfig.CAConfig("local.ca.org1.example.com")
+	assert.True(t, ok, "identityConfig.CAConfig(local.ca.org1.example.com) should have been successful for multiple backends")
+	assert.Equal(t, "https://ca.org1.example.com:7054", caConfig.URL)
 	assert.Equal(t, 1, len(caConfig.GRPCOptions))
 	assert.Equal(t, "ca.org1.example.com", caConfig.GRPCOptions["ssl-target-name-override"])
 
-	caConfig, ok = identityConfig.CAConfig("ca.org2.example.com")
-	assert.True(t, ok, "identityConfig.CAConfig(ca.org2.example.com) should have been successful for multiple backends")
+	caConfig, ok = identityConfig.CAConfig("local.ca.org2.example.com")
+	assert.True(t, ok, "identityConfig.CAConfig(local.ca.org2.example.com) should have been successful for multiple backends")
 	assert.Equal(t, caConfig.URL, "https://ca.org2.example.com:8054")
 }
 

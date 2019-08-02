@@ -195,6 +195,7 @@ type mockCaConfig struct{}
 
 func (m *mockCaConfig) CAConfig(org string) (*msp.CAConfig, bool) {
 	return &msp.CAConfig{
+		ID:               "test.url.com",
 		URL:              "test.url.com",
 		Registrar:        msp.EnrollCredentials{EnrollSecret: "secret", EnrollID: ""},
 		TLSCAClientKey:   []byte(""),

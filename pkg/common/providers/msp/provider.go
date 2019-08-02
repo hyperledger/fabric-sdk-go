@@ -25,10 +25,10 @@ type IdentityManagerProvider interface {
 //IdentityConfig contains identity configurations
 type IdentityConfig interface {
 	Client() *ClientConfig
-	CAConfig(caName string) (*CAConfig, bool)
-	CAServerCerts(caName string) ([][]byte, bool)
-	CAClientKey(caName string) ([]byte, bool)
-	CAClientCert(caName string) ([]byte, bool)
+	CAConfig(caID string) (*CAConfig, bool)
+	CAServerCerts(caID string) ([][]byte, bool)
+	CAClientKey(caID string) ([]byte, bool)
+	CAClientCert(caID string) ([]byte, bool)
 	CAKeyStorePath() string
 	CredentialStorePath() string
 }
@@ -64,6 +64,7 @@ type EnrollCredentials struct {
 
 // CAConfig defines a CA configuration
 type CAConfig struct {
+	ID               string
 	URL              string
 	GRPCOptions      map[string]interface{}
 	Registrar        EnrollCredentials

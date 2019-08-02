@@ -67,6 +67,8 @@ type EnrollmentRequest struct {
 	Name string
 	// The secret returned via Register
 	Secret string
+	// CAName is the name of the CA to connect to
+	CAName string
 	// AttrReqs are requests for attributes to add to the certificate.
 	// Each attribute is added only if the requestor owns the attribute.
 	AttrReqs []*AttributeRequest
@@ -88,6 +90,8 @@ type ReenrollmentRequest struct {
 	Profile string
 	// Label is the label to use in HSM operations
 	Label string
+	// CAName is the name of the CA to connect to
+	CAName string
 	// AttrReqs are requests for attributes to add to the certificate.
 	// Each attribute is added only if the requestor owns the attribute.
 	AttrReqs []*AttributeRequest

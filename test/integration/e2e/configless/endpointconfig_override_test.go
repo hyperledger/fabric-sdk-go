@@ -59,6 +59,7 @@ type clientConfig struct {
 
 // caConfig defines a CA configuration in identity config
 type caConfig struct {
+	ID         string
 	URL        string
 	TLSCACerts endpoint.MutualTLSConfig
 	Registrar  msp.EnrollCredentials
@@ -229,6 +230,7 @@ var (
 
 	caConfigObj = map[string]caConfig{
 		"ca.org1.example.com": {
+			ID:  "ca.org1.example.com",
 			URL: "https://ca.org1.example.com:7054",
 			TLSCACerts: endpoint.MutualTLSConfig{
 				Path: pathvar.Subst("${FABRIC_SDK_GO_PROJECT_PATH}/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/org1.example.com/tlsca/tlsca.org1.example.com-cert.pem"),
@@ -244,6 +246,7 @@ var (
 			CAName: "ca.org1.example.com",
 		},
 		"ca.org2.example.com": {
+			ID:  "ca.org2.example.com",
 			URL: "https://ca.org2.example.com:8054",
 			TLSCACerts: endpoint.MutualTLSConfig{
 				Path: pathvar.Subst("${FABRIC_SDK_GO_PROJECT_PATH}/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/org2.example.com/tlsca/tlsca.org2.example.com-cert.pem"),

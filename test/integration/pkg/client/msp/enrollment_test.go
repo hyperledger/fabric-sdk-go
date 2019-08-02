@@ -272,7 +272,7 @@ func getRegistrarEnrollmentCredentials(t *testing.T, ctxProvider context.ClientP
 	return getRegistrarEnrollmentCredentialsWithCAInstance(t, ctxProvider, "")
 }
 
-func getRegistrarEnrollmentCredentialsWithCAInstance(t *testing.T, ctxProvider context.ClientProvider, caName string) (string, string) {
+func getRegistrarEnrollmentCredentialsWithCAInstance(t *testing.T, ctxProvider context.ClientProvider, caID string) (string, string) {
 
 	ctx, err := ctxProvider()
 	if err != nil {
@@ -281,11 +281,11 @@ func getRegistrarEnrollmentCredentialsWithCAInstance(t *testing.T, ctxProvider c
 
 	myOrg := ctx.IdentityConfig().Client().Organization
 
-	if caName == "" {
-		caName = ctx.EndpointConfig().NetworkConfig().Organizations[myOrg].CertificateAuthorities[0]
+	if caID == "" {
+		caID = ctx.EndpointConfig().NetworkConfig().Organizations[myOrg].CertificateAuthorities[0]
 	}
 
-	caConfig, ok := ctx.IdentityConfig().CAConfig(caName)
+	caConfig, ok := ctx.IdentityConfig().CAConfig(caID)
 	if !ok {
 		t.Fatal("CAConfig failed")
 	}

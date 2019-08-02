@@ -296,7 +296,7 @@ func TestNewWithClientOptionError(t *testing.T) {
 
 // WithClientOptionError client option that generates error
 func WithClientOptionError() ClientOption {
-	return func(msp *Client) error {
+	return func(o *clientOptions) error {
 		return errors.New("Client option error")
 	}
 }
@@ -432,7 +432,7 @@ func TestGetAllIdentitiesFailure(t *testing.T) {
 
 // withOptionError is request option that generates error
 func withOptionError() RequestOption {
-	return func(ctx contextApi.Client, o *requestOptions) error {
+	return func(o *requestOptions) error {
 		return errors.New("Option Error")
 	}
 }

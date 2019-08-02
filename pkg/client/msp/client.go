@@ -32,163 +32,99 @@ import (
 // Client enables access to Client services
 type Client struct {
 	orgName string
-	// Name of the CA server instance
+	// ID of the Fabbric CA configuration entry associated with this client (optional)
+	// Client will direct Any Fabric CA calls to the URL specified in this configuration entry
+	caID string
+	// CA name (optional). CA within the Fabric CA server instance at the URL defined at caID.
+	// If not present, all calls will be handled by the default CA of the Fabric CA server instance.
 	caName string
 	ctx    context.Client
-}
-
-// ClientOption describes a functional parameter for the New constructor
-type ClientOption func(*Client) error
-
-// WithOrg option
-func WithOrg(orgName string) ClientOption {
-	return func(msp *Client) error {
-		msp.orgName = orgName
-		return nil
-	}
-}
-
-// WithCAInstance option
-func WithCAInstance(caInstanceName string) ClientOption {
-	return func(msp *Client) error {
-		msp.caName = caInstanceName
-		return nil
-	}
-}
-
-// opts allows the user to specify more advanced request options
-type requestOptions struct {
-	CA string
-}
-
-// RequestOption func for each Opts argument
-type RequestOption func(ctx context.Client, opts *requestOptions) error
-
-// WithCA allows for specifying optional CA name (within the CA server instance)
-func WithCA(caname string) RequestOption {
-	return func(ctx context.Client, o *requestOptions) error {
-		o.CA = caname
-		return nil
-	}
 }
 
 // New creates a new Client instance
 func New(clientProvider context.ClientProvider, opts ...ClientOption) (*Client, error) {
 
-	ctx, err := clientProvider()
-	if err != nil {
-		return nil, errors.WithMessage(err, "failed to create Client")
-	}
-
-	msp := Client{
-		ctx: ctx,
-	}
-
-	for _, param := range opts {
-		err1 := param(&msp)
-		if err1 != nil {
-			return nil, errors.WithMessage(err1, "failed to create Client")
-		}
-	}
-
-	if msp.orgName == "" {
-		msp.orgName = ctx.IdentityConfig().Client().Organization
-	}
-	if msp.orgName == "" {
-		return nil, errors.New("organization is not provided")
-	}
-
-	networkConfig := ctx.EndpointConfig().NetworkConfig()
-	org, ok := networkConfig.Organizations[strings.ToLower(msp.orgName)]
-	if !ok {
-		return nil, fmt.Errorf("non-existent organization: '%s'", msp.orgName)
-	}
-
-	if msp.caName == "" && len(org.CertificateAuthorities) > 0 {
-		// Default to the first CA in org, if it is defined
-		msp.caName = org.CertificateAuthorities[0]
-	}
-
-	err = veiifyOrgCA(org, msp.caName)
+	ctx, c, err := initClientFromOptions(clientProvider, opts...)
 	if err != nil {
 		return nil, err
 	}
 
-	return &msp, nil
+	if c.orgName == "" {
+		c.orgName = ctx.IdentityConfig().Client().Organization
+	}
+	if c.orgName == "" {
+		return nil, errors.New("organization is not provided")
+	}
+
+	networkConfig := ctx.EndpointConfig().NetworkConfig()
+	org, ok := networkConfig.Organizations[strings.ToLower(c.orgName)]
+	if !ok {
+		return nil, fmt.Errorf("non-existent organization: '%s'", c.orgName)
+	}
+
+	if c.caID == "" && len(org.CertificateAuthorities) > 0 {
+		// Default to the first CA in org, if it is defined
+		c.caID = org.CertificateAuthorities[0]
+	}
+	if c.caID != "" {
+		ca, ok := ctx.IdentityConfig().CAConfig(c.caID)
+		if !ok {
+			return nil, fmt.Errorf("non-existent CA: '%s'", c.caID)
+		}
+		c.caName = ca.CAName
+	}
+
+	err = veiifyOrgCA(org, c.caID)
+	if err != nil {
+		return nil, err
+	}
+
+	return c, nil
 }
 
-func veiifyOrgCA(org fab.OrganizationConfig, caName string) error {
-	if caName == "" {
+func initClientFromOptions(clientProvider context.ClientProvider, opts ...ClientOption) (fab.ClientContext, *Client, error) {
+	o := clientOptions{}
+	for _, param := range opts {
+		err := param(&o)
+		if err != nil {
+			return nil, nil, errors.WithMessage(err, "failed to create Client")
+		}
+	}
+
+	ctx, err := clientProvider()
+	if err != nil {
+		return nil, nil, errors.WithMessage(err, "failed to create Client")
+	}
+
+	c := Client{
+		ctx:     ctx,
+		orgName: o.orgName,
+		caID:    o.caID,
+	}
+
+	return ctx, &c, nil
+}
+
+func veiifyOrgCA(org fab.OrganizationConfig, caID string) error {
+	if caID == "" {
 		return nil
 	}
 	for _, name := range org.CertificateAuthorities {
-		if caName == name {
+		if caID == name {
 			return nil
 		}
 	}
-	return fmt.Errorf("ca: '%s' doesn't belong to organization: '%s'", caName, org.MSPID)
+	return fmt.Errorf("ca: '%s' doesn't belong to organization: '%s'", caID, org.MSPID)
 }
 
-func newCAClient(ctx context.Client, orgName string, caName string) (mspapi.CAClient, error) {
+func newCAClient(ctx context.Client, orgName string, caID string) (mspapi.CAClient, error) {
 
-	caClient, err := msp.NewCAClient(orgName, ctx, msp.WithCAInstance(caName))
+	caClient, err := msp.NewCAClient(orgName, ctx, msp.WithCAInstance(caID))
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to create CA Client")
 	}
 
 	return caClient, nil
-}
-
-// enrollmentOptions represent enrollment options
-type enrollmentOptions struct {
-	secret   string
-	profile  string
-	label    string
-	typ      string
-	attrReqs []*AttributeRequest
-}
-
-// EnrollmentOption describes a functional parameter for Enroll
-type EnrollmentOption func(*enrollmentOptions) error
-
-// WithSecret enrollment option
-func WithSecret(secret string) EnrollmentOption {
-	return func(o *enrollmentOptions) error {
-		o.secret = secret
-		return nil
-	}
-}
-
-// WithProfile enrollment option
-func WithProfile(profile string) EnrollmentOption {
-	return func(o *enrollmentOptions) error {
-		o.profile = profile
-		return nil
-	}
-}
-
-// WithType enrollment option
-func WithType(typ string) EnrollmentOption {
-	return func(o *enrollmentOptions) error {
-		o.typ = typ
-		return nil
-	}
-}
-
-// WithLabel enrollment option
-func WithLabel(label string) EnrollmentOption {
-	return func(o *enrollmentOptions) error {
-		o.label = label
-		return nil
-	}
-}
-
-// WithAttributeRequests enrollment option
-func WithAttributeRequests(attrReqs []*AttributeRequest) EnrollmentOption {
-	return func(o *enrollmentOptions) error {
-		o.attrReqs = attrReqs
-		return nil
-	}
 }
 
 // CreateIdentity creates a new identity with the Fabric CA server. An enrollment secret is returned which can then be used,
@@ -200,7 +136,7 @@ func WithAttributeRequests(attrReqs []*AttributeRequest) EnrollmentOption {
 //  Return identity info including the secret
 func (c *Client) CreateIdentity(request *IdentityRequest) (*IdentityResponse, error) {
 
-	ca, err := newCAClient(c.ctx, c.orgName, c.caName)
+	ca, err := newCAClient(c.ctx, c.orgName, c.caID)
 	if err != nil {
 		return nil, err
 	}
@@ -236,7 +172,7 @@ func (c *Client) CreateIdentity(request *IdentityRequest) (*IdentityResponse, er
 //  Return updated identity info
 func (c *Client) ModifyIdentity(request *IdentityRequest) (*IdentityResponse, error) {
 
-	ca, err := newCAClient(c.ctx, c.orgName, c.caName)
+	ca, err := newCAClient(c.ctx, c.orgName, c.caID)
 	if err != nil {
 		return nil, err
 	}
@@ -272,7 +208,7 @@ func (c *Client) ModifyIdentity(request *IdentityRequest) (*IdentityResponse, er
 //  Return removed identity info
 func (c *Client) RemoveIdentity(request *RemoveIdentityRequest) (*IdentityResponse, error) {
 
-	ca, err := newCAClient(c.ctx, c.orgName, c.caName)
+	ca, err := newCAClient(c.ctx, c.orgName, c.caID)
 	if err != nil {
 		return nil, err
 	}
@@ -296,20 +232,19 @@ func (c *Client) RemoveIdentity(request *RemoveIdentityRequest) (*IdentityRespon
 //  options holds optional request options
 //  Returns:
 //  Response containing identities
-func (c *Client) GetAllIdentities(options ...RequestOption) ([]*IdentityResponse, error) {
+func (c *Client) GetAllIdentities(opts ...RequestOption) ([]*IdentityResponse, error) {
 
-	// Read request options
-	opts, err := c.prepareOptsFromOptions(c.ctx, options...)
+	o, err := c.prepareRequestOptsFromOptions(opts...)
 	if err != nil {
 		return nil, err
 	}
 
-	ca, err := newCAClient(c.ctx, c.orgName, c.caName)
+	ca, err := newCAClient(c.ctx, c.orgName, c.caID)
 	if err != nil {
 		return nil, err
 	}
 
-	responses, err := ca.GetAllIdentities(opts.CA)
+	responses, err := ca.GetAllIdentities(o.caName)
 	if err != nil {
 		return nil, err
 	}
@@ -325,20 +260,19 @@ func (c *Client) GetAllIdentities(options ...RequestOption) ([]*IdentityResponse
 //
 //  Returns:
 //  Response containing identity information
-func (c *Client) GetIdentity(ID string, options ...RequestOption) (*IdentityResponse, error) {
+func (c *Client) GetIdentity(ID string, opts ...RequestOption) (*IdentityResponse, error) {
 
-	// Read request options
-	opts, err := c.prepareOptsFromOptions(c.ctx, options...)
+	o, err := c.prepareRequestOptsFromOptions(opts...)
 	if err != nil {
 		return nil, err
 	}
 
-	ca, err := newCAClient(c.ctx, c.orgName, c.caName)
+	ca, err := newCAClient(c.ctx, c.orgName, c.caID)
 	if err != nil {
 		return nil, err
 	}
 
-	response, err := ca.GetIdentity(ID, opts.CA)
+	response, err := ca.GetIdentity(ID, o.caName)
 	if err != nil {
 		return nil, err
 	}
@@ -396,7 +330,7 @@ func (c *Client) Enroll(enrollmentID string, opts ...EnrollmentOption) error {
 		}
 	}
 
-	ca, err := newCAClient(c.ctx, c.orgName, c.caName)
+	ca, err := newCAClient(c.ctx, c.orgName, c.caID)
 	if err != nil {
 		return err
 	}
@@ -404,9 +338,14 @@ func (c *Client) Enroll(enrollmentID string, opts ...EnrollmentOption) error {
 	req := &mspapi.EnrollmentRequest{
 		Name:    enrollmentID,
 		Secret:  eo.secret,
+		CAName:  c.caName,
 		Profile: eo.profile,
 		Type:    eo.typ,
 		Label:   eo.label,
+	}
+
+	if req.CAName == "" {
+		req.CAName = c.caName
 	}
 
 	if len(eo.attrReqs) > 0 {
@@ -435,7 +374,7 @@ func (c *Client) Reenroll(enrollmentID string, opts ...EnrollmentOption) error {
 		}
 	}
 
-	ca, err := newCAClient(c.ctx, c.orgName, c.caName)
+	ca, err := newCAClient(c.ctx, c.orgName, c.caID)
 	if err != nil {
 		return err
 	}
@@ -444,6 +383,10 @@ func (c *Client) Reenroll(enrollmentID string, opts ...EnrollmentOption) error {
 		Name:    enrollmentID,
 		Profile: eo.profile,
 		Label:   eo.label,
+		CAName:  c.caName,
+	}
+	if req.CAName == "" {
+		req.CAName = c.caName
 	}
 	if len(eo.attrReqs) > 0 {
 		attrs := make([]*mspapi.AttributeRequest, 0)
@@ -462,7 +405,7 @@ func (c *Client) Reenroll(enrollmentID string, opts ...EnrollmentOption) error {
 //  Returns:
 //  enrolment secret
 func (c *Client) Register(request *RegistrationRequest) (string, error) {
-	ca, err := newCAClient(c.ctx, c.orgName, c.caName)
+	ca, err := newCAClient(c.ctx, c.orgName, c.caID)
 	if err != nil {
 		return "", err
 	}
@@ -491,7 +434,7 @@ func (c *Client) Register(request *RegistrationRequest) (string, error) {
 //  Returns:
 //  revocation response
 func (c *Client) Revoke(request *RevocationRequest) (*RevocationResponse, error) {
-	ca, err := newCAClient(c.ctx, c.orgName, c.caName)
+	ca, err := newCAClient(c.ctx, c.orgName, c.caID)
 	if err != nil {
 		return nil, err
 	}
@@ -518,7 +461,7 @@ func (c *Client) Revoke(request *RevocationRequest) (*RevocationResponse, error)
 
 // GetCAInfo returns generic CA information
 func (c *Client) GetCAInfo() (*GetCAInfoResponse, error) {
-	ca, err := newCAClient(c.ctx, c.orgName, c.caName)
+	ca, err := newCAClient(c.ctx, c.orgName, c.caID)
 	if err != nil {
 		return nil, err
 	}
@@ -555,32 +498,36 @@ func (c *Client) CreateSigningIdentity(opts ...mspctx.SigningIdentityOption) (ms
 	return im.CreateSigningIdentity(opts...)
 }
 
-//prepareOptsFromOptions reads request options from Option array
-func (c *Client) prepareOptsFromOptions(ctx context.Client, options ...RequestOption) (requestOptions, error) {
-	opts := requestOptions{}
-	for _, option := range options {
-		err := option(ctx, &opts)
+//prepareRequestOptsFromOptions reads request options from Option array
+func (c *Client) prepareRequestOptsFromOptions(opts ...RequestOption) (requestOptions, error) {
+	o := requestOptions{}
+	for _, option := range opts {
+		err := option(&o)
 		if err != nil {
-			return opts, errors.WithMessage(err, "Failed to read opts")
+			return o, errors.WithMessage(err, "Failed to read opts")
 		}
 	}
-	return opts, nil
+	if o.caName == "" {
+		o.caName = c.caName
+	}
+	return o, nil
 }
 
 // GetAffiliation returns information about the requested affiliation
-func (c *Client) GetAffiliation(affiliation string, options ...RequestOption) (*AffiliationResponse, error) {
+func (c *Client) GetAffiliation(affiliation string, opts ...RequestOption) (*AffiliationResponse, error) {
+
 	// Read request options
-	opts, err := c.prepareOptsFromOptions(c.ctx, options...)
+	o, err := c.prepareRequestOptsFromOptions(opts...)
 	if err != nil {
 		return nil, err
 	}
 
-	ca, err := newCAClient(c.ctx, c.orgName, c.caName)
+	ca, err := newCAClient(c.ctx, c.orgName, c.caID)
 	if err != nil {
 		return nil, err
 	}
 
-	r, err := ca.GetAffiliation(affiliation, opts.CA)
+	r, err := ca.GetAffiliation(affiliation, o.caName)
 	if err != nil {
 		return nil, err
 	}
@@ -592,19 +539,19 @@ func (c *Client) GetAffiliation(affiliation string, options ...RequestOption) (*
 }
 
 // GetAllAffiliations returns all affiliations that the caller is authorized to see
-func (c *Client) GetAllAffiliations(options ...RequestOption) (*AffiliationResponse, error) {
+func (c *Client) GetAllAffiliations(opts ...RequestOption) (*AffiliationResponse, error) {
 	// Read request options
-	opts, err := c.prepareOptsFromOptions(c.ctx, options...)
+	o, err := c.prepareRequestOptsFromOptions(opts...)
 	if err != nil {
 		return nil, err
 	}
 
-	ca, err := newCAClient(c.ctx, c.orgName, c.caName)
+	ca, err := newCAClient(c.ctx, c.orgName, c.caID)
 	if err != nil {
 		return nil, err
 	}
 
-	r, err := ca.GetAllAffiliations(opts.CA)
+	r, err := ca.GetAllAffiliations(o.caName)
 	if err != nil {
 		return nil, err
 	}
@@ -617,7 +564,7 @@ func (c *Client) GetAllAffiliations(options ...RequestOption) (*AffiliationRespo
 
 // AddAffiliation adds a new affiliation to the server
 func (c *Client) AddAffiliation(request *AffiliationRequest) (*AffiliationResponse, error) {
-	ca, err := newCAClient(c.ctx, c.orgName, c.caName)
+	ca, err := newCAClient(c.ctx, c.orgName, c.caID)
 	if err != nil {
 		return nil, err
 	}
@@ -641,7 +588,7 @@ func (c *Client) AddAffiliation(request *AffiliationRequest) (*AffiliationRespon
 
 // ModifyAffiliation renames an existing affiliation on the server
 func (c *Client) ModifyAffiliation(request *ModifyAffiliationRequest) (*AffiliationResponse, error) {
-	ca, err := newCAClient(c.ctx, c.orgName, c.caName)
+	ca, err := newCAClient(c.ctx, c.orgName, c.caID)
 	if err != nil {
 		return nil, err
 	}
@@ -668,7 +615,7 @@ func (c *Client) ModifyAffiliation(request *ModifyAffiliationRequest) (*Affiliat
 
 // RemoveAffiliation removes an existing affiliation from the server
 func (c *Client) RemoveAffiliation(request *AffiliationRequest) (*AffiliationResponse, error) {
-	ca, err := newCAClient(c.ctx, c.orgName, c.caName)
+	ca, err := newCAClient(c.ctx, c.orgName, c.caID)
 	if err != nil {
 		return nil, err
 	}

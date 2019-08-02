@@ -102,7 +102,7 @@ func (c *MockConfig) Client() *msp.ClientConfig {
 // CAConfig not implemented
 func (c *MockConfig) CAConfig(org string) (*msp.CAConfig, bool) {
 	caConfig := msp.CAConfig{
-		CAName: "org1",
+		ID: "org1",
 	}
 
 	return &caConfig, true

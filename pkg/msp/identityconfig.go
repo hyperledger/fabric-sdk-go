@@ -88,6 +88,7 @@ type ClientTLSConfig struct {
 
 // CAConfig defines a CA configuration in identity config
 type CAConfig struct {
+	ID          string
 	URL         string
 	GRPCOptions map[string]interface{}
 	TLSCACerts  endpoint.MutualTLSConfig
@@ -118,14 +119,14 @@ func (c *IdentityConfig) Client() *msp.ClientConfig {
 }
 
 // CAConfig returns the CA configuration.
-func (c *IdentityConfig) CAConfig(caName string) (*msp.CAConfig, bool) {
-	cfg, ok := c.caConfigs[strings.ToLower(caName)]
+func (c *IdentityConfig) CAConfig(caID string) (*msp.CAConfig, bool) {
+	cfg, ok := c.caConfigs[strings.ToLower(caID)]
 	return cfg, ok
 }
 
 //CAClientCert read configuration for the fabric CA client cert bytes for given org
-func (c *IdentityConfig) CAClientCert(caName string) ([]byte, bool) {
-	cfg, ok := c.caConfigs[strings.ToLower(caName)]
+func (c *IdentityConfig) CAClientCert(caID string) ([]byte, bool) {
+	cfg, ok := c.caConfigs[strings.ToLower(caID)]
 	if ok {
 		//for now, we're only loading the first Cert Authority by default.
 		return cfg.TLSCAClientCert, true
@@ -134,8 +135,8 @@ func (c *IdentityConfig) CAClientCert(caName string) ([]byte, bool) {
 }
 
 //CAClientKey read configuration for the fabric CA client key bytes for given org
-func (c *IdentityConfig) CAClientKey(caName string) ([]byte, bool) {
-	cfg, ok := c.caConfigs[strings.ToLower(caName)]
+func (c *IdentityConfig) CAClientKey(caID string) ([]byte, bool) {
+	cfg, ok := c.caConfigs[strings.ToLower(caID)]
 	if ok {
 		//for now, we're only loading the first Cert Authority by default.
 		return cfg.TLSCAClientKey, true
@@ -145,8 +146,8 @@ func (c *IdentityConfig) CAClientKey(caName string) ([]byte, bool) {
 
 // CAServerCerts Read configuration option for the server certificates
 // will send a list of cert bytes for given org
-func (c *IdentityConfig) CAServerCerts(caName string) ([][]byte, bool) {
-	cfg, ok := c.caConfigs[strings.ToLower(caName)]
+func (c *IdentityConfig) CAServerCerts(caID string) ([][]byte, bool) {
+	cfg, ok := c.caConfigs[strings.ToLower(caID)]
 	if ok {
 		//for now, we're only loading the first Cert Authority by default.
 		return cfg.TLSCAServerCerts, true
@@ -186,6 +187,12 @@ func (c *IdentityConfig) loadIdentityConfigEntities() error {
 	logger.Debugf("certificateAuthorities are: %+v", configEntity.CertificateAuthorities)
 	if err != nil {
 		return errors.WithMessage(err, "failed to parse 'certificateAuthorities' config item to identityConfigEntity.CertificateAuthorities type")
+	}
+	// Populate ID from the lookup keys
+	for caID := range configEntity.CertificateAuthorities {
+		ca := configEntity.CertificateAuthorities[caID]
+		ca.ID = caID
+		configEntity.CertificateAuthorities[caID] = ca
 	}
 
 	//compile CA matchers
@@ -274,26 +281,26 @@ func (c *IdentityConfig) loadAllCAConfigs(configEntity *identityConfigEntity) er
 
 	configs := make(map[string]*msp.CAConfig)
 
-	for _, ca := range configEntity.CertificateAuthorities {
+	for caID := range configEntity.CertificateAuthorities {
 
-		matchedCaConfig, ok := c.tryMatchingCAConfig(configEntity, strings.ToLower(ca.CAName))
+		matchedCaConfig, ok := c.tryMatchingCAConfig(configEntity, strings.ToLower(caID))
 		if !ok {
 			continue
 		}
 
-		logger.Debugf("Mapped Certificate Authority [%s]", ca.CAName)
-		mspCAConfig, err := c.getMSPCAConfig(ca.CAName, matchedCaConfig)
+		logger.Debugf("Mapped Certificate Authority [%s]", caID)
+		mspCAConfig, err := c.getMSPCAConfig(matchedCaConfig)
 		if err != nil {
 			return err
 		}
-		configs[strings.ToLower(ca.CAName)] = mspCAConfig
+		configs[strings.ToLower(caID)] = mspCAConfig
 	}
 
 	c.caConfigs = configs
 	return nil
 }
 
-func (c *IdentityConfig) getMSPCAConfig(caName string, caConfig *CAConfig) (*msp.CAConfig, error) {
+func (c *IdentityConfig) getMSPCAConfig(caConfig *CAConfig) (*msp.CAConfig, error) {
 
 	serverCerts, err := c.getServerCerts(caConfig)
 	if err != nil {
@@ -302,12 +309,13 @@ func (c *IdentityConfig) getMSPCAConfig(caName string, caConfig *CAConfig) (*msp
 
 	var URL string
 	if caConfig.URL == "" {
-		URL = defaultCAServerSchema + "://" + caName + ":" + strconv.Itoa(defaultCAServerListenPort)
+		URL = defaultCAServerSchema + "://" + caConfig.ID + ":" + strconv.Itoa(defaultCAServerListenPort)
 	} else {
 		URL = caConfig.URL
 	}
 
 	return &msp.CAConfig{
+		ID:               caConfig.ID,
 		URL:              URL,
 		GRPCOptions:      caConfig.GRPCOptions,
 		Registrar:        caConfig.Registrar,
@@ -371,17 +379,17 @@ func (c *IdentityConfig) compileMatchers() error {
 	return nil
 }
 
-func (c *IdentityConfig) tryMatchingCAConfig(configEntity *identityConfigEntity, caName string) (*CAConfig, bool) {
+func (c *IdentityConfig) tryMatchingCAConfig(configEntity *identityConfigEntity, caID string) (*CAConfig, bool) {
 
 	//loop over certAuthorityEntityMatchers to find the matching CA Config
 	for _, matcher := range c.caMatchers {
-		if matcher.regex.MatchString(caName) {
-			return c.findMatchingCAConfig(configEntity, caName, matcher)
+		if matcher.regex.MatchString(caID) {
+			return c.findMatchingCAConfig(configEntity, caID, matcher)
 		}
 	}
 
 	//Direct lookup, if no caMatchers are configured or no matcher matched
-	caConfig, ok := configEntity.CertificateAuthorities[strings.ToLower(caName)]
+	caConfig, ok := configEntity.CertificateAuthorities[strings.ToLower(caID)]
 	if !ok {
 		return nil, false
 	}
@@ -393,16 +401,16 @@ func (c *IdentityConfig) tryMatchingCAConfig(configEntity *identityConfigEntity,
 	return &caConfig, true
 }
 
-func (c *IdentityConfig) findMatchingCAConfig(configEntity *identityConfigEntity, caName string, matcher matcherEntry) (*CAConfig, bool) {
+func (c *IdentityConfig) findMatchingCAConfig(configEntity *identityConfigEntity, caID string, matcher matcherEntry) (*CAConfig, bool) {
 
 	if matcher.matchConfig.IgnoreEndpoint {
-		logger.Debugf("Ignoring CA `%s` since entity matcher 'IgnoreEndpoint' flag is on", caName)
+		logger.Debugf("Ignoring CA `%s` since entity matcher 'IgnoreEndpoint' flag is on", caID)
 		return nil, false
 	}
 
 	mappedHost := matcher.matchConfig.MappedHost
 	if strings.Contains(mappedHost, "$") {
-		mappedHost = matcher.regex.ReplaceAllString(caName, mappedHost)
+		mappedHost = matcher.regex.ReplaceAllString(caID, mappedHost)
 	}
 
 	//Get the certAuthorityMatchConfig from mapped host
@@ -415,7 +423,7 @@ func (c *IdentityConfig) findMatchingCAConfig(configEntity *identityConfigEntity
 		caConfig.URL = matcher.matchConfig.URLSubstitutionExp
 		//check for regex replace '$'
 		if strings.Contains(caConfig.URL, "$") {
-			caConfig.URL = matcher.regex.ReplaceAllString(caName, caConfig.URL)
+			caConfig.URL = matcher.regex.ReplaceAllString(caID, caConfig.URL)
 		}
 	}
 
@@ -428,7 +436,7 @@ func (c *IdentityConfig) findMatchingCAConfig(configEntity *identityConfigEntity
 		hostOverride := matcher.matchConfig.SSLTargetOverrideURLSubstitutionExp
 		//check for regex replace '$'
 		if strings.Contains(hostOverride, "$") {
-			hostOverride = matcher.regex.ReplaceAllString(caName, hostOverride)
+			hostOverride = matcher.regex.ReplaceAllString(caID, hostOverride)
 		}
 		caConfig.GRPCOptions["ssl-target-name-override"] = hostOverride
 	}

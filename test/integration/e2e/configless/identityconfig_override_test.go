@@ -71,6 +71,7 @@ func getMSPCAConfig(caConfig *caConfig) (*msp.CAConfig, error) {
 	}
 
 	return &msp.CAConfig{
+		ID:               caConfig.ID,
 		URL:              caConfig.URL,
 		Registrar:        caConfig.Registrar,
 		CAName:           caConfig.CAName,
@@ -115,14 +116,14 @@ func getCAConfig(networkConfig *fab.NetworkConfig, org string) (*msp.CAConfig, b
 		return nil, false
 	}
 	//for now, we're only loading the first Cert Authority by default. TODO add logic to support passing the Cert Authority ID needed by the client.
-	certAuthorityName := networkConfig.Organizations[strings.ToLower(org)].CertificateAuthorities[0]
+	caID := networkConfig.Organizations[strings.ToLower(org)].CertificateAuthorities[0]
 
-	if certAuthorityName == "" {
+	if caID == "" {
 		return nil, false
 	}
 
 	caConfigs := newCAsConfig()
-	caConfig, ok := caConfigs[strings.ToLower(certAuthorityName)]
+	caConfig, ok := caConfigs[strings.ToLower(caID)]
 	if !ok {
 		// EntityMatchers are not supported in this implementation. If needed, uncomment the below lines
 		//caConfig, mappedHost := m.tryMatchingCAConfig(networkConfig, strings.ToLower(certAuthorityName))
