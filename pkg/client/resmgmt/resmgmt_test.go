@@ -8,7 +8,9 @@ package resmgmt
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -1237,6 +1239,8 @@ func TestSaveChannelWithSignatureOpt(t *testing.T) {
 
 	ctx := setupTestContext("test", "Org1MSP")
 	channelConfigPath := filepath.Join(metadata.GetProjectPath(), metadata.ChannelConfigPath, channelConfigFile)
+	configReader, err := getConfigReader(channelConfigPath)
+	assert.NoError(t, err, "Failed to create reader for the config %s", channelConfigPath)
 
 	mockConfig := &fcmocks.MockConfig{}
 	grpcOpts := make(map[string]interface{})
@@ -1260,7 +1264,7 @@ func TestSaveChannelWithSignatureOpt(t *testing.T) {
 	req := SaveChannelRequest{ChannelID: "mychannel", ChannelConfig: r1}
 
 	// get a valid signature for user "test" and mspID "Org1MSP"
-	signature, err := cc.CreateConfigSignature(ctx.SigningIdentity, channelConfigPath)
+	signature, err := cc.CreateConfigSignatureFromReader(ctx.SigningIdentity, configReader)
 	assert.NoError(t, err, "Failed to get channel config signature")
 
 	opts := WithConfigSignatures(signature)
@@ -1272,16 +1276,16 @@ func TestSaveChannelWithSignatureOpt(t *testing.T) {
 	user2Msp1 := mspmocks.NewMockSigningIdentity("user2", "Org1MSP")
 	user1Msp2 := mspmocks.NewMockSigningIdentity("user1", "Org2MSP")
 	user2Msp2 := mspmocks.NewMockSigningIdentity("user2", "Org2MSP")
-	signature, err = cc.CreateConfigSignature(user1Msp1, channelConfigPath)
+	signature, err = cc.CreateConfigSignatureFromReader(user1Msp1, configReader)
 	assert.NoError(t, err, "Failed to get channel config signature")
 	signatures := []*common.ConfigSignature{signature}
-	signature, err = cc.CreateConfigSignature(user2Msp1, channelConfigPath)
+	signature, err = cc.CreateConfigSignatureFromReader(user2Msp1, configReader)
 	assert.NoError(t, err, "Failed to get channel config signature")
 	signatures = append(signatures, signature)
-	signature, err = cc.CreateConfigSignature(user1Msp2, channelConfigPath)
+	signature, err = cc.CreateConfigSignatureFromReader(user1Msp2, configReader)
 	assert.NoError(t, err, "Failed to get channel config signature")
 	signatures = append(signatures, signature)
-	signature, err = cc.CreateConfigSignature(user2Msp2, channelConfigPath)
+	signature, err = cc.CreateConfigSignatureFromReader(user2Msp2, configReader)
 	assert.NoError(t, err, "Failed to get channel config signature")
 	signatures = append(signatures, signature)
 
@@ -1396,18 +1400,38 @@ func importSignature(t *testing.T, dir, prefix string) (RequestOption, *os.File)
 	return opt, file
 }
 
+func getConfigReader(configPath string) (io.Reader, error) {
+	fileConfigReader, err := os.Open(configPath)
+	if err != nil {
+		return nil, errors.Wrapf(err, "opening channel config file failed")
+	}
+
+	defer fileConfigReader.Close()
+
+	config, err := ioutil.ReadAll(fileConfigReader)
+
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	return bytes.NewReader(config), nil
+}
+
 func createOrgIDsAndExportSignatures(t *testing.T, fabCtx *fcmocks.MockContext, cc *Client, org, dir string) {
 	user1Msp1 := mspmocks.NewMockSigningIdentity("user1", org)
 	user2Msp1 := mspmocks.NewMockSigningIdentity("user2", org)
 	channelConfigPath := filepath.Join(metadata.GetProjectPath(), metadata.ChannelConfigPath, channelConfigFile)
 
-	sig, err := cc.CreateConfigSignature(fabCtx.SigningIdentity, channelConfigPath)
+	configReader, err := getConfigReader(channelConfigPath)
+	assert.NoError(t, err, "Failed to create reader for the config %s", channelConfigPath)
+
+	sig, err := cc.CreateConfigSignatureFromReader(fabCtx.SigningIdentity, configReader)
 	assert.NoError(t, err, "Failed to create config signature for default user of %s", org)
 	exportCfgSignature(t, sig, dir, fmt.Sprintf("signature1_%s", org))
-	sig, err = cc.CreateConfigSignature(user1Msp1, channelConfigPath)
+	sig, err = cc.CreateConfigSignatureFromReader(user1Msp1, configReader)
 	assert.NoError(t, err, "Failed to create config signature for user1 of %s", org)
 	exportCfgSignature(t, sig, dir, fmt.Sprintf("signature2_%s", org))
-	sig, err = cc.CreateConfigSignature(user2Msp1, channelConfigPath)
+	sig, err = cc.CreateConfigSignatureFromReader(user2Msp1, configReader)
 	assert.NoError(t, err, "Failed to create config signature for user2 of %s", org)
 	exportCfgSignature(t, sig, dir, fmt.Sprintf("signature3_%s", org))
 }
@@ -1435,8 +1459,10 @@ func TestMarshalUnMarshalCfgSignatures(t *testing.T) {
 	ctx := setupTestContext("test", "Org1MSP")
 	cc := setupResMgmtClient(t, ctx)
 	channelConfigPath := filepath.Join(metadata.GetProjectPath(), metadata.ChannelConfigPath, channelConfigFile)
+	configReader, err := getConfigReader(channelConfigPath)
+	assert.NoError(t, err, "Failed to create reader for the config %s", channelConfigPath)
 
-	sig, err := cc.CreateConfigSignature(ctx.SigningIdentity, channelConfigPath)
+	sig, err := cc.CreateConfigSignatureFromReader(ctx.SigningIdentity, configReader)
 	assert.NoError(t, err, "failed to create Msp1 ConfigSignature")
 	mSig, err := MarshalConfigSignature(sig)
 	assert.NoError(t, err, "failed to marshal Msp1 ConfigSignature")
@@ -1465,7 +1491,7 @@ func TestMarshalUnMarshalCfgSignatures(t *testing.T) {
 	assert.EqualValues(t, b.SignatureHeader, sig.SignatureHeader, "Marshaled signature did not match the one build from the unmarshaled copy")
 
 	// test prep call for external signature signing
-	cfd, e := cc.CreateConfigSignatureData(ctx.SigningIdentity, channelConfigPath)
+	cfd, e := cc.CreateConfigSignatureDataFromReader(ctx.SigningIdentity, configReader)
 	assert.NoError(t, e, "getting config info for external signing failed")
 	assert.NotEmpty(t, cfd.SignatureHeader, "getting signing header is not supposed to be empty")
 	assert.NotEmpty(t, cfd.SigningBytes, "getting signing bytes is not supposed to be empty")
@@ -1530,7 +1556,10 @@ func TestGetConfigSignaturesFromIdentities(t *testing.T) {
 	cc := setupResMgmtClient(t, ctx)
 	channelConfigPath := filepath.Join(metadata.GetProjectPath(), metadata.ChannelConfigPath, channelConfigFile)
 
-	signature, err := cc.CreateConfigSignature(ctx.SigningIdentity, channelConfigPath)
+	configReader, err := getConfigReader(channelConfigPath)
+	assert.NoError(t, err, "Failed to create reader for the config %s", channelConfigPath)
+
+	signature, err := cc.CreateConfigSignatureFromReader(ctx.SigningIdentity, configReader)
 	assert.NoError(t, err, "CreateSignaturesFromCfgPath failed")
 	//t.Logf("Signature: %s", signature)
 	assert.NotNil(t, signature, "signatures must not be empty")

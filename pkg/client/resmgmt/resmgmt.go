@@ -999,24 +999,6 @@ func (rc *Client) getConfigSignatures(req SaveChannelRequest, chConfig []byte) (
 	return rc.createCfgSigFromIDs(chConfig, signers...)
 }
 
-func readChConfigData(channelConfigPath string) ([]byte, error) {
-	if channelConfigPath == "" {
-		return nil, errors.New("must provide a channel config path")
-	}
-
-	configReader, err := os.Open(channelConfigPath) // nolint
-	if err != nil {
-		return nil, errors.Wrapf(err, "opening channel config file failed")
-	}
-	defer loggedClose(configReader)
-
-	chConfig, err := extractChConfigData(configReader)
-	if err != nil {
-		return nil, errors.WithMessage(err, "extracting channel config from channel config reader of channelConfigPath failed")
-	}
-	return chConfig, nil
-}
-
 func extractChConfigData(channelConfigReader io.Reader) ([]byte, error) {
 	if channelConfigReader == nil {
 		return nil, errors.New("must provide a non empty channel config file")
@@ -1036,10 +1018,27 @@ func extractChConfigData(channelConfigReader io.Reader) ([]byte, error) {
 
 // CreateConfigSignature creates a signature for the given client, custom signers and chConfig from channelConfigPath argument
 //	return ConfigSignature will be signed internally by the SDK. It can be passed to WithConfigSignatures() option
+// Deprecated: this method is deprecated in order to use CreateConfigSignatureFromReader
 func (rc *Client) CreateConfigSignature(signer msp.SigningIdentity, channelConfigPath string) (*common.ConfigSignature, error) {
-	chConfig, err := readChConfigData(channelConfigPath)
+	if channelConfigPath == "" {
+		return nil, errors.New("must provide a channel config path")
+	}
+
+	configReader, err := os.Open(channelConfigPath) //nolint
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "opening channel config file failed")
+	}
+	defer loggedClose(configReader)
+
+	return rc.CreateConfigSignatureFromReader(signer, configReader)
+}
+
+// CreateConfigSignatureFromReader creates a signature for the given client, custom signers and chConfig from io.Reader argument
+//	return ConfigSignature will be signed internally by the SDK. It can be passed to WithConfigSignatures() option
+func (rc *Client) CreateConfigSignatureFromReader(signer msp.SigningIdentity, channelConfig io.Reader) (*common.ConfigSignature, error) {
+	chConfig, err := extractChConfigData(channelConfig)
+	if err != nil {
+		return nil, errors.WithMessage(err, "extracting channel config failed")
 	}
 
 	sigs, err := rc.createCfgSigFromIDs(chConfig, signer)
@@ -1055,17 +1054,36 @@ func (rc *Client) CreateConfigSignature(signer msp.SigningIdentity, channelConfi
 }
 
 // CreateConfigSignatureData will prepare a SignatureHeader and the full signing []byte (signingBytes) to be used for signing a Channel Config
+// Deprecated: this method is deprecated in order to use CreateConfigSignatureDataFromReader
+func (rc *Client) CreateConfigSignatureData(signer msp.SigningIdentity, channelConfigPath string) (signatureHeaderData resource.ConfigSignatureData, e error) {
+	if channelConfigPath == "" {
+		e = errors.New("must provide a channel config path")
+		return
+	}
+
+	configReader, err := os.Open(channelConfigPath) //nolint
+	if err != nil {
+		e = errors.Wrapf(err, "opening channel config file failed")
+		return
+	}
+	defer loggedClose(configReader)
+
+	return rc.CreateConfigSignatureDataFromReader(signer, configReader)
+}
+
+// CreateConfigSignatureDataFromReader will prepare a SignatureHeader and the full signing []byte (signingBytes) to be used for signing a Channel Config
 // 	Once SigningBytes have been signed externally (signing signatureHeaderData.SigningBytes using an external tool like OpenSSL), do the following:
 //  1. create a common.ConfigSignature{} instance
 //  2. assign its SignatureHeader field with the returned field 'signatureHeaderData.signatureHeader'
 //  3. assign its Signature field with the generated signature of 'signatureHeaderData.signingBytes' from the external tool
 //  Then use WithConfigSignatures() option to pass this new instance for channel updates
-func (rc *Client) CreateConfigSignatureData(signer msp.SigningIdentity, channelConfigPath string) (signatureHeaderData resource.ConfigSignatureData, e error) {
-	chConfig, err := readChConfigData(channelConfigPath)
+func (rc *Client) CreateConfigSignatureDataFromReader(signer msp.SigningIdentity, channelConfig io.Reader) (signatureHeaderData resource.ConfigSignatureData, e error) {
+	chConfig, err := extractChConfigData(channelConfig)
 	if err != nil {
-		e = err
+		e = errors.WithMessage(err, "extracting channel config failed")
 		return
 	}
+
 	sigCtx := contextImpl.Client{
 		SigningIdentity: signer,
 		Providers:       rc.ctx,

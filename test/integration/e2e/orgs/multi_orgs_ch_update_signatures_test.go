@@ -231,7 +231,14 @@ func createSignatureFromSDK(t *testing.T, dsCtx *dsClientCtx, chConfigPath strin
 	usr, err := mspClient.GetSigningIdentity(user)
 	require.NoError(t, err, "error creating a new SigningIdentity for %s", dsCtx.org)
 
-	signature, err := dsCtx.rsCl.CreateConfigSignature(usr, chConfigPath)
+	chConfigReader, err := os.Open(chConfigPath)
+	require.NoError(t, err, "failed to create reader for the config %s", chConfigPath)
+	defer func() {
+		err = chConfigReader.Close()
+		require.NoError(t, err, "failed to close chConfig file %s", chConfigPath)
+	}()
+
+	signature, err := dsCtx.rsCl.CreateConfigSignatureFromReader(usr, chConfigReader)
 	require.NoError(t, err, "error creating a new ConfigSignature for %s", org1)
 
 	return signature
@@ -407,7 +414,15 @@ func generateChConfigData(t *testing.T, dsCtx *dsClientCtx, chConfigPath, user, 
 	u, err := mspClient.GetSigningIdentity(user)
 	require.NoError(t, err, "error creating a new SigningIdentity for %s", dsCtx.org)
 
-	d, err := dsCtx.rsCl.CreateConfigSignatureData(u, chConfigPath)
+	chConfigReader, err := os.Open(chConfigPath)
+	assert.NoError(t, err, "Failed to create reader for the config %s", chConfigPath)
+
+	defer func() {
+		err = chConfigReader.Close()
+		require.NoError(t, err, "Failed to close chConfig file")
+	}()
+
+	d, err := dsCtx.rsCl.CreateConfigSignatureDataFromReader(u, chConfigReader)
 	require.NoError(t, err, "Failed to fetch Channel config data for signing")
 
 	chCfgName := getBaseChCfgFileName(chConfigPath)
