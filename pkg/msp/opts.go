@@ -34,22 +34,22 @@ type client interface {
 
 // caConfig interface allows to uniquely override IdentityConfig interface's CAConfig() function
 type caConfig interface {
-	CAConfig(org string) (*msp.CAConfig, bool)
+	CAConfig(caID string) (*msp.CAConfig, bool)
 }
 
 // caServerCerts interface allows to uniquely override IdentityConfig interface's CAServerCerts() function
 type caServerCerts interface {
-	CAServerCerts(org string) ([][]byte, bool)
+	CAServerCerts(caID string) ([][]byte, bool)
 }
 
 // caClientKey interface allows to uniquely override IdentityConfig interface's CAClientKey() function
 type caClientKey interface {
-	CAClientKey(org string) ([]byte, bool)
+	CAClientKey(caID string) ([]byte, bool)
 }
 
 // caClientCert interface allows to uniquely override IdentityConfig interface's CAClientCert() function
 type caClientCert interface {
-	CAClientCert(org string) ([]byte, bool)
+	CAClientCert(caID string) ([]byte, bool)
 }
 
 // caKeyStorePath interface allows to uniquely override IdentityConfig interface's CAKeyStorePath() function

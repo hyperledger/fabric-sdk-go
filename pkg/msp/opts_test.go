@@ -56,18 +56,18 @@ func TestCreateCustomIdentityConfig(t *testing.T) {
 	require.NotEmpty(t, clnt, "client returned must not be empty")
 
 	// test m2 implementation
-	caCfg, ok := ico.CAConfig("testORG")
+	caCfg, ok := ico.CAConfig("testCA")
 	require.True(t, ok, "CAConfig failed")
 	require.Equal(t, "test.url.com", caCfg.URL, "CAConfig did not return expected interface value")
 
 	// test m3 implementation
-	s, ok := ico.CAServerCerts("testORG")
+	s, ok := ico.CAServerCerts("testCA")
 	require.True(t, ok, "CAServerCerts failed")
 	require.Equal(t, []byte("testCAservercert1"), s[0], "CAServerCerts did not return the right cert")
 	require.Equal(t, []byte("testCAservercert2"), s[1], "CAServerCerts did not return the right cert")
 
 	// test m4 implementation
-	c, ok := ico.CAClientKey("testORG")
+	c, ok := ico.CAClientKey("testCA")
 	require.True(t, ok, "CAClientKey failed")
 	require.Equal(t, []byte("testCAclientkey"), c, "CAClientKey did not return the right cert")
 
@@ -148,18 +148,18 @@ func TestCreateCustomIdentityConfigWithSomeDefaultFunctions(t *testing.T) {
 	require.NotEmpty(t, clnt, "client returned must not be empty")
 
 	// test m2 implementation
-	caCfg, ok := identityConfigOptionWithSomeDefaults.CAConfig("testORG")
+	caCfg, ok := identityConfigOptionWithSomeDefaults.CAConfig("testCA")
 	require.True(t, ok, "CAConfig failed")
 	require.Equal(t, "test.url.com", caCfg.URL, "CAConfig did not return expected interface value")
 
 	// test m3 implementation
-	s, ok := identityConfigOptionWithSomeDefaults.CAServerCerts("testORG")
+	s, ok := identityConfigOptionWithSomeDefaults.CAServerCerts("testCA")
 	require.True(t, ok, "CAServerCerts failed")
 	require.Equal(t, []byte("testCAservercert1"), s[0], "CAServerCerts did not return the right cert")
 	require.Equal(t, []byte("testCAservercert2"), s[1], "CAServerCerts did not return the right cert")
 
 	// test m4 implementation
-	c, ok := identityConfigOptionWithSomeDefaults.CAClientKey("testORG")
+	c, ok := identityConfigOptionWithSomeDefaults.CAClientKey("testCA")
 	require.True(t, ok, "CAClientKey failed")
 	require.Equal(t, []byte("testCAclientkey"), c, "CAClientKey did not return the right cert")
 
