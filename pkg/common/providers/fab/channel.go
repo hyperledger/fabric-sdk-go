@@ -25,6 +25,9 @@ type ChannelConfig interface {
 
 	// Query channel configuration
 	Query(reqCtx reqContext.Context) (ChannelCfg, error)
+
+	// QueryBlock queries channel configuration block
+	QueryBlock(reqCtx reqContext.Context) (*common.Block, error)
 }
 
 // ConfigGroupKey is the config group key

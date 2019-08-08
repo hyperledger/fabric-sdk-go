@@ -10,6 +10,9 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource"
+	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
+
 	"time"
 
 	"github.com/golang/protobuf/proto"
@@ -49,6 +52,12 @@ func TestChannelConfigWithPeer(t *testing.T) {
 	reqCtx, cancel := contextImpl.NewRequest(ctx, contextImpl.WithTimeout(10*time.Second))
 	defer cancel()
 
+	block, err := channelConfig.QueryBlock(reqCtx)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+	checkConfigBlock(t, block)
+
 	cfg, err := channelConfig.Query(reqCtx)
 	if err != nil {
 		t.Fatalf(err.Error())
@@ -56,6 +65,17 @@ func TestChannelConfigWithPeer(t *testing.T) {
 
 	if cfg.ID() != channelID {
 		t.Fatalf("Channel name error. Expecting %s, got %s ", channelID, cfg.ID())
+	}
+}
+
+func checkConfigBlock(t *testing.T, block *common.Block) {
+	if block.Header == nil {
+		t.Fatal("expected header in block")
+	}
+
+	_, err := resource.CreateConfigEnvelope(block.Data.Data[0])
+	if err != nil {
+		t.Fatal("expected envelope in block")
 	}
 }
 
@@ -89,6 +109,26 @@ func TestChannelConfigWithPeerWithRetries(t *testing.T) {
 		t.Fatalf("Failed to create new channel client: %s", err)
 	}
 
+	// Test QueryBlock
+	// ---------------
+
+	//Set custom retry handler for tracking number of attempts
+	queryBlockRetryHandler := retry.New(defRetryOpts)
+	overrideRetryHandler = &customRetryHandler{handler: queryBlockRetryHandler, retries: 0}
+
+	queryBlockReqCtx, cancel := contextImpl.NewRequest(ctx, contextImpl.WithTimeout(100*time.Second))
+	defer cancel()
+
+	_, err = channelConfig.QueryBlock(queryBlockReqCtx)
+	if err == nil || !strings.Contains(err.Error(), "ENDORSEMENT_MISMATCH") {
+		t.Fatal("Supposed to fail with ENDORSEMENT_MISMATCH. Description: payloads for config block do not match")
+	}
+
+	assert.True(t, overrideRetryHandler.(*customRetryHandler).retries-1 == numberOfAttempts, "number of attempts missmatching")
+
+	// Test Query
+	// ----------
+
 	//Set custom retry handler for tracking number of attempts
 	retryHandler := retry.New(defRetryOpts)
 	overrideRetryHandler = &customRetryHandler{handler: retryHandler, retries: 0}
@@ -117,6 +157,11 @@ func TestChannelConfigWithPeerError(t *testing.T) {
 	reqCtx, cancel := contextImpl.NewRequest(ctx, contextImpl.WithTimeout(10*time.Second))
 	defer cancel()
 
+	_, err = channelConfig.QueryBlock(reqCtx)
+	if err == nil {
+		t.Fatal("Should have failed with since there's one endorser and at least two are required")
+	}
+
 	_, err = channelConfig.Query(reqCtx)
 	if err == nil {
 		t.Fatal("Should have failed with since there's one endorser and at least two are required")
@@ -135,6 +180,12 @@ func TestChannelConfigWithOrdererError(t *testing.T) {
 
 	reqCtx, cancel := contextImpl.NewRequest(ctx, contextImpl.WithTimeout(1*time.Second))
 	defer cancel()
+
+	// Expecting error since orderer is not setup
+	_, err = channelConfig.QueryBlock(reqCtx)
+	if err == nil {
+		t.Fatal("Should have failed since orderer is not available")
+	}
 
 	// Expecting error since orderer is not setup
 	_, err = channelConfig.Query(reqCtx)

@@ -397,6 +397,15 @@ func WaitForOrdererConfigUpdate(t *testing.T, client *resmgmt.Client, channelID 
 			if currentBlock <= lastConfigBlock && !genesis {
 				return nil, status.New(status.TestStatus, status.GenericTransient.ToInt32(), fmt.Sprintf("Block number was not incremented [%d, %d]", currentBlock, lastConfigBlock), nil)
 			}
+
+			block, err := client.QueryConfigBlockFromOrderer(channelID, resmgmt.WithOrdererEndpoint("orderer.example.com"))
+			if err != nil {
+				return nil, status.New(status.TestStatus, status.GenericTransient.ToInt32(), err.Error(), nil)
+			}
+			if block.Header.Number != currentBlock {
+				return nil, status.New(status.TestStatus, status.GenericTransient.ToInt32(), fmt.Sprintf("Invalid block number [%d, %d]", block.Header.Number, currentBlock), nil)
+			}
+
 			return &currentBlock, nil
 		},
 	)

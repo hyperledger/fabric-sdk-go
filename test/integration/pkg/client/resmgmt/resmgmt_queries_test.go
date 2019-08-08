@@ -113,10 +113,22 @@ func testQueryConfigFromOrderer(t *testing.T, channelID string, client *resmgmt.
 	if !contains(channelCfg.Orderers(), expected) {
 		t.Fatalf("Expected orderer %s, got %s", expected, channelCfg.Orderers())
 	}
+	block, err := client.QueryConfigBlockFromOrderer(channelID, resmgmt.WithOrdererEndpoint("orderer.example.com"))
+	if err != nil {
+		t.Fatalf("QueryConfigBlockFromOrderer return error: %s", err)
+	}
+	if block.Header.Number != channelCfg.BlockNumber() {
+		t.Fatalf("QueryConfigBlockFromOrderer returned invalid block number: [%d, %d]", block.Header.Number, channelCfg.BlockNumber())
+	}
 
 	_, err = client.QueryConfigFromOrderer(channelID, resmgmt.WithOrdererEndpoint("non-existent"), resmgmt.WithRetry(retry.DefaultResMgmtOpts))
 	if err == nil {
 		t.Fatal("QueryConfig should have failed for invalid orderer")
+	}
+
+	_, err = client.QueryConfigBlockFromOrderer(channelID, resmgmt.WithOrdererEndpoint("non-existent"), resmgmt.WithRetry(retry.DefaultResMgmtOpts))
+	if err == nil {
+		t.Fatal("QueryConfigBlockFromOrderer should have failed for invalid orderer")
 	}
 
 }

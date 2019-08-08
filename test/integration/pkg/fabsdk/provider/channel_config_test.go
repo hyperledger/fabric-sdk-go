@@ -10,6 +10,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
+
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource"
+
 	contextAPI "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
@@ -50,6 +54,13 @@ func TestChannelConfig(t *testing.T) {
 	reqCtx, cancel := context.NewRequest(channelCtx, context.WithTimeoutType(fab.PeerResponse))
 	defer cancel()
 
+	block, err := cfg.QueryBlock(reqCtx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	checkConfigBlock(t, block)
+
 	response, err := cfg.Query(reqCtx)
 	if err != nil {
 		t.Fatal(err)
@@ -68,6 +79,17 @@ func TestChannelConfig(t *testing.T) {
 		t.Fatalf("Expected orderer %s, got %s", expected, response.Orderers())
 	}
 
+}
+
+func checkConfigBlock(t *testing.T, block *common.Block) {
+	if block.Header == nil {
+		t.Fatal("expected header in block")
+	}
+
+	_, err := resource.CreateConfigEnvelope(block.Data.Data[0])
+	if err != nil {
+		t.Fatal("expected envelope in block")
+	}
 }
 
 func TestChannelConfigWithOrderer(t *testing.T) {
@@ -129,6 +151,13 @@ func TestChannelConfigWithOrderer(t *testing.T) {
 func queryChannelCfg(channelCtx contextAPI.Channel, cfg fab.ChannelConfig, t *testing.T) {
 	reqCtx, cancel := context.NewRequest(channelCtx, context.WithTimeoutType(fab.OrdererResponse))
 	defer cancel()
+
+	block, err := cfg.QueryBlock(reqCtx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	checkConfigBlock(t, block)
+
 	response, err := cfg.Query(reqCtx)
 	if err != nil {
 		t.Fatal(err)

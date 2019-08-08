@@ -1183,6 +1183,41 @@ func loggedClose(c io.Closer) {
 	}
 }
 
+func (rc *Client) getChannelConfig(channelID string, opts requestOptions) (*chconfig.ChannelConfig, error) {
+	orderer, err := rc.requestOrderer(&opts, channelID)
+	if err != nil {
+		return nil, errors.WithMessage(err, "failed to find orderer for request")
+	}
+
+	return chconfig.New(channelID, chconfig.WithOrderer(orderer))
+}
+
+// QueryConfigBlockFromOrderer config returns channel configuration block from orderer. If orderer is not provided using options it will be defaulted to channel orderer (if configured) or random orderer from configuration.
+//  Parameters:
+//  channelID is mandatory channel ID
+//  options holds optional request options
+//
+//  Returns:
+//  channel configuration block
+func (rc *Client) QueryConfigBlockFromOrderer(channelID string, options ...RequestOption) (*common.Block, error) {
+
+	opts, err := rc.prepareRequestOpts(options...)
+	if err != nil {
+		return nil, err
+	}
+
+	channelConfig, err := rc.getChannelConfig(channelID, opts)
+	if err != nil {
+		return nil, errors.WithMessage(err, "QueryConfig failed")
+	}
+
+	reqCtx, cancel := rc.createRequestContext(opts, fab.OrdererResponse)
+	defer cancel()
+
+	return channelConfig.QueryBlock(reqCtx)
+
+}
+
 // QueryConfigFromOrderer config returns channel configuration from orderer. If orderer is not provided using options it will be defaulted to channel orderer (if configured) or random orderer from configuration.
 //  Parameters:
 //  channelID is mandatory channel ID
@@ -1197,12 +1232,7 @@ func (rc *Client) QueryConfigFromOrderer(channelID string, options ...RequestOpt
 		return nil, err
 	}
 
-	orderer, err := rc.requestOrderer(&opts, channelID)
-	if err != nil {
-		return nil, errors.WithMessage(err, "failed to find orderer for request")
-	}
-
-	channelConfig, err := chconfig.New(channelID, chconfig.WithOrderer(orderer))
+	channelConfig, err := rc.getChannelConfig(channelID, opts)
 	if err != nil {
 		return nil, errors.WithMessage(err, "QueryConfig failed")
 	}
