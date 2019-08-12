@@ -43,6 +43,10 @@ type NodeOUs struct {
 	ClientOUIdentifier *OrganizationalUnitIdentifiersConfiguration `yaml:"ClientOUIdentifier,omitempty"`
 	// PeerOUIdentifier specifies how to recognize peers by OU
 	PeerOUIdentifier *OrganizationalUnitIdentifiersConfiguration `yaml:"PeerOUIdentifier,omitempty"`
+	// AdminOUIdentifier specifies how to recognize admins by OU
+	AdminOUIdentifier *OrganizationalUnitIdentifiersConfiguration `yaml:"AdminOUIdentifier,omitempty"`
+	// OrdererOUIdentifier specifies how to recognize admins by OU
+	OrdererOUIdentifier *OrganizationalUnitIdentifiersConfiguration `yaml:"OrdererOUIdentifier,omitempty"`
 }
 
 // Configuration represents the accessory configuration an MSP can be equipped with.
@@ -156,7 +160,7 @@ func getMspConfig(dir string, ID string, sigid *msp.SigningIdentityInfo) (*msp.M
 	}
 
 	admincert, err := getPemMaterialFromDir(admincertDir)
-	if err != nil || len(admincert) == 0 {
+	if err != nil && !os.IsNotExist(err) {
 		return nil, errors.WithMessagef(err, "could not load a valid admin certificate from directory %s", admincertDir)
 	}
 
@@ -231,37 +235,39 @@ func getMspConfig(dir string, ID string, sigid *msp.SigningIdentityInfo) (*msp.M
 		// Prepare NodeOUs
 		if configuration.NodeOUs != nil && configuration.NodeOUs.Enable {
 			mspLogger.Debug("Loading NodeOUs")
-			if configuration.NodeOUs.ClientOUIdentifier == nil || len(configuration.NodeOUs.ClientOUIdentifier.OrganizationalUnitIdentifier) == 0 {
-				return nil, errors.New("Failed loading NodeOUs. ClientOU must be different from nil.")
-			}
-			if configuration.NodeOUs.PeerOUIdentifier == nil || len(configuration.NodeOUs.PeerOUIdentifier.OrganizationalUnitIdentifier) == 0 {
-				return nil, errors.New("Failed loading NodeOUs. PeerOU must be different from nil.")
-			}
-
 			nodeOUs = &msp.FabricNodeOUs{
-				Enable:             configuration.NodeOUs.Enable,
-				ClientOuIdentifier: &msp.FabricOUIdentifier{OrganizationalUnitIdentifier: configuration.NodeOUs.ClientOUIdentifier.OrganizationalUnitIdentifier},
-				PeerOuIdentifier:   &msp.FabricOUIdentifier{OrganizationalUnitIdentifier: configuration.NodeOUs.PeerOUIdentifier.OrganizationalUnitIdentifier},
+				Enable: true,
+			}
+			if configuration.NodeOUs.ClientOUIdentifier != nil && len(configuration.NodeOUs.ClientOUIdentifier.OrganizationalUnitIdentifier) != 0 {
+				nodeOUs.ClientOuIdentifier = &msp.FabricOUIdentifier{OrganizationalUnitIdentifier: configuration.NodeOUs.ClientOUIdentifier.OrganizationalUnitIdentifier}
+			}
+			if configuration.NodeOUs.PeerOUIdentifier != nil && len(configuration.NodeOUs.PeerOUIdentifier.OrganizationalUnitIdentifier) != 0 {
+				nodeOUs.PeerOuIdentifier = &msp.FabricOUIdentifier{OrganizationalUnitIdentifier: configuration.NodeOUs.PeerOUIdentifier.OrganizationalUnitIdentifier}
+			}
+			if configuration.NodeOUs.AdminOUIdentifier != nil && len(configuration.NodeOUs.AdminOUIdentifier.OrganizationalUnitIdentifier) != 0 {
+				nodeOUs.AdminOuIdentifier = &msp.FabricOUIdentifier{OrganizationalUnitIdentifier: configuration.NodeOUs.AdminOUIdentifier.OrganizationalUnitIdentifier}
+			}
+			if configuration.NodeOUs.OrdererOUIdentifier != nil && len(configuration.NodeOUs.OrdererOUIdentifier.OrganizationalUnitIdentifier) != 0 {
+				nodeOUs.OrdererOuIdentifier = &msp.FabricOUIdentifier{OrganizationalUnitIdentifier: configuration.NodeOUs.OrdererOUIdentifier.OrganizationalUnitIdentifier}
 			}
 
 			// Read certificates, if defined
 
 			// ClientOU
-			f := filepath.Join(dir, configuration.NodeOUs.ClientOUIdentifier.Certificate)
-			raw, err = readFile(f)
-			if err != nil {
-				mspLogger.Infof("Failed loading ClientOU certificate at [%s]: [%s]", f, err)
-			} else {
-				nodeOUs.ClientOuIdentifier.Certificate = raw
+			if nodeOUs.ClientOuIdentifier != nil {
+				nodeOUs.ClientOuIdentifier.Certificate = loadCertificateAt(dir, configuration.NodeOUs.ClientOUIdentifier.Certificate, "ClientOU")
 			}
-
 			// PeerOU
-			f = filepath.Join(dir, configuration.NodeOUs.PeerOUIdentifier.Certificate)
-			raw, err = readFile(f)
-			if err != nil {
-				mspLogger.Debugf("Failed loading PeerOU certificate at [%s]: [%s]", f, err)
-			} else {
-				nodeOUs.PeerOuIdentifier.Certificate = raw
+			if nodeOUs.PeerOuIdentifier != nil {
+				nodeOUs.PeerOuIdentifier.Certificate = loadCertificateAt(dir, configuration.NodeOUs.PeerOUIdentifier.Certificate, "PeerOU")
+			}
+			// AdminOU
+			if nodeOUs.AdminOuIdentifier != nil {
+				nodeOUs.AdminOuIdentifier.Certificate = loadCertificateAt(dir, configuration.NodeOUs.AdminOUIdentifier.Certificate, "AdminOU")
+			}
+			// OrdererOU
+			if nodeOUs.OrdererOuIdentifier != nil {
+				nodeOUs.OrdererOuIdentifier.Certificate = loadCertificateAt(dir, configuration.NodeOUs.OrdererOUIdentifier.Certificate, "OrdererOU")
 			}
 		}
 	} else {
@@ -295,3 +301,23 @@ func getMspConfig(dir string, ID string, sigid *msp.SigningIdentityInfo) (*msp.M
 
 	return mspconf, nil
 }
+
+func loadCertificateAt(dir, certificatePath string, ouType string) []byte {
+	f := filepath.Join(dir, certificatePath)
+	raw, err := readFile(f)
+	if err != nil {
+		mspLogger.Infof("Failed loading %s certificate at [%s]: [%s]", ouType, f, err)
+	} else {
+		return raw
+	}
+
+	return nil
+}
+
+const (
+	IdemixConfigDirMsp                  = "msp"
+	IdemixConfigDirUser                 = "user"
+	IdemixConfigFileIssuerPublicKey     = "IssuerPublicKey"
+	IdemixConfigFileRevocationPublicKey = "RevocationPublicKey"
+	IdemixConfigFileSigner              = "SignerConfig"
+)

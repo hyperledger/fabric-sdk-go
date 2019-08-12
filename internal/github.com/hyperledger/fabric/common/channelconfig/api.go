@@ -98,11 +98,8 @@ type Orderer interface {
 	// ConsensusMetadata returns the metadata associated with the consensus type.
 	ConsensusMetadata() []byte
 
-	// ConsensusMigrationState returns the consensus-type migration state.
-	ConsensusMigrationState() ab.ConsensusType_MigrationState
-
-	// ConsensusMigrationContext returns the consensus-type migration context.
-	ConsensusMigrationContext() uint64
+	// ConsensusState returns the consensus-type state.
+	ConsensusState() ab.ConsensusType_State
 
 	// BatchSize returns the maximum number of messages to include in a block
 	BatchSize() *ab.BatchSize
@@ -136,6 +133,9 @@ type ChannelCapabilities interface {
 
 	// ConsensusTypeMigration return true if consensus-type migration is permitted in both orderer and peer.
 	ConsensusTypeMigration() bool
+
+	// OrgSpecificOrdererEndpoints return true if the channel config processing allows orderer orgs to specify their own endpoints
+	OrgSpecificOrdererEndpoints() bool
 }
 
 // ApplicationCapabilities defines the capabilities for the application portion of a channel
@@ -172,6 +172,10 @@ type ApplicationCapabilities interface {
 	//  - policies expressible at a ledger key granularity, as described in FAB-8812
 	//  - new chaincode lifecycle, as described in FAB-11237
 	V1_3Validation() bool
+
+	// StorePvtDataOfInvalidTx() returns true if the peer needs to store the pvtData of
+	// invalid transactions (as introduced in v142).
+	StorePvtDataOfInvalidTx() bool
 
 	// V2_0Validation returns true if this channel supports transaction validation
 	// as introduced in v2.0. This includes:
@@ -213,8 +217,8 @@ type OrdererCapabilities interface {
 	// when validating messages
 	ExpirationCheck() bool
 
-	// Kafka2RaftMigration checks whether the orderer permits a Kafka to Raft migration.
-	Kafka2RaftMigration() bool
+	// ConsensusTypeMigration checks whether the orderer permits a consensus-type migration.
+	ConsensusTypeMigration() bool
 
 	// UseChannelCreationPolicyAsAdmins checks whether the orderer should use more sophisticated
 	// channel creation logic using channel creation policy as the Admins policy if

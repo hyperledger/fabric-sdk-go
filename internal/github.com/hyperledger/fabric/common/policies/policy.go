@@ -14,6 +14,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protoutil"
 	flogging "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/sdkpatch/logbridge"
+	cb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/msp"
 )
 
@@ -47,6 +48,15 @@ const (
 
 	// BlockValidation is the label for the policy which should validate the block signatures for the channel
 	BlockValidation = PathSeparator + ChannelPrefix + PathSeparator + OrdererPrefix + PathSeparator + "BlockValidation"
+
+	// ChannelOrdererAdmins is the label for the channel's orderer admin policy
+	ChannelOrdererAdmins = PathSeparator + ChannelPrefix + PathSeparator + OrdererPrefix + PathSeparator + "Admins"
+
+	// ChannelOrdererWriters is the label for the channel's orderer writers policy
+	ChannelOrdererWriters = PathSeparator + ChannelPrefix + PathSeparator + OrdererPrefix + PathSeparator + "Writers"
+
+	// ChannelOrdererReaders is the label for the channel's orderer readers policy
+	ChannelOrdererReaders = PathSeparator + ChannelPrefix + PathSeparator + OrdererPrefix + PathSeparator + "Readers"
 )
 
 var logger = flogging.MustGetLogger("policies")
@@ -56,6 +66,12 @@ type PrincipalSet []*msp.MSPPrincipal
 
 // PrincipalSets aggregates PrincipalSets
 type PrincipalSets []PrincipalSet
+
+// Converter represents a policy
+// which may be translated into a SignaturePolicyEnvelope
+type Converter interface {
+	Convert() (*cb.SignaturePolicyEnvelope, error)
+}
 
 // Policy is used to determine if a signature is valid
 type Policy interface {
@@ -88,22 +104,24 @@ type Provider interface {
 // ChannelPolicyManagerGetter is a support interface
 // to get access to the policy manager of a given channel
 type ChannelPolicyManagerGetter interface {
-	// Returns the policy manager associated to the passed channel
-	// and true if it was the manager requested, or false if it is the default manager
-	Manager(channelID string) (Manager, bool)
+	// Returns the policy manager associated with the specified channel.
+	Manager(channelID string) Manager
 }
+
+// PolicyManagerGetterFunc is a function adapater for ChannelPolicyManagerGetter.
+type PolicyManagerGetterFunc func(channelID string) Manager
 
 // ManagerImpl is an implementation of Manager and configtx.ConfigHandler
 // In general, it should only be referenced as an Impl for the configtx.ConfigManager
 type ManagerImpl struct {
 	path     string // The group level path
-	policies map[string]Policy
+	Policies map[string]Policy
 	managers map[string]*ManagerImpl
 }
 
 type rejectPolicy string
 
-type policyLogger struct {
-	policy     Policy
+type PolicyLogger struct {
+	Policy     Policy
 	policyName string
 }

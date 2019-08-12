@@ -17,6 +17,7 @@ import (
 	"github.com/hyperledger/fabric-lib-go/healthz"
 	commonledger "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/ledger"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/metrics"
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/core/ledger/util/couchdb"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/ledger/rwset"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/ledger/rwset/kvrwset"
@@ -25,16 +26,58 @@ import (
 
 // Initializer encapsulates dependencies for PeerLedgerProvider
 type Initializer struct {
-	StateListeners                []StateListener
-	DeployedChaincodeInfoProvider DeployedChaincodeInfoProvider
-	MembershipInfoProvider        MembershipInfoProvider
-	MetricsProvider               metrics.Provider
-	HealthCheckRegistry           HealthCheckRegistry
+	StateListeners                  []StateListener
+	DeployedChaincodeInfoProvider   DeployedChaincodeInfoProvider
+	MembershipInfoProvider          MembershipInfoProvider
+	ChaincodeLifecycleEventProvider ChaincodeLifecycleEventProvider
+	MetricsProvider                 metrics.Provider
+	HealthCheckRegistry             HealthCheckRegistry
+	Config                          *Config
+	CustomTxProcessors              map[common.HeaderType]CustomTxProcessor
+}
+
+// Config is a structure used to configure a ledger provider.
+type Config struct {
+	// RootFSPath is the top-level directory where ledger files are stored.
+	RootFSPath string
+	// StateDBConfig holds the configuration parameters for the state database.
+	StateDBConfig *StateDBConfig
+	// PrivateDataConfig holds the configuration parameters for the private data store.
+	PrivateDataConfig *PrivateDataConfig
+	// HistoryDBConfig holds the configuration parameters for the transaction history database.
+	HistoryDBConfig *HistoryDBConfig
+}
+
+// StateDBConfig is a structure used to configure the state parameters for the ledger.
+type StateDBConfig struct {
+	// StateDatabase is the database to use for storing last known state.  The
+	// two supported options are "goleveldb" and "CouchDB".
+	StateDatabase string
+	// CouchDB is the configuration for CouchDB.  It is used when StateDatabase
+	// is set to "CouchDB".
+	CouchDB *couchdb.Config
+}
+
+// PrivateDataConfig is a structure used to configure a private data storage provider.
+type PrivateDataConfig struct {
+	// BatchesInterval is the minimum duration (milliseconds) between batches
+	// for converting ineligible missing data entries into eligible entries.
+	BatchesInterval int
+	// MatchBatchSize is the maximum size of batches when converting ineligible
+	// missing data entries into eligible entries.
+	MaxBatchSize int
+	// PurgeInterval is the number of blocks to wait until purging expired
+	// private data entries.
+	PurgeInterval int
+}
+
+// HistoryDBConfig is a structure used to configure the transaction history database.
+type HistoryDBConfig struct {
+	Enabled bool
 }
 
 // PeerLedgerProvider provides handle to ledger instances
 type PeerLedgerProvider interface {
-	Initialize(initializer *Initializer) error
 	// Create creates a new ledger with the given genesis block.
 	// This function guarantees that the creation of ledger and committing the genesis block would an atomic action
 	// The chain id retrieved from the genesis block is treated as a ledger id
@@ -81,8 +124,9 @@ type PeerLedger interface {
 	// The pvt data is filtered by the list of 'ns/collections' supplied in the filter
 	// A nil filter does not filter any results and causes retrieving all the pvt data for the given blockNum
 	GetPvtDataByNum(blockNum uint64, filter PvtNsCollFilter) ([]*TxPvtData, error)
-	// CommitWithPvtData commits the block and the corresponding pvt data in an atomic operation
-	CommitWithPvtData(blockAndPvtdata *BlockAndPvtData) error
+	// CommitLegacy commits the block and the corresponding pvt data in an atomic operation following the v14 validation/commit path
+	// TODO: add a new Commit() path that replaces CommitLegacy() for the validation refactor described in FAB-12221
+	CommitLegacy(blockAndPvtdata *BlockAndPvtData, commitOpts *CommitOptions) error
 	// GetConfigHistoryRetriever returns the ConfigHistoryRetriever
 	GetConfigHistoryRetriever() (ConfigHistoryRetriever, error)
 	// CommitPvtDataOfOldBlocks commits the private data corresponding to already committed block
@@ -92,12 +136,12 @@ type PeerLedger interface {
 	CommitPvtDataOfOldBlocks(blockPvtData []*BlockPvtData) ([]*PvtdataHashMismatch, error)
 	// GetMissingPvtDataTracker return the MissingPvtDataTracker
 	GetMissingPvtDataTracker() (MissingPvtDataTracker, error)
-}
-
-// ValidatedLedger represents the 'final ledger' after filtering out invalid transactions from PeerLedger.
-// Post-v1
-type ValidatedLedger interface {
-	commonledger.Ledger
+	// DoesPvtDataInfoExist returns true when
+	// (1) the ledger has pvtdata associated with the given block number (or)
+	// (2) a few or all pvtdata associated with the given block number is missing but the
+	//     missing info is recorded in the ledger (or)
+	// (3) the block is committed and does not contain any pvtData.
+	DoesPvtDataInfoExist(blockNum uint64) (bool, error)
 }
 
 // SimpleQueryExecutor encapsulates basic functions
@@ -262,6 +306,11 @@ type BlockPvtData struct {
 // Add adds a given missing private data in the MissingPrivateDataList
 func (txMissingPvtData TxMissingPvtDataMap) Add(txNum uint64, ns, coll string, isEligible bool) {
 	txMissingPvtData[txNum] = append(txMissingPvtData[txNum], &MissingPvtData{ns, coll, isEligible})
+}
+
+// CommitOptions encapsulates options associated with a block commit.
+type CommitOptions struct {
+	FetchPvtDataFromLedger bool
 }
 
 // PvtCollFilter represents the set of the collection names (as keys of the map with value 'true')
@@ -488,6 +537,7 @@ type DeployedChaincodeInfo struct {
 	Version                     string
 	ExplicitCollectionConfigPkg *common.CollectionConfigPackage
 	ImplicitCollections         []*common.StaticCollectionConfig
+	IsLegacy                    bool
 }
 
 // GetAllCollectionsConfigPkg returns a combined collection config pkg that contains both explicit and implicit collections
@@ -538,9 +588,67 @@ type HealthCheckRegistry interface {
 	RegisterChecker(string, healthz.HealthChecker) error
 }
 
+// ChaincodeLifecycleEventListener interface enables ledger components (mainly, intended for statedb)
+// to be able to listen to chaincode lifecycle events. 'dbArtifactsTar' represents db specific artifacts
+// (such as index specs) packaged in a tar. Note that this interface is redefined here (in addition to
+// the one defined in ledger/cceventmgmt package). Using the same interface for the new lifecycle path causes
+// a cyclic import dependency. Moreover, eventually the whole package ledger/cceventmgmt is intented to
+// be removed when migration to new lifecycle is mandated.
+type ChaincodeLifecycleEventListener interface {
+	// HandleChaincodeDeploy is invoked when chaincode installed + defined becomes true.
+	// The expected usage are to creates all the necessary statedb structures (such as indexes) and update
+	// service discovery info. This function is invoked immediately before the committing the state changes
+	// that contain chaincode definition or when a chaincode install happens
+	HandleChaincodeDeploy(chaincodeDefinition *ChaincodeDefinition, dbArtifactsTar []byte) error
+	// ChaincodeDeployDone is invoked after the chaincode deployment is finished - `succeeded` indicates
+	// whether the deploy finished successfully
+	ChaincodeDeployDone(succeeded bool)
+}
+
+// ChaincodeDefinition captures the info about chaincode
+type ChaincodeDefinition struct {
+	Name              string
+	Hash              []byte
+	Version           string
+	CollectionConfigs *common.CollectionConfigPackage
+}
+
+func (cdef *ChaincodeDefinition) String() string {
+	return fmt.Sprintf("Name=%s, Version=%s, Hash=%#v", cdef.Name, cdef.Version, cdef.Hash)
+}
+
+type ChaincodeLifecycleEventProvider interface {
+	RegisterListener(channelID string, listener ChaincodeLifecycleEventListener)
+}
+
+// CustomTxProcessor allows to generate simulation results during commit time for custom transactions.
+// A custom processor may represent the information in a propriety fashion and can use this process to translate
+// the information into the form of `TxSimulationResults`. Because, the original information is signed in a
+// custom representation, an implementation of a `Processor` should be cautious that the custom representation
+// is used for simulation in an deterministic fashion and should take care of compatibility cross fabric versions.
+// 'initializingLedger' true indicates that either the transaction being processed is from the genesis block or the ledger is
+// synching the state (which could happen during peer startup if the statedb is found to be lagging behind the blockchain).
+// In the former case, the transactions processed are expected to be valid and in the latter case, only valid transactions
+// are reprocessed and hence any validation can be skipped.
+type CustomTxProcessor interface {
+	GenerateSimulationResults(txEnvelop *common.Envelope, simulator TxSimulator, initializingLedger bool) error
+}
+
+// InvalidTxError is expected to be thrown by a custom transaction processor
+// if it wants the ledger to record a particular transaction as invalid
+type InvalidTxError struct {
+	Msg string
+}
+
+func (e *InvalidTxError) Error() string {
+	return e.Msg
+}
+
 //go:generate counterfeiter -o mock/state_listener.go -fake-name StateListener . StateListener
 //go:generate counterfeiter -o mock/query_executor.go -fake-name QueryExecutor . QueryExecutor
 //go:generate counterfeiter -o mock/tx_simulator.go -fake-name TxSimulator . TxSimulator
 //go:generate counterfeiter -o mock/deployed_ccinfo_provider.go -fake-name DeployedChaincodeInfoProvider . DeployedChaincodeInfoProvider
 //go:generate counterfeiter -o mock/membership_info_provider.go -fake-name MembershipInfoProvider . MembershipInfoProvider
 //go:generate counterfeiter -o mock/health_check_registry.go -fake-name HealthCheckRegistry . HealthCheckRegistry
+//go:generate counterfeiter -o mock/cc_event_listener.go -fake-name ChaincodeLifecycleEventListener . ChaincodeLifecycleEventListener
+//go:generate counterfeiter -o mock/custom_tx_processor.go -fake-name CustomTxProcessor . CustomTxProcessor

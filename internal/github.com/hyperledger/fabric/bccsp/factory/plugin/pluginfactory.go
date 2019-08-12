@@ -69,10 +69,10 @@ func (f *PluginFactory) Get(pluginOpts *PluginOpts) (bccsp.BCCSP, error) {
 	}
 
 	// check to make sure symbol New meets the required function signature
-	new, ok := sym.(func(config map[string]interface{}) (bccsp.BCCSP, error))
+	symNew, ok := sym.(func(config map[string]interface{}) (bccsp.BCCSP, error))
 	if !ok {
 		return nil, fmt.Errorf("Plugin does not implement the required function signature for 'New'")
 	}
 
-	return new(pluginOpts.Config)
+	return symNew(pluginOpts.Config)
 }

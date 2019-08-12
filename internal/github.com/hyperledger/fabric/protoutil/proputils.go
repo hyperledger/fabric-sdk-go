@@ -11,11 +11,12 @@ Please review third_party pinning scripts and patches for more details.
 package protoutil
 
 import (
+	"crypto/sha256"
 	"encoding/hex"
+	"time"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/util"
-	factory "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/sdkpatch/cryptosuitebridge"
+	"github.com/golang/protobuf/ptypes"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 	"github.com/pkg/errors"
@@ -92,9 +93,7 @@ func GetChaincodeProposalPayload(bytes []byte) (*peer.ChaincodeProposalPayload, 
 
 // GetSignatureHeader Get SignatureHeader from bytes
 func GetSignatureHeader(bytes []byte) (*common.SignatureHeader, error) {
-	sh := &common.SignatureHeader{}
-	err := proto.Unmarshal(bytes, sh)
-	return sh, errors.Wrap(err, "error unmarshaling SignatureHeader")
+	return UnmarshalSignatureHeader(bytes)
 }
 
 // CreateChaincodeProposalWithTxIDNonceAndTransient creates a proposal from
@@ -121,7 +120,10 @@ func CreateChaincodeProposalWithTxIDNonceAndTransient(txid string, typ common.He
 	// get a more appropriate mechanism to handle it in.
 	var epoch uint64
 
-	timestamp := util.CreateUtcTimestamp()
+	timestamp, err := ptypes.TimestampProto(time.Now().UTC())
+	if err != nil {
+		return nil, "", errors.Wrap(err, "error validating Timestamp")
+	}
 
 	hdr := &common.Header{
 		ChannelHeader: MarshalOrPanic(
@@ -222,11 +224,6 @@ func GetBytesEnvelope(env *common.Envelope) ([]byte, error) {
 func ComputeTxID(nonce, creator []byte) (string, error) {
 	// TODO: Get the Hash function to be used from
 	// channel configuration
-	digest, err := factory.GetDefault().Hash(
-		append(nonce, creator...),
-		factory.GetSHA256Opts())
-	if err != nil {
-		return "", err
-	}
-	return hex.EncodeToString(digest), nil
+	digest := sha256.Sum256(append(nonce, creator...))
+	return hex.EncodeToString(digest[:]), nil
 }

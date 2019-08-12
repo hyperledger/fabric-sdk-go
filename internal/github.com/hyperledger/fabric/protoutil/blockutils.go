@@ -11,12 +11,12 @@ Please review third_party pinning scripts and patches for more details.
 package protoutil
 
 import (
+	"bytes"
+	"crypto/sha256"
 	"encoding/asn1"
-	"fmt"
-	"math"
+	"math/big"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/util"
 	cb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	"github.com/pkg/errors"
 )
@@ -39,19 +39,16 @@ func NewBlock(seqNum uint64, previousHash []byte) *cb.Block {
 }
 
 type asn1Header struct {
-	Number       int64
+	Number       *big.Int
 	PreviousHash []byte
 	DataHash     []byte
 }
 
 func BlockHeaderBytes(b *cb.BlockHeader) []byte {
-	if b.Number > uint64(math.MaxInt64) {
-		panic(fmt.Errorf("Golang does not currently support encoding uint64 to asn1"))
-	}
 	asn1Header := asn1Header{
 		PreviousHash: b.PreviousHash,
 		DataHash:     b.DataHash,
-		Number:       int64(b.Number),
+		Number:       new(big.Int).SetUint64(b.Number),
 	}
 	result, err := asn1.Marshal(asn1Header)
 	if err != nil {
@@ -64,11 +61,13 @@ func BlockHeaderBytes(b *cb.BlockHeader) []byte {
 }
 
 func BlockHeaderHash(b *cb.BlockHeader) []byte {
-	return util.ComputeSHA256(BlockHeaderBytes(b))
+	sum := sha256.Sum256(BlockHeaderBytes(b))
+	return sum[:]
 }
 
 func BlockDataHash(b *cb.BlockData) []byte {
-	return util.ComputeSHA256(util.ConcatenateBytes(b.Data...))
+	sum := sha256.Sum256(bytes.Join(b.Data, nil))
+	return sum[:]
 }
 
 // GetChainIDFromBlockBytes returns chain ID given byte array which represents
@@ -128,6 +127,35 @@ func GetMetadataFromBlockOrPanic(block *cb.Block, index cb.BlockMetadataIndex) *
 	return md
 }
 
+// GetConsenterMetadataFromBlock attempts to retrieve consenter metadata from the value
+// stored in block metadata at index SIGNATURES (first field). If no consenter metadata
+// is found there, it falls back to index ORDERER (third field).
+func GetConsenterMetadataFromBlock(block *cb.Block) (*cb.Metadata, error) {
+	m, err := GetMetadataFromBlock(block, cb.BlockMetadataIndex_SIGNATURES)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to retrieve metadata at index: %d", cb.BlockMetadataIndex_SIGNATURES)
+	}
+
+	// TODO FAB-15864 Remove this fallback when we can stop supporting upgrade from pre-1.4.1 orderer
+	if len(m.Value) == 0 {
+		return GetMetadataFromBlock(block, cb.BlockMetadataIndex_ORDERER)
+	}
+
+	obm := &cb.OrdererBlockMetadata{}
+	err = proto.Unmarshal(m.Value, obm)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal orderer block metadata")
+	}
+
+	res := &cb.Metadata{}
+	err = proto.Unmarshal(obm.ConsenterMetadata, res)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal consenter metadata")
+	}
+
+	return res, nil
+}
+
 // GetLastConfigIndexFromBlock retrieves the index of the last config block as
 // encoded in the block metadata
 func GetLastConfigIndexFromBlock(block *cb.Block) (uint64, error) {
@@ -174,9 +202,9 @@ func CopyBlockMetadata(src *cb.Block, dst *cb.Block) {
 // InitBlockMetadata initializes metadata structure
 func InitBlockMetadata(block *cb.Block) {
 	if block.Metadata == nil {
-		block.Metadata = &cb.BlockMetadata{Metadata: [][]byte{{}, {}, {}}}
-	} else if len(block.Metadata.Metadata) < int(cb.BlockMetadataIndex_TRANSACTIONS_FILTER+1) {
-		for i := int(len(block.Metadata.Metadata)); i <= int(cb.BlockMetadataIndex_TRANSACTIONS_FILTER); i++ {
+		block.Metadata = &cb.BlockMetadata{Metadata: [][]byte{{}, {}, {}, {}, {}}}
+	} else if len(block.Metadata.Metadata) < int(cb.BlockMetadataIndex_COMMIT_HASH+1) {
+		for i := int(len(block.Metadata.Metadata)); i <= int(cb.BlockMetadataIndex_COMMIT_HASH); i++ {
 			block.Metadata.Metadata = append(block.Metadata.Metadata, []byte{})
 		}
 	}

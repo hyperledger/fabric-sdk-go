@@ -21,6 +21,7 @@ const (
 	MSPv1_0 = iota
 	MSPv1_1
 	MSPv1_3
+	MSPv1_4_2
 )
 
 // NewOpts represent
@@ -43,6 +44,11 @@ type BCCSPNewOpts struct {
 	NewBaseOpts
 }
 
+// IdemixNewOpts contains the options to instantiate a new Idemix-based MSP
+type IdemixNewOpts struct {
+	NewBaseOpts
+}
+
 // New create a new MSP instance depending on the passed Opts
 func New(opts NewOpts) (MSP, error) {
 	cs := cryptosuite.GetDefault()
@@ -56,10 +62,12 @@ func New(opts NewOpts) (MSP, error) {
 			return NewBccspMsp(MSPv1_1, cs)
 		case MSPv1_3:
 			return NewBccspMsp(MSPv1_3, cs)
+		case MSPv1_4_2:
+			return NewBccspMsp(MSPv1_4_2, cs)
 		default:
 			return nil, errors.Errorf("Invalid *BCCSPNewOpts. Version not recognized [%v]", opts.GetVersion())
 		}
 	default:
-		return nil, errors.Errorf("Invalid msp.NewOpts instance. It must be *BCCSPNewOpts. It was [%v]", opts)
+		return nil, errors.Errorf("Invalid msp.NewOpts instance. It must be either *BCCSPNewOpts or *IdemixNewOpts. It was [%v]", opts)
 	}
 }

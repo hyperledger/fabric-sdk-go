@@ -11,13 +11,14 @@ Please review third_party pinning scripts and patches for more details.
 package protoutil
 
 import (
+	"crypto/rand"
 	"fmt"
 	"time"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/timestamp"
-	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/crypto"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/sdkinternal/pkg/identity"
+	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	cb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 	"github.com/pkg/errors"
@@ -50,7 +51,7 @@ func CreateNonceOrPanic() []byte {
 
 // CreateNonce generates a nonce using the common/crypto package.
 func CreateNonce() ([]byte, error) {
-	nonce, err := crypto.GetRandomNonce()
+	nonce, err := getRandomNonce()
 	return nonce, errors.WithMessage(err, "error generating random nonce")
 }
 
@@ -247,6 +248,7 @@ func NewSignatureHeaderOrPanic(id identity.Serializer) *cb.SignatureHeader {
 	if err != nil {
 		panic(fmt.Errorf("failed generating a new SignatureHeader: %s", err))
 	}
+
 	return signatureHeader
 }
 
@@ -289,6 +291,24 @@ func UnmarshalChaincodeID(bytes []byte) (*pb.ChaincodeID, error) {
 	}
 
 	return ccid, nil
+}
+
+// UnmarshalSignatureHeader unmarshals bytes to a SignatureHeader.
+func UnmarshalSignatureHeader(bytes []byte) (*cb.SignatureHeader, error) {
+	sh := &common.SignatureHeader{}
+	if err := proto.Unmarshal(bytes, sh); err != nil {
+		return nil, errors.Wrap(err, "error unmarshaling SignatureHeader")
+	}
+	return sh, nil
+}
+
+// UnmarshalSignatureHeaderOrPanic unmarshals bytes to a SignatureHeader.
+func UnmarshalSignatureHeaderOrPanic(bytes []byte) *cb.SignatureHeader {
+	sighdr, err := UnmarshalSignatureHeader(bytes)
+	if err != nil {
+		panic(err)
+	}
+	return sighdr
 }
 
 // IsConfigBlock validates whenever given block contains configuration
@@ -358,4 +378,14 @@ func EnvelopeToConfigUpdate(configtx *cb.Envelope) (*cb.ConfigUpdateEnvelope, er
 		return nil, err
 	}
 	return configUpdateEnv, nil
+}
+
+func getRandomNonce() ([]byte, error) {
+	key := make([]byte, 24)
+
+	_, err := rand.Read(key)
+	if err != nil {
+		return nil, errors.Wrap(err, "error getting random bytes")
+	}
+	return key, nil
 }

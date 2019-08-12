@@ -11,10 +11,10 @@ Please review third_party pinning scripts and patches for more details.
 package protoutil
 
 import (
+	"bytes"
 	"fmt"
 
 	"github.com/gogo/protobuf/proto"
-	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/util"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 )
 
@@ -45,7 +45,7 @@ func ConfigUpdateEnvelopeAsSignedData(ce *common.ConfigUpdateEnvelope) ([]*Signe
 		}
 
 		result[i] = &SignedData{
-			Data:      util.ConcatenateBytes(configSig.SignatureHeader, ce.ConfigUpdate),
+			Data:      bytes.Join([][]byte{configSig.SignatureHeader, ce.ConfigUpdate}, nil),
 			Identity:  sigHeader.Creator,
 			Signature: configSig.Signature,
 		}

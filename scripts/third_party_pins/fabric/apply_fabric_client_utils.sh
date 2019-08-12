@@ -426,7 +426,13 @@ sed -i'' -e 's/"github.com\/hyperledger\/fabric\/bccsp\/utils"/utils "github.com
 
 FILTER_FILENAME="msp/configbuilder.go"
 FILTER_FN="GetVerifyingMspConfig,getMspConfig,getPemMaterialFromDir,readFile,readPemFile"
+FILTER_FN+=",loadCertificateAt"
 gofilter
+START_LINE=`grep -n "case ProviderTypeToString(IDEMIX)" "${TMP_PROJECT_PATH}/${FILTER_FILENAME}" | head -n 1 | awk -F':' '{print $1}'`
+for i in {1..2}
+do
+    sed -i'' -e ${START_LINE}'d' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+done
 
 FILTER_FILENAME="msp/identities.go"
 FILTER_FN="newIdentity,newSigningIdentity,ExpiresAt,GetIdentifier,GetMSPIdentifier"
@@ -443,12 +449,20 @@ sed -i'' -e 's/\"go.uber.org\/zap\/zapcore/logging\"github.com\/hyperledger\/fab
 sed -i'' -e 's/zapcore.DebugLevel/logging.DEBUG/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 
 FILTER_FILENAME="msp/factory.go"
+sed -i'' -e '/import (/ a\
+    \"github.com\/hyperledger\/fabric-sdk-go\/pkg\/core\/cryptosuite\"' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e '/func New(/ a\
 cs := cryptosuite.GetDefault()\
 ' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e 's/newBccspMsp(MSPv1_0)/NewBccspMsp(MSPv1_0, cs)/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e 's/newBccspMsp(MSPv1_1)/NewBccspMsp(MSPv1_1, cs)/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e 's/newBccspMsp(MSPv1_3)/NewBccspMsp(MSPv1_3, cs)/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e 's/newBccspMsp(MSPv1_4_2)/NewBccspMsp(MSPv1_4_2, cs)/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+START_LINE=`grep -n "case \*IdemixNewOpts" "${TMP_PROJECT_PATH}/${FILTER_FILENAME}" | head -n 1 | awk -F':' '{print $1}'`
+for i in {1..11}
+do
+    sed -i'' -e ${START_LINE}'d' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+done
 
 FILTER_FILENAME="msp/mspimpl.go"
 FILTER_FN="sanitizeCert,SatisfiesPrincipal,Validate,getCertificationChainIdentifier,DeserializeIdentity,deserializeIdentityInternal"
@@ -460,6 +474,7 @@ FILTER_FN+=",GetTLSIntermediateCerts,GetTLSRootCerts,GetType,Setup"
 FILTER_FN+=",getCertFromPem,getIdentityFromConf,getSigningIdentityFromConf"
 FILTER_FN+=",newBccspMsp,IsWellFormed,GetVersion"
 FILTER_FN+=",hasOURole,hasOURoleInternal,collectPrincipals,satisfiesPrincipalInternalV13,satisfiesPrincipalInternalPreV13"
+FILTER_FN+=",satisfiesPrincipalInternalV142,isInAdmins"
 gofilter
 # TODO - adapt to msp/factory.go rather than changing newBccspMsp
 sed -i'' -e 's/newBccspMsp/NewBccspMsp/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
@@ -480,6 +495,7 @@ FILTER_FILENAME="msp/mspimplsetup.go"
 FILTER_FN="setupCrypto,setupCAs,setupAdmins,setupCRLs,finalizeSetupCAs,setupSigningIdentity"
 FILTER_FN+=",setupOUs,setupTLSCAs,setupV1,setupV11,getCertifiersIdentifier"
 FILTER_FN+=",preSetupV1,postSetupV1,setupNodeOUs,postSetupV11"
+FILTER_FN+=",setupAdminsPreV142,setupAdminsV142,setupNodeOUsV142,preSetupV142,setupV142,postSetupV142"
 gofilter
 sed -i'' -e 's/"github.com\/hyperledger\/fabric\/bccsp"/bccsp "github.com\/hyperledger\/fabric-sdk-go\/internal\/github.com\/hyperledger\/fabric\/sdkpatch\/cryptosuitebridge"/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 
@@ -487,12 +503,17 @@ FILTER_FILENAME="msp/mspimplvalidate.go"
 FILTER_FN="validateTLSCAIdentity,validateCAIdentity,validateIdentity,validateIdentityAgainstChain"
 FILTER_FN+=",validateCertAgainstChain,validateIdentityOUs,getValidityOptsForCert,isCACert"
 FILTER_FN+=",getSubjectKeyIdentifierFromCert,getAuthorityKeyIdentifierFromCrl"
-FILTER_FN+=",validateIdentityOUsV1,validateIdentityOUsV11"
+FILTER_FN+=",validateIdentityOUsV1,validateIdentityOUsV11,validateIdentityOUsV142"
 gofilter
 
 FILTER_FILENAME="msp/mspmgrimpl.go"
 FILTER_FN="NewMSPManager,DeserializeIdentity,GetMSPs,Setup,IsWellFormed"
 gofilter
+START_LINE=`grep -n "case \*idemixmsp" "${TMP_PROJECT_PATH}/${FILTER_FILENAME}" | head -n 1 | awk -F':' '{print $1}'`
+for i in {1..2}
+do
+    sed -i'' -e ${START_LINE}'d' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+done
 
 FILTER_FILENAME="msp/cache/cache.go"
 FILTER_FN="New"

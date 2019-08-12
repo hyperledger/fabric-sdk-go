@@ -50,6 +50,7 @@ FILTERS_ENABLED="fn"
 FILTER_FILENAME="internal/protoutil/commonutils.go"
 FILTER_FN="MarshalOrPanic"
 gofilter
+sed -i'' -e '/github.com\/hyperledger\/fabric\/protos\/common/d' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 
 echo "Filtering Go sources for allowed declarations ..."
 FILTERS_ENABLED="gen,type"

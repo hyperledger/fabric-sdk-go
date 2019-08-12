@@ -49,7 +49,7 @@ type CCPackage interface {
 }
 
 // ChaincodeExtractor extracts chaincode from a given path
-type ChaincodeExtractor func(ccname string, ccversion string, path string) (CCPackage, error)
+type ChaincodeExtractor func(ccNameVersion string, path string) (CCPackage, error)
 
 //-------- ChaincodeData is stored on the LSCC -------
 
