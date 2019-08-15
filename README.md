@@ -110,7 +110,7 @@ You need:
 
 Notes:
 
-- Dep is deprecated and replaced with Go modules.
+- Dependencies are handled using [Go modules](https://github.com/golang/go/wiki/Modules).
 
 
 ### Gerrit Git repository
