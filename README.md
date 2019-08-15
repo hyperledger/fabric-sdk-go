@@ -16,6 +16,12 @@ go get github.com/hyperledger/fabric-sdk-go
 
 You're good to go, happy coding! Check out the examples for usage demonstrations.
 
+### Documentation
+
+SDK documentation can be viewed at [GoDoc](https://godoc.org/github.com/hyperledger/fabric-sdk-go).
+
+The packages intended for end developer usage are within the pkg/client folder along with the main SDK package (pkg/fabsdk).
+
 ### Examples
 
 - [E2E Test](test/integration/e2e/end_to_end.go): Basic example that uses SDK to query and execute transaction
