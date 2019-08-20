@@ -45,3 +45,6 @@ require (
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
 	gopkg.in/yaml.v2 v2.2.1
 )
+
+// TEMPORARY - so that we can create a commit for the third_party fabric module.
+replace github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric => ./third_party/github.com/hyperledger/fabric

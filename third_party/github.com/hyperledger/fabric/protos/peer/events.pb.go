@@ -88,8 +88,8 @@ func (m *FilteredBlock) GetFilteredTransactions() []*FilteredTransaction {
 // within a block
 type FilteredTransaction struct {
 	Txid             string            `protobuf:"bytes,1,opt,name=txid,proto3" json:"txid,omitempty"`
-	Type             common.HeaderType `protobuf:"varint,2,opt,name=type,proto3,enum=common.HeaderType" json:"type,omitempty"`
-	TxValidationCode TxValidationCode  `protobuf:"varint,3,opt,name=tx_validation_code,json=txValidationCode,proto3,enum=protos.TxValidationCode" json:"tx_validation_code,omitempty"`
+	Type             common.HeaderType `protobuf:"varint,2,opt,name=type,proto3,enum=sdk.common.HeaderType" json:"type,omitempty"`
+	TxValidationCode TxValidationCode  `protobuf:"varint,3,opt,name=tx_validation_code,json=txValidationCode,proto3,enum=sdk.protos.TxValidationCode" json:"tx_validation_code,omitempty"`
 	// Types that are valid to be assigned to Data:
 	//	*FilteredTransaction_TransactionActions
 	Data                 isFilteredTransaction_Data `protobuf_oneof:"Data"`
@@ -299,7 +299,7 @@ type isDeliverResponse_Type interface {
 }
 
 type DeliverResponse_Status struct {
-	Status common.Status `protobuf:"varint,1,opt,name=status,proto3,enum=common.Status,oneof"`
+	Status common.Status `protobuf:"varint,1,opt,name=status,proto3,enum=sdk.common.Status,oneof"`
 }
 
 type DeliverResponse_Block struct {

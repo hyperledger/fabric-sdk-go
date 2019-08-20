@@ -190,7 +190,7 @@ func (m *ChaincodeInput) GetIsInit() bool {
 // Carries the chaincode specification. This is the actual metadata required for
 // defining a chaincode.
 type ChaincodeSpec struct {
-	Type                 ChaincodeSpec_Type `protobuf:"varint,1,opt,name=type,proto3,enum=protos.ChaincodeSpec_Type" json:"type,omitempty"`
+	Type                 ChaincodeSpec_Type `protobuf:"varint,1,opt,name=type,proto3,enum=sdk.protos.ChaincodeSpec_Type" json:"type,omitempty"`
 	ChaincodeId          *ChaincodeID       `protobuf:"bytes,2,opt,name=chaincode_id,json=chaincodeId,proto3" json:"chaincode_id,omitempty"`
 	Input                *ChaincodeInput    `protobuf:"bytes,3,opt,name=input,proto3" json:"input,omitempty"`
 	Timeout              int32              `protobuf:"varint,4,opt,name=timeout,proto3" json:"timeout,omitempty"`

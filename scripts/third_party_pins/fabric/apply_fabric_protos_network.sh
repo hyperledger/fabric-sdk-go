@@ -84,6 +84,7 @@ do
     sed -i'' -e "/proto.RegisterType/s/gossip/${NAMESPACE_PREFIX}gossip/g" "${TMP_PROJECT_PATH}/${i}"
     sed -i'' -e "/proto.RegisterEnum/s/gossip/${NAMESPACE_PREFIX}gossip/g" "${TMP_PROJECT_PATH}/${i}"
   fi
+  sed -i'' -e "s/protobuf:\(.*\)enum=\(.*\)/protobuf:\1enum=${NAMESPACE_PREFIX}\2/g" "${TMP_PROJECT_PATH}/${i}"
 done
 
 # Copy patched project into internal paths

@@ -151,7 +151,7 @@ type MSPPrincipal struct {
 	// "Principal" contains a specific identity. Default value
 	// denotes that Principal contains one of the groups by
 	// default supported by all MSPs ("admin" or "member").
-	PrincipalClassification MSPPrincipal_Classification `protobuf:"varint,1,opt,name=principal_classification,json=principalClassification,proto3,enum=common.MSPPrincipal_Classification" json:"principal_classification,omitempty"`
+	PrincipalClassification MSPPrincipal_Classification `protobuf:"varint,1,opt,name=principal_classification,json=principalClassification,proto3,enum=sdk.common.MSPPrincipal_Classification" json:"principal_classification,omitempty"`
 	// Principal completes the policy principal definition. For the default
 	// principal types, Principal can be either "Admin" or "Member".
 	// For the ByOrganizationUnit/ByIdentity values of Classification,
@@ -277,7 +277,7 @@ type MSPRole struct {
 	MspIdentifier string `protobuf:"bytes,1,opt,name=msp_identifier,json=mspIdentifier,proto3" json:"msp_identifier,omitempty"`
 	// MSPRoleType defines which of the available, pre-defined MSP-roles
 	// an identiy should posess inside the MSP with identifier MSPidentifier
-	Role                 MSPRole_MSPRoleType `protobuf:"varint,2,opt,name=role,proto3,enum=common.MSPRole_MSPRoleType" json:"role,omitempty"`
+	Role                 MSPRole_MSPRoleType `protobuf:"varint,2,opt,name=role,proto3,enum=sdk.common.MSPRole_MSPRoleType" json:"role,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}            `json:"-"`
 	XXX_unrecognized     []byte              `json:"-"`
 	XXX_sizecache        int32               `json:"-"`
@@ -324,7 +324,7 @@ func (m *MSPRole) GetRole() MSPRole_MSPRoleType {
 
 // MSPIdentityAnonymity can be used to enforce an identity to be anonymous or nominal.
 type MSPIdentityAnonymity struct {
-	AnonymityType        MSPIdentityAnonymity_MSPIdentityAnonymityType `protobuf:"varint,1,opt,name=anonymity_type,json=anonymityType,proto3,enum=common.MSPIdentityAnonymity_MSPIdentityAnonymityType" json:"anonymity_type,omitempty"`
+	AnonymityType        MSPIdentityAnonymity_MSPIdentityAnonymityType `protobuf:"varint,1,opt,name=anonymity_type,json=anonymityType,proto3,enum=sdk.common.MSPIdentityAnonymity_MSPIdentityAnonymityType" json:"anonymity_type,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                                      `json:"-"`
 	XXX_unrecognized     []byte                                        `json:"-"`
 	XXX_sizecache        int32                                         `json:"-"`

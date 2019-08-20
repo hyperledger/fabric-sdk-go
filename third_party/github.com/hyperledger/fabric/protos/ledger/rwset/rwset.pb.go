@@ -51,7 +51,7 @@ func (TxReadWriteSet_DataModel) EnumDescriptor() ([]byte, []int) {
 // DataModel specifies the enum value of the data model
 // ns_rwset field specifies a list of chaincode specific read-write set (one for each chaincode)
 type TxReadWriteSet struct {
-	DataModel            TxReadWriteSet_DataModel `protobuf:"varint,1,opt,name=data_model,json=dataModel,proto3,enum=rwset.TxReadWriteSet_DataModel" json:"data_model,omitempty"`
+	DataModel            TxReadWriteSet_DataModel `protobuf:"varint,1,opt,name=data_model,json=dataModel,proto3,enum=sdk.rwset.TxReadWriteSet_DataModel" json:"data_model,omitempty"`
 	NsRwset              []*NsReadWriteSet        `protobuf:"bytes,2,rep,name=ns_rwset,json=nsRwset,proto3" json:"ns_rwset,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                 `json:"-"`
 	XXX_unrecognized     []byte                   `json:"-"`
@@ -211,7 +211,7 @@ func (m *CollectionHashedReadWriteSet) GetPvtRwsetHash() []byte {
 
 // TxPvtReadWriteSet encapsulate the private read-write set for a transaction
 type TxPvtReadWriteSet struct {
-	DataModel            TxReadWriteSet_DataModel `protobuf:"varint,1,opt,name=data_model,json=dataModel,proto3,enum=rwset.TxReadWriteSet_DataModel" json:"data_model,omitempty"`
+	DataModel            TxReadWriteSet_DataModel `protobuf:"varint,1,opt,name=data_model,json=dataModel,proto3,enum=sdk.rwset.TxReadWriteSet_DataModel" json:"data_model,omitempty"`
 	NsPvtRwset           []*NsPvtReadWriteSet     `protobuf:"bytes,2,rep,name=ns_pvt_rwset,json=nsPvtRwset,proto3" json:"ns_pvt_rwset,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                 `json:"-"`
 	XXX_unrecognized     []byte                   `json:"-"`

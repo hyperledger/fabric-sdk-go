@@ -283,7 +283,7 @@ type GossipMessage struct {
 	Channel []byte `protobuf:"bytes,2,opt,name=channel,proto3" json:"channel,omitempty"`
 	// determines to which peers it is allowed
 	// to forward the message
-	Tag GossipMessage_Tag `protobuf:"varint,3,opt,name=tag,proto3,enum=gossip.GossipMessage_Tag" json:"tag,omitempty"`
+	Tag GossipMessage_Tag `protobuf:"varint,3,opt,name=tag,proto3,enum=sdk.gossip.GossipMessage_Tag" json:"tag,omitempty"`
 	// Types that are valid to be assigned to Content:
 	//	*GossipMessage_AliveMsg
 	//	*GossipMessage_MemReq
@@ -997,7 +997,7 @@ func (m *PeerIdentity) GetMetadata() []byte {
 type DataRequest struct {
 	Nonce                uint64      `protobuf:"varint,1,opt,name=nonce,proto3" json:"nonce,omitempty"`
 	Digests              [][]byte    `protobuf:"bytes,2,rep,name=digests,proto3" json:"digests,omitempty"`
-	MsgType              PullMsgType `protobuf:"varint,3,opt,name=msg_type,json=msgType,proto3,enum=gossip.PullMsgType" json:"msg_type,omitempty"`
+	MsgType              PullMsgType `protobuf:"varint,3,opt,name=msg_type,json=msgType,proto3,enum=sdk.gossip.PullMsgType" json:"msg_type,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}    `json:"-"`
 	XXX_unrecognized     []byte      `json:"-"`
 	XXX_sizecache        int32       `json:"-"`
@@ -1054,7 +1054,7 @@ func (m *DataRequest) GetMsgType() PullMsgType {
 type GossipHello struct {
 	Nonce                uint64      `protobuf:"varint,1,opt,name=nonce,proto3" json:"nonce,omitempty"`
 	Metadata             []byte      `protobuf:"bytes,2,opt,name=metadata,proto3" json:"metadata,omitempty"`
-	MsgType              PullMsgType `protobuf:"varint,3,opt,name=msg_type,json=msgType,proto3,enum=gossip.PullMsgType" json:"msg_type,omitempty"`
+	MsgType              PullMsgType `protobuf:"varint,3,opt,name=msg_type,json=msgType,proto3,enum=sdk.gossip.PullMsgType" json:"msg_type,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}    `json:"-"`
 	XXX_unrecognized     []byte      `json:"-"`
 	XXX_sizecache        int32       `json:"-"`
@@ -1111,7 +1111,7 @@ func (m *GossipHello) GetMsgType() PullMsgType {
 type DataUpdate struct {
 	Nonce                uint64      `protobuf:"varint,1,opt,name=nonce,proto3" json:"nonce,omitempty"`
 	Data                 []*Envelope `protobuf:"bytes,2,rep,name=data,proto3" json:"data,omitempty"`
-	MsgType              PullMsgType `protobuf:"varint,3,opt,name=msg_type,json=msgType,proto3,enum=gossip.PullMsgType" json:"msg_type,omitempty"`
+	MsgType              PullMsgType `protobuf:"varint,3,opt,name=msg_type,json=msgType,proto3,enum=sdk.gossip.PullMsgType" json:"msg_type,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}    `json:"-"`
 	XXX_unrecognized     []byte      `json:"-"`
 	XXX_sizecache        int32       `json:"-"`
@@ -1168,7 +1168,7 @@ func (m *DataUpdate) GetMsgType() PullMsgType {
 type DataDigest struct {
 	Nonce                uint64      `protobuf:"varint,1,opt,name=nonce,proto3" json:"nonce,omitempty"`
 	Digests              [][]byte    `protobuf:"bytes,2,rep,name=digests,proto3" json:"digests,omitempty"`
-	MsgType              PullMsgType `protobuf:"varint,3,opt,name=msg_type,json=msgType,proto3,enum=gossip.PullMsgType" json:"msg_type,omitempty"`
+	MsgType              PullMsgType `protobuf:"varint,3,opt,name=msg_type,json=msgType,proto3,enum=sdk.gossip.PullMsgType" json:"msg_type,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}    `json:"-"`
 	XXX_unrecognized     []byte      `json:"-"`
 	XXX_sizecache        int32       `json:"-"`

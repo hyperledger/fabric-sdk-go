@@ -218,7 +218,7 @@ func (*TokenAction) XXX_OneofWrappers() []interface{} {
 // TokenOwner holds the identity of a token owner
 type TokenOwner struct {
 	// Type is the type of the identity of the token owner
-	Type TokenOwner_Type `protobuf:"varint,1,opt,name=type,proto3,enum=token.TokenOwner_Type" json:"type,omitempty"`
+	Type TokenOwner_Type `protobuf:"varint,1,opt,name=type,proto3,enum=sdk.token.TokenOwner_Type" json:"type,omitempty"`
 	// Raw is the serialization of the identity
 	Raw                  []byte   `protobuf:"bytes,2,opt,name=raw,proto3" json:"raw,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`

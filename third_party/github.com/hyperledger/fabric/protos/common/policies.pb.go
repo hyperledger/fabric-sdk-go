@@ -333,7 +333,7 @@ func (m *SignaturePolicy_NOutOf) GetRules() []*SignaturePolicy {
 // 1 satisfied is sufficient, ALL would require 4 signatures, and MAJORITY would require 3 signatures.
 type ImplicitMetaPolicy struct {
 	SubPolicy            string                  `protobuf:"bytes,1,opt,name=sub_policy,json=subPolicy,proto3" json:"sub_policy,omitempty"`
-	Rule                 ImplicitMetaPolicy_Rule `protobuf:"varint,2,opt,name=rule,proto3,enum=common.ImplicitMetaPolicy_Rule" json:"rule,omitempty"`
+	Rule                 ImplicitMetaPolicy_Rule `protobuf:"varint,2,opt,name=rule,proto3,enum=sdk.common.ImplicitMetaPolicy_Rule" json:"rule,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                `json:"-"`
 	XXX_unrecognized     []byte                  `json:"-"`
 	XXX_sizecache        int32                   `json:"-"`

@@ -92,7 +92,7 @@ func (SeekInfo_SeekErrorResponse) EnumDescriptor() ([]byte, []int) {
 
 type BroadcastResponse struct {
 	// Status code, which may be used to programatically respond to success/failure
-	Status common.Status `protobuf:"varint,1,opt,name=status,proto3,enum=common.Status" json:"status,omitempty"`
+	Status common.Status `protobuf:"varint,1,opt,name=status,proto3,enum=sdk.common.Status" json:"status,omitempty"`
 	// Info string which may contain additional information about the status returned
 	Info                 string   `protobuf:"bytes,2,opt,name=info,proto3" json:"info,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
@@ -342,8 +342,8 @@ func (*SeekPosition) XXX_OneofWrappers() []interface{} {
 type SeekInfo struct {
 	Start                *SeekPosition              `protobuf:"bytes,1,opt,name=start,proto3" json:"start,omitempty"`
 	Stop                 *SeekPosition              `protobuf:"bytes,2,opt,name=stop,proto3" json:"stop,omitempty"`
-	Behavior             SeekInfo_SeekBehavior      `protobuf:"varint,3,opt,name=behavior,proto3,enum=orderer.SeekInfo_SeekBehavior" json:"behavior,omitempty"`
-	ErrorResponse        SeekInfo_SeekErrorResponse `protobuf:"varint,4,opt,name=error_response,json=errorResponse,proto3,enum=orderer.SeekInfo_SeekErrorResponse" json:"error_response,omitempty"`
+	Behavior             SeekInfo_SeekBehavior      `protobuf:"varint,3,opt,name=behavior,proto3,enum=sdk.orderer.SeekInfo_SeekBehavior" json:"behavior,omitempty"`
+	ErrorResponse        SeekInfo_SeekErrorResponse `protobuf:"varint,4,opt,name=error_response,json=errorResponse,proto3,enum=sdk.orderer.SeekInfo_SeekErrorResponse" json:"error_response,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                   `json:"-"`
 	XXX_unrecognized     []byte                     `json:"-"`
 	XXX_sizecache        int32                      `json:"-"`
@@ -442,7 +442,7 @@ type isDeliverResponse_Type interface {
 }
 
 type DeliverResponse_Status struct {
-	Status common.Status `protobuf:"varint,1,opt,name=status,proto3,enum=common.Status,oneof"`
+	Status common.Status `protobuf:"varint,1,opt,name=status,proto3,enum=sdk.common.Status,oneof"`
 }
 
 type DeliverResponse_Block struct {

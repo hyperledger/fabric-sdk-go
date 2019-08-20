@@ -59,7 +59,7 @@ type ConsensusType struct {
 	// Opaque metadata, dependent on the consensus type.
 	Metadata []byte `protobuf:"bytes,2,opt,name=metadata,proto3" json:"metadata,omitempty"`
 	// The state signals the ordering service to go into maintenance mode, typically for consensus-type migration.
-	State                ConsensusType_State `protobuf:"varint,3,opt,name=state,proto3,enum=orderer.ConsensusType_State" json:"state,omitempty"`
+	State                ConsensusType_State `protobuf:"varint,3,opt,name=state,proto3,enum=sdk.orderer.ConsensusType_State" json:"state,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}            `json:"-"`
 	XXX_unrecognized     []byte              `json:"-"`
 	XXX_sizecache        int32               `json:"-"`
