@@ -8,8 +8,8 @@ package mocks
 
 import (
 	"github.com/golang/protobuf/proto"
-	cb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
-	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
+	cb "github.com/hyperledger/fabric-protos-go/common"
+	pb "github.com/hyperledger/fabric-protos-go/peer"
 )
 
 // NewBlock returns a new mock block initialized with the given channel

@@ -7,7 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package dispatcher
 
 import (
-	ab "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/orderer"
+	ab "github.com/hyperledger/fabric-protos-go/orderer"
 )
 
 // SeekEvent is a SeekInfo request to the deliver server

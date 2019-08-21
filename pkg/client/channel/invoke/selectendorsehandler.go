@@ -15,9 +15,9 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/golang/protobuf/proto"
+	pb "github.com/hyperledger/fabric-protos-go/peer"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/rwsetutil"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
-	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 )
 
 var logger = logging.NewLogger("fabsdk/client")

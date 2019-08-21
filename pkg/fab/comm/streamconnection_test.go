@@ -15,7 +15,7 @@ import (
 
 	fabmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 
-	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
+	pb "github.com/hyperledger/fabric-protos-go/peer"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 )

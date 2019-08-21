@@ -13,7 +13,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/cauthdsl"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	mocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
-	common "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
+	common "github.com/hyperledger/fabric-protos-go/common"
 )
 
 const (

@@ -29,7 +29,7 @@ import (
 	discclient "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/discovery/client"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
-	fabdiscovery "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/discovery"
+	fabdiscovery "github.com/hyperledger/fabric-protos-go/discovery"
 )
 
 const (

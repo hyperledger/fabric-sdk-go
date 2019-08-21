@@ -11,8 +11,8 @@ Please review third_party pinning scripts and patches for more details.
 package capabilities
 
 import (
+	cb "github.com/hyperledger/fabric-protos-go/common"
 	flogging "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/sdkpatch/logbridge"
-	cb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 	"github.com/pkg/errors"
 )
 

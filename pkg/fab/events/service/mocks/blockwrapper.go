@@ -7,7 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package mocks
 
 import (
-	cb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
+	cb "github.com/hyperledger/fabric-protos-go/common"
 )
 
 // BlockWrapper wraps the Block and conforms to the Block interface

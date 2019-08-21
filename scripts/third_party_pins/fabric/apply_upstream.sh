@@ -64,7 +64,7 @@ declare -a CLIENT_UTILS_IMPORT_SUBSTS=(
     's/\"github.com\/hyperledger\/fabric\/common\/flogging\/httpadmin/\"github.com\/hyperledger\/fabric-sdk-go\/internal\/github.com\/hyperledger\/fabric\/sdkpatch\/logbridge\/httpadmin/g'
     's/\"github.com\/hyperledger\/fabric\/common\/flogging/flogging\"github.com\/hyperledger\/fabric-sdk-go\/internal\/github.com\/hyperledger\/fabric\/sdkpatch\/logbridge/g'
     's/\"github.com\/op\/go-logging/logging\"github.com\/hyperledger\/fabric-sdk-go\/internal\/github.com\/hyperledger\/fabric\/sdkpatch\/logbridge/g'
-    's/\"github.com\/hyperledger\/fabric\/protos/\"github.com\/hyperledger\/fabric-sdk-go\/third_party\/github.com\/hyperledger\/fabric\/protos/g'
+    's/\"github.com\/hyperledger\/fabric\/protos/\"github.com\/hyperledger\/fabric-protos-go/g'
     's/\"github.com\/hyperledger\/fabric\//\"github.com\/hyperledger\/fabric-sdk-go\/internal\/github.com\/hyperledger\/fabric\//g'
 )
 
@@ -75,6 +75,7 @@ INTERNAL_PATH=$THIRDPARTY_INTERNAL_FABRIC_PATH TMP_PROJECT_PATH=$TMP_PROJECT_PAT
 echo "Pinning and patching fabric external utils ..."
 declare -a EXTERNAL_UTILS_IMPORT_SUBSTS=(
     's/\"github.com\/hyperledger\/fabric\/protoutil/\"github.com\/hyperledger\/fabric-sdk-go\/third_party\/github.com\/hyperledger\/fabric\/internal\/protoutil/g'
+    's/\"github.com\/hyperledger\/fabric\/protos/\"github.com\/hyperledger\/fabric-protos-go/g'
     's/\"github.com\/hyperledger\/fabric\//\"github.com\/hyperledger\/fabric-sdk-go\/third_party\/github.com\/hyperledger\/fabric\//g'
 )
 INTERNAL_PATH=$THIRDPARTY_FABRIC_PATH TMP_PROJECT_PATH=$TMP_PROJECT_PATH IMPORT_SUBSTS="${EXTERNAL_UTILS_IMPORT_SUBSTS[*]}" $SCRIPTS_PATH/apply_fabric_external_utils.sh

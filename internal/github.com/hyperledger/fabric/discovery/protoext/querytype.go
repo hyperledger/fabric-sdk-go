@@ -10,7 +10,7 @@ Please review third_party pinning scripts and patches for more details.
 
 package protoext
 
-import "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/discovery"
+import "github.com/hyperledger/fabric-protos-go/discovery"
 
 // QueryType defines the types of service discovery requests
 type QueryType uint8

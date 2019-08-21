@@ -24,7 +24,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
 	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
 	"github.com/hyperledger/fabric-sdk-go/test/metadata"
-	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
+	"github.com/hyperledger/fabric-protos-go/common"
 	"github.com/pkg/errors"
 )
 

@@ -15,7 +15,7 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/multi"
 
-	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
+	pb "github.com/hyperledger/fabric-protos-go/peer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 

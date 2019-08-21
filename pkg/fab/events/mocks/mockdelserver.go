@@ -10,10 +10,10 @@ import (
 	"io"
 	"sync"
 
+	cb "github.com/hyperledger/fabric-protos-go/common"
+	pb "github.com/hyperledger/fabric-protos-go/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/util/test"
-	cb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
-	pb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/peer"
 	"github.com/pkg/errors"
 )
 
@@ -126,6 +126,11 @@ func (s *MockDeliverServer) Deliver(srv pb.Deliver_DeliverServer) error {
 		}
 	}
 	return nil
+}
+
+// DeliverWithPrivateData is not implemented
+func (s *MockDeliverServer) DeliverWithPrivateData(pb.Deliver_DeliverWithPrivateDataServer) error {
+	return errors.New("not implemented")
 }
 
 // DeliverFiltered delivers a stream of filtered blocks

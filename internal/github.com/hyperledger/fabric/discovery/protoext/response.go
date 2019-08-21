@@ -10,7 +10,7 @@ Please review third_party pinning scripts and patches for more details.
 
 package protoext
 
-import "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/discovery"
+import "github.com/hyperledger/fabric-protos-go/discovery"
 
 // ResponseConfigAt returns the ConfigResult at a given index in the Response,
 // or an Error if present.

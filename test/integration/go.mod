@@ -9,10 +9,11 @@ replace github.com/hyperledger/fabric-sdk-go => ../../
 replace github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric => ../../third_party/github.com/hyperledger/fabric
 
 require (
-	github.com/golang/protobuf v1.3.1
+	github.com/golang/protobuf v1.3.2
+	github.com/hyperledger/fabric-protos-go v0.0.0-20190821180310-6b6ac9042dfd
 	github.com/hyperledger/fabric-sdk-go v0.0.0-00010101000000-000000000000
 	github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric v2.0.0-alpha+incompatible
 	github.com/pkg/errors v0.8.1
 	github.com/stretchr/testify v1.3.0
-	google.golang.org/grpc v1.19.0
+	google.golang.org/grpc v1.23.0
 )

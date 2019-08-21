@@ -11,7 +11,7 @@ Please review third_party pinning scripts and patches for more details.
 package configtx
 
 import (
-	cb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
+	cb "github.com/hyperledger/fabric-protos-go/common"
 )
 
 // Validator provides a mechanism to propose config updates, see the config update results

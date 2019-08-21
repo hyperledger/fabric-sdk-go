@@ -7,8 +7,8 @@ SPDX-License-Identifier: Apache-2.0
 package blockfilter
 
 import (
+	cb "github.com/hyperledger/fabric-protos-go/common"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
-	cb "github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/common"
 )
 
 // AcceptAny returns a block filter that accepts any block

@@ -14,8 +14,8 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 
+	"github.com/hyperledger/fabric-protos-go/msp"
 	mspcfg "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/msp"
-	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/protos/msp"
 )
 
 const (
