@@ -81,17 +81,6 @@ declare -a EXTERNAL_UTILS_IMPORT_SUBSTS=(
 INTERNAL_PATH=$THIRDPARTY_FABRIC_PATH TMP_PROJECT_PATH=$TMP_PROJECT_PATH IMPORT_SUBSTS="${EXTERNAL_UTILS_IMPORT_SUBSTS[*]}" $SCRIPTS_PATH/apply_fabric_external_utils.sh
 INTERNAL_PATH=$THIRDPARTY_FABRIC_PATH TMP_PROJECT_PATH=$TMP_PROJECT_PATH IMPORT_SUBSTS="${EXTERNAL_UTILS_IMPORT_SUBSTS[*]}" $SCRIPTS_PATH/apply_fabric_common_utils.sh
 
-# protos
-echo "Pinning and patching protos (fabric common)..."
-declare -a PROTOS_IMPORT_SUBSTS=(
-    's/\"github.com\/hyperledger\/fabric\/protoutil/\"github.com\/hyperledger\/fabric-sdk-go\/third_party\/github.com\/hyperledger\/fabric\/internal\/protoutil/g'
-    's/\"github.com\/hyperledger\/fabric\//\"github.com\/hyperledger\/fabric-sdk-go\/third_party\/github.com\/hyperledger\/fabric\//g'
-)
-INTERNAL_PATH=$THIRDPARTY_FABRIC_PATH TMP_PROJECT_PATH=$TMP_PROJECT_PATH IMPORT_SUBSTS="${PROTOS_IMPORT_SUBSTS[*]}" $SCRIPTS_PATH/apply_fabric_protos_common.sh
-
-echo "Pinning and patching protos (fabric network) ..."
-INTERNAL_PATH=$THIRDPARTY_FABRIC_PATH TMP_PROJECT_PATH=$TMP_PROJECT_PATH IMPORT_SUBSTS="${PROTOS_IMPORT_SUBSTS[*]}" $SCRIPTS_PATH/apply_fabric_protos_network.sh
-
 # Cleanup temporary files from patch application
 echo "Removing temporary files ..."
 rm -Rf $TMP
