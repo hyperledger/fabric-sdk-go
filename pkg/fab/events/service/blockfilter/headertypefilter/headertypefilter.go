@@ -30,7 +30,7 @@ func hasType(block *cb.Block, headerTypes ...cb.HeaderType) bool {
 			logger.Errorf("error extracting envelope from block: %s", err)
 			continue
 		}
-		payload, err := protoutil.ExtractPayload(env)
+		payload, err := protoutil.UnmarshalPayload(env.Payload)
 		if err != nil {
 			logger.Errorf("error extracting payload from block: %s", err)
 			continue

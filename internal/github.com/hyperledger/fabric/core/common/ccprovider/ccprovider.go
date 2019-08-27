@@ -48,9 +48,6 @@ type CCPackage interface {
 	GetId() []byte
 }
 
-// ChaincodeExtractor extracts chaincode from a given path
-type ChaincodeExtractor func(ccNameVersion string, path string) (CCPackage, error)
-
 //-------- ChaincodeData is stored on the LSCC -------
 
 // ChaincodeData defines the datastructure for chaincodes to be serialized by proto

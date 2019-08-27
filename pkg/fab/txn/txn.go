@@ -43,21 +43,15 @@ func New(request fab.TransactionRequest) (*fab.Transaction, error) {
 	proposal := request.Proposal
 
 	// the original header
-	hdr, err := protoutil.GetHeader(proposal.Header)
+	hdr, err := protoutil.UnmarshalHeader(proposal.Header)
 	if err != nil {
 		return nil, errors.Wrap(err, "unmarshal proposal header failed")
 	}
 
 	// the original payload
-	pPayl, err := protoutil.GetChaincodeProposalPayload(proposal.Payload)
+	pPayl, err := protoutil.UnmarshalChaincodeProposalPayload(proposal.Payload)
 	if err != nil {
 		return nil, errors.Wrap(err, "unmarshal proposal payload failed")
-	}
-
-	// get header extensions so we have the visibility field
-	hdrExt, err := protoutil.GetChaincodeHeaderExtension(hdr)
-	if err != nil {
-		return nil, err
 	}
 
 	responsePayload := request.ProposalResponses[0].ProposalResponse.Payload
@@ -75,7 +69,7 @@ func New(request fab.TransactionRequest) (*fab.Transaction, error) {
 	cea := &pb.ChaincodeEndorsedAction{ProposalResponsePayload: responsePayload, Endorsements: endorsements}
 
 	// obtain the bytes of the proposal payload that will go to the transaction
-	propPayloadBytes, err := protoutil.GetBytesProposalPayloadForTx(pPayl, hdrExt.PayloadVisibility)
+	propPayloadBytes, err := protoutil.GetBytesProposalPayloadForTx(pPayl)
 	if err != nil {
 		return nil, err
 	}
@@ -120,7 +114,7 @@ func Send(reqCtx reqContext.Context, tx *fab.Transaction, orderers []fab.Orderer
 	}
 
 	// the original header
-	hdr, err := protoutil.GetHeader(tx.Proposal.Proposal.Header)
+	hdr, err := protoutil.UnmarshalHeader(tx.Proposal.Proposal.Header)
 	if err != nil {
 		return nil, errors.Wrap(err, "unmarshal proposal header failed")
 	}

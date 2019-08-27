@@ -73,7 +73,7 @@ func BlockDataHash(b *cb.BlockData) []byte {
 // GetChainIDFromBlockBytes returns chain ID given byte array which represents
 // the block
 func GetChainIDFromBlockBytes(bytes []byte) (string, error) {
-	block, err := GetBlockFromBlockBytes(bytes)
+	block, err := UnmarshalBlock(bytes)
 	if err != nil {
 		return "", err
 	}
@@ -91,7 +91,7 @@ func GetChainIDFromBlock(block *cb.Block) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	payload, err := GetPayload(envelope)
+	payload, err := UnmarshalPayload(envelope.Payload)
 	if err != nil {
 		return "", err
 	}
@@ -179,16 +179,6 @@ func GetLastConfigIndexFromBlockOrPanic(block *cb.Block) uint64 {
 		panic(err)
 	}
 	return index
-}
-
-// GetBlockFromBlockBytes marshals the bytes into Block
-func GetBlockFromBlockBytes(blockBytes []byte) (*cb.Block, error) {
-	block := &cb.Block{}
-	err := proto.Unmarshal(blockBytes, block)
-	if err != nil {
-		return block, errors.Wrap(err, "error unmarshaling block")
-	}
-	return block, nil
 }
 
 // CopyBlockMetadata copies metadata from one block into another

@@ -104,16 +104,16 @@ type bccspmsp struct {
 	clientOU, peerOU, adminOU, ordererOU *OUIdentifier
 }
 
-// NewBccspMsp returns an MSP instance backed up by a BCCSP
+// newBccspMsp returns an MSP instance backed up by a BCCSP
 // crypto provider. It handles x.509 certificates and can
 // generate identities and signing identities backed by
 // certificates and keypairs
-func NewBccspMsp(version MSPVersion, cryptoSuite core.CryptoSuite) (MSP, error) {
+func newBccspMsp(version MSPVersion, defaultBCCSP core.CryptoSuite) (MSP, error) {
 	mspLogger.Debugf("Creating BCCSP-based MSP instance")
 
 	theMsp := &bccspmsp{}
 	theMsp.version = version
-	theMsp.bccsp = cryptoSuite
+	theMsp.bccsp = defaultBCCSP
 	switch version {
 	case MSPv1_0:
 		theMsp.internalSetupFunc = theMsp.setupV1

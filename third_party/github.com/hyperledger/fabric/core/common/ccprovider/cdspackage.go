@@ -22,7 +22,6 @@ package ccprovider
 
 import (
 	"github.com/golang/protobuf/proto"
-	pb "github.com/hyperledger/fabric-protos-go/peer"
 )
 
 //----- CDSData ------
@@ -48,14 +47,3 @@ func (data *CDSData) String() string { return proto.CompactTextString(data) }
 
 //ProtoMessage just exists to make proto happy
 func (*CDSData) ProtoMessage() {}
-
-//--------- CDSPackage ------------
-
-//CDSPackage encapsulates ChaincodeDeploymentSpec.
-type CDSPackage struct {
-	buf     []byte
-	depSpec *pb.ChaincodeDeploymentSpec
-	data    *CDSData
-	datab   []byte
-	id      []byte
-}

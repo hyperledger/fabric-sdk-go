@@ -11,7 +11,7 @@ Please review third_party pinning scripts and patches for more details.
 package msp
 
 import (
-	"github.com/hyperledger/fabric-sdk-go/pkg/core/cryptosuite"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/pkg/errors"
 )
 
@@ -50,20 +50,18 @@ type IdemixNewOpts struct {
 }
 
 // New create a new MSP instance depending on the passed Opts
-func New(opts NewOpts) (MSP, error) {
-	cs := cryptosuite.GetDefault()
-
+func New(opts NewOpts, cryptoProvider core.CryptoSuite) (MSP, error) {
 	switch opts.(type) {
 	case *BCCSPNewOpts:
 		switch opts.GetVersion() {
 		case MSPv1_0:
-			return NewBccspMsp(MSPv1_0, cs)
+			return newBccspMsp(MSPv1_0, cryptoProvider)
 		case MSPv1_1:
-			return NewBccspMsp(MSPv1_1, cs)
+			return newBccspMsp(MSPv1_1, cryptoProvider)
 		case MSPv1_3:
-			return NewBccspMsp(MSPv1_3, cs)
+			return newBccspMsp(MSPv1_3, cryptoProvider)
 		case MSPv1_4_2:
-			return NewBccspMsp(MSPv1_4_2, cs)
+			return newBccspMsp(MSPv1_4_2, cryptoProvider)
 		default:
 			return nil, errors.Errorf("Invalid *BCCSPNewOpts. Version not recognized [%v]", opts.GetVersion())
 		}

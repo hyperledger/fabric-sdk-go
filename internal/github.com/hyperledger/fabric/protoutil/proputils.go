@@ -22,78 +22,52 @@ import (
 	"github.com/pkg/errors"
 )
 
-// GetHeader Get Header from bytes
-func GetHeader(bytes []byte) (*common.Header, error) {
-	hdr := &common.Header{}
-	err := proto.Unmarshal(bytes, hdr)
-	return hdr, errors.Wrap(err, "error unmarshaling Header")
+func validateChannelHeaderType(chdr *common.ChannelHeader, expectedTypes []common.HeaderType) error {
+	for _, t := range expectedTypes {
+		if common.HeaderType(chdr.Type) == t {
+			return nil
+		}
+	}
+	return errors.Errorf("invalid channel header type. expected one of %s, received %s", expectedTypes, common.HeaderType(chdr.Type))
 }
 
-// GetChaincodeHeaderExtension get chaincode header extension given header
-func GetChaincodeHeaderExtension(hdr *common.Header) (*peer.ChaincodeHeaderExtension, error) {
-	chdr, err := UnmarshalChannelHeader(hdr.ChannelHeader)
+// CreateChaincodeProposal creates a proposal from given input.
+// It returns the proposal and the transaction id associated to the proposal
+func CreateChaincodeProposal(typ common.HeaderType, chainID string, cis *peer.ChaincodeInvocationSpec, creator []byte) (*peer.Proposal, string, error) {
+	return CreateChaincodeProposalWithTransient(typ, chainID, cis, creator, nil)
+}
+
+// CreateChaincodeProposalWithTransient creates a proposal from given input
+// It returns the proposal and the transaction id associated to the proposal
+func CreateChaincodeProposalWithTransient(typ common.HeaderType, chainID string, cis *peer.ChaincodeInvocationSpec, creator []byte, transientMap map[string][]byte) (*peer.Proposal, string, error) {
+	// generate a random nonce
+	nonce, err := getRandomNonce()
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
-	chaincodeHdrExt := &peer.ChaincodeHeaderExtension{}
-	err = proto.Unmarshal(chdr.Extension, chaincodeHdrExt)
-	return chaincodeHdrExt, errors.Wrap(err, "error unmarshaling ChaincodeHeaderExtension")
+	// compute txid
+	txid := ComputeTxID(nonce, creator)
+
+	return CreateChaincodeProposalWithTxIDNonceAndTransient(txid, typ, chainID, cis, nonce, creator, transientMap)
 }
 
-// GetChaincodeAction gets the ChaincodeAction given chaicnode action bytes
-func GetChaincodeAction(caBytes []byte) (*peer.ChaincodeAction, error) {
-	chaincodeAction := &peer.ChaincodeAction{}
-	err := proto.Unmarshal(caBytes, chaincodeAction)
-	return chaincodeAction, errors.Wrap(err, "error unmarshaling ChaincodeAction")
-}
+// CreateChaincodeProposalWithTxIDAndTransient creates a proposal from given
+// input. It returns the proposal and the transaction id associated with the
+// proposal
+func CreateChaincodeProposalWithTxIDAndTransient(typ common.HeaderType, chainID string, cis *peer.ChaincodeInvocationSpec, creator []byte, txid string, transientMap map[string][]byte) (*peer.Proposal, string, error) {
+	// generate a random nonce
+	nonce, err := getRandomNonce()
+	if err != nil {
+		return nil, "", err
+	}
 
-// GetChaincodeEvents gets the ChaincodeEvents given chaincode event bytes
-func GetChaincodeEvents(eBytes []byte) (*peer.ChaincodeEvent, error) {
-	chaincodeEvent := &peer.ChaincodeEvent{}
-	err := proto.Unmarshal(eBytes, chaincodeEvent)
-	return chaincodeEvent, errors.Wrap(err, "error unmarshaling ChaicnodeEvent")
-}
+	// compute txid unless provided by tests
+	if txid == "" {
+		txid = ComputeTxID(nonce, creator)
+	}
 
-// GetProposalResponsePayload gets the proposal response payload
-func GetProposalResponsePayload(prpBytes []byte) (*peer.ProposalResponsePayload, error) {
-	prp := &peer.ProposalResponsePayload{}
-	err := proto.Unmarshal(prpBytes, prp)
-	return prp, errors.Wrap(err, "error unmarshaling ProposalResponsePayload")
-}
-
-// GetPayload Get Payload from Envelope message
-func GetPayload(e *common.Envelope) (*common.Payload, error) {
-	payload := &common.Payload{}
-	err := proto.Unmarshal(e.Payload, payload)
-	return payload, errors.Wrap(err, "error unmarshaling Payload")
-}
-
-// GetTransaction Get Transaction from bytes
-func GetTransaction(txBytes []byte) (*peer.Transaction, error) {
-	tx := &peer.Transaction{}
-	err := proto.Unmarshal(txBytes, tx)
-	return tx, errors.Wrap(err, "error unmarshaling Transaction")
-
-}
-
-// GetChaincodeActionPayload Get ChaincodeActionPayload from bytes
-func GetChaincodeActionPayload(capBytes []byte) (*peer.ChaincodeActionPayload, error) {
-	cap := &peer.ChaincodeActionPayload{}
-	err := proto.Unmarshal(capBytes, cap)
-	return cap, errors.Wrap(err, "error unmarshaling ChaincodeActionPayload")
-}
-
-// GetChaincodeProposalPayload Get ChaincodeProposalPayload from bytes
-func GetChaincodeProposalPayload(bytes []byte) (*peer.ChaincodeProposalPayload, error) {
-	cpp := &peer.ChaincodeProposalPayload{}
-	err := proto.Unmarshal(bytes, cpp)
-	return cpp, errors.Wrap(err, "error unmarshaling ChaincodeProposalPayload")
-}
-
-// GetSignatureHeader Get SignatureHeader from bytes
-func GetSignatureHeader(bytes []byte) (*common.SignatureHeader, error) {
-	return UnmarshalSignatureHeader(bytes)
+	return CreateChaincodeProposalWithTxIDNonceAndTransient(txid, typ, chainID, cis, nonce, creator, transientMap)
 }
 
 // CreateChaincodeProposalWithTxIDNonceAndTransient creates a proposal from
@@ -182,6 +156,12 @@ func GetBytesChaincodeProposalPayload(cpp *peer.ChaincodeProposalPayload) ([]byt
 	return cppBytes, errors.Wrap(err, "error marshaling ChaincodeProposalPayload")
 }
 
+// GetBytesResponse gets the bytes of Response
+func GetBytesResponse(res *peer.Response) ([]byte, error) {
+	resBytes, err := proto.Marshal(res)
+	return resBytes, errors.Wrap(err, "error marshaling Response")
+}
+
 // GetBytesChaincodeEvent gets the bytes of ChaincodeEvent
 func GetBytesChaincodeEvent(event *peer.ChaincodeEvent) ([]byte, error) {
 	eventBytes, err := proto.Marshal(event)
@@ -195,10 +175,22 @@ func GetBytesChaincodeActionPayload(cap *peer.ChaincodeActionPayload) ([]byte, e
 	return capBytes, errors.Wrap(err, "error marshaling ChaincodeActionPayload")
 }
 
-// GetBytesProposal returns the bytes of a proposal message
-func GetBytesProposal(prop *peer.Proposal) ([]byte, error) {
-	propBytes, err := proto.Marshal(prop)
-	return propBytes, errors.Wrap(err, "error marshaling Proposal")
+// GetBytesProposalResponse gets proposal bytes response
+func GetBytesProposalResponse(pr *peer.ProposalResponse) ([]byte, error) {
+	respBytes, err := proto.Marshal(pr)
+	return respBytes, errors.Wrap(err, "error marshaling ProposalResponse")
+}
+
+// GetBytesHeader get the bytes of Header from the message
+func GetBytesHeader(hdr *common.Header) ([]byte, error) {
+	bytes, err := proto.Marshal(hdr)
+	return bytes, errors.Wrap(err, "error marshaling Header")
+}
+
+// GetBytesSignatureHeader get the bytes of SignatureHeader from the message
+func GetBytesSignatureHeader(hdr *common.SignatureHeader) ([]byte, error) {
+	bytes, err := proto.Marshal(hdr)
+	return bytes, errors.Wrap(err, "error marshaling SignatureHeader")
 }
 
 // GetBytesTransaction get the bytes of Transaction from the message
@@ -219,11 +211,179 @@ func GetBytesEnvelope(env *common.Envelope) ([]byte, error) {
 	return bytes, errors.Wrap(err, "error marshaling Envelope")
 }
 
+// GetActionFromEnvelope extracts a ChaincodeAction message from a
+// serialized Envelope
+// TODO: fix function name as per FAB-11831
+func GetActionFromEnvelope(envBytes []byte) (*peer.ChaincodeAction, error) {
+	env, err := GetEnvelopeFromBlock(envBytes)
+	if err != nil {
+		return nil, err
+	}
+	return GetActionFromEnvelopeMsg(env)
+}
+
+func GetActionFromEnvelopeMsg(env *common.Envelope) (*peer.ChaincodeAction, error) {
+	payl, err := UnmarshalPayload(env.Payload)
+	if err != nil {
+		return nil, err
+	}
+
+	tx, err := UnmarshalTransaction(payl.Data)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(tx.Actions) == 0 {
+		return nil, errors.New("at least one TransactionAction required")
+	}
+
+	_, respPayload, err := GetPayloads(tx.Actions[0])
+	return respPayload, err
+}
+
+// CreateProposalFromCISAndTxid returns a proposal given a serialized identity
+// and a ChaincodeInvocationSpec
+func CreateProposalFromCISAndTxid(txid string, typ common.HeaderType, chainID string, cis *peer.ChaincodeInvocationSpec, creator []byte) (*peer.Proposal, string, error) {
+	nonce, err := getRandomNonce()
+	if err != nil {
+		return nil, "", err
+	}
+	return CreateChaincodeProposalWithTxIDNonceAndTransient(txid, typ, chainID, cis, nonce, creator, nil)
+}
+
+// CreateProposalFromCIS returns a proposal given a serialized identity and a
+// ChaincodeInvocationSpec
+func CreateProposalFromCIS(typ common.HeaderType, chainID string, cis *peer.ChaincodeInvocationSpec, creator []byte) (*peer.Proposal, string, error) {
+	return CreateChaincodeProposal(typ, chainID, cis, creator)
+}
+
+// CreateGetChaincodesProposal returns a GETCHAINCODES proposal given a
+// serialized identity
+func CreateGetChaincodesProposal(chainID string, creator []byte) (*peer.Proposal, string, error) {
+	ccinp := &peer.ChaincodeInput{Args: [][]byte{[]byte("getchaincodes")}}
+	lsccSpec := &peer.ChaincodeInvocationSpec{
+		ChaincodeSpec: &peer.ChaincodeSpec{
+			Type:        peer.ChaincodeSpec_GOLANG,
+			ChaincodeId: &peer.ChaincodeID{Name: "lscc"},
+			Input:       ccinp,
+		},
+	}
+	return CreateProposalFromCIS(common.HeaderType_ENDORSER_TRANSACTION, chainID, lsccSpec, creator)
+}
+
+// CreateGetInstalledChaincodesProposal returns a GETINSTALLEDCHAINCODES
+// proposal given a serialized identity
+func CreateGetInstalledChaincodesProposal(creator []byte) (*peer.Proposal, string, error) {
+	ccinp := &peer.ChaincodeInput{Args: [][]byte{[]byte("getinstalledchaincodes")}}
+	lsccSpec := &peer.ChaincodeInvocationSpec{
+		ChaincodeSpec: &peer.ChaincodeSpec{
+			Type:        peer.ChaincodeSpec_GOLANG,
+			ChaincodeId: &peer.ChaincodeID{Name: "lscc"},
+			Input:       ccinp,
+		},
+	}
+	return CreateProposalFromCIS(common.HeaderType_ENDORSER_TRANSACTION, "", lsccSpec, creator)
+}
+
+// CreateInstallProposalFromCDS returns a install proposal given a serialized
+// identity and a ChaincodeDeploymentSpec
+func CreateInstallProposalFromCDS(ccpack proto.Message, creator []byte) (*peer.Proposal, string, error) {
+	return createProposalFromCDS("", ccpack, creator, "install")
+}
+
+// CreateDeployProposalFromCDS returns a deploy proposal given a serialized
+// identity and a ChaincodeDeploymentSpec
+func CreateDeployProposalFromCDS(
+	chainID string,
+	cds *peer.ChaincodeDeploymentSpec,
+	creator []byte,
+	policy []byte,
+	escc []byte,
+	vscc []byte,
+	collectionConfig []byte) (*peer.Proposal, string, error) {
+	if collectionConfig == nil {
+		return createProposalFromCDS(chainID, cds, creator, "deploy", policy, escc, vscc)
+	}
+	return createProposalFromCDS(chainID, cds, creator, "deploy", policy, escc, vscc, collectionConfig)
+}
+
+// CreateUpgradeProposalFromCDS returns a upgrade proposal given a serialized
+// identity and a ChaincodeDeploymentSpec
+func CreateUpgradeProposalFromCDS(
+	chainID string,
+	cds *peer.ChaincodeDeploymentSpec,
+	creator []byte,
+	policy []byte,
+	escc []byte,
+	vscc []byte,
+	collectionConfig []byte) (*peer.Proposal, string, error) {
+	if collectionConfig == nil {
+		return createProposalFromCDS(chainID, cds, creator, "upgrade", policy, escc, vscc)
+	}
+	return createProposalFromCDS(chainID, cds, creator, "upgrade", policy, escc, vscc, collectionConfig)
+}
+
+// createProposalFromCDS returns a deploy or upgrade proposal given a
+// serialized identity and a ChaincodeDeploymentSpec
+func createProposalFromCDS(chainID string, msg proto.Message, creator []byte, propType string, args ...[]byte) (*peer.Proposal, string, error) {
+	// in the new mode, cds will be nil, "deploy" and "upgrade" are instantiates.
+	var ccinp *peer.ChaincodeInput
+	var b []byte
+	var err error
+	if msg != nil {
+		b, err = proto.Marshal(msg)
+		if err != nil {
+			return nil, "", err
+		}
+	}
+	switch propType {
+	case "deploy":
+		fallthrough
+	case "upgrade":
+		cds, ok := msg.(*peer.ChaincodeDeploymentSpec)
+		if !ok || cds == nil {
+			return nil, "", errors.New("invalid message for creating lifecycle chaincode proposal")
+		}
+		Args := [][]byte{[]byte(propType), []byte(chainID), b}
+		Args = append(Args, args...)
+
+		ccinp = &peer.ChaincodeInput{Args: Args}
+	case "install":
+		ccinp = &peer.ChaincodeInput{Args: [][]byte{[]byte(propType), b}}
+	}
+
+	// wrap the deployment in an invocation spec to lscc...
+	lsccSpec := &peer.ChaincodeInvocationSpec{
+		ChaincodeSpec: &peer.ChaincodeSpec{
+			Type:        peer.ChaincodeSpec_GOLANG,
+			ChaincodeId: &peer.ChaincodeID{Name: "lscc"},
+			Input:       ccinp,
+		},
+	}
+
+	// ...and get the proposal for it
+	return CreateProposalFromCIS(common.HeaderType_ENDORSER_TRANSACTION, chainID, lsccSpec, creator)
+}
+
 // ComputeTxID computes TxID as the Hash computed
 // over the concatenation of nonce and creator.
-func ComputeTxID(nonce, creator []byte) (string, error) {
+func ComputeTxID(nonce, creator []byte) string {
 	// TODO: Get the Hash function to be used from
 	// channel configuration
-	digest := sha256.Sum256(append(nonce, creator...))
-	return hex.EncodeToString(digest[:]), nil
+	hasher := sha256.New()
+	hasher.Write(nonce)
+	hasher.Write(creator)
+	return hex.EncodeToString(hasher.Sum(nil))
+}
+
+// CheckTxID checks that txid is equal to the Hash computed
+// over the concatenation of nonce and creator.
+func CheckTxID(txid string, nonce, creator []byte) error {
+	computedTxID := ComputeTxID(nonce, creator)
+
+	if txid != computedTxID {
+		return errors.Errorf("invalid txid. got [%s], expected [%s]", txid, computedTxID)
+	}
+
+	return nil
 }

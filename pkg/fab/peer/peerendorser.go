@@ -294,12 +294,12 @@ func extractChaincodeNameNotFoundError(grpcstat *grpcstatus.Status) (int32, stri
 // getChaincodeResponseStatus gets the actual response status from response.Payload.extension.Response.status, as fabric always returns actual 200
 func getChaincodeResponseStatus(response *pb.ProposalResponse) (int32, error) {
 	if response.Payload != nil {
-		payload, err := protoutil.GetProposalResponsePayload(response.Payload)
+		payload, err := protoutil.UnmarshalProposalResponsePayload(response.Payload)
 		if err != nil {
 			return 0, errors.Wrap(err, "unmarshal of proposal response payload failed")
 		}
 
-		extension, err := protoutil.GetChaincodeAction(payload.Extension)
+		extension, err := protoutil.UnmarshalChaincodeAction(payload.Extension)
 		if err != nil {
 			return 0, errors.Wrap(err, "unmarshal of chaincode action failed")
 		}

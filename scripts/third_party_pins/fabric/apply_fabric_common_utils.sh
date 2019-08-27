@@ -58,12 +58,16 @@ FILTERS_ENABLED="fn"
 FILTER_FILENAME="core/common/ccprovider/ccprovider.go"
 FILTER_FN=Reset,String,ProtoMessage
 gofilter
-sed -i'' -e 's/var ccInfoCache = NewCCInfoCache(ccInfoFSProvider)//g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+sed -i'' -e '/ChaincodeExtractor/d' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 
 FILTER_FILENAME="core/common/ccprovider/cdspackage.go"
 FILTER_FN=Reset,String,ProtoMessage
 gofilter
-sed -i'' -e 's/var ccInfoCache = NewCCInfoCache(ccInfoFSProvider)//g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+START_LINE=`grep -n "GetHasher" "${TMP_PROJECT_PATH}/${FILTER_FILENAME}" | head -n 1 | awk -F':' '{print $1}'`
+for i in {1..100}
+do
+    sed -i'' -e ${START_LINE}'d' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
+done
 
 FILTER_FILENAME="core/ledger/kvledger/txmgmt/rwsetutil/rwset_proto_util.go"
 FILTER_FN="NewHeight,ToProtoBytes,FromProtoBytes,toProtoMsg,TxRwSetFromProtoMsg,TxPvtRwSetFromProtoMsg,nsRwSetFromProtoMsg,nsPvtRwSetFromProtoMsg"
