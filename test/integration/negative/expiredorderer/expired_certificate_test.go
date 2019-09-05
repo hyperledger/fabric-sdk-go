@@ -89,7 +89,7 @@ func TestExpiredCert(t *testing.T) {
 	}
 
 	req := resmgmt.SaveChannelRequest{ChannelID: "orgchannel",
-		ChannelConfigPath: integration.GetChannelConfigPath("orgchannel.tx"),
+		ChannelConfigPath: integration.GetChannelConfigTxPath("orgchannel.tx"),
 		SigningIdentities: []msp.SigningIdentity{org1AdminUser, org2AdminUser}}
 	_, err = chMgmtClient.SaveChannel(req)
 	//error in GRPC log is ' Failed to dial orderer.example.com:7050: connection error: desc = "transport: authentication handshake failed: x509: certificate has expiredorderer or is not yet valid"; '

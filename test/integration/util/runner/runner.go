@@ -95,9 +95,9 @@ func (r *Runner) ExampleChaincodeID() string {
 // Initialize prepares for the test run.
 func (r *Runner) Initialize() {
 	r.testSetup = &integration.BaseSetupImpl{
-		ChannelID:         r.ChannelID,
-		OrgID:             r.Org1Name,
-		ChannelConfigFile: integration.GetChannelConfigPath(r.ChannelID + ".tx"),
+		ChannelID:           r.ChannelID,
+		OrgID:               r.Org1Name,
+		ChannelConfigTxFile: integration.GetChannelConfigTxPath(r.ChannelID + ".tx"),
 	}
 
 	sdk, err := fabsdk.New(integration.ConfigBackend)

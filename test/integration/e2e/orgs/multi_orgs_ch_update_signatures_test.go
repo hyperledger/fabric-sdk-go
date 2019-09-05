@@ -19,6 +19,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/hyperledger/fabric-protos-go/common"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/utils"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/discovery/dynamicdiscovery"
@@ -37,7 +38,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defsvc"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/chpvdr"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
-	"github.com/hyperledger/fabric-protos-go/common"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -96,9 +96,9 @@ func e2eCreateAndQueryChannel(t *testing.T, ordererClCtx, org1ClCtx, org2ClCtx *
 	}()
 
 	t.Logf("created tempDir for %s signatures: %s", channelID, sigDir)
-	chConfigPath := integration.GetChannelConfigPath(fmt.Sprintf("%s.tx", channelID))
-	chConfigOrg1MSPPath := integration.GetChannelConfigPath(fmt.Sprintf("%s%sMSPanchors.tx", channelID, org1))
-	chConfigOrg2MSPPath := integration.GetChannelConfigPath(fmt.Sprintf("%s%sMSPanchors.tx", channelID, org2))
+	chConfigPath := integration.GetChannelConfigTxPath(fmt.Sprintf("%s.tx", channelID))
+	chConfigOrg1MSPPath := integration.GetChannelConfigTxPath(fmt.Sprintf("%s%sMSPanchors.tx", channelID, org1))
+	chConfigOrg2MSPPath := integration.GetChannelConfigTxPath(fmt.Sprintf("%s%sMSPanchors.tx", channelID, org2))
 	isSDKSigning := channelID == dsChannelSDK
 	sigs := generateSignatures(t, org1ClCtx, org2ClCtx, chConfigPath, chConfigOrg1MSPPath, chConfigOrg2MSPPath, sigDir, isSDKSigning)
 	saveChannel(t, ordererClCtx, org1ClCtx, org2ClCtx, channelID, chConfigPath, chConfigOrg1MSPPath, chConfigOrg2MSPPath, sigs, true)

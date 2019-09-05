@@ -20,6 +20,22 @@ import (
 	"google.golang.org/grpc/credentials"
 )
 
+// DeliverySession enables simulation of multiple calls to the orderer
+// Each call is internally represented by a DeliverySession
+// Note that SDK's orderer.SendDeliver function returns only upon
+// the delivery channel is closed, so the only way to simulate multiple
+// calls is to have each call handled by a separate delivery channel
+type DeliverySession struct {
+	Deliveries     chan *common.Block
+	DeliveryErrors chan error
+	DeliveryQueue  chan interface{}
+}
+
+// Close closes a delivery session
+func (s *DeliverySession) Close() {
+	close(s.DeliveryQueue)
+}
+
 // MockOrderer is a mock fabricclient.Orderer
 // Note that calling broadcast doesn't deliver anythng. This implies
 // that the broadcast side and the deliver side are totally
@@ -28,23 +44,21 @@ type MockOrderer struct {
 	OrdererURL        string
 	BroadcastListener chan *fab.SignedEnvelope
 	BroadcastErrors   chan error
-	Deliveries        chan *common.Block
-	DeliveryErrors    chan error
 	// These queues are used to detach the client, to avoid deadlocks
-	BroadcastQueue chan *fab.SignedEnvelope
-	DeliveryQueue  chan interface{}
+	BroadcastQueue        chan *fab.SignedEnvelope
+	DeliverySessions      chan *DeliverySession
+	DeliverySessionsQueue chan *DeliverySession
 }
 
 // NewMockOrderer ...
 func NewMockOrderer(url string, broadcastListener chan *fab.SignedEnvelope) *MockOrderer {
 	o := &MockOrderer{
-		OrdererURL:        url,
-		BroadcastListener: broadcastListener,
-		BroadcastErrors:   make(chan error, 100),
-		Deliveries:        make(chan *common.Block, 1),
-		DeliveryErrors:    make(chan error, 1),
-		BroadcastQueue:    make(chan *fab.SignedEnvelope, 100),
-		DeliveryQueue:     make(chan interface{}, 100),
+		OrdererURL:            url,
+		BroadcastListener:     broadcastListener,
+		BroadcastErrors:       make(chan error, 100),
+		BroadcastQueue:        make(chan *fab.SignedEnvelope, 100),
+		DeliverySessions:      make(chan *DeliverySession, 100),
+		DeliverySessionsQueue: make(chan *DeliverySession, 100),
 	}
 
 	if broadcastListener != nil {
@@ -67,19 +81,28 @@ func broadcast(o *MockOrderer) {
 
 func delivery(o *MockOrderer) {
 	for {
-		value, ok := <-o.DeliveryQueue
+		s, ok := <-o.DeliverySessionsQueue
 		if !ok {
-			close(o.Deliveries)
-			return
+			close(o.DeliverySessions)
+			close(o.DeliverySessionsQueue)
+			break
 		}
-		switch value := value.(type) {
-		case common.Status:
-		case *common.Block:
-			o.Deliveries <- value
-		case error:
-			o.DeliveryErrors <- value
-		default:
-			panic(fmt.Sprintf("Value not *common.Block nor error: %+v", value))
+		for {
+			value, ok := <-s.DeliveryQueue
+			if !ok {
+				close(s.Deliveries)
+				//close(s.DeliveryErrors)
+				break
+			}
+			switch value := value.(type) {
+			case common.Status:
+			case *common.Block:
+				s.Deliveries <- value
+			case error:
+				s.DeliveryErrors <- value
+			default:
+				panic(fmt.Sprintf("Value not *common.Block nor error: %+v", value))
+			}
 		}
 	}
 }
@@ -106,13 +129,17 @@ func (o *MockOrderer) SendBroadcast(ctx reqContext.Context, envelope *fab.Signed
 
 // SendDeliver returns the channels for delivery of prepared mock values and errors (if any)
 func (o *MockOrderer) SendDeliver(ctx reqContext.Context, envelope *fab.SignedEnvelope) (chan *common.Block, chan error) {
-	return o.Deliveries, o.DeliveryErrors
+	s, ok := <-o.DeliverySessions
+	if !ok {
+		panic("No more delivery sessions")
+	}
+	o.DeliverySessionsQueue <- s
+	return s.Deliveries, s.DeliveryErrors
 }
 
 // CloseQueue ends the mock broadcast and delivery queues
 func (o *MockOrderer) CloseQueue() {
 	close(o.BroadcastQueue)
-	close(o.DeliveryQueue)
 }
 
 // EnqueueSendBroadcastError enqueues error
@@ -120,18 +147,29 @@ func (o *MockOrderer) EnqueueSendBroadcastError(err error) {
 	o.BroadcastErrors <- err
 }
 
-// EnqueueForSendDeliver enqueues a mock value (block or error) for delivery
-func (o *MockOrderer) EnqueueForSendDeliver(value interface{}) {
-	switch value.(type) {
-	case common.Status:
-		o.DeliveryQueue <- value
-	case *common.Block:
-		o.DeliveryQueue <- value
-	case error:
-		o.DeliveryQueue <- value
-	default:
-		panic(fmt.Sprintf("Value not *common.Block nor error: %+v", value))
+// EnqueueForSendDeliver enqueues mock values for delivery
+// Each call to this function will prepare orderer to handle exactly
+// one (subsequent) call to SendDeliver
+func (o *MockOrderer) EnqueueForSendDeliver(values ...interface{}) {
+	s := &DeliverySession{
+		Deliveries:     make(chan *common.Block, 100),
+		DeliveryErrors: make(chan error, 100),
+		DeliveryQueue:  make(chan interface{}, 100),
 	}
+	for _, v := range values {
+		switch v.(type) {
+		case common.Status:
+			s.DeliveryQueue <- v
+		case *common.Block:
+			s.DeliveryQueue <- v
+		case error:
+			s.DeliveryQueue <- v
+		default:
+			panic(fmt.Sprintf("Value not *common.Block/common.Status/error: %+v", v))
+		}
+	}
+	o.DeliverySessions <- s
+	s.Close()
 }
 
 // MockGrpcOrderer is a mock fabricclient.Orderer to test

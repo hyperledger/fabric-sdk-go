@@ -45,6 +45,8 @@ github.com/hyperledger/fabric-protos-go v0.0.0-20190821180310-6b6ac9042dfd h1:z0
 github.com/hyperledger/fabric-protos-go v0.0.0-20190821180310-6b6ac9042dfd/go.mod h1:xVYTjK4DtZRBxZ2D9aE4y6AbLaPwue2o/criQyQbVD0=
 github.com/hyperledger/fabric-protos-go v0.0.0-20190823190507-26c33c998676 h1:35/AU/6kOZgrblvSjglQ6yoz3opCKTpfoMjQygtCD/U=
 github.com/hyperledger/fabric-protos-go v0.0.0-20190823190507-26c33c998676/go.mod h1:xVYTjK4DtZRBxZ2D9aE4y6AbLaPwue2o/criQyQbVD0=
+github.com/hyperledger/fabric-sdk-go/test/integration v0.0.0-20190831190312-1fab350867c4 h1:wkJyYfRQH10wqtUubzIBURQoZ+MpjbObmWEexAcwCQE=
+github.com/hyperledger/fabric-sdk-go/test/integration v0.0.0-20190831190312-1fab350867c4/go.mod h1:sccEHC5QwAXO4PAJwHSmfqfoFwGAX5s/GKzqGWyxFbM=
 github.com/kr/logfmt v0.0.0-20140226030751-b84e30acd515 h1:T+h1c/A9Gawja4Y9mFVWj2vyii2bbUNDw3kt9VxK2EY=
 github.com/kr/logfmt v0.0.0-20140226030751-b84e30acd515/go.mod h1:+0opPa2QZZtGFBFZlji/RkVcI2GknAs/DXo4wKdlNEc=
 github.com/kr/pretty v0.1.0 h1:L/CwN0zerZDmRFUapSPitk6f+Q3+0za1rQkzVuMiMFI=

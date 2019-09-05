@@ -39,14 +39,14 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/hyperledger/fabric-protos-go/common"
+	"github.com/hyperledger/fabric-protos-go/msp"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/utils"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
 	msp2 "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
-	"github.com/hyperledger/fabric-protos-go/common"
-	"github.com/hyperledger/fabric-protos-go/msp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -323,7 +323,7 @@ func prepareReadWriteSets(t *testing.T, crlBytes [][]byte, ledgerClient *ledger.
 func updateChannelConfig(t *testing.T, readSet *common.ConfigGroup, writeSet *common.ConfigGroup, resmgmtClient *resmgmt.Client, org1MspClient, org2MspClient *mspclient.Client) {
 
 	//read block template and update read/write sets
-	txBytes, err := ioutil.ReadFile(integration.GetChannelConfigPath("twoorgs.genesis.block"))
+	txBytes, err := ioutil.ReadFile(integration.GetChannelConfigTxPath("twoorgs.genesis.block"))
 	require.NoError(t, err)
 
 	block := &common.Block{}
@@ -443,7 +443,7 @@ func joinChannel(t *testing.T, sdk *fabsdk.FabricSDK) {
 	require.NoError(t, err, "failed to get org2AdminIdentity")
 
 	req := resmgmt.SaveChannelRequest{ChannelID: "orgchannel",
-		ChannelConfigPath: integration.GetChannelConfigPath("orgchannel.tx"),
+		ChannelConfigPath: integration.GetChannelConfigTxPath("orgchannel.tx"),
 		SigningIdentities: []msp2.SigningIdentity{org1AdminIdentity, org2AdminIdenity}}
 	txID, err := ordererResMgmt.SaveChannel(req, resmgmt.WithRetry(retry.DefaultResMgmtOpts), resmgmt.WithOrdererEndpoint("orderer.example.com"))
 	require.Nil(t, err, "error should be nil")

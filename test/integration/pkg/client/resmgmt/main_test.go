@@ -15,11 +15,13 @@ import (
 )
 
 const (
-	org1Name      = "Org1"
-	org2Name      = "Org2"
-	org1AdminUser = "Admin"
-	org2AdminUser = "Admin"
-	orgChannelID  = "orgchannel"
+	ordererOrgName      = "OrdererOrg"
+	org1Name            = "Org1"
+	org2Name            = "Org2"
+	ordererOrgAdminUser = "Admin"
+	org1AdminUser       = "Admin"
+	org2AdminUser       = "Admin"
+	orgChannelID        = "orgchannel"
 )
 
 var mainSDK *fabsdk.FabricSDK

@@ -422,3 +422,26 @@ func getOpts(opts ...Opt) options {
 	}
 	return optionsValue
 }
+
+// ExtractConfigFromBlock extracts channel configuration from block
+func ExtractConfigFromBlock(block *common.Block) (*common.Config, error) {
+	if block == nil || block.Data == nil || len(block.Data.Data) == 0 {
+		return nil, errors.New("invalid block")
+	}
+	blockPayload := block.Data.Data[0]
+
+	envelope := &common.Envelope{}
+	if err := proto.Unmarshal(blockPayload, envelope); err != nil {
+		return nil, err
+	}
+	payload := &common.Payload{}
+	if err := proto.Unmarshal(envelope.Payload, payload); err != nil {
+		return nil, err
+	}
+
+	cfgEnv := &common.ConfigEnvelope{}
+	if err := proto.Unmarshal(payload.Data, cfgEnv); err != nil {
+		return nil, err
+	}
+	return cfgEnv.Config, nil
+}

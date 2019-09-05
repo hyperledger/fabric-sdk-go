@@ -221,7 +221,7 @@ func createChannel(t *testing.T, sdk *fabsdk.FabricSDK, resMgmtClient *resmgmt.C
 		t.Fatal(err)
 	}
 	req := resmgmt.SaveChannelRequest{ChannelID: channelID,
-		ChannelConfigPath: integration.GetChannelConfigPath(channelID + ".tx"),
+		ChannelConfigPath: integration.GetChannelConfigTxPath(channelID + ".tx"),
 		SigningIdentities: []msp.SigningIdentity{adminIdentity}}
 	txID, err := resMgmtClient.SaveChannel(req, resmgmt.WithRetry(retry.DefaultResMgmtOpts), resmgmt.WithOrdererEndpoint("orderer.example.com"))
 	require.Nil(t, err, "error should be nil")

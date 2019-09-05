@@ -95,9 +95,9 @@ func checkConfigBlock(t *testing.T, block *common.Block) {
 func TestChannelConfigWithOrderer(t *testing.T) {
 
 	testSetup := integration.BaseSetupImpl{
-		ChannelID:         "mychannel",
-		OrgID:             org1Name,
-		ChannelConfigFile: integration.GetChannelConfigPath("mychannel.tx"),
+		ChannelID:           "mychannel",
+		OrgID:               org1Name,
+		ChannelConfigTxFile: integration.GetChannelConfigTxPath("mychannel.tx"),
 	}
 
 	configBackend, err := integration.ConfigBackend()

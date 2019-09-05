@@ -58,7 +58,7 @@ func InitializeChannel(sdk *fabsdk.FabricSDK, orgID string, req resmgmt.SaveChan
 	}
 
 	if len(joinedTargets) != len(targets) {
-		_, err := CreateChannel(sdk, req)
+		_, err := SaveChannel(sdk, req)
 		if err != nil {
 			return errors.Wrapf(err, "create channel failed")
 		}
@@ -96,8 +96,8 @@ func FilterTargetsJoinedChannel(sdk *fabsdk.FabricSDK, orgID string, channelID s
 	return joinedTargets, nil
 }
 
-// CreateChannel attempts to save the named channel.
-func CreateChannel(sdk *fabsdk.FabricSDK, req resmgmt.SaveChannelRequest) (bool, error) {
+// SaveChannel attempts to save (create or update) the named channel.
+func SaveChannel(sdk *fabsdk.FabricSDK, req resmgmt.SaveChannelRequest) (bool, error) {
 
 	//prepare context
 	clientContext := sdk.Context(fabsdk.WithUser(adminUser), fabsdk.WithOrg(ordererOrgName))

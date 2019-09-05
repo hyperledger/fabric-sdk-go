@@ -34,12 +34,12 @@ import (
 
 // BaseSetupImpl implementation of BaseTestSetup
 type BaseSetupImpl struct {
-	Identity          msp.Identity
-	Targets           []string
-	ConfigFile        string
-	OrgID             string
-	ChannelID         string
-	ChannelConfigFile string
+	Identity            msp.Identity
+	Targets             []string
+	ConfigFile          string
+	OrgID               string
+	ChannelID           string
+	ChannelConfigTxFile string
 }
 
 // Initial B values for ExampleCC
@@ -142,7 +142,7 @@ func (setup *BaseSetupImpl) Initialize(sdk *fabsdk.FabricSDK) error {
 	}
 	setup.Targets = targets
 
-	r, err := os.Open(setup.ChannelConfigFile)
+	r, err := os.Open(setup.ChannelConfigTxFile)
 	if err != nil {
 		return errors.Wrapf(err, "opening channel config file failed")
 	}
@@ -168,8 +168,8 @@ func GetDeployPath() string {
 	return filepath.Join(metadata.GetProjectPath(), ccPath)
 }
 
-// GetChannelConfigPath returns the path to the named channel config file
-func GetChannelConfigPath(filename string) string {
+// GetChannelConfigTxPath returns the path to the named channel config file
+func GetChannelConfigTxPath(filename string) string {
 	return filepath.Join(metadata.GetProjectPath(), metadata.ChannelConfigPath, filename)
 }
 
@@ -219,7 +219,7 @@ func CreateChannelAndUpdateAnchorPeers(t *testing.T, sdk *fabsdk.FabricSDK, chan
 
 	req := resmgmt.SaveChannelRequest{
 		ChannelID:         channelID,
-		ChannelConfigPath: GetChannelConfigPath(channelConfigFile),
+		ChannelConfigPath: GetChannelConfigTxPath(channelConfigFile),
 		SigningIdentities: signingIdentities,
 	}
 	_, err = chMgmtClient.SaveChannel(req, resmgmt.WithRetry(retry.DefaultResMgmtOpts), resmgmt.WithOrdererEndpoint("orderer.example.com"))
@@ -232,7 +232,7 @@ func CreateChannelAndUpdateAnchorPeers(t *testing.T, sdk *fabsdk.FabricSDK, chan
 	for _, orgCtx := range orgsContext {
 		req := resmgmt.SaveChannelRequest{
 			ChannelID:         channelID,
-			ChannelConfigPath: GetChannelConfigPath(orgCtx.AnchorPeerConfigFile),
+			ChannelConfigPath: GetChannelConfigTxPath(orgCtx.AnchorPeerConfigFile),
 			SigningIdentities: []msp.SigningIdentity{orgCtx.SigningIdentity},
 		}
 		if _, err := orgCtx.ResMgmt.SaveChannel(req, resmgmt.WithRetry(retry.DefaultResMgmtOpts), resmgmt.WithOrdererEndpoint("orderer.example.com")); err != nil {

@@ -28,9 +28,9 @@ import (
 )
 
 const (
-	channelConfigFile = "mychannel.tx"
-	channelID         = "mychannel"
-	orgName           = org1Name
+	channelConfigTxFile = "mychannel.tx"
+	channelID           = "mychannel"
+	orgName             = org1Name
 )
 
 func initializeLedgerTests(t *testing.T) (*fabsdk.FabricSDK, []string) {
@@ -58,7 +58,7 @@ func initializeLedgerTests(t *testing.T) (*fabsdk.FabricSDK, []string) {
 		t.Fatalf("creating peers failed: %s", err)
 	}
 
-	req := resmgmt.SaveChannelRequest{ChannelID: channelID, ChannelConfigPath: integration.GetChannelConfigPath(channelConfigFile), SigningIdentities: []msp.SigningIdentity{adminIdentity}}
+	req := resmgmt.SaveChannelRequest{ChannelID: channelID, ChannelConfigPath: integration.GetChannelConfigTxPath(channelConfigTxFile), SigningIdentities: []msp.SigningIdentity{adminIdentity}}
 	err = integration.InitializeChannel(sdk, orgName, req, targets)
 	if err != nil {
 		t.Fatalf("failed to ensure channel has been initialized: %s", err)

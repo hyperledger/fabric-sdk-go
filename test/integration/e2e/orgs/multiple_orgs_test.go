@@ -315,7 +315,7 @@ func createChannel(org1AdminUser msp.SigningIdentity, org2AdminUser msp.SigningI
 
 	// create a channel for orgchannel.tx
 	req := resmgmt.SaveChannelRequest{ChannelID: mc.channelID,
-		ChannelConfigPath: integration.GetChannelConfigPath("orgchannel.tx"),
+		ChannelConfigPath: integration.GetChannelConfigTxPath("orgchannel.tx"),
 		SigningIdentities: []msp.SigningIdentity{org1AdminUser, org2AdminUser}}
 	txID, err := chMgmtClient.SaveChannel(req, resmgmt.WithRetry(retry.DefaultResMgmtOpts), resmgmt.WithOrdererEndpoint("orderer.example.com"))
 	require.Nil(t, err, "error should be nil for SaveChannel of orgchannel")
@@ -327,7 +327,7 @@ func createChannel(org1AdminUser msp.SigningIdentity, org2AdminUser msp.SigningI
 	chMgmtClient, err = resmgmt.New(mc.org1AdminClientContext)
 	require.NoError(t, err, "failed to get a new channel management client for org1Admin")
 	req = resmgmt.SaveChannelRequest{ChannelID: mc.channelID,
-		ChannelConfigPath: integration.GetChannelConfigPath("orgchannelOrg1MSPanchors.tx"),
+		ChannelConfigPath: integration.GetChannelConfigTxPath("orgchannelOrg1MSPanchors.tx"),
 		SigningIdentities: []msp.SigningIdentity{org1AdminUser}}
 	txID, err = chMgmtClient.SaveChannel(req, resmgmt.WithRetry(retry.DefaultResMgmtOpts), resmgmt.WithOrdererEndpoint("orderer.example.com"))
 	require.Nil(t, err, "error should be nil for SaveChannel for anchor peer 1")
@@ -339,7 +339,7 @@ func createChannel(org1AdminUser msp.SigningIdentity, org2AdminUser msp.SigningI
 	chMgmtClient, err = resmgmt.New(mc.org2AdminClientContext)
 	require.NoError(t, err, "failed to get a new channel management client for org2Admin")
 	req = resmgmt.SaveChannelRequest{ChannelID: mc.channelID,
-		ChannelConfigPath: integration.GetChannelConfigPath("orgchannelOrg2MSPanchors.tx"),
+		ChannelConfigPath: integration.GetChannelConfigTxPath("orgchannelOrg2MSPanchors.tx"),
 		SigningIdentities: []msp.SigningIdentity{org2AdminUser}}
 	txID, err = chMgmtClient.SaveChannel(req, resmgmt.WithRetry(retry.DefaultResMgmtOpts), resmgmt.WithOrdererEndpoint("orderer.example.com"))
 	require.Nil(t, err, "error should be nil for SaveChannel for anchor peer 2")
