@@ -437,6 +437,7 @@ Profiles:
 
     OneOrgChannel:
         Consortium: TestConsortium
+        <<: *ChannelDefaults
         Application:
             <<: *ApplicationDefaults
             Organizations:
@@ -444,6 +445,7 @@ Profiles:
 
     TwoOrgsChannel:
         Consortium: SampleConsortium
+        <<: *ChannelDefaults
         Application:
             <<: *ApplicationDefaults
             Organizations:
@@ -452,6 +454,7 @@ Profiles:
 
     DsChannel:
         Consortium: SampleConsortium
+        <<: *ChannelDefaults
         Application:
             <<: *ApplicationDefaults
             Organizations:
