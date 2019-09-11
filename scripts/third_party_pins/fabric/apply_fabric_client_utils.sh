@@ -212,10 +212,6 @@ declare -a FILES=(
     "sdkpatch/cryptosuitebridge/cryptosuitebridge.go"
     "sdkpatch/cachebridge/cache.go"
 
-    "core/common/privdata/collection.go"
-    "core/ledger/ledger_interface.go"
-    "core/ledger/kvledger/txmgmt/version/version.go"
-
     "msp/factory.go"
     "msp/cert.go"
     "msp/configbuilder.go"
@@ -406,10 +402,6 @@ FILTER_FILENAME="common/channelconfig/util.go"
 sed -i'' -e '/"github.com\/hyperledger\/fabric\/bccsp/ a\
 "github.com\/hyperledger\/fabric-sdk-go\/pkg\/common\/providers\/core"' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
 sed -i'' -e 's/bccsp.BCCSP/core.CryptoSuite/g' "${TMP_PROJECT_PATH}/${FILTER_FILENAME}"
-
-FILTER_FILENAME="core/ledger/kvledger/txmgmt/version/version.go"
-FILTER_FN=
-gofilter
 
 FILTER_FILENAME="common/policies/policy.go"
 FILTER_FN=

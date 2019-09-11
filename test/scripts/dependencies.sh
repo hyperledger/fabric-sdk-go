@@ -38,7 +38,7 @@ function recordCacheResult {
 
 function installGoBin {
     declare repo="github.com/myitcv/gobin"
-    declare revision="master"
+    declare revision="v0"
     declare pkg="github.com/myitcv/gobin"
     declare cmd="gobin"
 

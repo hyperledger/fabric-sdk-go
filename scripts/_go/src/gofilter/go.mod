@@ -3,3 +3,5 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module gofilter
+
+go 1.13

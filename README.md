@@ -100,7 +100,7 @@ If you want to contribute to the Go SDK, please run the test suite and submit pa
 
 You need:
 
-- Go 1.12
+- Go 1.13
 - Make
 - Docker
 - Docker Compose
