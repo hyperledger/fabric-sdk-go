@@ -19,6 +19,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/hyperledger/fabric-protos-go/orderer"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/util/test"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
@@ -1075,39 +1077,15 @@ func getNetworkConfigWithoutOrderer(t *testing.T) fab.EndpointConfig {
 	return config
 }
 
-func TestUpdateChannelConfigSuccess(t *testing.T) {
-	ctx := setupTestContext("test", "Org1MSP")
+func TestCalculateConfigUpdate(t *testing.T) {
 
-	// Create mock orderer with simple mock block
-	orderer := fcmocks.NewMockOrderer("", nil)
-	//defer orderer.CloseQueue()
-
-	setupCustomOrderer(ctx, orderer)
-	cc := setupResMgmtClient(t, ctx)
-
-	// Test valid Save Channel request using config block (success)
+	// Get the original configuration
 	originalConfiglBlockBytes, err := ioutil.ReadFile(filepath.Join("testdata", "config.block"))
 	assert.Nil(t, err, "opening config.block file failed")
 	originalConfigBlock := &common.Block{}
 	assert.Nil(t, proto.Unmarshal(originalConfiglBlockBytes, originalConfigBlock), "unmarshalling originalConfigBlock failed")
 	originalConfig, err := resource.ExtractConfigFromBlock(originalConfigBlock)
 	assert.Nil(t, err, "extractConfigFromBlock failed")
-
-	orderer.EnqueueForSendDeliver(
-		// The first call to orderer returns the very last block
-		// For testing, we can put here any valid block.
-		originalConfigBlock,
-		common.Status_SUCCESS,
-	)
-	orderer.EnqueueForSendDeliver(
-		// The next call returns the last configuration block,
-		// which is the input to config update tx calculation
-		originalConfigBlock,
-		common.Status_SUCCESS,
-	)
-	resp, err := cc.UpdateChannelConfig(UpdateChannelConfigRequest{ChannelID: "mychannel", ChannelConfig: originalConfig}, WithOrderer(orderer))
-	assert.NotNil(t, err, "Should have failed for unchanged configuration")
-	assert.Contains(t, err.Error(), "no differences detected between original and updated config")
 
 	// Prepare new configuration
 	modifiedConfigBytes, err := proto.Marshal(originalConfig)
@@ -1118,19 +1096,18 @@ func TestUpdateChannelConfigSuccess(t *testing.T) {
 	assert.Nil(t, err, "error modifying config")
 	assert.Nil(t, test.VerifyMaxMessageCount(modifiedConfig, newMaxMessageCount), "error verifying modified config")
 
-	orderer.EnqueueForSendDeliver(
-		originalConfigBlock,
-		common.Status_SUCCESS,
-	)
-	orderer.EnqueueForSendDeliver(
-		originalConfigBlock,
-		common.Status_SUCCESS,
-	)
-	resp, err = cc.UpdateChannelConfig(UpdateChannelConfigRequest{ChannelID: "mychannel", ChannelConfig: modifiedConfig}, WithOrderer(orderer))
-	assert.Nil(t, err, "error should be nil")
-	assert.NotEmpty(t, resp.TransactionID, "transaction ID should be populated")
+	channelID := "mychannel"
 
-	orderer.CloseQueue()
+	configUpdate, err := CalculateConfigUpdate(channelID, originalConfig, modifiedConfig)
+	assert.NoError(t, err, "calculating config update failed")
+	assert.NotNil(t, configUpdate, "calculated config update is nil")
+	assert.Equal(t, channelID, configUpdate.ChannelId, "channel ID mismatch")
+
+	updatedBatchSizeBytes := configUpdate.WriteSet.Groups["Orderer"].Values["BatchSize"].Value
+	batchSize := &orderer.BatchSize{}
+	assert.Nil(t, proto.Unmarshal(updatedBatchSizeBytes, batchSize), "unmarshalling BatchSize failed")
+	assert.Equal(t, newMaxMessageCount, batchSize.MaxMessageCount, "MaxMessageCount mismatch")
+
 }
 
 func TestSaveChannelSuccess(t *testing.T) {
