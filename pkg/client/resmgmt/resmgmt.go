@@ -112,25 +112,15 @@ type requestOptions struct {
 //SaveChannelRequest holds parameters for save channel request
 type SaveChannelRequest struct {
 	ChannelID         string
-	ChannelConfig     io.Reader             // ChannelConfig data source
-	ChannelConfigPath string                // Convenience option to use the named file as ChannelConfig reader
-	SigningIdentities []msp.SigningIdentity // Users that sign channel configuration
+	ChannelConfig     io.Reader // ChannelConfig data source
+	ChannelConfigPath string    // Convenience option to use the named file as ChannelConfig reader
+	// Users that sign channel configuration
+	// deprecated - one entity shouldn't have access to another entities' keys to sign on their behalf
+	SigningIdentities []msp.SigningIdentity
 }
 
 // SaveChannelResponse contains response parameters for save channel
 type SaveChannelResponse struct {
-	TransactionID fab.TransactionID
-}
-
-// UpdateChannelConfigRequest holds parameters for update channel config request.
-type UpdateChannelConfigRequest struct {
-	ChannelID         string
-	ChannelConfig     *common.Config        // Desired channel config.
-	SigningIdentities []msp.SigningIdentity // Users that sign channel configuration
-}
-
-// UpdateChannelConfigResponse contains response parameters for update channel config
-type UpdateChannelConfigResponse struct {
 	TransactionID fab.TransactionID
 }
 
@@ -971,54 +961,6 @@ func (rc *Client) SaveChannel(req SaveChannelRequest, options ...RequestOption) 
 	return SaveChannelResponse{TransactionID: txID}, nil
 }
 
-// UpdateChannelConfig updates channel configuration.
-//  Parameters:
-//  req holds info about mandatory channel name and configuration
-//  options holds optional request options
-//  if options have signatures (WithConfigSignatures() or 1 or more WithConfigSignature() calls), then UpdateChannelConfig will
-//     use these signatures instead of creating ones for the SigningIdentities found in req.
-//	   Make sure that req.ChannelConfig has the channel config matching these signatures.
-//
-//  Returns:
-//  update channel config response with transaction ID
-func (rc *Client) UpdateChannelConfig(req UpdateChannelConfigRequest, options ...RequestOption) (UpdateChannelConfigResponse, error) {
-
-	opts, err := rc.prepareRequestOpts(options...)
-	if err != nil {
-		return UpdateChannelConfigResponse{}, err
-	}
-
-	err = rc.validateUpdateChannelConfigRequest(req)
-	if err != nil {
-		return UpdateChannelConfigResponse{}, err
-	}
-
-	logger.Debugf("updating channel config: %s", req.ChannelID)
-
-	orderer, err := rc.requestOrderer(&opts, req.ChannelID)
-	if err != nil {
-		return UpdateChannelConfigResponse{}, errors.WithMessage(err, "failed to find orderer for request")
-	}
-
-	chConfig, err := rc.calculateConfigUpdate(req, orderer)
-	if err != nil {
-		return UpdateChannelConfigResponse{}, errors.WithMessage(err, "prepare channel ConfigTx failed")
-	}
-
-	txID, err := rc.signAndSubmitChannelConfigTx(
-		req.ChannelID,
-		req.SigningIdentities,
-		opts,
-		chConfig,
-		orderer,
-	)
-	if err != nil {
-		return UpdateChannelConfigResponse{}, errors.WithMessage(err, "update channel config failed")
-	}
-
-	return UpdateChannelConfigResponse{TransactionID: txID}, nil
-}
-
 func (rc *Client) signAndSubmitChannelConfigTx(channelID string, signingIdentities []msp.SigningIdentity, opts requestOptions, chConfigTx []byte, orderer fab.Orderer) (fab.TransactionID, error) {
 	var configSignatures []*common.ConfigSignature
 	var err error
@@ -1048,39 +990,26 @@ func (rc *Client) signAndSubmitChannelConfigTx(channelID string, signingIdentiti
 	return txID, nil
 }
 
-func (rc *Client) calculateConfigUpdate(req UpdateChannelConfigRequest, orderer fab.Orderer) ([]byte, error) {
-	block, err := rc.QueryConfigBlockFromOrderer(req.ChannelID, WithOrderer(orderer))
-	if err != nil {
-		return nil, errors.WithMessage(err, "retrieving current channel config failed")
+// CalculateConfigUpdate calculates channel config update based on the difference between provided
+// current channel config and proposed new channel config.
+func CalculateConfigUpdate(channelID string, currentConfig, newConfig *common.Config) (*common.ConfigUpdate, error) {
+
+	if channelID == "" || currentConfig == nil || newConfig == nil {
+		return nil, errors.New("must provide channel ID and current and new channel config")
 	}
-	currentConfig, err := resource.ExtractConfigFromBlock(block)
-	if err != nil {
-		return nil, errors.WithMessage(err, "extracting config from the latest block failed")
-	}
-	if currentConfig.Sequence != req.ChannelConfig.Sequence {
+
+	if currentConfig.Sequence != newConfig.Sequence {
 		return nil, errors.New("channel config sequence mismatch")
 	}
-	configUpdate, err := update.Compute(currentConfig, req.ChannelConfig)
+	configUpdate, err := update.Compute(currentConfig, newConfig)
 	if err != nil {
 		return nil, errors.WithMessage(err, "config update computation failed")
 	}
-	configUpdate.ChannelId = req.ChannelID
-	configUpdateBytes, err := proto.Marshal(configUpdate)
-	if err != nil {
-		return nil, errors.WithMessage(err, "marshalling config update failed")
-	}
-	return configUpdateBytes, nil
+	configUpdate.ChannelId = channelID
+	return configUpdate, nil
 }
 
 func (rc *Client) validateSaveChannelRequest(req SaveChannelRequest) error {
-
-	if req.ChannelID == "" || req.ChannelConfig == nil {
-		return errors.New("must provide channel ID and channel config")
-	}
-	return nil
-}
-
-func (rc *Client) validateUpdateChannelConfigRequest(req UpdateChannelConfigRequest) error {
 
 	if req.ChannelID == "" || req.ChannelConfig == nil {
 		return errors.New("must provide channel ID and channel config")

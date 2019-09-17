@@ -12,8 +12,6 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/util/test"
-
 	"github.com/golang/protobuf/proto"
 
 	"github.com/hyperledger/fabric-protos-go/common"
@@ -246,43 +244,6 @@ func ExampleClient_SaveChannel_withOrdererEndpoint() {
 	fmt.Println("Saved channel")
 
 	// Output: Saved channel
-
-}
-
-func ExampleClient_UpdateChannelConfig_success() {
-
-	c, err := New(mockClientProvider())
-	if err != nil {
-		fmt.Printf("failed to create client: %s\n", err)
-	}
-
-	block, err := c.QueryConfigBlockFromOrderer("mychannel", WithOrdererEndpoint("example.com"))
-	if err != nil {
-		fmt.Printf("QueryConfigBlockFromOrderer returned error: %s\n", err)
-	}
-	channelConfig, err := resource.ExtractConfigFromBlock(block)
-	if err != nil {
-		fmt.Println("extractConfigFromBlock failed")
-	}
-
-	// Modify channel configuration
-	_, err = test.ModifyMaxMessageCount(channelConfig)
-	if err != nil {
-		fmt.Printf("error modifying channel configuration: %s\n", err)
-	}
-
-	resp, err := c.UpdateChannelConfig(UpdateChannelConfigRequest{ChannelID: "mychannel", ChannelConfig: channelConfig}, WithOrdererEndpoint("example.com"))
-	if err != nil {
-		fmt.Printf("failed to update channel config: %s\n", err)
-	}
-
-	if resp.TransactionID == "" {
-		fmt.Println("Failed to save channel")
-	}
-
-	fmt.Println("Updated channel config")
-
-	// Output: Updated channel config
 
 }
 
