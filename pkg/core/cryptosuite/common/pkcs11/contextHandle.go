@@ -82,18 +82,7 @@ func (handle *ContextHandle) OpenSession() (mPkcs11.SessionHandle, error) {
 	handle.lock.RLock()
 	defer handle.lock.RUnlock()
 
-	var session mPkcs11.SessionHandle
-	var err error
-	for i := 0; i < handle.opts.openSessionRetry; i++ {
-		session, err = handle.ctx.OpenSession(handle.slot, mPkcs11.CKF_SERIAL_SESSION|mPkcs11.CKF_RW_SESSION)
-		if err != nil {
-			logger.Warnf("OpenSession failed, retrying [%s]\n", err)
-		} else {
-			logger.Debug("OpenSession succeeded")
-			break
-		}
-	}
-	return session, err
+	return handle.ctx.OpenSession(handle.slot, mPkcs11.CKF_SERIAL_SESSION|mPkcs11.CKF_RW_SESSION)
 }
 
 // Login logs a user into a token
@@ -119,13 +108,20 @@ func (handle *ContextHandle) ReturnSession(session mPkcs11.SessionHandle) {
 	handle.lock.RLock()
 	defer handle.lock.RUnlock()
 
-	_, e := handle.ctx.GetSessionInfo(session)
+	e := isEmpty(session)
+	if e != nil {
+		logger.Warnf("not returning session [%d], due to error [%s]. Discarding it", session, e)
+		return
+	}
+
+	_, e = handle.ctx.GetSessionInfo(session)
 	if e != nil {
 		logger.Warnf("not returning session [%d], due to error [%s]. Discarding it", session, e)
 		e = handle.ctx.CloseSession(session)
 		if e != nil {
 			logger.Warn("unable to close session:", e)
 		}
+		cachebridge.ClearSession(fmt.Sprintf("%d", session))
 		return
 	}
 
@@ -137,6 +133,7 @@ func (handle *ContextHandle) ReturnSession(session mPkcs11.SessionHandle) {
 	default:
 		// have plenty of sessions in cache, dropping
 		e = handle.ctx.CloseSession(session)
+		cachebridge.ClearSession(fmt.Sprintf("%d", session))
 		if e != nil {
 			logger.Warn("unable to close session: ", e)
 		}
@@ -151,20 +148,35 @@ func (handle *ContextHandle) GetSession() (session mPkcs11.SessionHandle) {
 	select {
 	case session = <-handle.sessions:
 		logger.Debugf("Reusing existing pkcs11 session %+v on slot %d\n", session, handle.slot)
-
+		handle.lock.RUnlock()
 	default:
+		handle.lock.RUnlock()
 		logger.Debug("opening a new session since cache is empty/full")
 		// cache is empty (or completely in use), create a new session
 		s, err := handle.OpenSession()
 		if err != nil {
-			handle.lock.RUnlock()
-			panic(fmt.Errorf("OpenSession failed [%s]", err))
+			logger.Debugf("opening a new session failed [%v], will retry %d times", err, handle.opts.openSessionRetry)
+			handle.lock.Lock()
+			defer handle.lock.Unlock()
+			for i := 0; i < handle.opts.openSessionRetry; i++ {
+				logger.Debugf("Trying re-login and open session attempt[%v]", i+1)
+				s, err = handle.reLogin()
+				if err != nil {
+					logger.Debugf("Failed to re-login, attempt[%d], error[%s], trying again now", i+1, err)
+					continue
+				} else {
+					logger.Debugf("Successfully able to re-login and open session[%d], attempt[%d], clearing cache now for new session", s, i+1)
+					cachebridge.ClearSession(fmt.Sprintf("%d", s))
+					return s
+				}
+			}
+			logger.Debugf("Exhausted all attempts to recover session, failed with error [%s], returning 0 session", err)
+			return s
 		}
 		logger.Debugf("Created new pkcs11 session %+v on slot %d", s, handle.slot)
 		session = s
 		cachebridge.ClearSession(fmt.Sprintf("%d", session))
 	}
-	handle.lock.RUnlock()
 	return handle.validateSession(session)
 }
 
@@ -191,6 +203,11 @@ func (handle *ContextHandle) GenerateKeyPair(session mPkcs11.SessionHandle, m []
 
 	handle.lock.RLock()
 	defer handle.lock.RUnlock()
+
+	err := isEmpty(session)
+	if err != nil {
+		return 0, 0, errors.Wrap(err, "failed to generate key pair")
+	}
 
 	return handle.ctx.GenerateKeyPair(session, m, public, private)
 }
@@ -336,6 +353,11 @@ func (handle *ContextHandle) FindKeyPairFromSKI(session mPkcs11.SessionHandle, s
 	handle.lock.RLock()
 	defer handle.lock.RUnlock()
 
+	err := isEmpty(session)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to find key pair from SKI")
+	}
+
 	return cachebridge.GetKeyPairFromSessionSKI(&cachebridge.KeyPairCacheKey{Mod: handle.ctx, Session: session, SKI: ski, KeyType: keyType})
 }
 
@@ -364,45 +386,10 @@ func (handle *ContextHandle) validateSession(currentSession mPkcs11.SessionHandl
 		handle.lock.Lock()
 		defer handle.lock.Unlock()
 
-		handle.disposePKCS11Ctx()
-
-		//create new context
-		newCtx := handle.createNewPKCS11Ctx()
-		if newCtx == nil {
-			logger.Warn("Failed to recreate new pkcs11 context for given library")
-			return 0
-		}
-
-		//find slot
-		slot, found := handle.findSlot(newCtx)
-		if !found {
-			logger.Warnf("Unable to find slot for label :%s", handle.label)
-			return 0
-		}
-		logger.Debug("got the slot ", slot)
-
-		//open new session for given slot
-		newSession, err := createNewSession(newCtx, slot)
+		newSession, err := handle.reLogin()
 		if err != nil {
-			logger.Fatalf("OpenSession [%s]\n", err)
-			return 0
+			logger.Warnf("Re-login Failed : %s,", err)
 		}
-		logger.Debugf("Recreated new pkcs11 session %+v on slot %d\n", newSession, slot)
-
-		//login with new session
-		err = newCtx.Login(newSession, mPkcs11.CKU_USER, handle.pin)
-		if err != nil && err != mPkcs11.Error(mPkcs11.CKR_USER_ALREADY_LOGGED_IN) {
-			logger.Warnf("Unable to login with new session :%s", newSession)
-			return 0
-		}
-
-		handle.sendNotification()
-
-		handle.ctx = newCtx
-		handle.slot = slot
-		handle.sessions = make(chan mPkcs11.SessionHandle, handle.opts.sessionCacheSize)
-
-		logger.Infof("Able to login with recreated session successfully")
 		return newSession
 
 	case mPkcs11.Error(mPkcs11.CKR_DEVICE_MEMORY),
@@ -415,6 +402,52 @@ func (handle *ContextHandle) validateSession(currentSession mPkcs11.SessionHandl
 		// default should be a valid session or valid error, return session as it is
 		return currentSession
 	}
+}
+
+// reLogin destroys pkcs11 context and tries to re-login and returns new session
+// Note: this function isn't thread safe, recommended to use write lock for calling this function
+func (handle *ContextHandle) reLogin() (mPkcs11.SessionHandle, error) {
+
+	// dispose existing pkcs11 ctx
+	handle.disposePKCS11Ctx()
+
+	// create new context
+	newCtx := handle.createNewPKCS11Ctx()
+	if newCtx == nil {
+		logger.Warn("Failed to recreate new pkcs11 context for given library")
+		return 0, errors.New("failed to recreate new pkcs11 context for given library")
+	}
+	handle.ctx = newCtx
+
+	// find slot
+	slot, found := handle.findSlot(handle.ctx)
+	if !found {
+		logger.Warnf("Unable to find slot for label :%s", handle.label)
+		return 0, errors.Errorf("unable to find slot for label :%s", handle.label)
+	}
+	logger.Debugf("Able to find slot : %d ", slot)
+
+	// open new session for given slot
+	newSession, err := createNewSession(handle.ctx, slot)
+	if err != nil {
+		logger.Errorf("Failed to open session with given slot [%s]\n", err)
+		return 0, errors.Errorf("failed to open session with given slot :%s", err)
+	}
+	logger.Debugf("Recreated new pkcs11 session %+v on slot %d\n", newSession, slot)
+
+	// login with new session
+	err = handle.ctx.Login(newSession, mPkcs11.CKU_USER, handle.pin)
+	if err != nil && err != mPkcs11.Error(mPkcs11.CKR_USER_ALREADY_LOGGED_IN) {
+		logger.Warnf("Unable to login with new session :%d", newSession)
+		return 0, errors.Errorf("unable to login with new session :%d", newSession)
+	}
+
+	handle.sendNotification()
+	handle.slot = slot
+	handle.sessions = make(chan mPkcs11.SessionHandle, handle.opts.sessionCacheSize)
+
+	logger.Infof("Able to login with recreated session successfully")
+	return newSession, nil
 }
 
 //detectErrorCondition checks if given session handle has errors
@@ -455,7 +488,7 @@ func (handle *ContextHandle) disposePKCS11Ctx() {
 	//ignore error on close all sessions
 	err := handle.ctx.CloseAllSessions(handle.slot)
 	if err != nil {
-		logger.Warnf("Unable to close session", err)
+		logger.Warn("Unable to close session", err)
 	}
 
 	//clear cache
@@ -644,4 +677,13 @@ func loadLibInitializer() lazycache.EntryInitializer {
 		sessions := make(chan mPkcs11.SessionHandle, ctxKey.opts.sessionCacheSize)
 		return &ContextHandle{ctx: ctx, slot: slot, pin: ctxKey.pin, lib: ctxKey.lib, label: ctxKey.label, sessions: sessions, opts: ctxKey.opts}, nil
 	}
+}
+
+// isEmpty validates if session is valid (not default zero handle)
+func isEmpty(session mPkcs11.SessionHandle) error {
+
+	if session > 0 {
+		return nil
+	}
+	return errors.New("invalid session detected")
 }
