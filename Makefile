@@ -63,8 +63,7 @@ FABRIC_DEV_REGISTRY         ?= nexus3.hyperledger.org:10001
 FABRIC_DEV_REGISTRY_PRE_CMD ?= docker login -u docker -p docker nexus3.hyperledger.org:10001
 
 # Base image variables for socat and softshm builds
-BASE_UBUNTU_VERSION = "xenial"
-BASE_GO_VERSION = "1.12.5"
+BASE_GO_VERSION = "1.13"
 
 # Upstream fabric patching (overridable)
 THIRDPARTY_FABRIC_CA_BRANCH ?= master
@@ -277,15 +276,8 @@ lint-all: version populate-noforce
 .PHONY: build-softhsm2-image
 build-softhsm2-image:
 	 @$(DOCKER_CMD) build --no-cache -q -t "fabsdkgo-softhsm2" \
-		--build-arg BASE_UBUNTU_VERSION=$(BASE_UBUNTU_VERSION) \
 		--build-arg BASE_GO_VERSION=$(BASE_GO_VERSION) \
 		-f $(FIXTURE_SOFTHSM2_PATH)/Dockerfile .
-
-.PHONY: build-socat-image
-build-socat-image:
-	 @$(DOCKER_CMD) build --no-cache -q -t "fabsdkgo-socat" \
-		--build-arg BASE_UBUNTU_VERSION=$(BASE_UBUNTU_VERSION) \
-		-f $(FIXTURE_SOCAT_PATH)/Dockerfile .
 
 .PHONY: unit-test
 unit-test: clean-tests depend-noforce populate-noforce license lint-submodules

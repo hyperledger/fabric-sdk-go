@@ -23,7 +23,8 @@ services:
   #        - dockerd.example.com
 
   chaincoded:
-    image: ${FABRIC_BASE_DOCKER_REGISTRY}${FABRIC_BASEIMAGE_FIXTURE_IMAGE}:${FABRIC_ARCH}${FABRIC_ARCH_SEP}${FABRIC_BASEIMAGE_FIXTURE_TAG}
+    # TODO: parameterize golang version
+    image: golang:1.13
     environment:
       - DOCKER_HOST=http://dockerd.example.com:2375
       - CHAINCODED_VERBOSE
