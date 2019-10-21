@@ -108,6 +108,7 @@ func (c *Client) Send(ctx context.Context, req *Request, targets ...fab.PeerConf
 func (c *Client) send(reqCtx context.Context, req *discclient.Request, target fab.PeerConfig) (discclient.Response, error) {
 	opts := comm.OptsFromPeerConfig(&target)
 	opts = append(opts, comm.WithConnectTimeout(c.ctx.EndpointConfig().Timeout(fab.DiscoveryConnection)))
+	opts = append(opts, comm.WithParentContext(reqCtx))
 
 	conn, err := comm.NewConnection(c.ctx, target.URL, opts...)
 	if err != nil {

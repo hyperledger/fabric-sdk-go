@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package comm
 
 import (
+	"context"
 	"crypto/x509"
 	"time"
 
@@ -23,6 +24,7 @@ type params struct {
 	failFast        bool
 	insecure        bool
 	connectTimeout  time.Duration
+	parentContext   context.Context
 }
 
 func defaultParams() *params {
@@ -77,6 +79,15 @@ func WithConnectTimeout(value time.Duration) options.Opt {
 	}
 }
 
+// WithParentContext sets the parent context
+func WithParentContext(value context.Context) options.Opt {
+	return func(p options.Params) {
+		if setter, ok := p.(parentContextSetter); ok {
+			setter.SetParentContext(value)
+		}
+	}
+}
+
 // WithInsecure indicates to fall back to an insecure connection if the
 // connection URL does not specify a protocol
 func WithInsecure() options.Opt {
@@ -121,6 +132,11 @@ func (p *params) SetInsecure(value bool) {
 	p.insecure = value
 }
 
+func (p *params) SetParentContext(value context.Context) {
+	logger.Debugf("Setting parent context")
+	p.parentContext = value
+}
+
 type hostOverrideSetter interface {
 	SetHostOverride(value string)
 }
@@ -143,6 +159,10 @@ type insecureSetter interface {
 
 type connectTimeoutSetter interface {
 	SetConnectTimeout(value time.Duration)
+}
+
+type parentContextSetter interface {
+	SetParentContext(value context.Context)
 }
 
 // OptsFromPeerConfig returns a set of connection options from the given peer config

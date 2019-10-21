@@ -55,7 +55,9 @@ func NewConnection(ctx fabcontext.Client, url string, opts ...options.Opt) (*GRP
 		return nil, err
 	}
 
-	reqCtx, cancel := context.NewRequest(ctx, context.WithTimeout(params.connectTimeout))
+	reqCtx, cancel := context.NewRequest(ctx,
+		context.WithTimeout(params.connectTimeout),
+		context.WithParent(params.parentContext))
 	defer cancel()
 
 	commManager, ok := context.RequestCommManager(reqCtx)
