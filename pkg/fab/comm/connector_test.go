@@ -93,6 +93,27 @@ func TestDialAfterClose(t *testing.T) {
 	assert.Error(t, err, "expecting error when dialing after connector is closed")
 }
 
+func TestDialAfterRestart(t *testing.T) {
+	srvs, addrs, err := startEndorsers(1, endorserAddress)
+	require.NoError(t, err)
+	require.Len(t, addrs, 1)
+
+	addr := addrs[0]
+
+	connector := NewCachingConnector(normalSweepTime, normalIdleTime)
+
+	conn1, err := connector.DialContext(context.Background(), addr, grpc.WithInsecure())
+	require.NoError(t, err)
+	require.NotNil(t, conn1)
+	srvs[0].Stop()
+	time.Sleep(time.Second)
+
+	conn2, err := connector.DialContext(context.Background(), addr, grpc.WithInsecure())
+	require.Error(t, err)
+	require.Contains(t, err.Error(), connectivity.TransientFailure.String())
+	require.Nil(t, conn2)
+}
+
 func TestConnectorHappyFlushNumber1(t *testing.T) {
 	connector := NewCachingConnector(normalSweepTime, normalIdleTime)
 	defer connector.Close()
