@@ -1,6 +1,6 @@
 # Hyperledger Fabric Client SDK for Go
 
-[![Build Status](https://jenkins.hyperledger.org/buildStatus/icon?job=fabric-sdk-go-tests-merge-x86_64)](https://jenkins.hyperledger.org/job/fabric-sdk-go-tests-merge-x86_64)
+[![Build Status](https://dev.azure.com/hyperledger/fabric-sdk-go/_apis/build/status/hyperledger.fabric-sdk-go?branchName=master)](https://dev.azure.com/hyperledger/fabric-sdk-go/_build/latest?definitionId=19&branchName=master)
 [![Go Report Card](https://goreportcard.com/badge/github.com/hyperledger/fabric-sdk-go)](https://goreportcard.com/report/github.com/hyperledger/fabric-sdk-go)
 [![GoDoc](https://godoc.org/github.com/hyperledger/fabric-sdk-go?status.svg)](https://godoc.org/github.com/hyperledger/fabric-sdk-go)
 
@@ -36,7 +36,6 @@ The packages intended for end developer usage are within the pkg/client folder a
 
 - Discussion is happening in [Rocket Chat](https://chat.hyperledger.org/channel/fabric-sdk-go).
 - Issue tracking is handled in [Jira](https://jira.hyperledger.org/secure/RapidBoard.jspa?projectKey=FAB&rapidView=7&view=planning).
-- Active development occurs in the [Gerrit](https://gerrit.hyperledger.org/r/#/admin/projects/fabric-sdk-go) repository.
 
 ## Client SDK
 
@@ -69,11 +68,6 @@ Obtain the client SDK packages for Fabric and Fabric CA.
 
 ```bash
 git clone https://github.com/hyperledger/fabric-sdk-go.git
-
-# Alternatively, you should clone from gerrit to contribute. For example:
-# git clone ssh://<username>@gerrit.hyperledger.org:29418/fabric-sdk-go && scp -p -P 29418 <username>@gerrit.hyperledger.org:hooks/commit-msg fabric-sdk-go/.git/hooks/
-#
-# See https://gerrit.hyperledger.org/
 ```
 
 ```bash
@@ -96,7 +90,7 @@ The following Go tags can be supplied to enable additional functionality:
 
 ## Contributing to the Go SDK
 
-If you want to contribute to the Go SDK, please run the test suite and submit patches to the Gerrit git repostory for review. For general guidelines, please refer to the Fabric project's [contribution page](http://hyperledger-fabric.readthedocs.io/en/latest/CONTRIBUTING.html).
+If you want to contribute to the Go SDK, please run the test suite and submit patches for review. For general guidelines, please refer to the Fabric project's [contribution page](http://hyperledger-fabric.readthedocs.io/en/latest/CONTRIBUTING.html).
 
 You need:
 
@@ -111,11 +105,6 @@ You need:
 Notes:
 
 - Dependencies are handled using [Go modules](https://github.com/golang/go/wiki/Modules).
-
-
-### Gerrit Git repository
-
-To contribute patches, you will need to clone (or add a remote) from [Gerrit](https://gerrit.hyperledger.org/r/#/admin/projects/fabric-sdk-go) with authentication.
 
 ### Running a portion of the test suite
 
