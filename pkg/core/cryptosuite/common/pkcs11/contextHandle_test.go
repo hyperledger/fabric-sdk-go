@@ -603,6 +603,70 @@ func TestGetSessionResilience(t *testing.T) {
 
 }
 
+func TestContextHandleInRecovery(t *testing.T) {
+	handle, err := LoadPKCS11ContextHandle(lib, label, pin)
+	assert.NoError(t, err)
+	assert.NotNil(t, handle)
+	assert.NotNil(t, handle.ctx)
+
+	// make sure session pool is empty
+	for len(handle.sessions) > 0 {
+		<-handle.sessions
+	}
+
+	// get session
+	session := handle.GetSession()
+	err = isEmpty(session)
+	assert.NoError(t, err)
+
+	// tamper pin, so that get session should fail
+	libBackup := handle.lib
+	slotBackup := handle.slot
+
+	resetLib := func() {
+		handle.lock.Lock()
+		defer handle.lock.Unlock()
+		handle.lib = libBackup
+		handle.slot = slotBackup
+	}
+	defer resetLib()
+
+	// recreate failure scenario
+	handle.lib = handle.lib + "_invalid"
+	handle.slot = 9999
+
+	// get session, should fail
+	session = handle.GetSession()
+	err = isEmpty(session)
+	assert.Error(t, err)
+
+	assert.True(t, handle.recovery)
+
+	verifyRecoveryError := func(err error) {
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "pkcs11 ctx is under recovery, try again later")
+	}
+
+	_, err = handle.OpenSession()
+	verifyRecoveryError(err)
+
+	err = handle.Login(4)
+	verifyRecoveryError(err)
+
+	lenBefore := len(handle.sessions)
+	handle.ReturnSession(4)
+	assert.Equal(t, lenBefore, len(handle.sessions))
+
+	_, err = handle.GetAttributeValue(4, 4, nil)
+	verifyRecoveryError(err)
+
+	err = handle.SetAttributeValue(4, 4, nil)
+	verifyRecoveryError(err)
+
+	_, _, err = handle.GenerateKeyPair(4, nil, nil, nil)
+	verifyRecoveryError(err)
+}
+
 func TestMain(m *testing.M) {
 
 	possibilities := strings.Split(allLibs, ",")
