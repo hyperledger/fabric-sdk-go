@@ -32,7 +32,7 @@ var logger = logging.NewLogger("fabsdk/fab")
 
 //overrideRetryHandler is private and used for unit-tests to test query retry behaviors
 var overrideRetryHandler retry.Handler
-var versionCapabilityPattern = regexp.MustCompile(`^V(\d+)_(\d+)$`)
+var versionCapabilityPattern = regexp.MustCompile(`^V(\d+)_(\d+)(_(\d+))?$`)
 
 // Opts contains options for retrieving channel configuration
 type Opts struct {
