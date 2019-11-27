@@ -41,7 +41,7 @@ type chaincodeDeployRequest struct {
 	Version    string
 	Args       [][]byte
 	Policy     *common.SignaturePolicyEnvelope
-	CollConfig []*common.CollectionConfig
+	CollConfig []*pb.CollectionConfig
 }
 
 // createChaincodeDeployProposal creates an instantiate or upgrade chaincode proposal.
@@ -70,7 +70,7 @@ func createChaincodeDeployProposal(txh fab.TransactionHeader, deploy chaincodePr
 	args = append(args, []byte(vscc))
 
 	if chaincode.CollConfig != nil {
-		collConfigBytes, err := proto.Marshal(&common.CollectionConfigPackage{Config: chaincode.CollConfig})
+		collConfigBytes, err := proto.Marshal(&pb.CollectionConfigPackage{Config: chaincode.CollConfig})
 		if err != nil {
 			return nil, errors.WithMessage(err, "marshal of collection policy failed")
 		}

@@ -209,11 +209,11 @@ func createChaincodeQueryResponse(tpr *fab.TransactionProposalResponse) (*pb.Cha
 }
 
 // QueryCollectionsConfig queries the collections config for a chaincode on this channel.
-func (c *Ledger) QueryCollectionsConfig(reqCtx reqContext.Context, chaincodeName string, targets []fab.ProposalProcessor, verifier ResponseVerifier) ([]*common.CollectionConfigPackage, error) {
+func (c *Ledger) QueryCollectionsConfig(reqCtx reqContext.Context, chaincodeName string, targets []fab.ProposalProcessor, verifier ResponseVerifier) ([]*pb.CollectionConfigPackage, error) {
 	cir := createCollectionsConfigInvokeRequest(chaincodeName)
 	tprs, errs := queryChaincode(reqCtx, c.chName, cir, targets, verifier)
 
-	responses := []*common.CollectionConfigPackage{}
+	responses := []*pb.CollectionConfigPackage{}
 	for _, tpr := range tprs {
 		r, err := createCollectionsConfigQueryResponse(tpr)
 		if err != nil {
@@ -225,8 +225,8 @@ func (c *Ledger) QueryCollectionsConfig(reqCtx reqContext.Context, chaincodeName
 	return responses, errs
 }
 
-func createCollectionsConfigQueryResponse(tpr *fab.TransactionProposalResponse) (*common.CollectionConfigPackage, error) {
-	response := common.CollectionConfigPackage{}
+func createCollectionsConfigQueryResponse(tpr *fab.TransactionProposalResponse) (*pb.CollectionConfigPackage, error) {
+	response := pb.CollectionConfigPackage{}
 	err := proto.Unmarshal(tpr.ProposalResponse.GetResponse().Payload, &response)
 	if err != nil {
 		return nil, errors.Wrap(err, "unmarshal of transaction proposal response failed")

@@ -19,7 +19,7 @@ require (
 	github.com/google/certificate-transparency-go v0.0.0-20180222191210-5ab67e519c93 // indirect
 	github.com/hashicorp/hcl v0.0.0-20180404174102-ef8a98b0bbce // indirect
 	github.com/hyperledger/fabric-lib-go v1.0.0
-	github.com/hyperledger/fabric-protos-go v0.0.0-20190821180310-6b6ac9042dfd
+	github.com/hyperledger/fabric-protos-go v0.0.0-20191121202242-f5500d5e3e85
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/magiconair/properties v1.7.6 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect

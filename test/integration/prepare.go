@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"time"
 
-	cb "github.com/hyperledger/fabric-protos-go/common"
+	pb "github.com/hyperledger/fabric-protos-go/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
@@ -139,19 +139,19 @@ func InstallExamplePvtChaincode(orgs []*OrgContext, ccID string) error {
 }
 
 // InstantiateExampleChaincode instantiates the example CC on the given channel
-func InstantiateExampleChaincode(orgs []*OrgContext, channelID, ccID, ccPolicy string, collConfigs ...*cb.CollectionConfig) error {
+func InstantiateExampleChaincode(orgs []*OrgContext, channelID, ccID, ccPolicy string, collConfigs ...*pb.CollectionConfig) error {
 	_, err := InstantiateChaincode(orgs[0].ResMgmt, channelID, ccID, exampleCCPath, exampleCCVersion, ccPolicy, ExampleCCInitArgs(), collConfigs...)
 	return err
 }
 
 // InstantiateExamplePvtChaincode instantiates the example pvt CC on the given channel
-func InstantiateExamplePvtChaincode(orgs []*OrgContext, channelID, ccID, ccPolicy string, collConfigs ...*cb.CollectionConfig) error {
+func InstantiateExamplePvtChaincode(orgs []*OrgContext, channelID, ccID, ccPolicy string, collConfigs ...*pb.CollectionConfig) error {
 	_, err := InstantiateChaincode(orgs[0].ResMgmt, channelID, ccID, examplePvtCCPath, examplePvtCCVersion, ccPolicy, ExampleCCInitArgs(), collConfigs...)
 	return err
 }
 
 // UpgradeExamplePvtChaincode upgrades the instantiated example pvt CC on the given channel
-func UpgradeExamplePvtChaincode(orgs []*OrgContext, channelID, ccID, ccPolicy string, collConfigs ...*cb.CollectionConfig) error {
+func UpgradeExamplePvtChaincode(orgs []*OrgContext, channelID, ccID, ccPolicy string, collConfigs ...*pb.CollectionConfig) error {
 	// first install the CC with the upgraded cc version
 	ccPkg, err := packager.NewCCPackage(examplePvtCCPath, GetDeployPath())
 	if err != nil {
