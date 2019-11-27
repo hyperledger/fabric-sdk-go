@@ -10,11 +10,11 @@ import (
 	"reflect"
 	"testing"
 
+	pb "github.com/hyperledger/fabric-protos-go/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
-	cb "github.com/hyperledger/fabric-protos-go/common"
 	"github.com/stretchr/testify/require"
 )
 
@@ -58,14 +58,14 @@ func TestQueryCollectionsConfig(t *testing.T) {
 
 	conf := resp.Config[0]
 	switch cconf := conf.Payload.(type) {
-	case *cb.CollectionConfig_StaticCollectionConfig:
+	case *pb.CollectionConfig_StaticCollectionConfig:
 		checkStaticCollectionConfig(t, cconf.StaticCollectionConfig)
 	default:
 		t.Fatalf("The CollectionConfig.Payload's type is incorrect, expected `CollectionConfig_StaticCollectionConfig`, got %+v", reflect.TypeOf(conf.Payload))
 	}
 }
 
-func checkStaticCollectionConfig(t *testing.T, collConf *cb.StaticCollectionConfig) {
+func checkStaticCollectionConfig(t *testing.T, collConf *pb.StaticCollectionConfig) {
 	if collConf.Name != collCfgName {
 		t.Fatalf("CollectionConfig'name is incorrect, expected collection1, got %s", collConf.Name)
 	}
@@ -83,19 +83,19 @@ func checkStaticCollectionConfig(t *testing.T, collConf *cb.StaticCollectionConf
 	}
 }
 
-func newCollectionConfig(colName, policy string, reqPeerCount, maxPeerCount int32, blockToLive uint64) (*cb.CollectionConfig, error) {
+func newCollectionConfig(colName, policy string, reqPeerCount, maxPeerCount int32, blockToLive uint64) (*pb.CollectionConfig, error) {
 	p, err := cauthdsl.FromString(policy)
 	if err != nil {
 		return nil, err
 	}
-	cpc := &cb.CollectionPolicyConfig{
-		Payload: &cb.CollectionPolicyConfig_SignaturePolicy{
+	cpc := &pb.CollectionPolicyConfig{
+		Payload: &pb.CollectionPolicyConfig_SignaturePolicy{
 			SignaturePolicy: p,
 		},
 	}
-	return &cb.CollectionConfig{
-		Payload: &cb.CollectionConfig_StaticCollectionConfig{
-			StaticCollectionConfig: &cb.StaticCollectionConfig{
+	return &pb.CollectionConfig{
+		Payload: &pb.CollectionConfig_StaticCollectionConfig{
+			StaticCollectionConfig: &pb.StaticCollectionConfig{
 				Name:              colName,
 				MemberOrgsPolicy:  cpc,
 				RequiredPeerCount: reqPeerCount,

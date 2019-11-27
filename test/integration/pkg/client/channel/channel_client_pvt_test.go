@@ -16,6 +16,7 @@ import (
 	"testing"
 	"time"
 
+	pb "github.com/hyperledger/fabric-protos-go/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 
@@ -27,7 +28,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
-	cb "github.com/hyperledger/fabric-protos-go/common"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
@@ -345,19 +345,19 @@ func TestChannelClientRollsBackPvtDataIfMvccReadConflict(t *testing.T) {
 	assert.Truef(t, actual == expected, "Private data not rolled back during MVCC_READ_CONFLICT")
 }
 
-func newCollectionConfig(colName, policy string, reqPeerCount, maxPeerCount int32, blockToLive uint64) (*cb.CollectionConfig, error) {
+func newCollectionConfig(colName, policy string, reqPeerCount, maxPeerCount int32, blockToLive uint64) (*pb.CollectionConfig, error) {
 	p, err := cauthdsl.FromString(policy)
 	if err != nil {
 		return nil, err
 	}
-	cpc := &cb.CollectionPolicyConfig{
-		Payload: &cb.CollectionPolicyConfig_SignaturePolicy{
+	cpc := &pb.CollectionPolicyConfig{
+		Payload: &pb.CollectionPolicyConfig_SignaturePolicy{
 			SignaturePolicy: p,
 		},
 	}
-	return &cb.CollectionConfig{
-		Payload: &cb.CollectionConfig_StaticCollectionConfig{
-			StaticCollectionConfig: &cb.StaticCollectionConfig{
+	return &pb.CollectionConfig{
+		Payload: &pb.CollectionConfig_StaticCollectionConfig{
+			StaticCollectionConfig: &pb.StaticCollectionConfig{
 				Name:              colName,
 				MemberOrgsPolicy:  cpc,
 				RequiredPeerCount: reqPeerCount,

@@ -74,7 +74,7 @@ type InstantiateCCRequest struct {
 	Version    string
 	Args       [][]byte
 	Policy     *common.SignaturePolicyEnvelope
-	CollConfig []*common.CollectionConfig
+	CollConfig []*pb.CollectionConfig
 }
 
 // InstantiateCCResponse contains response parameters for instantiate chaincode
@@ -89,7 +89,7 @@ type UpgradeCCRequest struct {
 	Version    string
 	Args       [][]byte
 	Policy     *common.SignaturePolicyEnvelope
-	CollConfig []*common.CollectionConfig
+	CollConfig []*pb.CollectionConfig
 }
 
 // UpgradeCCResponse contains response parameters for upgrade chaincode
@@ -618,7 +618,7 @@ func (rc *Client) QueryInstantiatedChaincodes(channelID string, options ...Reque
 //
 // Returns:
 // list of collections config
-func (rc *Client) QueryCollectionsConfig(channelID string, chaincodeName string, options ...RequestOption) (*common.CollectionConfigPackage, error) {
+func (rc *Client) QueryCollectionsConfig(channelID string, chaincodeName string, options ...RequestOption) (*pb.CollectionConfigPackage, error) {
 	opts, err := rc.prepareRequestOpts(options...)
 	if err != nil {
 		return nil, err
