@@ -563,8 +563,11 @@ endif
 .PHONY: thirdparty-pin
 thirdparty-pin:
 	@echo "Pinning third party packages ..."
-	@UPSTREAM_COMMIT=$(THIRDPARTY_FABRIC_COMMIT) UPSTREAM_BRANCH=$(THIRDPARTY_FABRIC_BRANCH) scripts/third_party_pins/fabric/apply_upstream.sh
-	@UPSTREAM_COMMIT=$(THIRDPARTY_FABRIC_CA_COMMIT) UPSTREAM_BRANCH=$(THIRDPARTY_FABRIC_CA_BRANCH) scripts/third_party_pins/fabric-ca/apply_upstream.sh
+	@THIRDPARTY_FABRIC_COMMIT=$(THIRDPARTY_FABRIC_COMMIT) \
+	THIRDPARTY_FABRIC_BRANCH=$(THIRDPARTY_FABRIC_BRANCH) \
+	THIRDPARTY_FABRIC_CA_COMMIT=$(THIRDPARTY_FABRIC_CA_COMMIT) \
+	THIRDPARTY_FABRIC_CA_BRANCH=$(THIRDPARTY_FABRIC_CA_BRANCH) \
+	scripts/third_party_pins/apply_thirdparty_pins.sh
 
 .PHONY: populate
 populate: populate-vendor populate-fixtures-stable
