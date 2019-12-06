@@ -13,7 +13,7 @@ package policies
 import (
 	"strings"
 
-	cb "github.com/hyperledger/fabric-protos-go/common"
+	cb "github.com/hyperledger/fabric/protos/common"
 	"github.com/pkg/errors"
 )
 

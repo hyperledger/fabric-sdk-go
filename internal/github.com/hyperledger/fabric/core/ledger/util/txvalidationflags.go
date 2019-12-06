@@ -11,7 +11,7 @@ Please review third_party pinning scripts and patches for more details.
 package util
 
 import (
-	"github.com/hyperledger/fabric-protos-go/peer"
+	"github.com/hyperledger/fabric/protos/peer"
 )
 
 // TxValidationFlags is array of transaction validation codes. It is used when committer validates block.
@@ -23,6 +23,12 @@ func NewTxValidationFlags(size int) TxValidationFlags {
 	return newTxValidationFlagsSetValue(size, peer.TxValidationCode_NOT_VALIDATED)
 }
 
+// NewTxValidationFlagsSetValue Creates new object-array of validation codes with target size
+// and the supplied value
+func NewTxValidationFlagsSetValue(size int, value peer.TxValidationCode) TxValidationFlags {
+	return newTxValidationFlagsSetValue(size, value)
+}
+
 func newTxValidationFlagsSetValue(size int, value peer.TxValidationCode) TxValidationFlags {
 	inst := make(TxValidationFlags, size)
 	for i := range inst {
@@ -30,6 +36,11 @@ func newTxValidationFlagsSetValue(size int, value peer.TxValidationCode) TxValid
 	}
 
 	return inst
+}
+
+// SetFlag assigns validation code to specified transaction
+func (obj TxValidationFlags) SetFlag(txIndex int, flag peer.TxValidationCode) {
+	obj[txIndex] = uint8(flag)
 }
 
 // Flag returns validation code at specified transaction
