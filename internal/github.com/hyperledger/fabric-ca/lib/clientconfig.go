@@ -21,16 +21,10 @@ Please review third_party pinning scripts and patches for more details.
 package lib
 
 import (
-	"fmt"
-	"net/url"
-	"path"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 
-	"github.com/cloudflare/cfssl/log"
-	"github.com/hyperledger/fabric-ca/api"
-	"github.com/hyperledger/fabric-ca/lib/tls"
-	"github.com/hyperledger/fabric-ca/util"
-	"github.com/hyperledger/fabric/bccsp/factory"
-	"github.com/pkg/errors"
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/api"
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/lib/tls"
 )
 
 // ClientConfig is the fabric-ca client's config
@@ -43,68 +37,10 @@ type ClientConfig struct {
 	ID         api.RegistrationRequest
 	Revoke     api.RevocationRequest
 	CAInfo     api.GetCAInfoRequest
-	CAName     string               `help:"Name of CA"`
-	CSP        *factory.FactoryOpts `mapstructure:"bccsp" hide:"true"`
-	Debug      bool                 `opt:"d" help:"Enable debug level logging" hide:"true"`
-	LogLevel   string               `help:"Set logging level (info, warning, debug, error, fatal, critical)"`
-}
+	CAName     string           `help:"Name of CA"`
+	CSP        core.CryptoSuite `mapstructure:"bccsp" hide:"true"`
+	ServerName string           `help:"CA server name to be used in case of host name override"`
 
-// Enroll a client given the server's URL and the client's home directory.
-// The URL may be of the form: http://user:pass@host:port where user and pass
-// are the enrollment ID and secret, respectively.
-func (c *ClientConfig) Enroll(rawurl, home string) (*EnrollmentResponse, error) {
-	purl, err := url.Parse(rawurl)
-	if err != nil {
-		return nil, err
-	}
-	if purl.User != nil {
-		name := purl.User.Username()
-		secret, _ := purl.User.Password()
-		c.Enrollment.Name = name
-		c.Enrollment.Secret = secret
-		purl.User = nil
-	}
-	if c.Enrollment.Name == "" {
-		expecting := fmt.Sprintf(
-			"%s://<enrollmentID>:<secret>@%s",
-			purl.Scheme, purl.Host)
-		return nil, errors.Errorf(
-			"The URL of the fabric CA server is missing the enrollment ID and secret;"+
-				" found '%s' but expecting '%s'", rawurl, expecting)
-	}
-	c.Enrollment.CAName = c.CAName
-	c.URL = purl.String()
-	c.TLS.Enabled = purl.Scheme == "https"
-	c.Enrollment.CSR = &c.CSR
-	client := &Client{HomeDir: home, Config: c}
-	return client.Enroll(&c.Enrollment)
-}
-
-// GenCSR generates a certificate signing request and writes the CSR to a file.
-func (c *ClientConfig) GenCSR(home string) error {
-
-	client := &Client{HomeDir: home, Config: c}
-	// Generate the CSR
-
-	err := client.Init()
-	if err != nil {
-		return err
-	}
-
-	if c.CSR.CN == "" {
-		return errors.Errorf("CSR common name not specified; use '--csr.cn' flag")
-	}
-
-	csrPEM, _, err := client.GenCSR(&c.CSR, c.CSR.CN)
-	if err != nil {
-		return err
-	}
-
-	csrFile := path.Join(client.Config.MSPDir, "signcerts", fmt.Sprintf("%s.csr", c.CSR.CN))
-	err = util.WriteFile(csrFile, csrPEM, 0644)
-	if err != nil {
-		return errors.WithMessage(err, "Failed to store the CSR")
-	}
-	log.Infof("Stored CSR at %s", csrFile)
-	return nil
+	Debug    bool   `opt:"d" help:"Enable debug level logging" hide:"true"`
+	LogLevel string `help:"Set logging level (info, warning, debug, error, fatal, critical)"`
 }

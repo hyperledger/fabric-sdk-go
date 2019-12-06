@@ -7,7 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 Notice: This file has been modified for Hyperledger Fabric SDK Go usage.
 Please review third_party pinning scripts and patches for more details.
 */
-package factory
+package plugin
 
 import (
 	"errors"
@@ -15,7 +15,7 @@ import (
 	"os"
 	"plugin"
 
-	"github.com/hyperledger/fabric/bccsp"
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp"
 )
 
 const (
@@ -40,26 +40,26 @@ func (f *PluginFactory) Name() string {
 }
 
 // Get returns an instance of BCCSP using Opts.
-func (f *PluginFactory) Get(config *FactoryOpts) (bccsp.BCCSP, error) {
+func (f *PluginFactory) Get(pluginOpts *PluginOpts) (bccsp.BCCSP, error) {
 	// check for valid config
-	if config == nil || config.PluginOpts == nil {
+	if pluginOpts == nil {
 		return nil, errors.New("Invalid config. It must not be nil.")
 	}
 
 	// Library is required property
-	if config.PluginOpts.Library == "" {
+	if pluginOpts.Library == "" {
 		return nil, errors.New("Invalid config: missing property 'Library'")
 	}
 
 	// make sure the library exists
-	if _, err := os.Stat(config.PluginOpts.Library); err != nil {
-		return nil, fmt.Errorf("Could not find library '%s' [%s]", config.PluginOpts.Library, err)
+	if _, err := os.Stat(pluginOpts.Library); err != nil {
+		return nil, fmt.Errorf("Could not find library '%s' [%s]", pluginOpts.Library, err)
 	}
 
 	// attempt to load the library as a plugin
-	plug, err := plugin.Open(config.PluginOpts.Library)
+	plug, err := plugin.Open(pluginOpts.Library)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to load plugin '%s' [%s]", config.PluginOpts.Library, err)
+		return nil, fmt.Errorf("Failed to load plugin '%s' [%s]", pluginOpts.Library, err)
 	}
 
 	// lookup the required symbol 'New'
@@ -74,5 +74,5 @@ func (f *PluginFactory) Get(config *FactoryOpts) (bccsp.BCCSP, error) {
 		return nil, fmt.Errorf("Plugin does not implement the required function signature for 'New'")
 	}
 
-	return symNew(config.PluginOpts.Config)
+	return symNew(pluginOpts.Config)
 }
