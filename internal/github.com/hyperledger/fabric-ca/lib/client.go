@@ -24,18 +24,21 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
-
 	cfsslapi "github.com/cloudflare/cfssl/api"
 	"github.com/cloudflare/cfssl/csr"
-	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/api"
-	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/lib/client/credential"
-	x509cred "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/lib/client/credential/x509"
-	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/lib/common"
-	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/lib/streamer"
-	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/lib/tls"
-	log "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/sdkpatch/logbridge"
-	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/util"
+	"github.com/cloudflare/cfssl/log"
+	proto "github.com/golang/protobuf/proto"
+	fp256bn "github.com/hyperledger/fabric-amcl/amcl/FP256BN"
+	"github.com/hyperledger/fabric-ca/api"
+	"github.com/hyperledger/fabric-ca/lib/client/credential"
+	idemixcred "github.com/hyperledger/fabric-ca/lib/client/credential/idemix"
+	x509cred "github.com/hyperledger/fabric-ca/lib/client/credential/x509"
+	"github.com/hyperledger/fabric-ca/lib/common"
+	"github.com/hyperledger/fabric-ca/lib/streamer"
+	"github.com/hyperledger/fabric-ca/lib/tls"
+	"github.com/hyperledger/fabric-ca/util"
+	"github.com/hyperledger/fabric/bccsp"
+	"github.com/hyperledger/fabric/idemix"
 	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
 )
@@ -51,9 +54,11 @@ type Client struct {
 	// File and directory paths
 	keyFile, certFile, idemixCredFile, idemixCredsDir, ipkFile, caCertsDir string
 	// The crypto service provider (BCCSP)
-	csp core.CryptoSuite
+	csp bccsp.BCCSP
 	// HTTP client associated with this Fabric CA client
 	httpClient *http.Client
+	// Public key of Idemix issuer
+	issuerPublicKey *idemix.IssuerPublicKey
 }
 
 // GetCAInfoResponse is the response from the GetCAInfo call
@@ -124,9 +129,13 @@ func (c *Client) Init() error {
 		}
 		c.idemixCredFile = path.Join(c.idemixCredsDir, "SignerConfig")
 
-		c.csp = cfg.CSP
+		// Initialize BCCSP (the crypto layer)
+		c.csp, err = util.InitBCCSP(&cfg.CSP, mspDir, c.HomeDir)
+		if err != nil {
+			return err
+		}
 		// Create http.Client object and associate it with this client
-		err = c.initHTTPClient(cfg.ServerName)
+		err = c.initHTTPClient()
 		if err != nil {
 			return err
 		}
@@ -137,10 +146,15 @@ func (c *Client) Init() error {
 	return nil
 }
 
-func (c *Client) initHTTPClient(serverName string) error {
+func (c *Client) initHTTPClient() error {
 	tr := new(http.Transport)
 	if c.Config.TLS.Enabled {
 		log.Info("TLS Enabled")
+
+		err := tls.AbsTLSClient(&c.Config.TLS, c.HomeDir)
+		if err != nil {
+			return err
+		}
 
 		tlsConfig, err2 := tls.GetClientTLSConfig(&c.Config.TLS, c.csp)
 		if err2 != nil {
@@ -148,9 +162,6 @@ func (c *Client) initHTTPClient(serverName string) error {
 		}
 		// set the default ciphers
 		tlsConfig.CipherSuites = tls.DefaultCipherSuites
-		//set the host name override
-		tlsConfig.ServerName = serverName
-
 		tr.TLSClientConfig = tlsConfig
 	}
 	c.httpClient = &http.Client{Transport: tr}
@@ -185,7 +196,7 @@ func (c *Client) GetCAInfo(req *api.GetCAInfoRequest) (*GetCAInfoResponse, error
 }
 
 // GenCSR generates a CSR (Certificate Signing Request)
-func (c *Client) GenCSR(req *api.CSRInfo, id string) ([]byte, core.Key, error) {
+func (c *Client) GenCSR(req *api.CSRInfo, id string) ([]byte, bccsp.Key, error) {
 	log.Debugf("GenCSR %+v", req)
 
 	err := c.Init()
@@ -304,15 +315,112 @@ func (c *Client) handleX509Enroll(req *api.EnrollmentRequest) (*EnrollmentRespon
 // 3. Sends a request with the CredentialRequest object in the body to the
 //    /api/v1/idemix/credentail REST endpoint to get a credential
 func (c *Client) handleIdemixEnroll(req *api.EnrollmentRequest) (*EnrollmentResponse, error) {
+	log.Debugf("Getting nonce from CA %s", req.CAName)
+	reqNet := &api.IdemixEnrollmentRequestNet{
+		CAName: req.CAName,
+	}
+	var identity *Identity
+
+	// Get nonce from the CA
+	body, err := util.Marshal(reqNet, "NonceRequest")
+	if err != nil {
+		return nil, errors.WithMessage(err, "Failed to marshal nonce request")
+	}
+	post, err := c.newPost("idemix/credential", body)
+	if err != nil {
+		return nil, errors.WithMessage(err, "Failed to create HTTP request for getting a nonce")
+	}
+	err = c.addAuthHeaderForIdemixEnroll(req, identity, body, post)
+	if err != nil {
+		return nil, errors.WithMessage(err,
+			"Either username/password or X509 enrollment certificate is required to request an Idemix credential")
+	}
+
+	// Send the request and process the response
+	var result common.IdemixEnrollmentResponseNet
+	err = c.SendReq(post, &result)
+	if err != nil {
+		return nil, err
+	}
+	nonceBytes, err := util.B64Decode(result.Nonce)
+
+	if err != nil {
+		return nil, errors.WithMessage(err,
+			fmt.Sprintf("Failed to decode nonce that was returned by CA %s", req.CAName))
+	}
+	nonce := fp256bn.FromBytes(nonceBytes)
+	log.Infof("Successfully got nonce from CA %s", req.CAName)
+
+	ipkBytes := []byte{}
+	ipkBytes, err = util.B64Decode(result.CAInfo.IssuerPublicKey)
+	if err != nil {
+		return nil, errors.WithMessage(err, fmt.Sprintf("Failed to decode issuer public key that was returned by CA %s", req.CAName))
+	}
+	// Create credential request
+	credReq, sk, err := c.newIdemixCredentialRequest(nonce, ipkBytes)
+	if err != nil {
+		return nil, errors.WithMessage(err, "Failed to create an Idemix credential request")
+	}
+	reqNet.CredRequest = credReq
+	log.Info("Successfully created an Idemix credential request")
+
+	body, err = util.Marshal(reqNet, "CredentialRequest")
+	if err != nil {
+		return nil, errors.WithMessage(err, "Failed to marshal Idemix credential request")
+	}
+
+	// Send the cred request to the CA
+	post, err = c.newPost("idemix/credential", body)
+	if err != nil {
+		return nil, errors.WithMessage(err, "Failed to create HTTP request for getting Idemix credential")
+	}
+	err = c.addAuthHeaderForIdemixEnroll(req, identity, body, post)
+	if err != nil {
+		return nil, errors.WithMessage(err,
+			"Either username/password or X509 enrollment certificate is required to request idemix credential")
+	}
+	err = c.SendReq(post, &result)
+	if err != nil {
+		return nil, err
+	}
 	log.Infof("Successfully received Idemix credential from CA %s", req.CAName)
-	return nil, errors.New("idemix enroll not supported")
+	return c.newIdemixEnrollmentResponse(identity, &result, sk, req.Name)
+}
+
+// addAuthHeaderForIdemixEnroll adds authenticate header to the specified HTTP request
+// It adds basic authentication header if userName and password are specified in the
+// specified EnrollmentRequest object. Else, checks if a X509 credential in the client's
+// MSP directory, if so, loads the identity, creates an oauth token based on the loaded
+// identity's X509 credential, and adds the token to the HTTP request. The loaded
+// identity is passed back to the caller.
+func (c *Client) addAuthHeaderForIdemixEnroll(req *api.EnrollmentRequest, id *Identity,
+	body []byte, post *http.Request) error {
+	if req.Name != "" && req.Secret != "" {
+		post.SetBasicAuth(req.Name, req.Secret)
+		return nil
+	}
+	if id == nil {
+		err := c.checkX509Enrollment()
+		if err != nil {
+			return err
+		}
+		id, err = c.LoadMyIdentity()
+		if err != nil {
+			return err
+		}
+	}
+	err := id.addTokenAuthHdr(post, body)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // newEnrollmentResponse creates a client enrollment response from a network response
 // @param result The result from server
 // @param id Name of identity being enrolled or reenrolled
 // @param key The private key which was used to sign the request
-func (c *Client) newEnrollmentResponse(result *common.EnrollmentResponseNet, id string, key core.Key) (*EnrollmentResponse, error) {
+func (c *Client) newEnrollmentResponse(result *common.EnrollmentResponseNet, id string, key bccsp.Key) (*EnrollmentResponse, error) {
 	log.Debugf("newEnrollmentResponse %s", id)
 	certByte, err := util.B64Decode(result.Cert)
 	if err != nil {
@@ -322,7 +430,7 @@ func (c *Client) newEnrollmentResponse(result *common.EnrollmentResponseNet, id 
 	if err != nil {
 		return nil, err
 	}
-	x509Cred := x509cred.NewCredential(key, certByte, c)
+	x509Cred := x509cred.NewCredential(c.certFile, c.keyFile, c)
 	err = x509Cred.SetVal(signer)
 	if err != nil {
 		return nil, err
@@ -334,6 +442,57 @@ func (c *Client) newEnrollmentResponse(result *common.EnrollmentResponseNet, id 
 	if err != nil {
 		return nil, err
 	}
+	return resp, nil
+}
+
+// newIdemixEnrollmentResponse creates a client idemix enrollment response from a network response
+func (c *Client) newIdemixEnrollmentResponse(identity *Identity, result *common.IdemixEnrollmentResponseNet,
+	sk *fp256bn.BIG, id string) (*EnrollmentResponse, error) {
+	log.Debugf("newIdemixEnrollmentResponse %s", id)
+	credBytes, err := util.B64Decode(result.Credential)
+	if err != nil {
+		return nil, errors.WithMessage(err, "Invalid response format from server")
+	}
+
+	criBytes, err := util.B64Decode(result.CRI)
+	if err != nil {
+		return nil, errors.WithMessage(err, "Invalid response format from server")
+	}
+
+	// Create SignerConfig object with credential bytes from the response
+	// and secret key
+	role, _ := result.Attrs["Role"].(int)
+	ou, _ := result.Attrs["OU"].(string)
+	enrollmentID, _ := result.Attrs["EnrollmentID"].(string)
+	signerConfig := &idemixcred.SignerConfig{
+		Cred:                            credBytes,
+		Sk:                              idemix.BigToBytes(sk),
+		Role:                            role,
+		OrganizationalUnitIdentifier:    ou,
+		EnrollmentID:                    enrollmentID,
+		CredentialRevocationInformation: criBytes,
+	}
+
+	// Create IdemixCredential object
+	cred := idemixcred.NewCredential(c.idemixCredFile, c)
+	err = cred.SetVal(signerConfig)
+	if err != nil {
+		return nil, err
+	}
+	if identity == nil {
+		identity = NewIdentity(c, id, []credential.Credential{cred})
+	} else {
+		identity.creds = append(identity.creds, cred)
+	}
+
+	resp := &EnrollmentResponse{
+		Identity: identity,
+	}
+	err = c.net2LocalCAInfo(&result.CAInfo, &resp.CAInfo)
+	if err != nil {
+		return nil, err
+	}
+	log.Infof("Successfully processed response from the CA")
 	return resp, nil
 }
 
@@ -362,6 +521,83 @@ func (c *Client) newCertificateRequest(req *api.CSRInfo) *csr.CertificateRequest
 		cr.SerialNumber = req.SerialNumber
 	}
 	return &cr
+}
+
+// newIdemixCredentialRequest returns CredentialRequest object, a secret key, and a random number used in
+// the creation of credential request.
+func (c *Client) newIdemixCredentialRequest(nonce *fp256bn.BIG, ipkBytes []byte) (*idemix.CredRequest, *fp256bn.BIG, error) {
+	rng, err := idemix.GetRand()
+	if err != nil {
+		return nil, nil, err
+	}
+	sk := idemix.RandModOrder(rng)
+
+	issuerPubKey, err := c.getIssuerPubKey(ipkBytes)
+	if err != nil {
+		return nil, nil, err
+	}
+	return idemix.NewCredRequest(sk, idemix.BigToBytes(nonce), issuerPubKey, rng), sk, nil
+}
+
+func (c *Client) getIssuerPubKey(ipkBytes []byte) (*idemix.IssuerPublicKey, error) {
+	var err error
+	if ipkBytes == nil || len(ipkBytes) == 0 {
+		ipkBytes, err = ioutil.ReadFile(c.ipkFile)
+		if err != nil {
+			return nil, errors.Wrapf(err, "Error reading CA's Idemix public key at '%s'", c.ipkFile)
+		}
+	}
+	pubKey := &idemix.IssuerPublicKey{}
+	err = proto.Unmarshal(ipkBytes, pubKey)
+	if err != nil {
+		return nil, err
+	}
+	c.issuerPublicKey = pubKey
+	return c.issuerPublicKey, nil
+}
+
+// LoadMyIdentity loads the client's identity from disk
+func (c *Client) LoadMyIdentity() (*Identity, error) {
+	err := c.Init()
+	if err != nil {
+		return nil, err
+	}
+	return c.LoadIdentity(c.keyFile, c.certFile, c.idemixCredFile)
+}
+
+// LoadIdentity loads an identity from disk
+func (c *Client) LoadIdentity(keyFile, certFile, idemixCredFile string) (*Identity, error) {
+	log.Debugf("Loading identity: keyFile=%s, certFile=%s", keyFile, certFile)
+	err := c.Init()
+	if err != nil {
+		return nil, err
+	}
+
+	var creds []credential.Credential
+	var x509Found, idemixFound bool
+	x509Cred := x509cred.NewCredential(certFile, keyFile, c)
+	err = x509Cred.Load()
+	if err == nil {
+		x509Found = true
+		creds = append(creds, x509Cred)
+	} else {
+		log.Debugf("No X509 credential found at %s, %s", keyFile, certFile)
+	}
+
+	idemixCred := idemixcred.NewCredential(idemixCredFile, c)
+	err = idemixCred.Load()
+	if err == nil {
+		idemixFound = true
+		creds = append(creds, idemixCred)
+	} else {
+		log.Debugf("No Idemix credential found at %s", idemixCredFile)
+	}
+
+	if !x509Found && !idemixFound {
+		return nil, errors.New("Identity does not posses any enrollment credentials")
+	}
+
+	return c.NewIdentity(creds)
 }
 
 // NewIdentity creates a new identity
@@ -395,9 +631,37 @@ func (c *Client) NewX509Identity(name string, creds []credential.Credential) x50
 	return NewIdentity(c, name, creds)
 }
 
+// LoadCSRInfo reads CSR (Certificate Signing Request) from a file
+// @parameter path The path to the file contains CSR info in JSON format
+func (c *Client) LoadCSRInfo(path string) (*api.CSRInfo, error) {
+	csrJSON, err := ioutil.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	var csrInfo api.CSRInfo
+	err = util.Unmarshal(csrJSON, &csrInfo, "LoadCSRInfo")
+	if err != nil {
+		return nil, err
+	}
+	return &csrInfo, nil
+}
+
+// GetCertFilePath returns the path to the certificate file for this client
+func (c *Client) GetCertFilePath() string {
+	return c.certFile
+}
+
 // GetCSP returns BCCSP instance associated with this client
-func (c *Client) GetCSP() core.CryptoSuite {
+func (c *Client) GetCSP() bccsp.BCCSP {
 	return c.csp
+}
+
+// GetIssuerPubKey returns issuer public key associated with this client
+func (c *Client) GetIssuerPubKey() (*idemix.IssuerPublicKey, error) {
+	if c.issuerPublicKey == nil {
+		return c.getIssuerPubKey(nil)
+	}
+	return c.issuerPublicKey, nil
 }
 
 // newGet create a new GET request
@@ -555,6 +819,28 @@ func (c *Client) getURL(endpoint string) (string, error) {
 	return rtn, nil
 }
 
+// CheckEnrollment returns an error if this client is not enrolled
+func (c *Client) CheckEnrollment() error {
+	err := c.Init()
+	if err != nil {
+		return err
+	}
+	var x509Enrollment, idemixEnrollment bool
+	err = c.checkX509Enrollment()
+	if err == nil {
+		x509Enrollment = true
+	}
+	err = c.checkIdemixEnrollment()
+	if err == nil {
+		idemixEnrollment = true
+	}
+	if x509Enrollment || idemixEnrollment {
+		return nil
+	}
+	log.Errorf("Enrollment check failed: %s", err.Error())
+	return errors.New("Enrollment information does not exist. Please execute enroll command first. Example: fabric-ca-client enroll -u http://user:userpw@serverAddr:serverPort")
+}
+
 func (c *Client) checkX509Enrollment() error {
 	keyFileExists := util.FileExists(c.keyFile)
 	certFileExists := util.FileExists(c.certFile)
@@ -573,6 +859,54 @@ func (c *Client) checkX509Enrollment() error {
 	return errors.New("X509 enrollment information does not exist")
 }
 
+// checkIdemixEnrollment returns an error if CA's Idemix public key and user's
+// Idemix credential does not exist and if they exist and credential verification
+// fails. Returns nil if the credential verification suucceeds
+func (c *Client) checkIdemixEnrollment() error {
+	log.Debugf("CheckIdemixEnrollment - ipkFile: %s, idemixCredFrile: %s", c.ipkFile, c.idemixCredFile)
+
+	idemixIssuerPubKeyExists := util.FileExists(c.ipkFile)
+	idemixCredExists := util.FileExists(c.idemixCredFile)
+	if idemixIssuerPubKeyExists && idemixCredExists {
+		err := c.verifyIdemixCredential()
+		if err != nil {
+			return errors.WithMessage(err, "Idemix enrollment check failed")
+		}
+		return nil
+	}
+	return errors.New("Idemix enrollment information does not exist")
+}
+
+func (c *Client) verifyIdemixCredential() error {
+	ipk, err := c.getIssuerPubKey(nil)
+	if err != nil {
+		return err
+	}
+	credfileBytes, err := util.ReadFile(c.idemixCredFile)
+	if err != nil {
+		return errors.Wrapf(err, "Failed to read %s", c.idemixCredFile)
+	}
+	signerConfig := &idemixcred.SignerConfig{}
+	err = json.Unmarshal(credfileBytes, signerConfig)
+	if err != nil {
+		return errors.Wrapf(err, "Failed to unmarshal signer config from %s", c.idemixCredFile)
+	}
+
+	cred := new(idemix.Credential)
+	err = proto.Unmarshal(signerConfig.GetCred(), cred)
+	if err != nil {
+		return errors.Wrap(err, "Failed to unmarshal Idemix credential from signer config")
+	}
+	sk := fp256bn.FromBytes(signerConfig.GetSk())
+
+	// Verify that the credential is cryptographically valid
+	err = cred.Ver(sk, ipk)
+	if err != nil {
+		return errors.Wrap(err, "Idemix credential is not cryptographically valid")
+	}
+	return nil
+}
+
 func newCfsslBasicKeyRequest(bkr *api.BasicKeyRequest) *csr.BasicKeyRequest {
 	return &csr.BasicKeyRequest{A: bkr.Algo, S: bkr.Size}
 }
@@ -588,7 +922,7 @@ func NormalizeURL(addr string) (*url.URL, error) {
 		u.Host = net.JoinHostPort(u.Scheme, u.Opaque)
 		u.Opaque = ""
 	} else if u.Path != "" && !strings.Contains(u.Path, ":") {
-		u.Host = net.JoinHostPort(u.Path, "")
+		u.Host = net.JoinHostPort(u.Path, util.GetServerPort())
 		u.Path = ""
 	} else if u.Scheme == "" {
 		u.Host = u.Path
@@ -599,7 +933,7 @@ func NormalizeURL(addr string) (*url.URL, error) {
 	}
 	_, port, err := net.SplitHostPort(u.Host)
 	if err != nil {
-		_, port, err = net.SplitHostPort(u.Host + ":" + "")
+		_, port, err = net.SplitHostPort(u.Host + ":" + util.GetServerPort())
 		if err != nil {
 			return nil, err
 		}
@@ -611,14 +945,4 @@ func NormalizeURL(addr string) (*url.URL, error) {
 		}
 	}
 	return u, nil
-}
-
-// GetFabCAVersion is a utility function to fetch the Fabric CA version for this client
-// TODO remove the function below once Fabric CA v1.3 is not supported by the SDK anymore
-func (c *Client) GetFabCAVersion() (string, error) {
-	i, e := c.GetCAInfo(&api.GetCAInfoRequest{CAName: c.Config.CAName})
-	if e != nil {
-		return "", e
-	}
-	return i.Version, nil
 }

@@ -31,7 +31,7 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/utils"
+	"github.com/hyperledger/fabric/bccsp/utils"
 	"github.com/pkg/errors"
 )
 
