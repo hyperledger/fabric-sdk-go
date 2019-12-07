@@ -11,10 +11,12 @@
 
 set -e
 
+echo "UPSTREAM_BRANCH=$UPSTREAM_BRANCH"
+echo "UPSTREAM_COMMIT=$UPSTREAM_COMMIT"
+
 UPSTREAM_PROJECT="github.com/hyperledger/fabric-ca"
 UPSTREAM_BRANCH="${UPSTREAM_BRANCH:-release}"
 SCRIPTS_PATH="scripts/third_party_pins/fabric-ca"
-PATCHES_PATH="scripts/third_party_pins/fabric-ca/patches"
 
 THIRDPARTY_INTERNAL_FABRIC_CA_PATH='internal/github.com/hyperledger/fabric-ca'
 
@@ -35,9 +37,6 @@ cd $TMP_PROJECT_PATH
 git checkout $UPSTREAM_BRANCH
 git reset --hard $UPSTREAM_COMMIT
 
-echo "Patching upstream project ..."
-git am ${CWD}/${PATCHES_PATH}/*
-
 cd $CWD
 
 echo 'Removing current upstream project from working directory ...'
@@ -46,14 +45,7 @@ mkdir -p "${THIRDPARTY_INTERNAL_FABRIC_CA_PATH}"
 
 # fabric-ca client utils
 echo "Pinning and patching fabric-ca client utils..."
-declare -a CLIENT_UTILS_IMPORT_SUBSTS=(
-    's/\"github.com\/hyperledger\/fabric-ca/\"github.com\/hyperledger\/fabric-sdk-go\/internal\/github.com\/hyperledger\/fabric-ca/g'
-    's/\"github.com\/hyperledger\/fabric\/bccsp\/factory/factory\"github.com\/hyperledger\/fabric-sdk-go\/internal\/github.com\/hyperledger\/fabric-ca\/sdkpatch\/cryptosuitebridge/g'
-    's/\"github.com\/hyperledger\/fabric\/bccsp/\"github.com\/hyperledger\/fabric-sdk-go\/pkg\/cryptosuite\/bccsp/g'
-    '/clog.\"github.com\/cloudflare\/cfssl\/log/!s/\"github.com\/cloudflare\/cfssl\/log/log\"github.com\/hyperledger\/fabric-sdk-go\/internal\/github.com\/hyperledger\/fabric-ca\/sdkpatch\/logbridge/g'
-    's/\"github.com\/hyperledger\/fabric\//\"github.com\/hyperledger\/fabric-sdk-go\/internal\/github.com\/hyperledger\/fabric\//g'
-)
-INTERNAL_PATH=$THIRDPARTY_INTERNAL_FABRIC_CA_PATH TMP_PROJECT_PATH=$TMP_PROJECT_PATH IMPORT_SUBSTS="${CLIENT_UTILS_IMPORT_SUBSTS[*]}" $SCRIPTS_PATH/apply_fabric_ca_client_utils.sh
+INTERNAL_PATH=$THIRDPARTY_INTERNAL_FABRIC_CA_PATH TMP_PROJECT_PATH=$TMP_PROJECT_PATH $SCRIPTS_PATH/apply_fabric_ca_client_utils.sh
 
 # Cleanup temporary files from patch application
 echo "Removing temporary files ..."
