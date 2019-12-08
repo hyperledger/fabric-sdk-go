@@ -1,8 +1,12 @@
 # Hyperledger Fabric Client SDK for Go
 
-[![Build Status](https://dev.azure.com/hyperledger/fabric-sdk-go/_apis/build/status/hyperledger.fabric-sdk-go?branchName=master)](https://dev.azure.com/hyperledger/fabric-sdk-go/_build/latest?definitionId=19&branchName=master)
-[![Go Report Card](https://goreportcard.com/badge/github.com/hyperledger/fabric-sdk-go)](https://goreportcard.com/report/github.com/hyperledger/fabric-sdk-go)
+[![Release](https://img.shields.io/github/release/hyperledger/fabric-sdk-go.svg?style=flat-square)](https://github.com/hyperledger/fabric-sdk-go/releases/latest)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://raw.githubusercontent.com/hyperledger/fabric-sdk-go/master/LICENSE)
 [![GoDoc](https://godoc.org/github.com/hyperledger/fabric-sdk-go?status.svg)](https://godoc.org/github.com/hyperledger/fabric-sdk-go)
+
+[![Build Status](https://dev.azure.com/hyperledger/fabric-sdk-go/_apis/build/status/hyperledger.fabric-sdk-go?branchName=master)](https://dev.azure.com/hyperledger/fabric-sdk-go/_build/latest?definitionId=19&branchName=master)
+[![codecov](https://codecov.io/gh/hyperledger/fabric-sdk-go/branch/master/graph/badge.svg)](https://codecov.io/gh/hyperledger/fabric-sdk-go)
+[![Go Report Card](https://goreportcard.com/badge/github.com/hyperledger/fabric-sdk-go)](https://goreportcard.com/report/github.com/hyperledger/fabric-sdk-go)
 
 This SDK enables Go developers to build solutions that interact with [Hyperledger Fabric](http://hyperledger-fabric.readthedocs.io/en/latest/).
 

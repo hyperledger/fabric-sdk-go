@@ -8,6 +8,7 @@
 .DS_Store
 .vscode
 debug.test
+coverage.txt
 vendor/
 scripts/_go/pkg/
 scripts/_go/bin/

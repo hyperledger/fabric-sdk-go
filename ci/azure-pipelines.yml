@@ -26,6 +26,8 @@ jobs:
   # TODO: resolve dependencies between dependencies.sh and install_deps.yml
   - script: make unit-test
     displayName: Run checks and unit test
+  - script: bash <(curl https://codecov.io/bash)
+    displayName: Upload coverage to Codecov    
 
 - job: IntegrationTest
   pool:
