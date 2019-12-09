@@ -67,9 +67,9 @@ BASE_GO_VERSION = "1.13"
 
 # Upstream fabric patching (overridable)
 THIRDPARTY_FABRIC_CA_BRANCH ?= master
-THIRDPARTY_FABRIC_CA_COMMIT ?= 233a4749c83b96a9dddfba97a358d55c974e586d
+THIRDPARTY_FABRIC_CA_COMMIT ?= 02fe02b0a6f224aac8ac6fd813cecc590ec2a024
 THIRDPARTY_FABRIC_BRANCH    ?= master
-THIRDPARTY_FABRIC_COMMIT    ?= fedb583e7cb2998fef986a2a1a609f1f90beb983
+THIRDPARTY_FABRIC_COMMIT    ?= v2.0.0-beta
 
 # Force removal of images in cleanup (overridable)
 FIXTURE_DOCKER_REMOVE_FORCE ?= false
