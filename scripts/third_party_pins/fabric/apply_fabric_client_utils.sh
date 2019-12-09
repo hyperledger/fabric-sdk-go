@@ -20,10 +20,8 @@ declare TMP_PROJECT_PATH=${PATCH_PROJECT_PATH}
 # Split BCCSP factory into subpackages
 mkdir ${TMP_PROJECT_PATH}/bccsp/factory/sw
 mkdir ${TMP_PROJECT_PATH}/bccsp/factory/pkcs11
-mkdir ${TMP_PROJECT_PATH}/bccsp/factory/plugin
 mv ${TMP_PROJECT_PATH}/bccsp/factory/swfactory.go ${TMP_PROJECT_PATH}/bccsp/factory/sw/swfactory.go
 mv ${TMP_PROJECT_PATH}/bccsp/factory/pkcs11factory.go ${TMP_PROJECT_PATH}/bccsp/factory/pkcs11/pkcs11factory.go
-mv ${TMP_PROJECT_PATH}/bccsp/factory/pluginfactory.go ${TMP_PROJECT_PATH}/bccsp/factory/plugin/pluginfactory.go
 
 declare -a FILES=(
 
@@ -33,11 +31,9 @@ declare -a FILES=(
     "bccsp/hashopts.go"
     "bccsp/keystore.go"
     "bccsp/opts.go"
-    "bccsp/rsaopts.go"
 
     "bccsp/factory/pkcs11/pkcs11factory.go"
     "bccsp/factory/sw/swfactory.go"
-    "bccsp/factory/plugin/pluginfactory.go"
 
     "bccsp/pkcs11/conf.go"
     "bccsp/pkcs11/ecdsa.go"
@@ -62,8 +58,6 @@ declare -a FILES=(
     "bccsp/sw/keygen.go"
     "bccsp/sw/keyimport.go"
     "bccsp/sw/new.go"
-    "bccsp/sw/rsa.go"
-    "bccsp/sw/rsakey.go"
 
     "bccsp/utils/errs.go"
     "bccsp/utils/io.go"
@@ -177,7 +171,7 @@ declare -a FILES=(
     "gossip/util/misc.go"
 
     "sdkinternal/configtxgen/encoder/encoder.go"
-    "sdkinternal/configtxgen/localconfig/config.go"
+    "sdkinternal/configtxgen/genesisconfig/config.go"
     "sdkinternal/configtxlator/update/update.go"
     "sdkinternal/configtxlator/update/update.go"
 

@@ -35,6 +35,13 @@ parent is the commit ```1234```.
 > git checkout master
 > git merge fix
 ```
-If necessary, fix any conflicts and commit
+If necessary, fix any conflicts and commit.
 
+We can end up with two commits related to patching the upstream. To squash them
+into a single commit, softly reset to HEAD~2 and commit all files to a single commit.
+```
+> git reset HEAD~2
+> git add .
+> git commit --signoff -m "Patch upstream"
+```
 Amend as required, and push all commits.
