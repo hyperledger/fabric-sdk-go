@@ -46,15 +46,13 @@ func getBCCSPFromOpts(config *pkcs11.PKCS11Opts) (bccsp.BCCSP, error) {
 
 //getOptsByConfig Returns Factory opts for given SDK config
 func getOptsByConfig(c core.CryptoSuiteConfig) *pkcs11.PKCS11Opts {
-	pkks := pkcs11.FileKeystoreOpts{KeyStorePath: c.KeyStorePath()}
 	opts := &pkcs11.PKCS11Opts{
-		SecLevel:     c.SecurityLevel(),
-		HashFamily:   c.SecurityAlgorithm(),
-		FileKeystore: &pkks,
-		Library:      c.SecurityProviderLibPath(),
-		Pin:          c.SecurityProviderPin(),
-		Label:        c.SecurityProviderLabel(),
-		SoftVerify:   c.SoftVerify(),
+		SecLevel:   c.SecurityLevel(),
+		HashFamily: c.SecurityAlgorithm(),
+		Library:    c.SecurityProviderLibPath(),
+		Pin:        c.SecurityProviderPin(),
+		Label:      c.SecurityProviderLabel(),
+		SoftVerify: c.SoftVerify(),
 	}
 	logger.Debug("Initialized PKCS11 cryptosuite")
 

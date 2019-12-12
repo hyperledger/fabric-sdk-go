@@ -14,14 +14,15 @@ import (
 	"crypto/x509"
 	"fmt"
 
-	"github.com/hyperledger/fabric-ca/lib/attrmgr"
-	"github.com/hyperledger/fabric-ca/util"
-	"github.com/hyperledger/fabric/bccsp"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
+
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/lib/attrmgr"
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/util"
 	"github.com/pkg/errors"
 )
 
 // NewSigner is constructor for Signer
-func NewSigner(key bccsp.Key, cert []byte) (*Signer, error) {
+func NewSigner(key core.Key, cert []byte) (*Signer, error) {
 	s := &Signer{
 		key:       key,
 		certBytes: cert,
@@ -39,7 +40,7 @@ func NewSigner(key bccsp.Key, cert []byte) (*Signer, error) {
 // Each identity may have multiple signers and currently one ecert
 type Signer struct {
 	// Private key
-	key bccsp.Key
+	key core.Key
 	// Certificate bytes
 	certBytes []byte
 	// X509 certificate that is constructed from the cert bytes associated with this signer
@@ -49,7 +50,7 @@ type Signer struct {
 }
 
 // Key returns the key bytes of this signer
-func (s *Signer) Key() bccsp.Key {
+func (s *Signer) Key() core.Key {
 	return s.key
 }
 

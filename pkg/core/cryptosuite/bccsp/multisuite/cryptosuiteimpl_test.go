@@ -65,7 +65,6 @@ func TestCryptoSuiteByConfigPKCS11(t *testing.T) {
 	mockConfig.EXPECT().SecurityProvider().Return("pkcs11")
 	mockConfig.EXPECT().SecurityAlgorithm().Return("SHA2")
 	mockConfig.EXPECT().SecurityLevel().Return(256)
-	mockConfig.EXPECT().KeyStorePath().Return("/tmp/msp")
 	mockConfig.EXPECT().SecurityProviderLibPath().Return(providerLib)
 	mockConfig.EXPECT().SecurityProviderLabel().Return(softHSMTokenLabel)
 	mockConfig.EXPECT().SecurityProviderPin().Return(softHSMPin)

@@ -15,9 +15,9 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	mspprotos "github.com/hyperledger/fabric-protos-go/msp"
-	"github.com/hyperledger/fabric/bccsp"
-	"github.com/hyperledger/fabric/msp"
-	"github.com/hyperledger/fabric/msp/cache"
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/msp"
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/msp/cache"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/pkg/errors"
 )
 
@@ -30,10 +30,10 @@ type pendingMSPConfig struct {
 type MSPConfigHandler struct {
 	version msp.MSPVersion
 	idMap   map[string]*pendingMSPConfig
-	bccsp   bccsp.BCCSP
+	bccsp   core.CryptoSuite
 }
 
-func NewMSPConfigHandler(mspVersion msp.MSPVersion, bccsp bccsp.BCCSP) *MSPConfigHandler {
+func NewMSPConfigHandler(mspVersion msp.MSPVersion, bccsp core.CryptoSuite) *MSPConfigHandler {
 	return &MSPConfigHandler{
 		version: mspVersion,
 		idMap:   make(map[string]*pendingMSPConfig),

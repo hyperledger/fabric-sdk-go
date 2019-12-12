@@ -19,10 +19,8 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	m "github.com/hyperledger/fabric-protos-go/msp"
-	"github.com/hyperledger/fabric/bccsp"
-	"github.com/hyperledger/fabric/bccsp/factory"
-	"github.com/hyperledger/fabric/bccsp/signer"
-	"github.com/hyperledger/fabric/bccsp/sw"
+	factory "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/sdkpatch/cryptosuitebridge"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/pkg/errors"
 )
 
@@ -82,7 +80,7 @@ type bccspmsp struct {
 	admins []Identity
 
 	// the crypto provider
-	bccsp bccsp.BCCSP
+	bccsp core.CryptoSuite
 
 	// the provider identifier for this MSP
 	name string
@@ -110,7 +108,7 @@ type bccspmsp struct {
 // crypto provider. It handles x.509 certificates and can
 // generate identities and signing identities backed by
 // certificates and keypairs
-func newBccspMsp(version MSPVersion, defaultBCCSP bccsp.BCCSP) (MSP, error) {
+func newBccspMsp(version MSPVersion, defaultBCCSP core.CryptoSuite) (MSP, error) {
 	mspLogger.Debugf("Creating BCCSP-based MSP instance")
 
 	theMsp := &bccspmsp{}
@@ -144,26 +142,6 @@ func newBccspMsp(version MSPVersion, defaultBCCSP bccsp.BCCSP) (MSP, error) {
 	return theMsp, nil
 }
 
-// NewBccspMspWithKeyStore allows to create a BCCSP-based MSP whose underlying
-// crypto material is available through the passed keystore
-func NewBccspMspWithKeyStore(version MSPVersion, keyStore bccsp.KeyStore, bccsp bccsp.BCCSP) (MSP, error) {
-	thisMSP, err := newBccspMsp(version, bccsp)
-	if err != nil {
-		return nil, err
-	}
-
-	csp, err := sw.NewWithParams(
-		factory.GetDefaultOpts().SwOpts.SecLevel,
-		factory.GetDefaultOpts().SwOpts.HashFamily,
-		keyStore)
-	if err != nil {
-		return nil, err
-	}
-	thisMSP.(*bccspmsp).bccsp = csp
-
-	return thisMSP, nil
-}
-
 func (msp *bccspmsp) getCertFromPem(idBytes []byte) (*x509.Certificate, error) {
 	if idBytes == nil {
 		return nil, errors.New("getCertFromPem error: nil idBytes")
@@ -185,7 +163,7 @@ func (msp *bccspmsp) getCertFromPem(idBytes []byte) (*x509.Certificate, error) {
 	return cert, nil
 }
 
-func (msp *bccspmsp) getIdentityFromConf(idBytes []byte) (Identity, bccsp.Key, error) {
+func (msp *bccspmsp) getIdentityFromConf(idBytes []byte) (Identity, core.Key, error) {
 	// get a cert
 	cert, err := msp.getCertFromPem(idBytes)
 	if err != nil {
@@ -193,7 +171,7 @@ func (msp *bccspmsp) getIdentityFromConf(idBytes []byte) (Identity, bccsp.Key, e
 	}
 
 	// get the public key in the right format
-	certPubK, err := msp.bccsp.KeyImport(cert, &bccsp.X509PublicKeyImportOpts{Temporary: true})
+	certPubK, err := msp.bccsp.KeyImport(cert, factory.GetX509PublicKeyImportOpts(true))
 	if err != nil {
 		return nil, nil, err
 	}
@@ -230,14 +208,14 @@ func (msp *bccspmsp) getSigningIdentityFromConf(sidInfo *m.SigningIdentityInfo) 
 		if pemKey == nil {
 			return nil, errors.Errorf("%s: wrong PEM encoding", sidInfo.PrivateSigner.KeyIdentifier)
 		}
-		privKey, err = msp.bccsp.KeyImport(pemKey.Bytes, &bccsp.ECDSAPrivateKeyImportOpts{Temporary: true})
+		privKey, err = msp.bccsp.KeyImport(pemKey.Bytes, factory.GetECDSAPrivateKeyImportOpts(true))
 		if err != nil {
 			return nil, errors.WithMessage(err, "getIdentityFromBytes error: Failed to import EC private key")
 		}
 	}
 
 	// get the peer signer
-	peerSigner, err := signer.New(msp.bccsp, privKey)
+	peerSigner, err := factory.NewCspSigner(msp.bccsp, privKey)
 	if err != nil {
 		return nil, errors.WithMessage(err, "getIdentityFromBytes error: Failed initializing bccspCryptoSigner")
 	}
@@ -420,7 +398,7 @@ func (msp *bccspmsp) deserializeIdentityInternal(serializedIdentity []byte) (Ide
 	// We can't do it yet because there is no standardized way
 	// (yet) to encode the MSP ID into the x.509 body of a cert
 
-	pub, err := msp.bccsp.KeyImport(cert, &bccsp.X509PublicKeyImportOpts{Temporary: true})
+	pub, err := msp.bccsp.KeyImport(cert, factory.GetX509PublicKeyImportOpts(true))
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to import certificate's public key")
 	}
@@ -780,7 +758,7 @@ func (msp *bccspmsp) getCertificationChainIdentifier(id Identity) ([]byte, error
 func (msp *bccspmsp) getCertificationChainIdentifierFromChain(chain []*x509.Certificate) ([]byte, error) {
 	// Hash the chain
 	// Use the hash of the identity's certificate as id in the IdentityIdentifier
-	hashOpt, err := bccsp.GetHashOpt(msp.cryptoConfig.IdentityIdentifierHashFunction)
+	hashOpt, err := factory.GetHashOpt(msp.cryptoConfig.IdentityIdentifierHashFunction)
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed getting hash function options")
 	}
