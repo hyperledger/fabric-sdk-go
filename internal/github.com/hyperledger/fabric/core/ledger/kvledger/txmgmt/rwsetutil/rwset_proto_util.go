@@ -24,8 +24,6 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric-protos-go/ledger/rwset"
 	"github.com/hyperledger/fabric-protos-go/ledger/rwset/kvrwset"
-	"github.com/hyperledger/fabric/core/ledger/kvledger/txmgmt/version"
-	"github.com/hyperledger/fabric/core/ledger/util"
 )
 
 /////////////////////////////////////////////////////////////////
@@ -49,32 +47,6 @@ type CollHashedRwSet struct {
 	CollectionName string
 	HashedRwSet    *kvrwset.HashedRWSet
 	PvtRwSetHash   []byte
-}
-
-// GetPvtDataHash returns the PvtRwSetHash for a given namespace and collection
-func (txRwSet *TxRwSet) GetPvtDataHash(ns, coll string) []byte {
-	// we could build and use a map to reduce the number of lookup
-	// in the future call. However, we decided to defer such optimization
-	// due to the following assumptions (mainly to avoid additional LOC).
-	// we assume that the number of namespaces and collections in a txRWSet
-	// to be very minimal (in a single digit),
-	for _, nsRwSet := range txRwSet.NsRwSets {
-		if nsRwSet.NameSpace != ns {
-			continue
-		}
-		return nsRwSet.getPvtDataHash(coll)
-	}
-	return nil
-}
-
-func (nsRwSet *NsRwSet) getPvtDataHash(coll string) []byte {
-	for _, collHashedRwSet := range nsRwSet.CollHashedRwSets {
-		if collHashedRwSet.CollectionName != coll {
-			continue
-		}
-		return collHashedRwSet.PvtRwSetHash
-	}
-	return nil
 }
 
 /////////////////////////////////////////////////////////////////
@@ -236,19 +208,6 @@ func collHashedRwSetFromProtoMsg(protoMsg *rwset.CollectionHashedReadWriteSet) (
 	return colHashedRwSet, nil
 }
 
-func (txRwSet *TxRwSet) NumCollections() int {
-	if txRwSet == nil {
-		return 0
-	}
-	numColls := 0
-	for _, nsRwset := range txRwSet.NsRwSets {
-		for range nsRwset.CollHashedRwSets {
-			numColls++
-		}
-	}
-	return numColls
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 // functions for private read-write set
 ///////////////////////////////////////////////////////////////////////////////
@@ -320,42 +279,4 @@ func collPvtRwSetFromProtoMsg(protoMsg *rwset.CollectionPvtReadWriteSet) (*CollP
 		return nil, err
 	}
 	return collPvtRwSet, nil
-}
-
-// NewKVRead helps constructing proto message kvrwset.KVRead
-func NewKVRead(key string, version *version.Height) *kvrwset.KVRead {
-	return &kvrwset.KVRead{Key: key, Version: newProtoVersion(version)}
-}
-
-// NewVersion helps converting proto message kvrwset.Version to version.Height
-func NewVersion(protoVersion *kvrwset.Version) *version.Height {
-	if protoVersion == nil {
-		return nil
-	}
-	return version.NewHeight(protoVersion.BlockNum, protoVersion.TxNum)
-}
-
-func newProtoVersion(height *version.Height) *kvrwset.Version {
-	if height == nil {
-		return nil
-	}
-	return &kvrwset.Version{BlockNum: height.BlockNum, TxNum: height.TxNum}
-}
-
-func newKVWrite(key string, value []byte) *kvrwset.KVWrite {
-	return &kvrwset.KVWrite{Key: key, IsDelete: value == nil, Value: value}
-}
-
-func newPvtKVReadHash(key string, version *version.Height) *kvrwset.KVReadHash {
-	return &kvrwset.KVReadHash{KeyHash: util.ComputeStringHash(key), Version: newProtoVersion(version)}
-}
-
-func newPvtKVWriteAndHash(key string, value []byte) (*kvrwset.KVWrite, *kvrwset.KVWriteHash) {
-	kvWrite := newKVWrite(key, value)
-	var keyHash, valueHash []byte
-	keyHash = util.ComputeStringHash(key)
-	if !kvWrite.IsDelete {
-		valueHash = util.ComputeHash(value)
-	}
-	return kvWrite, &kvrwset.KVWriteHash{KeyHash: keyHash, IsDelete: kvWrite.IsDelete, ValueHash: valueHash}
 }

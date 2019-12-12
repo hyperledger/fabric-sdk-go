@@ -33,7 +33,7 @@ import (
 	"strings"
 
 	"github.com/cloudflare/cfssl/api"
-	"github.com/cloudflare/cfssl/log"
+	log "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/sdkpatch/logbridge"
 	"github.com/pkg/errors"
 )
 
