@@ -12,20 +12,18 @@ package util
 
 import (
 	"crypto/rand"
-
-	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/sdkpatch/cryptosuitebridge"
-
 	"fmt"
 	"io"
 	"time"
 
 	"github.com/golang/protobuf/ptypes/timestamp"
-	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp"
+	"github.com/hyperledger/fabric/bccsp"
+	"github.com/hyperledger/fabric/bccsp/factory"
 )
 
 // ComputeSHA256 returns SHA2-256 on data
 func ComputeSHA256(data []byte) (hash []byte) {
-	hash, err := cryptosuitebridge.GetDefault().Hash(data, cryptosuitebridge.GetSHA256Opts())
+	hash, err := factory.GetDefault().Hash(data, &bccsp.SHA256Opts{})
 	if err != nil {
 		panic(fmt.Errorf("Failed computing SHA256 on [% x]", data))
 	}
@@ -34,7 +32,7 @@ func ComputeSHA256(data []byte) (hash []byte) {
 
 // ComputeSHA3256 returns SHA3-256 on data
 func ComputeSHA3256(data []byte) (hash []byte) {
-	hash, err := cryptosuitebridge.GetDefault().Hash(data, &bccsp.SHA3_256Opts{})
+	hash, err := factory.GetDefault().Hash(data, &bccsp.SHA3_256Opts{})
 	if err != nil {
 		panic(fmt.Errorf("Failed computing SHA3_256 on [% x]", data))
 	}
@@ -76,7 +74,14 @@ func idBytesToStr(id []byte) string {
 	return fmt.Sprintf("%x-%x-%x-%x-%x", id[0:4], id[4:6], id[6:8], id[8:10], id[10:])
 }
 
-const testchainid = "testchainid"
+// ToChaincodeArgs converts string args to []byte args
+func ToChaincodeArgs(args ...string) [][]byte {
+	bargs := make([][]byte, len(args))
+	for i, arg := range args {
+		bargs[i] = []byte(arg)
+	}
+	return bargs
+}
 
 // ConcatenateBytes is useful for combining multiple arrays of bytes, especially for
 // signatures or digests over multiple fields

@@ -22,6 +22,7 @@ package api
 
 import (
 	"github.com/cloudflare/cfssl/signer"
+	"github.com/hyperledger/fabric/idemix"
 )
 
 /*
@@ -45,6 +46,12 @@ type EnrollmentRequestNet struct {
 	signer.SignRequest
 	CAName   string
 	AttrReqs []*AttributeRequest `json:"attr_reqs,omitempty"`
+}
+
+// IdemixEnrollmentRequestNet is a request to enroll an identity and get idemix credential
+type IdemixEnrollmentRequestNet struct {
+	*idemix.CredRequest `json:"request"`
+	CAName              string `json:"caname"`
 }
 
 // ReenrollmentRequestNet is a request to reenroll an identity.
