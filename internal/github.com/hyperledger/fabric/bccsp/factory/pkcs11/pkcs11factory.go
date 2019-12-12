@@ -1,5 +1,3 @@
-// +build pkcs11
-
 /*
 Copyright IBM Corp. All Rights Reserved.
 
@@ -9,13 +7,12 @@ SPDX-License-Identifier: Apache-2.0
 Notice: This file has been modified for Hyperledger Fabric SDK Go usage.
 Please review third_party pinning scripts and patches for more details.
 */
-
-package factory
+package pkcs11
 
 import (
-	"github.com/hyperledger/fabric/bccsp"
-	"github.com/hyperledger/fabric/bccsp/pkcs11"
-	"github.com/hyperledger/fabric/bccsp/sw"
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp"
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/pkcs11"
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/sw"
 	"github.com/pkg/errors"
 )
 
@@ -33,13 +30,12 @@ func (f *PKCS11Factory) Name() string {
 }
 
 // Get returns an instance of BCCSP using Opts.
-func (f *PKCS11Factory) Get(config *FactoryOpts) (bccsp.BCCSP, error) {
+func (f *PKCS11Factory) Get(p11Opts *pkcs11.PKCS11Opts) (bccsp.BCCSP, error) {
 	// Validate arguments
-	if config == nil || config.Pkcs11Opts == nil {
+	if p11Opts == nil {
 		return nil, errors.New("Invalid config. It must not be nil.")
 	}
 
-	p11Opts := config.Pkcs11Opts
 	ks := sw.NewDummyKeyStore()
 
 	return pkcs11.New(*p11Opts, ks)

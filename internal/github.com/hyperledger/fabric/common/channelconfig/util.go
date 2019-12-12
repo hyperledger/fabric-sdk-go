@@ -21,8 +21,9 @@ import (
 	ab "github.com/hyperledger/fabric-protos-go/orderer"
 	"github.com/hyperledger/fabric-protos-go/orderer/etcdraft"
 	pb "github.com/hyperledger/fabric-protos-go/peer"
-	"github.com/hyperledger/fabric/bccsp"
-	"github.com/hyperledger/fabric/protoutil"
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp"
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protoutil"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/pkg/errors"
 )
 
@@ -244,7 +245,7 @@ func ACLValues(acls map[string]string) *StandardConfigValue {
 }
 
 // ValidateCapabilities validates whether the peer can meet the capabilities requirement in the given config block
-func ValidateCapabilities(block *cb.Block, bccsp bccsp.BCCSP) error {
+func ValidateCapabilities(block *cb.Block, bccsp core.CryptoSuite) error {
 	envelopeConfig, err := protoutil.ExtractEnvelope(block, 0)
 	if err != nil {
 		return errors.Errorf("failed to %s", err)

@@ -309,7 +309,7 @@ func (p11w *Pkcs11Wrapper) ImportECKeyFromFile(file string) (err error) {
 
 func (p11w *Pkcs11Wrapper) SignMessage(message string, key pkcs11.ObjectHandle) (signature string, err error) {
 
-	// TODO: diff mech needed for rsa. example: CKM_RSA_PKCS CKM_ECDSA
+	// TODO: diff mech needed for rsa. example: CKM_ECDSA
 	err = p11w.Context.SignInit(p11w.Session, []*pkcs11.Mechanism{pkcs11.NewMechanism(pkcs11.CKM_ECDSA, nil)}, key)
 	if err != nil {
 		return
