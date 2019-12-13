@@ -16,7 +16,7 @@ variables:
 jobs:
 - job: UnitTest
   pool:
-    vmImage: ubuntu-16.04
+    vmImage: ubuntu-18.04
   dependsOn: []
   timeoutInMinutes: 60
   steps:
@@ -31,7 +31,7 @@ jobs:
 
 - job: IntegrationTest
   pool:
-    vmImage: ubuntu-16.04
+    vmImage: ubuntu-18.04
   dependsOn: []
   timeoutInMinutes: 60
   steps:
