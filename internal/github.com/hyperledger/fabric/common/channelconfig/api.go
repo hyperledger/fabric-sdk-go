@@ -16,9 +16,9 @@ import (
 	cb "github.com/hyperledger/fabric-protos-go/common"
 	ab "github.com/hyperledger/fabric-protos-go/orderer"
 	pb "github.com/hyperledger/fabric-protos-go/peer"
-	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/configtx"
-	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/policies"
-	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/msp"
+	"github.com/hyperledger/fabric/common/configtx"
+	"github.com/hyperledger/fabric/common/policies"
+	"github.com/hyperledger/fabric/msp"
 )
 
 // Org stores the common organizational config
@@ -28,6 +28,9 @@ type Org interface {
 
 	// MSPID returns the MSP ID associated with this org
 	MSPID() string
+
+	// MSP returns the MSP implementation for this org.
+	MSP() msp.MSP
 }
 
 // ApplicationOrg stores the per org application config

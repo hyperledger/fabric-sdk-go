@@ -15,9 +15,9 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	mspprotos "github.com/hyperledger/fabric-protos-go/msp"
-	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/msp"
-	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/msp/cache"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
+	"github.com/hyperledger/fabric/bccsp"
+	"github.com/hyperledger/fabric/msp"
+	"github.com/hyperledger/fabric/msp/cache"
 	"github.com/pkg/errors"
 )
 
@@ -30,10 +30,10 @@ type pendingMSPConfig struct {
 type MSPConfigHandler struct {
 	version msp.MSPVersion
 	idMap   map[string]*pendingMSPConfig
-	bccsp   core.CryptoSuite
+	bccsp   bccsp.BCCSP
 }
 
-func NewMSPConfigHandler(mspVersion msp.MSPVersion, bccsp core.CryptoSuite) *MSPConfigHandler {
+func NewMSPConfigHandler(mspVersion msp.MSPVersion, bccsp bccsp.BCCSP) *MSPConfigHandler {
 	return &MSPConfigHandler{
 		version: mspVersion,
 		idMap:   make(map[string]*pendingMSPConfig),
@@ -41,7 +41,7 @@ func NewMSPConfigHandler(mspVersion msp.MSPVersion, bccsp core.CryptoSuite) *MSP
 	}
 }
 
-// ProposeValue called when an org defines an MSP
+// ProposeMSP called when an org defines an MSP
 func (bh *MSPConfigHandler) ProposeMSP(mspConfig *mspprotos.MSPConfig) (msp.MSP, error) {
 	var theMsp msp.MSP
 	var err error

@@ -17,11 +17,11 @@ limitations under the License.
 Notice: This file has been modified for Hyperledger Fabric SDK Go usage.
 Please review third_party pinning scripts and patches for more details.
 */
-package sw
+package factory
 
 import (
-	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp"
-	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/sw"
+	"github.com/hyperledger/fabric/bccsp"
+	"github.com/hyperledger/fabric/bccsp/sw"
 	"github.com/pkg/errors"
 )
 
@@ -39,11 +39,13 @@ func (f *SWFactory) Name() string {
 }
 
 // Get returns an instance of BCCSP using Opts.
-func (f *SWFactory) Get(swOpts *SwOpts) (bccsp.BCCSP, error) {
+func (f *SWFactory) Get(config *FactoryOpts) (bccsp.BCCSP, error) {
 	// Validate arguments
-	if swOpts == nil {
+	if config == nil || config.SwOpts == nil {
 		return nil, errors.New("Invalid config. It must not be nil.")
 	}
+
+	swOpts := config.SwOpts
 
 	var ks bccsp.KeyStore
 	switch {

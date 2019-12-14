@@ -7,10 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 Notice: This file has been modified for Hyperledger Fabric SDK Go usage.
 Please review third_party pinning scripts and patches for more details.
 */
-/*
-Notice: This file has been modified for Hyperledger Fabric SDK Go usage.
-Please review third_party pinning scripts and patches for more details.
-*/
 
 package update
 
@@ -20,7 +16,7 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	cb "github.com/hyperledger/fabric-protos-go/common"
-	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protoutil"
+	"github.com/hyperledger/fabric/protoutil"
 )
 
 func computePoliciesMapUpdate(original, updated map[string]*cb.ConfigPolicy) (readSet, writeSet, sameSet map[string]*cb.ConfigPolicy, updatedMembers bool) {

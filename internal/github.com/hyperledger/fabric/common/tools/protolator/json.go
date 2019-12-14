@@ -20,7 +20,7 @@ import (
 
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
-	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/tools/protolator/protoext"
+	"github.com/hyperledger/fabric/common/tools/protolator/protoext"
 )
 
 // MostlyDeterministicMarshal is _NOT_ the function you are looking for.
