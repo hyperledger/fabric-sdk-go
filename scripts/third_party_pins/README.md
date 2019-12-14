@@ -23,6 +23,8 @@ future.
 > git add .
 > git commit --signoff -m "Apply upstream"
 ```
+We will refer to this commit later, let's say it is commit ```abcd```
+
 Now we need to replay changes from the last correct patch.
 We do it using git, with the help of a temporary branch where we
 first copy the changes we want to replay. This example assumes
@@ -38,10 +40,14 @@ parent is the commit ```1234```.
 If necessary, fix any conflicts and commit.
 
 We can end up with two commits related to patching the upstream. To squash them
-into a single commit, softly reset to HEAD~2 and commit all files to a single commit.
+into a single commit, softly reset to ```abcd``` (the result of "Apply upstream",
+see above) and commit all files to a single commit.
 ```
-> git reset HEAD~2
+> git reset abcd
 > git add .
 > git commit --signoff -m "Patch upstream"
 ```
+Note that ```git reset HEAD~2``` might not work as expected due to the merge.
+
 Amend as required, and push all commits.
+
