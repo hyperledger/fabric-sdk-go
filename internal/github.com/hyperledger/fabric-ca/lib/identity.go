@@ -15,14 +15,14 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"strings"
 
-	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/api"
-	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/lib/client/credential"
-	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/lib/client/credential/x509"
-	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/lib/common"
-	log "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/sdkpatch/logbridge"
-	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/util"
+	"github.com/cloudflare/cfssl/log"
+	"github.com/hyperledger/fabric-ca/api"
+	"github.com/hyperledger/fabric-ca/lib/client/credential"
+	"github.com/hyperledger/fabric-ca/lib/client/credential/idemix"
+	"github.com/hyperledger/fabric-ca/lib/client/credential/x509"
+	"github.com/hyperledger/fabric-ca/lib/common"
+	"github.com/hyperledger/fabric-ca/util"
 	"github.com/pkg/errors"
 )
 
@@ -45,6 +45,31 @@ func NewIdentity(client *Client, name string, creds []credential.Credential) *Id
 // GetName returns the identity name
 func (i *Identity) GetName() string {
 	return i.name
+}
+
+// GetClient returns the client associated with this identity
+func (i *Identity) GetClient() *Client {
+	return i.client
+}
+
+// GetIdemixCredential returns Idemix credential of this identity
+func (i *Identity) GetIdemixCredential() credential.Credential {
+	for _, cred := range i.creds {
+		if cred.Type() == idemix.CredType {
+			return cred
+		}
+	}
+	return nil
+}
+
+// GetX509Credential returns X509 credential of this identity
+func (i *Identity) GetX509Credential() credential.Credential {
+	for _, cred := range i.creds {
+		if cred.Type() == x509.CredType {
+			return cred
+		}
+	}
+	return nil
 }
 
 // GetECert returns the enrollment certificate signer for this identity
@@ -84,6 +109,25 @@ func (i *Identity) Register(req *api.RegistrationRequest) (rr *api.RegistrationR
 
 	log.Debug("The register request completed successfully")
 	return resp, nil
+}
+
+// RegisterAndEnroll registers and enrolls an identity and returns the identity
+func (i *Identity) RegisterAndEnroll(req *api.RegistrationRequest) (*Identity, error) {
+	if i.client == nil {
+		return nil, errors.New("No client is associated with this identity")
+	}
+	rresp, err := i.Register(req)
+	if err != nil {
+		return nil, errors.WithMessage(err, fmt.Sprintf("Failed to register %s", req.Name))
+	}
+	eresp, err := i.client.Enroll(&api.EnrollmentRequest{
+		Name:   req.Name,
+		Secret: rresp.Secret,
+	})
+	if err != nil {
+		return nil, errors.WithMessage(err, fmt.Sprintf("Failed to enroll %s", req.Name))
+	}
+	return eresp.Identity, nil
 }
 
 // Reenroll reenrolls an existing Identity and returns a new Identity
@@ -139,6 +183,52 @@ func (i *Identity) Revoke(req *api.RevocationRequest) (*api.RevocationResponse, 
 		return nil, err
 	}
 	return &api.RevocationResponse{RevokedCerts: result.RevokedCerts, CRL: crl}, nil
+}
+
+// RevokeSelf revokes the current identity and all certificates
+func (i *Identity) RevokeSelf() (*api.RevocationResponse, error) {
+	name := i.GetName()
+	log.Debugf("RevokeSelf %s", name)
+	req := &api.RevocationRequest{
+		Name: name,
+	}
+	return i.Revoke(req)
+}
+
+// GenCRL generates CRL
+func (i *Identity) GenCRL(req *api.GenCRLRequest) (*api.GenCRLResponse, error) {
+	log.Debugf("Entering identity.GenCRL %+v", req)
+	reqBody, err := util.Marshal(req, "GenCRLRequest")
+	if err != nil {
+		return nil, err
+	}
+	var result genCRLResponseNet
+	err = i.Post("gencrl", reqBody, &result, nil)
+	if err != nil {
+		return nil, err
+	}
+	log.Debugf("Successfully generated CRL: %+v", req)
+	crl, err := util.B64Decode(result.CRL)
+	if err != nil {
+		return nil, err
+	}
+	return &api.GenCRLResponse{CRL: crl}, nil
+}
+
+// GetCRI gets Idemix credential revocation information (CRI)
+func (i *Identity) GetCRI(req *api.GetCRIRequest) (*api.GetCRIResponse, error) {
+	log.Debugf("Entering identity.GetCRI %+v", req)
+	reqBody, err := util.Marshal(req, "GetCRIRequest")
+	if err != nil {
+		return nil, err
+	}
+	var result api.GetCRIResponse
+	err = i.Post("idemix/cri", reqBody, &result, nil)
+	if err != nil {
+		return nil, err
+	}
+	log.Debugf("Successfully generated CRI: %+v", req)
+	return &result, nil
 }
 
 // GetIdentity returns information about the requested identity
@@ -336,6 +426,44 @@ func (i *Identity) RemoveAffiliation(req *api.RemoveAffiliationRequest) (*api.Af
 	return result, nil
 }
 
+// GetCertificates returns all certificates that the caller is authorized to see
+func (i *Identity) GetCertificates(req *api.GetCertificatesRequest, cb func(*json.Decoder) error) error {
+	log.Debugf("Entering identity.GetCertificates, sending request: %+v", req)
+
+	queryParam := make(map[string]string)
+	queryParam["id"] = req.ID
+	queryParam["aki"] = req.AKI
+	queryParam["serial"] = req.Serial
+	queryParam["revoked_start"] = req.Revoked.StartTime
+	queryParam["revoked_end"] = req.Revoked.EndTime
+	queryParam["expired_start"] = req.Expired.StartTime
+	queryParam["expired_end"] = req.Expired.EndTime
+	queryParam["notrevoked"] = strconv.FormatBool(req.NotRevoked)
+	queryParam["notexpired"] = strconv.FormatBool(req.NotExpired)
+	queryParam["ca"] = req.CAName
+	err := i.GetStreamResponse("certificates", queryParam, "result.certs", cb)
+	if err != nil {
+		return err
+	}
+
+	log.Debugf("Successfully completed getting certificates request")
+	return nil
+}
+
+// Store writes my identity info to disk
+func (i *Identity) Store() error {
+	if i.client == nil {
+		return errors.New("An identity with no client may not be stored")
+	}
+	for _, cred := range i.creds {
+		err := cred.Store()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // Get sends a get request to an endpoint
 func (i *Identity) Get(endpoint, caname string, result interface{}) error {
 	req, err := i.client.newGet(endpoint)
@@ -430,18 +558,11 @@ func (i *Identity) Post(endpoint string, reqBody []byte, result interface{}, que
 }
 
 func (i *Identity) addTokenAuthHdr(req *http.Request, body []byte) error {
-	// TODO remove the below compatibility logic once Fabric CA v1.3 is not supported by the SDK anymore
-	caVer, e := i.client.GetFabCAVersion()
-	if e != nil {
-		return errors.WithMessage(e, "Failed to add token authorization header because client is unable to fetch the Fabric CA version")
-	}
-	compatibility := isCompatibleFabCA(caVer)
-
 	log.Debug("Adding token-based authorization header")
 	var token string
 	var err error
 	for _, cred := range i.creds {
-		token, err = cred.CreateToken(req, body, compatibility)
+		token, err = cred.CreateToken(req, body)
 		if err != nil {
 			return errors.WithMessage(err, "Failed to add token authorization header")
 		}
@@ -449,30 +570,4 @@ func (i *Identity) addTokenAuthHdr(req *http.Request, body []byte) error {
 	}
 	req.Header.Set("authorization", token)
 	return nil
-}
-
-// TODO remove the function below once Fabric CA v1.3 is not supported by the SDK anymore
-func isCompatibleFabCA(caVersion string) bool {
-	versions := strings.Split(caVersion, ".")
-	// 1.0-1.3 -> set Compatible CA to true, otherwise (1.4 and above) set false
-	if len(versions) > 1 {
-		majv, e := strconv.Atoi(versions[0])
-		if e != nil {
-			log.Debugf("Fabric CA version retrieval format returned error, will not use Compatible Fabric CA setup in the client: %s", e)
-			return false
-		}
-		if majv == 0 {
-			return true
-		}
-
-		minv, e := strconv.Atoi(versions[1])
-		if e != nil {
-			log.Debugf("Fabric CA version retrieval format returned error, will not use Compatible Fabric CA setup in the client: %s", e)
-			return false
-		}
-		if majv == 1 && minv < 4 {
-			return true
-		}
-	}
-	return false
 }

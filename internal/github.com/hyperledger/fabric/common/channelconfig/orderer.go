@@ -19,7 +19,7 @@ import (
 
 	cb "github.com/hyperledger/fabric-protos-go/common"
 	ab "github.com/hyperledger/fabric-protos-go/orderer"
-	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/capabilities"
+	"github.com/hyperledger/fabric/common/capabilities"
 	"github.com/pkg/errors"
 )
 
