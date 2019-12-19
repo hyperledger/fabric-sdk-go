@@ -29,7 +29,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/util/concurrent/lazycache"
 	"github.com/hyperledger/fabric-sdk-go/pkg/util/concurrent/lazyref"
 	"github.com/pkg/errors"
-	grpcCodes "google.golang.org/grpc/codes"
 )
 
 const (
@@ -40,23 +39,6 @@ const (
 )
 
 var logger = logging.NewLogger(moduleName)
-
-var retryableCodes = map[status.Group][]status.Code{
-	status.GRPCTransportStatus: {
-		status.Code(grpcCodes.Unavailable),
-	},
-	status.DiscoveryServerStatus: {
-		status.QueryEndorsers,
-	},
-}
-
-var defaultRetryOpts = retry.Opts{
-	Attempts:       6,
-	InitialBackoff: 500 * time.Millisecond,
-	MaxBackoff:     5 * time.Second,
-	BackoffFactor:  1.75,
-	RetryableCodes: retryableCodes,
-}
 
 // DiscoveryClient is the client to the discovery service
 type DiscoveryClient interface {
@@ -84,7 +66,8 @@ type Service struct {
 
 // New creates a new dynamic selection service using Fabric's Discovery Service
 func New(ctx contextAPI.Client, channelID string, discovery fab.DiscoveryService, opts ...coptions.Opt) (*Service, error) {
-	options := params{retryOpts: defaultRetryOpts}
+	options := params{retryOpts: getDefaultRetryOpts(ctx, channelID)}
+
 	coptions.Apply(&options, opts)
 
 	if options.refreshInterval == 0 {
@@ -353,6 +336,10 @@ func asPeer(ctx contextAPI.Client, endpoint *discclient.Peer) (fab.Peer, error) 
 		Peer:        peer,
 		blockHeight: endpoint.StateInfoMessage.GetStateInfo().GetProperties().LedgerHeight,
 	}, nil
+}
+
+func getDefaultRetryOpts(ctx contextAPI.Client, channelID string) retry.Opts {
+	return ctx.EndpointConfig().ChannelConfig(channelID).Policies.Discovery.RetryOpts
 }
 
 type peerEndpoint struct {
