@@ -35,6 +35,10 @@ func TestDefaultChannelWithDefaultChannelConfiguredAndNoMatchers(t *testing.T) {
 	assert.Equal(t, 3, chConfig.Policies.QueryChannelConfig.MaxTargets)
 	assert.Equal(t, 1, chConfig.Policies.Discovery.MinResponses)
 	assert.Equal(t, 3, chConfig.Policies.Discovery.MaxTargets)
+	assert.Equal(t, 2, chConfig.Policies.Discovery.RetryOpts.Attempts)
+	assert.Equal(t, 2*time.Second, chConfig.Policies.Discovery.RetryOpts.InitialBackoff)
+	assert.Equal(t, 7*time.Second, chConfig.Policies.Discovery.RetryOpts.MaxBackoff)
+	assert.Equal(t, 2, len(chConfig.Policies.Discovery.RetryOpts.RetryableCodes))
 
 	eventPolicies := chConfig.Policies.EventService
 	assert.Equalf(t, fab.BalancedStrategy, eventPolicies.ResolverStrategy, "Unexpected value for ResolverStrategy")
