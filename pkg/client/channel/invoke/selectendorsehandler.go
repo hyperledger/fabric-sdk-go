@@ -23,7 +23,7 @@ import (
 var logger = logging.NewLogger("fabsdk/client")
 
 var lsccFilter = func(ccID string) bool {
-	return ccID != "lscc"
+	return ccID != "lscc" && ccID != "_lifecycle"
 }
 
 // SelectAndEndorseHandler selects endorsers according to the policies of the chaincodes in the provided invocation chain
