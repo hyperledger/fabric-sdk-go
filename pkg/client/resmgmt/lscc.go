@@ -7,6 +7,8 @@ SPDX-License-Identifier: Apache-2.0
 package resmgmt
 
 import (
+	"strings"
+
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/txn"
@@ -39,6 +41,7 @@ type chaincodeDeployRequest struct {
 	Name       string
 	Path       string
 	Version    string
+	Lang       string
 	Args       [][]byte
 	Policy     *common.SignaturePolicyEnvelope
 	CollConfig []*pb.CollectionConfig
@@ -52,7 +55,7 @@ func createChaincodeDeployProposal(txh fab.TransactionHeader, deploy chaincodePr
 	args = append(args, []byte(channelID))
 
 	ccds := &pb.ChaincodeDeploymentSpec{ChaincodeSpec: &pb.ChaincodeSpec{
-		Type: pb.ChaincodeSpec_GOLANG, ChaincodeId: &pb.ChaincodeID{Name: chaincode.Name, Path: chaincode.Path, Version: chaincode.Version},
+		Type: pb.ChaincodeSpec_Type(pb.ChaincodeSpec_Type_value[strings.ToUpper(chaincode.Lang)]), ChaincodeId: &pb.ChaincodeID{Name: chaincode.Name, Path: chaincode.Path, Version: chaincode.Version},
 		Input: &pb.ChaincodeInput{Args: chaincode.Args}}}
 	ccdsBytes, err := protoutil.Marshal(ccds)
 	if err != nil {
@@ -90,6 +93,7 @@ func createChaincodeDeployProposal(txh fab.TransactionHeader, deploy chaincodePr
 
 	cir := fab.ChaincodeInvokeRequest{
 		ChaincodeID: lscc,
+		Lang:        chaincode.Lang,
 		Fcn:         fcn,
 		Args:        args,
 	}

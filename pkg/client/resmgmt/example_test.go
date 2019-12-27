@@ -64,7 +64,7 @@ func Example() {
 
 	// Instantiate example chaincode on channel 'mychannel'
 	ccPolicy := cauthdsl.SignedByMspMember("Org1MSP")
-	instantiateReq := InstantiateCCRequest{Name: "ExampleCC", Version: "v0", Path: "path", Policy: ccPolicy}
+	instantiateReq := InstantiateCCRequest{Name: "ExampleCC", Version: "v0", Lang: "golang", Path: "path", Policy: ccPolicy}
 	_, err = c.InstantiateCC("mychannel", instantiateReq, WithTargets(peer))
 	if err != nil {
 		fmt.Printf("failed to install chaincode: %s\n", err)
@@ -173,7 +173,7 @@ func ExampleWithTargetFilter() {
 	}
 
 	ccPolicy := cauthdsl.SignedByMspMember("Org1MSP")
-	req := InstantiateCCRequest{Name: "ExampleCC", Version: "v0", Path: "path", Policy: ccPolicy}
+	req := InstantiateCCRequest{Name: "ExampleCC", Version: "v0", Lang: "golang", Path: "path", Policy: ccPolicy}
 
 	resp, err := c.InstantiateCC("mychannel", req, WithTargetFilter(&urlTargetFilter{url: "http://peer1.com"}))
 	if err != nil {
@@ -292,7 +292,7 @@ func ExampleClient_InstantiateCC() {
 	}
 
 	ccPolicy := cauthdsl.SignedByMspMember("Org1MSP")
-	req := InstantiateCCRequest{Name: "ExampleCC", Version: "v0", Path: "path", Policy: ccPolicy}
+	req := InstantiateCCRequest{Name: "ExampleCC", Version: "v0", Lang: "golang", Path: "path", Policy: ccPolicy}
 
 	resp, err := c.InstantiateCC("mychannel", req)
 	if err != nil {
@@ -316,7 +316,7 @@ func ExampleClient_UpgradeCC() {
 	}
 
 	ccPolicy := cauthdsl.SignedByMspMember("Org1MSP")
-	req := UpgradeCCRequest{Name: "ExampleCC", Version: "v1", Path: "path", Policy: ccPolicy}
+	req := UpgradeCCRequest{Name: "ExampleCC", Version: "v1", Lang: "golang", Path: "path", Policy: ccPolicy}
 
 	resp, err := c.UpgradeCC("mychannel", req, WithTargets(mockPeer()))
 	if err != nil {

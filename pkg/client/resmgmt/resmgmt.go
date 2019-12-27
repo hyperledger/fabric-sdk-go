@@ -72,6 +72,7 @@ type InstantiateCCRequest struct {
 	Name       string
 	Path       string
 	Version    string
+	Lang       string
 	Args       [][]byte
 	Policy     *common.SignaturePolicyEnvelope
 	CollConfig []*pb.CollectionConfig
@@ -87,6 +88,7 @@ type UpgradeCCRequest struct {
 	Name       string
 	Path       string
 	Version    string
+	Lang       string
 	Args       [][]byte
 	Policy     *common.SignaturePolicyEnvelope
 	CollConfig []*pb.CollectionConfig
@@ -872,8 +874,8 @@ func checkRequiredCCProposalParams(channelID string, req InstantiateCCRequest) e
 		return errors.New("must provide channel ID")
 	}
 
-	if req.Name == "" || req.Version == "" || req.Path == "" || req.Policy == nil {
-		return errors.New("Chaincode name, version, path and policy are required")
+	if req.Name == "" || req.Lang == "" || req.Version == "" || req.Path == "" || req.Policy == nil {
+		return errors.New("Chaincode name, language, version, path and policy are required")
 	}
 	return nil
 }
