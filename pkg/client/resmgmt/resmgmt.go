@@ -793,7 +793,7 @@ func (rc *Client) verifyTPSignature(channelService fab.ChannelService, txProposa
 
 // sendCCProposal sends proposal for type  Instantiate, Upgrade
 func (rc *Client) sendCCProposal(reqCtx reqContext.Context, ccProposalType chaincodeProposalType, channelID string, req InstantiateCCRequest, opts requestOptions) (fab.TransactionID, error) {
-	if err := checkRequiredCCProposalParams(channelID, req); err != nil {
+	if err := checkRequiredCCProposalParams(channelID, &req); err != nil {
 		return fab.EmptyTransactionID, err
 	}
 
@@ -868,7 +868,7 @@ func (rc *Client) sendTransactionAndCheckEvent(eventService fab.EventService, tp
 	}
 }
 
-func checkRequiredCCProposalParams(channelID string, req InstantiateCCRequest) error {
+func checkRequiredCCProposalParams(channelID string, req *InstantiateCCRequest) error {
 
 	if channelID == "" {
 		return errors.New("must provide channel ID")
@@ -879,7 +879,7 @@ func checkRequiredCCProposalParams(channelID string, req InstantiateCCRequest) e
 	}
 
 	// Forward compatibility, set Lang to golang by default
-	if req.Lang == 0 && pb.ChaincodeSpec_Type_name[int32(req.Lang)] == "" {
+	if req.Lang == 0 || pb.ChaincodeSpec_Type_name[int32(req.Lang)] == "" {
 		req.Lang = pb.ChaincodeSpec_GOLANG
 	}
 
