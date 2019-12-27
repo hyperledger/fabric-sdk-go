@@ -874,9 +874,15 @@ func checkRequiredCCProposalParams(channelID string, req InstantiateCCRequest) e
 		return errors.New("must provide channel ID")
 	}
 
-	if req.Name == "" || req.Lang == "" || req.Version == "" || req.Path == "" || req.Policy == nil {
-		return errors.New("Chaincode name, language, version, path and policy are required")
+	if req.Name == "" || req.Version == "" || req.Path == "" || req.Policy == nil {
+		return errors.New("Chaincode name, version, path and policy are required")
 	}
+
+	// Forward compatibility, set Lang to golang by default
+	if req.Lang == "" {
+		req.Lang = "golang"
+	}
+
 	return nil
 }
 
