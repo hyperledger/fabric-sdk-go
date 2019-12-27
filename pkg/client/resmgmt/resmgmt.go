@@ -72,7 +72,7 @@ type InstantiateCCRequest struct {
 	Name       string
 	Path       string
 	Version    string
-	Lang       string
+	Lang       pb.ChaincodeSpec_Type
 	Args       [][]byte
 	Policy     *common.SignaturePolicyEnvelope
 	CollConfig []*pb.CollectionConfig
@@ -88,7 +88,7 @@ type UpgradeCCRequest struct {
 	Name       string
 	Path       string
 	Version    string
-	Lang       string
+	Lang       pb.ChaincodeSpec_Type
 	Args       [][]byte
 	Policy     *common.SignaturePolicyEnvelope
 	CollConfig []*pb.CollectionConfig
@@ -879,8 +879,8 @@ func checkRequiredCCProposalParams(channelID string, req InstantiateCCRequest) e
 	}
 
 	// Forward compatibility, set Lang to golang by default
-	if req.Lang == "" {
-		req.Lang = "golang"
+	if req.Lang == 0 && pb.ChaincodeSpec_Type_name[int32(req.Lang)] == "" {
+		req.Lang = pb.ChaincodeSpec_GOLANG
 	}
 
 	return nil
