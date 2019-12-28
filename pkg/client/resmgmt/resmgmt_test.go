@@ -1618,31 +1618,28 @@ func TestCheckRequiredCCProposalParams(t *testing.T) {
 	req := InstantiateCCRequest{Name: "name", Version: "version", Path: "path", Policy: ccPolicy}
 
 	// Test empty channel lang
-	err := checkRequiredCCProposalParams("mychannel", &req)
-	if err != nil {
-		t.Fatal("Should have failed for empty request")
-	}
+	checkRequiredCCProposalParams("mychannel", &req)
 	if req.Lang != pb.ChaincodeSpec_GOLANG {
 		t.Fatal("Lang must be equal to golang", req.Lang)
 	}
 
 	// Test channel lang with golang
 	req = InstantiateCCRequest{Name: "name", Version: "version", Lang: pb.ChaincodeSpec_GOLANG, Path: "path", Policy: ccPolicy}
-	err = checkRequiredCCProposalParams("mychannel", &req)
+	checkRequiredCCProposalParams("mychannel", &req)
 	if req.Lang != pb.ChaincodeSpec_GOLANG {
 		t.Fatal("Lang must be equal to golang")
 	}
 
 	// Test channel lang with java
 	req = InstantiateCCRequest{Name: "name", Version: "version", Lang: pb.ChaincodeSpec_JAVA, Path: "path", Policy: ccPolicy}
-	err = checkRequiredCCProposalParams("mychannel", &req)
+	checkRequiredCCProposalParams("mychannel", &req)
 	if req.Lang != pb.ChaincodeSpec_JAVA {
-		t.Fatal("Lang must be equal to golang")
+		t.Fatal("Lang must be equal to java")
 	}
 
 	// Test channel lang with unknown
 	req = InstantiateCCRequest{Name: "name", Version: "version", Lang: 11, Path: "path", Policy: ccPolicy}
-	err = checkRequiredCCProposalParams("mychannel", &req)
+	checkRequiredCCProposalParams("mychannel", &req)
 	if req.Lang != pb.ChaincodeSpec_GOLANG {
 		t.Fatal("Lang must be equal to golang", req.Lang)
 	}
