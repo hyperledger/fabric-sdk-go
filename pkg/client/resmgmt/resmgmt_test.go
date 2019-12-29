@@ -816,7 +816,7 @@ func TestInstantiateCCWithDifferentMSP(t *testing.T) {
 
 	// Valid request
 	ccPolicy := cauthdsl.SignedByMspMember("otherMSP")
-	req := InstantiateCCRequest{Name: "name", Version: "version", Lang: pb.ChaincodeSpec_GOLANG, Path: "path", Policy: ccPolicy}
+	req := InstantiateCCRequest{Name: "name", Version: "version", Path: "path", Policy: ccPolicy}
 
 	// Test filter only provided (filter rejects discovery service peer msp)
 	_, err := rc.InstantiateCC("mychannel", req, WithTargetFilter(&mspFilter{mspID: "Org2MSP"}))
@@ -909,7 +909,7 @@ func TestUpgradeCCWithDifferentMSP(t *testing.T) {
 
 	// Valid request
 	ccPolicy := cauthdsl.SignedByMspMember("otherMSP")
-	req := UpgradeCCRequest{Name: "name", Version: "version", Lang: pb.ChaincodeSpec_GOLANG, Path: "path", Policy: ccPolicy}
+	req := UpgradeCCRequest{Name: "name", Version: "version", Path: "path", Policy: ccPolicy}
 
 	// Test filter only provided (filter rejects discovery service peer msp)
 	_, err := rc.UpgradeCC("mychannel", req, WithTargetFilter(&mspFilter{mspID: "Org2MSP"}))
@@ -967,7 +967,7 @@ func TestCCProposal(t *testing.T) {
 	rc := setupResMgmtClient(t, ctx)
 
 	ccPolicy := cauthdsl.SignedByMspMember("Org1MSP")
-	instantiateReq := InstantiateCCRequest{Name: "name", Version: "version", Lang: pb.ChaincodeSpec_GOLANG, Path: "path", Policy: ccPolicy}
+	instantiateReq := InstantiateCCRequest{Name: "name", Version: "version", Path: "path", Policy: ccPolicy}
 
 	// Test invalid function (only 'instatiate' and 'upgrade' are supported)
 	reqCtx, cancel := contextImpl.NewRequest(rc.ctx, contextImpl.WithTimeout(10*time.Second))
