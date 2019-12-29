@@ -39,6 +39,7 @@ type chaincodeDeployRequest struct {
 	Name       string
 	Path       string
 	Version    string
+	Lang       pb.ChaincodeSpec_Type
 	Args       [][]byte
 	Policy     *common.SignaturePolicyEnvelope
 	CollConfig []*pb.CollectionConfig
@@ -52,7 +53,7 @@ func createChaincodeDeployProposal(txh fab.TransactionHeader, deploy chaincodePr
 	args = append(args, []byte(channelID))
 
 	ccds := &pb.ChaincodeDeploymentSpec{ChaincodeSpec: &pb.ChaincodeSpec{
-		Type: pb.ChaincodeSpec_GOLANG, ChaincodeId: &pb.ChaincodeID{Name: chaincode.Name, Path: chaincode.Path, Version: chaincode.Version},
+		Type: chaincode.Lang, ChaincodeId: &pb.ChaincodeID{Name: chaincode.Name, Path: chaincode.Path, Version: chaincode.Version},
 		Input: &pb.ChaincodeInput{Args: chaincode.Args}}}
 	ccdsBytes, err := protoutil.Marshal(ccds)
 	if err != nil {
@@ -90,6 +91,7 @@ func createChaincodeDeployProposal(txh fab.TransactionHeader, deploy chaincodePr
 
 	cir := fab.ChaincodeInvokeRequest{
 		ChaincodeID: lscc,
+		Lang:        chaincode.Lang,
 		Fcn:         fcn,
 		Args:        args,
 	}

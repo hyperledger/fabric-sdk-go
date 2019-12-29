@@ -66,6 +66,7 @@ type TransactionHeader interface {
 // ChaincodeInvokeRequest contains the parameters for sending a transaction proposal.
 type ChaincodeInvokeRequest struct {
 	ChaincodeID  string
+	Lang         pb.ChaincodeSpec_Type
 	TransientMap map[string][]byte
 	Fcn          string
 	Args         [][]byte

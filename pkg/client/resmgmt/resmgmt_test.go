@@ -1612,6 +1612,39 @@ func TestGetConfigSignaturesFromIdentities(t *testing.T) {
 	assert.NotNil(t, signature, "signatures must not be empty")
 }
 
+func TestCheckRequiredCCProposalParams(t *testing.T) {
+	// Valid request
+	ccPolicy := cauthdsl.SignedByMspMember("Org1MSP")
+	req := InstantiateCCRequest{Name: "name", Version: "version", Path: "path", Policy: ccPolicy}
+
+	// Test empty channel lang
+	checkRequiredCCProposalParams("mychannel", &req)
+	if req.Lang != pb.ChaincodeSpec_GOLANG {
+		t.Fatal("Lang must be equal to golang", req.Lang)
+	}
+
+	// Test channel lang with golang
+	req = InstantiateCCRequest{Name: "name", Version: "version", Lang: pb.ChaincodeSpec_GOLANG, Path: "path", Policy: ccPolicy}
+	checkRequiredCCProposalParams("mychannel", &req)
+	if req.Lang != pb.ChaincodeSpec_GOLANG {
+		t.Fatal("Lang must be equal to golang")
+	}
+
+	// Test channel lang with java
+	req = InstantiateCCRequest{Name: "name", Version: "version", Lang: pb.ChaincodeSpec_JAVA, Path: "path", Policy: ccPolicy}
+	checkRequiredCCProposalParams("mychannel", &req)
+	if req.Lang != pb.ChaincodeSpec_JAVA {
+		t.Fatal("Lang must be equal to java")
+	}
+
+	// Test channel lang with unknown
+	req = InstantiateCCRequest{Name: "name", Version: "version", Lang: 11, Path: "path", Policy: ccPolicy}
+	checkRequiredCCProposalParams("mychannel", &req)
+	if req.Lang != pb.ChaincodeSpec_GOLANG {
+		t.Fatal("Lang must be equal to golang", req.Lang)
+	}
+}
+
 func createClientContext(fabCtx context.Client) context.ClientProvider {
 	return func() (context.Client, error) {
 		return fabCtx, nil
