@@ -99,7 +99,6 @@ func findSource(filePath string) ([]*Descriptor, error) {
 				if len(relPath) > len(folder) {
 					relPath = relPath[len(folder)+1:]
 				}
-				fmt.Println(relPath, relPath)
 				descriptors = append(descriptors, &Descriptor{name: relPath, fqp: path})
 			}
 			return nil
