@@ -168,6 +168,12 @@ func GetDeployPath() string {
 	return filepath.Join(metadata.GetProjectPath(), ccPath)
 }
 
+// GetJavaDeployPath returns the path to the java chaincode fixtrues
+func GetJavaDeployPath() string {
+	const ccPath = "test/fixtures/javatestdata"
+	return filepath.Join(metadata.GetProjectPath(), ccPath)
+}
+
 // GetChannelConfigTxPath returns the path to the named channel config file
 func GetChannelConfigTxPath(filename string) string {
 	return filepath.Join(metadata.GetProjectPath(), metadata.ChannelConfigPath, filename)
@@ -314,6 +320,28 @@ func InstantiateChaincode(resMgmt *resmgmt.Client, channelID, ccName, ccPath, cc
 	)
 }
 
+// InstantiateJavaChaincode instantiates the given java chaincode to the given channel
+func InstantiateJavaChaincode(resMgmt *resmgmt.Client, channelID, ccName, ccPath, ccVersion string, ccPolicyStr string, args [][]byte, collConfigs ...*pb.CollectionConfig) (resmgmt.InstantiateCCResponse, error) {
+	ccPolicy, err := cauthdsl.FromString(ccPolicyStr)
+	if err != nil {
+		return resmgmt.InstantiateCCResponse{}, errors.Wrapf(err, "error creating CC policy [%s]", ccPolicyStr)
+	}
+
+	return resMgmt.InstantiateCC(
+		channelID,
+		resmgmt.InstantiateCCRequest{
+			Name:       ccName,
+			Path:       ccPath,
+			Version:    ccVersion,
+			Lang:       pb.ChaincodeSpec_JAVA,
+			Args:       args,
+			Policy:     ccPolicy,
+			CollConfig: collConfigs,
+		},
+		resmgmt.WithRetry(retry.DefaultResMgmtOpts),
+	)
+}
+
 // UpgradeChaincode upgrades the given chaincode on the given channel
 func UpgradeChaincode(resMgmt *resmgmt.Client, channelID, ccName, ccPath, ccVersion string, ccPolicyStr string, args [][]byte, collConfigs ...*pb.CollectionConfig) (resmgmt.UpgradeCCResponse, error) {
 	ccPolicy, err := cauthdsl.FromString(ccPolicyStr)
@@ -327,6 +355,28 @@ func UpgradeChaincode(resMgmt *resmgmt.Client, channelID, ccName, ccPath, ccVers
 			Name:       ccName,
 			Path:       ccPath,
 			Version:    ccVersion,
+			Args:       args,
+			Policy:     ccPolicy,
+			CollConfig: collConfigs,
+		},
+		resmgmt.WithRetry(retry.DefaultResMgmtOpts),
+	)
+}
+
+// UpgradeJavaChaincode upgrades the given java chaincode on the given channel
+func UpgradeJavaChaincode(resMgmt *resmgmt.Client, channelID, ccName, ccPath, ccVersion string, ccPolicyStr string, args [][]byte, collConfigs ...*pb.CollectionConfig) (resmgmt.UpgradeCCResponse, error) {
+	ccPolicy, err := cauthdsl.FromString(ccPolicyStr)
+	if err != nil {
+		return resmgmt.UpgradeCCResponse{}, errors.Wrapf(err, "error creating CC policy [%s]", ccPolicyStr)
+	}
+
+	return resMgmt.UpgradeCC(
+		channelID,
+		resmgmt.UpgradeCCRequest{
+			Name:       ccName,
+			Path:       ccPath,
+			Version:    ccVersion,
+			Lang:       pb.ChaincodeSpec_JAVA,
 			Args:       args,
 			Policy:     ccPolicy,
 			CollConfig: collConfigs,
