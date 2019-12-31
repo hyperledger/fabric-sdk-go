@@ -182,7 +182,7 @@ func InstantiateExamplePvtChaincode(orgs []*OrgContext, channelID, ccID, ccPolic
 
 // InstantiateExampleJavaChaincode instantiates the example CC on the given channel
 func InstantiateExampleJavaChaincode(orgs []*OrgContext, channelID, ccID, ccPolicy string, collConfigs ...*pb.CollectionConfig) error {
-	_, err := InstantiateJavaChaincode(orgs[0].ResMgmt, channelID, ccID, exampleCCPath, exampleCCVersion, ccPolicy, ExampleCCInitArgs(), collConfigs...)
+	_, err := InstantiateJavaChaincode(orgs[0].ResMgmt, channelID, ccID, exampleJavaCCPath, exampleJavaCCVersion, ccPolicy, ExampleCCInitArgs(), collConfigs...)
 	return err
 }
 
