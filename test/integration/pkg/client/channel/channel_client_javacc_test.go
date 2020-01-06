@@ -47,10 +47,11 @@ func TestJavaChaincodeInstallInstantiateAndUpgrade(t *testing.T) {
 	}
 
 	// test query
-	testJavaQuery(t, chClient, "200", ccID, "b")
+	testExampleCCQuery(t, chClient, "200", ccID, "b")
 }
 
-func testJavaQuery(t *testing.T, chClient *channel.Client, expected string, ccID, key string) {
+// testExampleCCQuery query examplechaincode
+func testExampleCCQuery(t *testing.T, chClient *channel.Client, expected string, ccID, key string) {
 	const (
 		maxRetries = 10
 		retrySleep = 500 * time.Millisecond
