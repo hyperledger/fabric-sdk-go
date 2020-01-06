@@ -48,6 +48,13 @@ func TestResMgmtClientQueries(t *testing.T) {
 	testInstalledChaincodes(t, javaCCID, target, client)
 
 	testInstantiatedChaincodes(t, orgChannelID, javaCCID, target, client)
+
+	// test node chaincode installed and instantiated
+	nodeCCID := integration.GenerateExampleNodeID(false)
+
+	testInstalledChaincodes(t, nodeCCID, target, client)
+
+	testInstantiatedChaincodes(t, orgChannelID, nodeCCID, target, client)
 }
 
 func testInstantiatedChaincodes(t *testing.T, channelID string, ccID string, target string, client *resmgmt.Client) {
