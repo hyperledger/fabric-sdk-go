@@ -495,7 +495,7 @@ func (handle *ContextHandle) validateSession(currentSession mPkcs11.SessionHandl
 	logger.Debugf("Validating session[%+v], for any error condition....", currentSession)
 	e = handle.detectErrorCondition(currentSession)
 	if e != nil {
-		logger.Warnf("Found error condition, while validating session [%+v], error:[%v]", currentSession, e)
+		logger.Debugf("Found error condition, while validating session [%+v], error:[%v]", currentSession, e)
 	}
 
 	switch e {
@@ -600,6 +600,7 @@ func (handle *ContextHandle) detectErrorCondition(currentSession mPkcs11.Session
 	if e == nil {
 		_, e = handle.ctx.GetSessionInfo(currentSession)
 		if e == nil {
+			logger.Debugf("Validating operation state for session[%+v]", currentSession)
 			_, e = handle.ctx.GetOperationState(currentSession)
 		}
 	}
