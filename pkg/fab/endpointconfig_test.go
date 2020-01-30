@@ -112,8 +112,8 @@ func TestCAConfigFailsByNetworkConfig(t *testing.T) {
 		t.Fatalf("failed to reset network config, cause:%s", err)
 	}
 	//Testing OrdererConfig failure scenario
-	oConfig, ok := sampleEndpointConfig.OrdererConfig("peerorg1")
-	if oConfig != nil || ok {
+	oConfig, ok, ignoreOrderer := sampleEndpointConfig.OrdererConfig("peerorg1")
+	if oConfig != nil || ok || ignoreOrderer {
 		t.Fatal("Testing get OrdererConfig supposed to fail")
 	}
 
@@ -323,7 +323,7 @@ func TestOrdererConfig(t *testing.T) {
 		t.Fatal("Failed to get endpoint config from backend")
 	}
 
-	oConfig, _ := endpointConfig.OrdererConfig("invalid")
+	oConfig, _, _ := endpointConfig.OrdererConfig("invalid")
 	if oConfig != nil {
 		t.Fatal("Testing non-existing OrdererConfig failed")
 	}
@@ -392,11 +392,13 @@ func testCommonConfigOrderer(t *testing.T, expectedConfigHost string, fetchedCon
 		t.Fatal("Failed to get endpoint config from backend")
 	}
 
-	expectedConfig, ok := endpointConfig.OrdererConfig(expectedConfigHost)
+	expectedConfig, ok, ignoreOrderer := endpointConfig.OrdererConfig(expectedConfigHost)
 	assert.True(t, ok)
+	assert.False(t, ignoreOrderer)
 
-	fetchedConfig, ok = endpointConfig.OrdererConfig(fetchedConfigHost)
+	fetchedConfig, ok, ignoreOrderer = endpointConfig.OrdererConfig(fetchedConfigHost)
 	assert.True(t, ok)
+	assert.False(t, ignoreOrderer)
 
 	if expectedConfig.URL == "" {
 		t.Fatal("Url value for the host is empty")
@@ -1374,8 +1376,9 @@ func TestEntityMatchers(t *testing.T) {
 	assert.True(t, ok, "supposed to find peer config")
 	assert.NotNil(t, peerConfig, "supposed to find peer config")
 
-	ordererConfig, ok := endpointConfig.OrdererConfig("xyz.org1.example.com")
+	ordererConfig, ok, ignoreOrderer := endpointConfig.OrdererConfig("xyz.org1.example.com")
 	assert.True(t, ok, "supposed to find orderer config")
+	assert.False(t, ignoreOrderer, "supposed to not ignore orderer")
 	assert.NotNil(t, ordererConfig, "supposed to find orderer config")
 
 	channelConfig := endpointConfig.ChannelConfig("samplexyzchannel")
@@ -1414,8 +1417,9 @@ func TestDefaultGRPCOpts(t *testing.T) {
 	_, ok = peerConfig.GRPCOptions["allow-insecure"]
 	assert.True(t, ok)
 
-	ordererConfig, ok := endpointConfig.OrdererConfig("xyz.org1.example.com")
+	ordererConfig, ok, ignoreOrderer := endpointConfig.OrdererConfig("xyz.org1.example.com")
 	assert.True(t, ok, "supposed to find orderer config")
+	assert.False(t, ignoreOrderer)
 	assert.NotNil(t, ordererConfig, "supposed to find orderer config")
 	assert.NotEmpty(t, ordererConfig.GRPCOptions)
 	assert.Equal(t, 6, len(ordererConfig.GRPCOptions))
