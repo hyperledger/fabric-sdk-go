@@ -1481,7 +1481,7 @@ func (c *EndpointConfig) tryMatchingPeerConfig(peerSearchKey string, searchByURL
 func (c *EndpointConfig) matchPeer(peerSearchKey string, matcher matcherEntry) (*fab.PeerConfig, bool) {
 
 	if matcher.matchConfig.IgnoreEndpoint {
-		logger.Debugf(" Ignoring peer `%s` since entity matcher IgnoreEndpoint flag is on", peerSearchKey)
+		logger.Debugf("Ignoring peer `%s` since entity matcher IgnoreEndpoint flag is on", peerSearchKey)
 		return nil, false
 	}
 
@@ -1583,7 +1583,7 @@ func (c *EndpointConfig) tryMatchingOrdererConfig(ordererSearchKey string, searc
 func (c *EndpointConfig) matchOrderer(ordererSearchKey string, matcher matcherEntry) (*fab.OrdererConfig, bool) {
 
 	if matcher.matchConfig.IgnoreEndpoint {
-		logger.Debugf(" Ignoring peer `%s` since entity matcher IgnoreEndpoint flag is on", ordererSearchKey)
+		logger.Debugf("Ignoring orderer `%s` since entity matcher IgnoreEndpoint flag is on", ordererSearchKey)
 		return nil, false
 	}
 
