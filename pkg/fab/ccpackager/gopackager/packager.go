@@ -41,23 +41,27 @@ var keep = []string{".c", ".h", ".s", ".go", ".yaml", ".json"}
 var logger = logging.NewLogger("fabsdk/fab")
 
 // NewCCPackage creates new go lang chaincode package
-func NewCCPackage(chaincodePath string, goPath string) (*resource.CCPackage, error) {
+func NewCCPackage(chaincodePath string, currentDir string) (*resource.CCPackage, error) {
 
 	if chaincodePath == "" {
 		return nil, errors.New("chaincode path must be provided")
 	}
 
-	var projDir string
-	gp := goPath
-	if gp == "" {
-		gp = defaultGoPath()
-		if gp == "" {
-			return nil, errors.New("GOPATH not defined")
+	var (
+		err     error
+		projDir string
+	)
+
+	if currentDir == "" {
+		currentDir, err = os.Getwd()
+		if err != nil {
+			return nil, errors.New("can't get current directory")
 		}
-		logger.Debugf("Default GOPATH=%s", gp)
+
+		logger.Debugf("Default GOPATH=%s", currentDir)
 	}
 
-	projDir = filepath.Join(gp, "src", chaincodePath)
+	projDir = filepath.Join(currentDir, chaincodePath)
 
 	logger.Debugf("projDir variable=%s", projDir)
 
@@ -65,8 +69,9 @@ func NewCCPackage(chaincodePath string, goPath string) (*resource.CCPackage, err
 	// and then pack them into an archive.  While the two phases aren't
 	// strictly necessary yet, they pave the way for the future where we
 	// will need to assemble sources from multiple packages
-	descriptors, err := findSource(gp, projDir)
+	descriptors, err := findSource(currentDir, projDir)
 	if err != nil {
+		fmt.Println(chaincodePath)
 		return nil, err
 	}
 	tarBytes, err := generateTarGz(descriptors)
@@ -87,7 +92,7 @@ func NewCCPackage(chaincodePath string, goPath string) (*resource.CCPackage, err
 // As a convenience, we also formulate a tar-friendly "name" for each file
 // based on relative position to 'goPath'.
 // -------------------------------------------------------------------------
-func findSource(goPath string, filePath string) ([]*Descriptor, error) {
+func findSource(currentDir string, filePath string) ([]*Descriptor, error) {
 	var descriptors []*Descriptor
 	err := filepath.Walk(filePath,
 		func(path string, fileInfo os.FileInfo, err error) error {
@@ -95,7 +100,7 @@ func findSource(goPath string, filePath string) ([]*Descriptor, error) {
 				return err
 			}
 			if fileInfo.Mode().IsRegular() && isSource(path) {
-				relPath, err := filepath.Rel(goPath, path)
+				relPath, err := filepath.Rel(currentDir, path)
 				if err != nil {
 					return err
 				}

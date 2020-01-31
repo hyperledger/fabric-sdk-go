@@ -25,7 +25,7 @@ func TestNewCCPackage(t *testing.T) {
 	pwd, err := os.Getwd()
 	assert.Nil(t, err, "error from os.Getwd %s", err)
 
-	ccPackage, err := NewCCPackage("github.com", filepath.Join(pwd, "testdata"))
+	ccPackage, err := NewCCPackage("testdata", pwd)
 	assert.Nil(t, err, "error from Create %s", err)
 
 	r := bytes.NewReader(ccPackage.Code)
@@ -45,7 +45,7 @@ func TestNewCCPackage(t *testing.T) {
 
 		assert.Nil(t, err, "error from tarReader.Next() %s", err)
 
-		exampleccExist = exampleccExist || header.Name == "src/github.com/example_cc/example_cc.go"
+		exampleccExist = exampleccExist || header.Name == "testdata/example_cc/example_cc.go"
 		eventMetaInfExists = eventMetaInfExists || header.Name == "META-INF/sample-json/event.json"
 		examplecc1MetaInfExists = examplecc1MetaInfExists || header.Name == "META-INF/example1.json"
 		fooMetaInfoExists = fooMetaInfoExists || strings.HasPrefix(header.Name, "foo-META-INF")
