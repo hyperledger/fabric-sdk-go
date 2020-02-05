@@ -79,6 +79,8 @@ type EnrollmentRequest struct {
 	// The type of the enrollment request: x509 or idemix
 	// The default is a request for an X509 enrollment certificate
 	Type string
+	// Additional hosts to add to certificate SANs
+	Hosts []string
 }
 
 // ReenrollmentRequest is a request to reenroll an identity.

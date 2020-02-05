@@ -56,6 +56,9 @@ func (c *fabricCAAdapter) Enroll(request *api.EnrollmentRequest) ([]byte, error)
 		Profile: request.Profile,
 		Type:    request.Type,
 		Label:   request.Label,
+		CSR: &caapi.CSRInfo{
+			Hosts: request.Hosts,
+		},
 	}
 
 	if len(request.AttrReqs) > 0 {

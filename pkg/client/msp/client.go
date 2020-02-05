@@ -342,6 +342,7 @@ func (c *Client) Enroll(enrollmentID string, opts ...EnrollmentOption) error {
 		Profile: eo.profile,
 		Type:    eo.typ,
 		Label:   eo.label,
+		Hosts:   eo.hosts,
 	}
 
 	if req.CAName == "" {
