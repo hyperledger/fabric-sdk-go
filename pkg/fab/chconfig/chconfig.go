@@ -445,7 +445,12 @@ func loadConfigGroupPolicies(versionsGroup *common.ConfigGroup, group *common.Co
 		versionsGroup.Policies = make(map[string]*common.ConfigPolicy)
 		for key, configPolicy := range policies {
 			versionsGroup.Policies[key] = &common.ConfigPolicy{}
-			err := loadConfigPolicy(versionsGroup.Policies[key], configPolicy)
+
+			versionsGroup.Policies[key].Version = configPolicy.Version
+			versionsGroup.Policies[key].Policy = configPolicy.Policy
+			versionsGroup.Policies[key].ModPolicy = configPolicy.ModPolicy
+
+			err := loadPolicy(configPolicy.Policy)
 			if err != nil {
 				return err
 			}
@@ -454,13 +459,6 @@ func loadConfigGroupPolicies(versionsGroup *common.ConfigGroup, group *common.Co
 
 	return nil
 
-}
-
-func loadConfigPolicy(versionsPolicy *common.ConfigPolicy, configPolicy *common.ConfigPolicy) error {
-	versionsPolicy.Version = configPolicy.Version
-	versionsPolicy.Policy = configPolicy.Policy
-	versionsPolicy.ModPolicy = configPolicy.ModPolicy
-	return loadPolicy(configPolicy.Policy)
 }
 
 func loadPolicy(policy *common.Policy) error {
