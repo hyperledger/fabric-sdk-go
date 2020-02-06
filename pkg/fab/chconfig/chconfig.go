@@ -458,6 +458,8 @@ func loadConfigGroupPolicies(versionsGroup *common.ConfigGroup, group *common.Co
 
 func loadConfigPolicy(versionsPolicy *common.ConfigPolicy, configPolicy *common.ConfigPolicy) error {
 	versionsPolicy.Version = configPolicy.Version
+	versionsPolicy.Policy = configPolicy.Policy
+	versionsPolicy.ModPolicy = configPolicy.ModPolicy
 	return loadPolicy(configPolicy.Policy)
 }
 
