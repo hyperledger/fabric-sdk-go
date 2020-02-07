@@ -123,12 +123,13 @@ func (mr *MockEndpointConfigMockRecorder) NetworkPeers() *gomock.Call {
 }
 
 // OrdererConfig mocks base method
-func (m *MockEndpointConfig) OrdererConfig(arg0 string) (*fab.OrdererConfig, bool) {
+func (m *MockEndpointConfig) OrdererConfig(arg0 string) (*fab.OrdererConfig, bool, bool) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "OrdererConfig", arg0)
 	ret0, _ := ret[0].(*fab.OrdererConfig)
 	ret1, _ := ret[1].(bool)
-	return ret0, ret1
+	ret2, _ := ret[2].(bool)
+	return ret0, ret1, ret2
 }
 
 // OrdererConfig indicates an expected call of OrdererConfig
