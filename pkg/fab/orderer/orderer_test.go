@@ -15,17 +15,17 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/endpoint"
 	"google.golang.org/grpc"
 	grpccodes "google.golang.org/grpc/codes"
 
 	"github.com/golang/mock/gomock"
+	"github.com/hyperledger/fabric-protos-go/common"
+	ab "github.com/hyperledger/fabric-protos-go/orderer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/test/mockfab"
+	"github.com/hyperledger/fabric-sdk-go/pkg/core/config/endpoint"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
-	"github.com/hyperledger/fabric-protos-go/common"
-	ab "github.com/hyperledger/fabric-protos-go/orderer"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
@@ -522,6 +522,41 @@ func TestForGRPCErrorsWithKeepAliveOpts(t *testing.T) {
 	assert.EqualValues(t, status.ConnectionFailed, status.ToOrdererStatusCode(statusError.Code))
 	//assert.EqualValues(t, grpccodes.DeadlineExceeded, status.ToGRPCStatusCode(statusError.Code))
 	assert.Equal(t, status.OrdererClientStatus, statusError.Group)
+}
+
+func TestNewOrdererFromOrdererName(t *testing.T) {
+	t.Run("run simple FromOrdererName", func(t *testing.T){
+		_, err := New(mocks.NewMockEndpointConfig(), FromOrdererName("orderer"))
+		if err != nil {
+			t.Fatalf("Failed to get new orderer from name. Error: %s", err)
+		}
+	})
+
+	t.Run("run FromOrdererName with Ignore orderer in config", func(t *testing.T){
+		mockCtrl := gomock.NewController(t)
+		defer mockCtrl.Finish()
+		mockEndpoingCfg := mockfab.NewMockEndpointConfig(mockCtrl)
+
+		mockEndpoingCfg.EXPECT().OrdererConfig("orderer").Return(nil, false, true)
+
+		_, err := New(mockEndpoingCfg, FromOrdererName("orderer"))
+		if err == nil {
+			t.Fatal("Expected error but got nil")
+		}
+	})
+
+	t.Run("run FromOrdererName with orderer not found in config", func(t *testing.T){
+		mockCtrl := gomock.NewController(t)
+		defer mockCtrl.Finish()
+		mockEndpoingCfg := mockfab.NewMockEndpointConfig(mockCtrl)
+
+		mockEndpoingCfg.EXPECT().OrdererConfig("orderer").Return(nil, false, false)
+
+		_, err := New(mockEndpoingCfg, FromOrdererName("orderer"))
+		if err == nil {
+			t.Fatal("Expected error but got nil")
+		}
+	})
 }
 
 func TestNewOrdererFromConfig(t *testing.T) {

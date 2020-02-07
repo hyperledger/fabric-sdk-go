@@ -236,8 +236,8 @@ func (m *mockrderersConfig) OrderersConfig() []fab.OrdererConfig {
 
 type mockOrdererConfig struct{}
 
-func (m *mockOrdererConfig) OrdererConfig(name string) (*fab.OrdererConfig, bool) {
-	return &fab.OrdererConfig{URL: "o.com", GRPCOptions: nil, TLSCACert: nil}, true
+func (m *mockOrdererConfig) OrdererConfig(name string) (*fab.OrdererConfig, bool, bool) {
+	return &fab.OrdererConfig{URL: "o.com", GRPCOptions: nil, TLSCACert: nil}, true, false
 }
 
 type mockPeersConfig struct{}

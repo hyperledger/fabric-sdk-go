@@ -193,7 +193,7 @@ func (c *EndpointConfig) OrderersConfig() []fab.OrdererConfig {
 }
 
 // OrdererConfig returns the requested orderer
-func (c *EndpointConfig) OrdererConfig(nameOrURL string) (*fab.OrdererConfig, bool) {
+func (c *EndpointConfig) OrdererConfig(nameOrURL string) (*fab.OrdererConfig, bool, bool) {
 	return c.tryMatchingOrdererConfig(nameOrURL, true)
 }
 
@@ -1282,8 +1282,8 @@ func (c *EndpointConfig) loadOrdererConfigs() error {
 	ordererConfigs := []fab.OrdererConfig{}
 	for name := range c.networkConfig.Orderers {
 
-		matchedOrderer, ok := c.tryMatchingOrdererConfig(name, false)
-		if !ok {
+		matchedOrderer, ok, ignoreOrderer := c.tryMatchingOrdererConfig(name, false)
+		if !ok || ignoreOrderer {
 			continue
 		}
 
@@ -1345,7 +1345,11 @@ func (c *EndpointConfig) loadChannelOrderers() error {
 		orderers := []fab.OrdererConfig{}
 		for _, ordererName := range channelConfig.Orderers {
 
-			orderer, ok := c.tryMatchingOrdererConfig(strings.ToLower(ordererName), false)
+			orderer, ok, ignoreOrderer := c.tryMatchingOrdererConfig(strings.ToLower(ordererName), false)
+			if ignoreOrderer {
+				continue
+			}
+
 			if !ok {
 				return errors.Errorf("Could not find Orderer Config for channel orderer [%s]", ordererName)
 			}
@@ -1539,7 +1543,7 @@ func (c *EndpointConfig) getMappedPeer(host string) *fab.PeerConfig {
 	return &mappedConfig
 }
 
-func (c *EndpointConfig) tryMatchingOrdererConfig(ordererSearchKey string, searchByURL bool) (*fab.OrdererConfig, bool) {
+func (c *EndpointConfig) tryMatchingOrdererConfig(ordererSearchKey string, searchByURL bool) (*fab.OrdererConfig, bool, bool) {
 
 	//loop over orderer entity matchers to find the matching orderer
 	for _, matcher := range c.ordererMatchers {
@@ -1552,7 +1556,7 @@ func (c *EndpointConfig) tryMatchingOrdererConfig(ordererSearchKey string, searc
 	//direct lookup if orderer matchers are not configured or no matchers matched
 	orderer, ok := c.networkConfig.Orderers[strings.ToLower(ordererSearchKey)]
 	if ok {
-		return &orderer, true
+		return &orderer, true, false
 	}
 
 	if searchByURL {
@@ -1563,7 +1567,7 @@ func (c *EndpointConfig) tryMatchingOrdererConfig(ordererSearchKey string, searc
 					URL:         ordererCfg.URL,
 					GRPCOptions: ordererCfg.GRPCOptions,
 					TLSCACert:   ordererCfg.TLSCACert,
-				}, true
+				}, true, false
 			}
 		}
 	}
@@ -1574,17 +1578,19 @@ func (c *EndpointConfig) tryMatchingOrdererConfig(ordererSearchKey string, searc
 			URL:         ordererSearchKey,
 			GRPCOptions: c.defaultOrdererConfig.GRPCOptions,
 			TLSCACert:   c.defaultOrdererConfig.TLSCACert,
-		}, true
+		}, true, false
 	}
 
-	return nil, false
+	return nil, false, false
 }
 
-func (c *EndpointConfig) matchOrderer(ordererSearchKey string, matcher matcherEntry) (*fab.OrdererConfig, bool) {
+func (c *EndpointConfig) matchOrderer(ordererSearchKey string, matcher matcherEntry) (*fab.OrdererConfig, bool, bool) {
 
 	if matcher.matchConfig.IgnoreEndpoint {
-		logger.Debugf("Ignoring orderer `%s` since entity matcher IgnoreEndpoint flag is on", ordererSearchKey)
-		return nil, false
+		logger.Debugf(" Ignoring orderer `%s` since entity matcher IgnoreEndpoint flag is on", ordererSearchKey)
+		// IgnoreEndpoint must force ignoring this matching orderer (weather found or not) and must be explicitly
+		// mentioned. The third argument is explicitly used for this, all other cases will return false.
+		return nil, false, true
 	}
 
 	mappedHost := c.regexMatchAndReplace(matcher.regex, ordererSearchKey, matcher.matchConfig.MappedHost)
@@ -1593,7 +1599,7 @@ func (c *EndpointConfig) matchOrderer(ordererSearchKey string, matcher matcherEn
 	matchedOrderer := c.getMappedOrderer(mappedHost)
 	if matchedOrderer == nil {
 		logger.Debugf("Could not find mapped host [%s] for orderer [%s]", matcher.matchConfig.MappedHost, ordererSearchKey)
-		return nil, false
+		return nil, false, false
 	}
 
 	//URLSubstitutionExp if found use from entity matcher otherwise use from mapped host
@@ -1611,7 +1617,7 @@ func (c *EndpointConfig) matchOrderer(ordererSearchKey string, matcher matcherEn
 		matchedOrderer.URL = c.getDefaultMatchingURL(ordererSearchKey)
 	}
 
-	return matchedOrderer, true
+	return matchedOrderer, true, false
 }
 
 func (c *EndpointConfig) getMappedOrderer(host string) *fab.OrdererConfig {
