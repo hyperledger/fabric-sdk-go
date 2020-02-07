@@ -8,6 +8,8 @@ package api
 
 import (
 	"errors"
+
+	"github.com/cloudflare/cfssl/csr"
 )
 
 var (
@@ -79,8 +81,24 @@ type EnrollmentRequest struct {
 	// The type of the enrollment request: x509 or idemix
 	// The default is a request for an X509 enrollment certificate
 	Type string
-	// Additional hosts to add to certificate SANs
-	Hosts []string
+	// CSR is Certificate Signing Request info
+	CSR *CSRInfo
+}
+
+// CSRInfo is Certificate Signing Request (CSR) Information
+type CSRInfo struct {
+	CN           string
+	Names        []csr.Name
+	Hosts        []string
+	KeyRequest   *BasicKeyRequest
+	CA           *csr.CAConfig
+	SerialNumber string
+}
+
+// BasicKeyRequest encapsulates size and algorithm for the key to be generated
+type BasicKeyRequest struct {
+	Algo string
+	Size int
 }
 
 // ReenrollmentRequest is a request to reenroll an identity.
@@ -97,6 +115,8 @@ type ReenrollmentRequest struct {
 	// AttrReqs are requests for attributes to add to the certificate.
 	// Each attribute is added only if the requestor owns the attribute.
 	AttrReqs []*AttributeRequest
+	// CSR is Certificate Signing Request info
+	CSR *CSRInfo
 }
 
 // Attribute defines additional attributes that may be passed along during registration

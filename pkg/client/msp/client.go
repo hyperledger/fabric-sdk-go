@@ -342,7 +342,7 @@ func (c *Client) Enroll(enrollmentID string, opts ...EnrollmentOption) error {
 		Profile: eo.profile,
 		Type:    eo.typ,
 		Label:   eo.label,
-		Hosts:   eo.hosts,
+		CSR:     createCSRInfo(eo.csr),
 	}
 
 	if req.CAName == "" {
@@ -664,6 +664,30 @@ func fillAffiliationInfo(info *AffiliationInfo, name string, affiliations []mspa
 		info.Affiliations = children
 	}
 	return nil
+}
+
+func createCSRInfo(csr *CSRInfo) *mspapi.CSRInfo {
+	if csr == nil {
+		// csr is not obrigatory, so we can return nil
+		return nil
+	}
+
+	var kr *mspapi.BasicKeyRequest
+	if csr.KeyRequest != nil {
+		kr = &mspapi.BasicKeyRequest{
+			Algo: csr.KeyRequest.Algo,
+			Size: csr.KeyRequest.Size,
+		}
+	}
+
+	return &mspapi.CSRInfo{
+		CA:           csr.CA,
+		CN:           csr.CN,
+		Hosts:        csr.Hosts,
+		KeyRequest:   kr,
+		Names:        csr.Names,
+		SerialNumber: csr.SerialNumber,
+	}
 }
 
 func getAllAttributes(attrs []mspapi.Attribute) []Attribute {

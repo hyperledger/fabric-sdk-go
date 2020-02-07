@@ -24,7 +24,7 @@ type enrollmentOptions struct {
 	label    string
 	typ      string
 	attrReqs []*AttributeRequest
-	hosts    []string
+	csr      *CSRInfo
 }
 
 // ClientOption describes a functional parameter for the New constructor
@@ -100,10 +100,10 @@ func WithAttributeRequests(attrReqs []*AttributeRequest) EnrollmentOption {
 	}
 }
 
-// WithHosts enrollment option
-func WithHosts(hosts []string) EnrollmentOption {
+// WithCSR enrollment option
+func WithCSR(csr *CSRInfo) EnrollmentOption {
 	return func(o *enrollmentOptions) error {
-		o.hosts = hosts
+		o.csr = csr
 		return nil
 	}
 }

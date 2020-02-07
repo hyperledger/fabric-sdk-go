@@ -56,9 +56,7 @@ func (c *fabricCAAdapter) Enroll(request *api.EnrollmentRequest) ([]byte, error)
 		Profile: request.Profile,
 		Type:    request.Type,
 		Label:   request.Label,
-		CSR: &caapi.CSRInfo{
-			Hosts: request.Hosts,
-		},
+		CSR:     createCSRInfo(request.CSR),
 	}
 
 	if len(request.AttrReqs) > 0 {
@@ -532,6 +530,30 @@ func fillAffiliationInfo(info *api.AffiliationInfo, name string, affiliations []
 		info.Affiliations = children
 	}
 	return nil
+}
+
+func createCSRInfo(csr *api.CSRInfo) *caapi.CSRInfo {
+	if csr == nil {
+		// csr is not obrigatory, so we can return nil
+		return nil
+	}
+
+	var kr *caapi.BasicKeyRequest
+	if csr.KeyRequest != nil {
+		kr = &caapi.BasicKeyRequest{
+			Algo: csr.KeyRequest.Algo,
+			Size: csr.KeyRequest.Size,
+		}
+	}
+
+	return &caapi.CSRInfo{
+		CA:           csr.CA,
+		CN:           csr.CN,
+		Hosts:        csr.Hosts,
+		KeyRequest:   kr,
+		Names:        csr.Names,
+		SerialNumber: csr.SerialNumber,
+	}
 }
 
 func getAllAttributes(attrs []caapi.Attribute) []api.Attribute {

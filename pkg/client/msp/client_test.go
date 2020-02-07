@@ -214,7 +214,7 @@ func TestEnrollWithAttributeRequests(t *testing.T) {
 	}
 }
 
-func TestEnrollWithHosts(t *testing.T) {
+func TestEnrollWithCSR(t *testing.T) {
 	f := testFixture{}
 	sdk := f.setup()
 	defer sdk.Close()
@@ -229,7 +229,12 @@ func TestEnrollWithHosts(t *testing.T) {
 		t.Fatal("Expected to not find user")
 	}
 
-	err = msp.Enroll(enrollUsername, WithSecret("enrollmentSecret"), WithHosts([]string{"localhost"}))
+	csr := &CSRInfo{
+		CN:    enrollUsername,
+		Hosts: []string{"localhost"},
+	}
+
+	err = msp.Enroll(enrollUsername, WithSecret("enrollmentSecret"), WithCSR(csr))
 	require.NoError(t, err)
 
 	enrolledUser, err := msp.GetSigningIdentity(enrollUsername)
@@ -238,7 +243,7 @@ func TestEnrollWithHosts(t *testing.T) {
 	assert.Equal(t, enrollUsername, enrolledUser.Identifier().ID)
 	assert.Equal(t, "Org1MSP", enrolledUser.Identifier().MSPID)
 
-	err = msp.Reenroll(enrolledUser.Identifier().ID, WithHosts([]string{"localhost"}))
+	err = msp.Reenroll(enrolledUser.Identifier().ID, WithCSR(csr))
 	if err != nil {
 		t.Fatalf("Reenroll return error %s", err)
 	}
