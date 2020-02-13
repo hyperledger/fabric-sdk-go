@@ -1,3 +1,7 @@
+// +build disabled
+
+// TODO fix java integration tests
+
 /*
  Copyright Mioto Yaku All Rights Reserved.
 
