@@ -40,7 +40,7 @@ owIgRo0pFBhgLXaJ9ECYR+gSNBDpIc5I/Fr7QL7iIleSQlY=
 
 func TestConnectIdentityInCcp(t *testing.T) {
 	gw, err := Connect(
-		WithConfig(config.FromFile("test/connection-tls.json")),
+		WithConfig(config.FromFile("testdata/connection-tls.json")),
 		WithUser("user1"),
 	)
 	if err != nil {
@@ -54,7 +54,7 @@ func TestConnectIdentityInCcp(t *testing.T) {
 
 func TestConnectNoOptions(t *testing.T) {
 	gw, err := Connect(
-		WithConfig(config.FromFile("test/connection-tls.json")),
+		WithConfig(config.FromFile("testdata/connection-tls.json")),
 		WithUser("user1"),
 	)
 
@@ -62,7 +62,7 @@ func TestConnectNoOptions(t *testing.T) {
 		t.Fatalf("Failed to create gateway: %s", err)
 	}
 
-	options := gw.(*gateway).options
+	options := gw.options
 
 	if options.CommitHandler != DefaultCommitHandlers.OrgAll {
 		t.Fatal("DefaultCommitHandler not correctly initialized")
@@ -74,7 +74,7 @@ func TestConnectNoOptions(t *testing.T) {
 }
 
 func TestConnectWithSDK(t *testing.T) {
-	sdk, err := fabsdk.New(config.FromFile("test/connection-tls.json"))
+	sdk, err := fabsdk.New(config.FromFile("testdata/connection-tls.json"))
 
 	if err != nil {
 		t.Fatalf("Failed to create SDK: %s", err)
@@ -89,7 +89,7 @@ func TestConnectWithSDK(t *testing.T) {
 		t.Fatalf("Failed to create gateway: %s", err)
 	}
 
-	options := gw.(*gateway).options
+	options := gw.options
 
 	if options.CommitHandler != DefaultCommitHandlers.OrgAll {
 		t.Fatal("DefaultCommitHandler not correctly initialized")
@@ -105,7 +105,7 @@ func TestConnectWithIdentity(t *testing.T) {
 	wallet.Put("user", NewX509Identity(testCert, testPrivKey))
 
 	gw, err := Connect(
-		WithConfig(config.FromFile("test/connection-tls.json")),
+		WithConfig(config.FromFile("testdata/connection-tls.json")),
 		WithIdentity(wallet, "user"),
 	)
 
@@ -113,11 +113,11 @@ func TestConnectWithIdentity(t *testing.T) {
 		t.Fatalf("Failed to create gateway: %s", err)
 	}
 
-	if gw.(*gateway).options.Identity == nil {
+	if gw.options.Identity == nil {
 		t.Fatal("Identity not set")
 	}
 
-	mspid := gw.(*gateway).options.Identity.Identifier().MSPID
+	mspid := gw.options.Identity.Identifier().MSPID
 
 	if !reflect.DeepEqual(mspid, "Org1MSP") {
 		t.Fatalf("Incorrect mspid: %s", mspid)
@@ -126,7 +126,7 @@ func TestConnectWithIdentity(t *testing.T) {
 
 func TestConnectWithCommitHandler(t *testing.T) {
 	gw, err := Connect(
-		WithConfig(config.FromFile("test/connection-tls.json")),
+		WithConfig(config.FromFile("testdata/connection-tls.json")),
 		WithUser("user1"),
 		WithCommitHandler(DefaultCommitHandlers.OrgAny),
 	)
@@ -134,7 +134,7 @@ func TestConnectWithCommitHandler(t *testing.T) {
 		t.Fatalf("Failed to create gateway: %s", err)
 	}
 
-	options := gw.(*gateway).options
+	options := gw.options
 
 	if options.CommitHandler != DefaultCommitHandlers.OrgAny {
 		t.Fatal("CommitHandler not set correctly")
@@ -143,7 +143,7 @@ func TestConnectWithCommitHandler(t *testing.T) {
 
 func TestConnectWithDiscovery(t *testing.T) {
 	gw, err := Connect(
-		WithConfig(config.FromFile("test/connection-tls.json")),
+		WithConfig(config.FromFile("testdata/connection-tls.json")),
 		WithUser("user1"),
 		WithDiscovery(false),
 	)
@@ -151,7 +151,7 @@ func TestConnectWithDiscovery(t *testing.T) {
 		t.Fatalf("Failed to create gateway: %s", err)
 	}
 
-	options := gw.(*gateway).options
+	options := gw.options
 
 	if options.Discovery != false {
 		t.Fatal("Discovery not set correctly")
@@ -160,7 +160,7 @@ func TestConnectWithDiscovery(t *testing.T) {
 
 func TestConnectWithMultipleOptions(t *testing.T) {
 	gw, err := Connect(
-		WithConfig(config.FromFile("test/connection-tls.json")),
+		WithConfig(config.FromFile("testdata/connection-tls.json")),
 		WithUser("user1"),
 		WithCommitHandler(DefaultCommitHandlers.OrgAny),
 		WithDiscovery(false),
@@ -169,7 +169,7 @@ func TestConnectWithMultipleOptions(t *testing.T) {
 		t.Fatalf("Failed to create gateway: %s", err)
 	}
 
-	options := gw.(*gateway).options
+	options := gw.options
 
 	if options.Discovery != false {
 		t.Fatal("Discovery not set correctly")
@@ -180,9 +180,9 @@ func TestConnectWithMultipleOptions(t *testing.T) {
 	}
 }
 
-func TestGetSdk(t *testing.T) {
+func TestGetSDK(t *testing.T) {
 	gw, err := Connect(
-		WithConfig(config.FromFile("test/connection-tls.json")),
+		WithConfig(config.FromFile("testdata/connection-tls.json")),
 		WithUser("user1"),
 	)
 
@@ -190,14 +190,14 @@ func TestGetSdk(t *testing.T) {
 		t.Fatalf("Failed to create gateway: %s", err)
 	}
 
-	if gw.getSdk() != gw.(*gateway).sdk {
-		t.Fatal("getSdk() not returning the correct object")
+	if gw.getSDK() != gw.sdk {
+		t.Fatal("getSDK() not returning the correct object")
 	}
 }
 
 func TestGetOrg(t *testing.T) {
 	gw, err := Connect(
-		WithConfig(config.FromFile("test/connection-tls.json")),
+		WithConfig(config.FromFile("testdata/connection-tls.json")),
 		WithUser("user1"),
 	)
 
@@ -214,7 +214,7 @@ func TestGetOrg(t *testing.T) {
 
 func TestGetPeersForOrg(t *testing.T) {
 	gw, err := Connect(
-		WithConfig(config.FromFile("test/connection-tls.json")),
+		WithConfig(config.FromFile("testdata/connection-tls.json")),
 		WithUser("user1"),
 	)
 
@@ -250,7 +250,7 @@ func TestGetNetwork(t *testing.T) {
 	wallet.Put("user", NewX509Identity(testCert, testPrivKey))
 
 	gw, err := Connect(
-		WithConfig(config.FromFile("test/connection-tls.json")),
+		WithConfig(config.FromFile("testdata/connection-tls.json")),
 		WithIdentity(wallet, "user"))
 
 	if err != nil {
@@ -261,16 +261,11 @@ func TestGetNetwork(t *testing.T) {
 	if err == nil {
 		t.Fatalf("Failed to get network: %s", err)
 	}
-
-	// name := nw.GetName()
-	// if name != "mychannel" {
-	// 	t.Fatalf("GetNetwork() not returning the correct named network: %s", name)
-	// }
 }
 
 func TestClose(t *testing.T) {
 	gw, err := Connect(
-		WithConfig(config.FromFile("test/connection-tls.json")),
+		WithConfig(config.FromFile("testdata/connection-tls.json")),
 		WithUser("user1"),
 	)
 

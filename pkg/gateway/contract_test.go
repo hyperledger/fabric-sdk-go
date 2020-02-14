@@ -13,7 +13,7 @@ import (
 func TestCreateTransaction(t *testing.T) {
 	c := mockChannelProvider("mychannel")
 
-	gw := &gateway{}
+	gw := &Gateway{}
 
 	nw, err := newNetwork(gw, c)
 
@@ -29,7 +29,7 @@ func TestCreateTransaction(t *testing.T) {
 		t.Fatalf("Failed to create transaction: %s", err)
 	}
 
-	name := txn.(*transaction).name
+	name := txn.name
 	if name != "txn1" {
 		t.Fatalf("Incorrect transaction name: %s", name)
 	}
@@ -38,7 +38,7 @@ func TestCreateTransaction(t *testing.T) {
 func TestSubmitTransaction(t *testing.T) {
 	c := mockChannelProvider("mychannel")
 
-	gw := &gateway{}
+	gw := &Gateway{}
 
 	nw, err := newNetwork(gw, c)
 
@@ -62,7 +62,7 @@ func TestSubmitTransaction(t *testing.T) {
 func TestEvaluateTransaction(t *testing.T) {
 	c := mockChannelProvider("mychannel")
 
-	gw := &gateway{}
+	gw := &Gateway{}
 
 	nw, err := newNetwork(gw, c)
 

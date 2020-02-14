@@ -16,7 +16,7 @@ func TestTransactionOptions(t *testing.T) {
 	
 	c := mockChannelProvider("mychannel")
 
-	gw := &gateway{}
+	gw := &Gateway{}
 
 	nw, err := newNetwork(gw, c)
 
@@ -36,12 +36,12 @@ func TestTransactionOptions(t *testing.T) {
 		t.Fatalf("Failed to create transaction: %s", err)
 	}
 
-	data := txn.(*transaction).request.TransientMap["price"]
+	data := txn.request.TransientMap["price"]
 	if string(data) != "8500" {
 		t.Fatalf("Incorrect transient data: %s", string(data))
 	}
 
-	endorsers := txn.(*transaction).endorsingPeers
+	endorsers := txn.endorsingPeers
 	if endorsers[0] != "peer1" {
 		t.Fatalf("Incorrect endorsing peer: %s", endorsers[0])
 	}

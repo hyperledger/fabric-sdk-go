@@ -11,15 +11,25 @@ import (
 	"github.com/pkg/errors"
 )
 
-type transaction struct {
+// A Transaction represents a specific invocation of a transaction function, and provides
+// flexibility over how that transaction is invoked. Applications should
+// obtain instances of this class from a Contract using the
+// Contract.CreateTransaction method.
+//
+// Instances of this class are stateful. A new instance <strong>must</strong>
+// be created for each transaction invocation.
+type Transaction struct {
 	name           string
-	contract       *contract
+	contract       *Contract
 	request        *channel.Request
 	endorsingPeers []string
 }
 
-func newTransaction(name string, contract *contract, options ...TransactionOption) (Transaction, error) {
-	txn := &transaction{
+// TransactionOption functional arguments can be supplied when creating a transaction object
+type TransactionOption = func(*Transaction) error
+
+func newTransaction(name string, contract *Contract, options ...TransactionOption) (*Transaction, error) {
+	txn := &Transaction{
 		name:     name,
 		contract: contract,
 		request:  &channel.Request{ChaincodeID: contract.chaincodeID, Fcn: name},
@@ -40,7 +50,7 @@ func newTransaction(name string, contract *contract, options ...TransactionOptio
 // but will not be stored on the ledger. This can be used to pass
 // private data to a transaction function.
 func WithTransient(data map[string][]byte) TransactionOption {
-	return func(txn *transaction) error {
+	return func(txn *Transaction) error {
 		txn.request.TransientMap = data
 		return nil
 	}
@@ -49,13 +59,17 @@ func WithTransient(data map[string][]byte) TransactionOption {
 // WithEndorsingPeers is an optional argument to the CreateTransaction method which
 // sets the peers that should be used for endorsement of transaction submitted to the ledger using Submit()
 func WithEndorsingPeers(peers ...string) TransactionOption {
-	return func(txn *transaction) error {
+	return func(txn *Transaction) error {
 		txn.endorsingPeers = peers
 		return nil
 	}
 }
 
-func (txn *transaction) Evaluate(args ...string) ([]byte, error) {
+// Evaluate a transaction function and return its results.
+// The transaction function will be evaluated on the endorsing peers but
+// the responses will not be sent to the ordering service and hence will
+// not be committed to the ledger. This can be used for querying the world state.
+func (txn *Transaction) Evaluate(args ...string) ([]byte, error) {
 	bytes := make([][]byte, len(args))
 	for i, v := range args {
 		bytes[i] = []byte(v)
@@ -70,7 +84,10 @@ func (txn *transaction) Evaluate(args ...string) ([]byte, error) {
 	return response.Payload, nil
 }
 
-func (txn *transaction) Submit(args ...string) ([]byte, error) {
+// Submit a transaction to the ledger. The transaction function represented by this object
+// will be evaluated on the endorsing peers and then submitted to the ordering service
+// for committing to the ledger.
+func (txn *Transaction) Submit(args ...string) ([]byte, error) {
 	bytes := make([][]byte, len(args))
 	for i, v := range args {
 		bytes[i] = []byte(v)

@@ -13,15 +13,17 @@ import (
 	"github.com/pkg/errors"
 )
 
-type network struct {
+// A Network object represents the set of peers in a Fabric network (channel).
+// Applications should get a Network instance from a Gateway using the GetNetwork method.
+type Network struct {
 	name    string
-	gateway *gateway
+	gateway *Gateway
 	client  *channel.Client
 	peers   []fab.Peer
 }
 
-func newNetwork(gateway *gateway, channelProvider context.ChannelProvider) (*network, error) {
-	n := network{
+func newNetwork(gateway *Gateway, channelProvider context.ChannelProvider) (*Network, error) {
+	n := Network{
 		gateway: gateway,
 	}
 
@@ -55,10 +57,12 @@ func newNetwork(gateway *gateway, channelProvider context.ChannelProvider) (*net
 	return &n, nil
 }
 
-func (n *network) GetName() string {
+// Name is the name of the network (also known as channel name)
+func (n *Network) Name() string {
 	return n.name
 }
 
-func (n *network) GetContract(chaincodeID string) Contract {
+// GetContract returns instance of a smart contract on the current network.
+func (n *Network) GetContract(chaincodeID string) *Contract {
 	return newContract(n, chaincodeID, "")
 }

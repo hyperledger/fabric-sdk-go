@@ -51,8 +51,8 @@ func TestInsertionAndLookup(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to lookup identity: %s", err)
 	}
-	if entry.GetType() != "X509" {
-		t.Fatalf("Unexpected identity type: %s", entry.GetType())
+	if entry.Type() != "X509" {
+		t.Fatalf("Unexpected identity type: %s", entry.Type())
 	}
 }
 

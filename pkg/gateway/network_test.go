@@ -16,7 +16,7 @@ import (
 func TestNewNetwork(t *testing.T) {
 	c := mockChannelProvider("mychannel")
 
-	gw := &gateway{}
+	gw := &Gateway{}
 
 	nw, err := newNetwork(gw, c)
 
@@ -24,15 +24,15 @@ func TestNewNetwork(t *testing.T) {
 		t.Fatalf("Failed to create network: %s", err)
 	}
 
-	if nw.GetName() != "mychannel" {
-		t.Fatalf("Incorrect network name: %s", nw.GetName())
+	if nw.Name() != "mychannel" {
+		t.Fatalf("Incorrect network name: %s", nw.Name())
 	}
 }
 
 func TestGetContract(t *testing.T) {
 	c := mockChannelProvider("mychannel")
 
-	gw := &gateway{}
+	gw := &Gateway{}
 
 	nw, err := newNetwork(gw, c)
 
@@ -41,7 +41,7 @@ func TestGetContract(t *testing.T) {
 	}
 
 	contr := nw.GetContract("contract1")
-	name := contr.GetName()
+	name := contr.Name()
 
 	if name != "contract1" {
 		t.Fatalf("Incorrect contract name: %s", err)

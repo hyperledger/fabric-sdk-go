@@ -13,18 +13,18 @@ type X509Identity struct {
 	key  string
 }
 
-// GetType ...
-func (x *X509Identity) GetType() string {
+// Type returns X509 for this identity type
+func (x *X509Identity) Type() string {
 	return "X509"
 }
 
-// GetCert ...
-func (x *X509Identity) GetCert() string {
+// Cert returns the X509 certificate PEM
+func (x *X509Identity) Cert() string {
 	return x.cert
 }
 
-// GetKey ...
-func (x *X509Identity) GetKey() string {
+// Key returns the private key PEM
+func (x *X509Identity) Key() string {
 	return x.key
 }
 

@@ -45,14 +45,14 @@ func RunWithConfig(t *testing.T) {
 		t.Fatalf("Failed to get network: %s", err)
 	}
 
-	name := nw.GetName()
+	name := nw.Name()
 	if name != channelID {
 		t.Fatalf("Incorrect network name: %s", name)
 	}
 
 	contract := nw.GetContract(ccID)
 
-	name = contract.GetName()
+	name = contract.Name()
 	if name != ccID {
 		t.Fatalf("Incorrect contract name: %s", name)
 	}
@@ -85,14 +85,14 @@ func RunWithSDK(t *testing.T) {
 		t.Fatalf("Failed to get network: %s", err)
 	}
 
-	name := nw.GetName()
+	name := nw.Name()
 	if name != channelID {
 		t.Fatalf("Incorrect network name: %s", name)
 	}
 
 	contract := nw.GetContract(ccID)
 
-	name = contract.GetName()
+	name = contract.Name()
 	if name != ccID {
 		t.Fatalf("Incorrect contract name: %s", name)
 	}
@@ -100,7 +100,7 @@ func RunWithSDK(t *testing.T) {
 	runContract(contract, t)
 }
 
-func runContract(contract gateway.Contract, t *testing.T) {
+func runContract(contract *gateway.Contract, t *testing.T) {
 	response, err := contract.EvaluateTransaction("invoke", "query", "b")
 
 	if err != nil {

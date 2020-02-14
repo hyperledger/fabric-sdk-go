@@ -6,18 +6,12 @@ SPDX-License-Identifier: Apache-2.0
 
 package gateway
 
-// Identity ...
-type Identity struct {
-	theType string
-}
-
-// IdentityType ...
-type IdentityType interface {
-	GetType() string
-}
-
-// IDHandler ...
-type IDHandler interface {
-	GetElements(id IdentityType) map[string]string
-	FromElements(map[string]string) IdentityType
+// A Wallet stores identity information used to connect to a Hyperledger Fabric network.
+// Instances are created using factory methods on the implementing objects.
+type Wallet interface {
+	Put(label string, id IdentityType) error
+	Get(label string) (IdentityType, error)
+	Remove(label string) error
+	Exists(label string) bool
+	List() []string
 }
