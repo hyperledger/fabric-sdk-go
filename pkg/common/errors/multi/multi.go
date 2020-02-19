@@ -44,6 +44,9 @@ func Append(errs error, err error) error {
 	if !ok {
 		return New(errs, err)
 	}
+	if err == nil {
+		return errs
+	}
 	return append(m, err)
 }
 
