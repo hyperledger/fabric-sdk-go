@@ -8,35 +8,34 @@ package gateway
 
 import "errors"
 
-// InMemoryWallet stores identity information used to connect to a Hyperledger Fabric network.
+// InMemoryWalletStore stores identity information used to connect to a Hyperledger Fabric network.
 // Instances are created using NewInMemoryWallet()
-type InMemoryWallet struct {
-	idhandler IDHandler
-	storage   map[string]map[string]string
+type inMemoryWalletStore struct {
+	storage map[string][]byte
 }
 
 // NewInMemoryWallet creates an instance of a wallet, backed by files on the filesystem
-func NewInMemoryWallet() *InMemoryWallet {
-	return &InMemoryWallet{newX509IdentityHandler(), make(map[string]map[string]string, 10)}
+func NewInMemoryWallet() *Wallet {
+	store := &inMemoryWalletStore{make(map[string][]byte, 10)}
+	return &Wallet{store}
 }
 
 // Put an identity into the wallet.
-func (f *InMemoryWallet) Put(label string, id IdentityType) error {
-	elements := f.idhandler.GetElements(id)
-	f.storage[label] = elements
+func (f *inMemoryWalletStore) Put(label string, content []byte) error {
+	f.storage[label] = content
 	return nil
 }
 
 // Get an identity from the wallet.
-func (f *InMemoryWallet) Get(label string) (IdentityType, error) {
-	if elements, ok := f.storage[label]; ok {
-		return f.idhandler.FromElements(elements), nil
+func (f *inMemoryWalletStore) Get(label string) ([]byte, error) {
+	if content, ok := f.storage[label]; ok {
+		return content, nil
 	}
 	return nil, errors.New("label doesn't exist: " + label)
 }
 
 // Remove an identity from the wallet. If the identity does not exist, this method does nothing.
-func (f *InMemoryWallet) Remove(label string) error {
+func (f *inMemoryWalletStore) Remove(label string) error {
 	if _, ok := f.storage[label]; ok {
 		delete(f.storage, label)
 		return nil
@@ -45,16 +44,16 @@ func (f *InMemoryWallet) Remove(label string) error {
 }
 
 // Exists returns true if the identity is in the wallet.
-func (f *InMemoryWallet) Exists(label string) bool {
+func (f *inMemoryWalletStore) Exists(label string) bool {
 	_, ok := f.storage[label]
 	return ok
 }
 
 // List all of the labels in the wallet.
-func (f *InMemoryWallet) List() []string {
+func (f *inMemoryWalletStore) List() ([]string, error) {
 	labels := make([]string, 0, len(f.storage))
 	for label := range f.storage {
 		labels = append(labels, label)
 	}
-	return labels
+	return labels, nil
 }

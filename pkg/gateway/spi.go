@@ -22,18 +22,17 @@ type CommitHandler interface {
 	CancelListening()
 }
 
-// Identity is the base type for implementing wallet identities - experimental
-type Identity struct {
-	theType string
-}
-
-// IdentityType represents a specific identity format - experimental
-type IdentityType interface {
-	Type() string
-}
-
-// IDHandler represents the storage of identity information - experimental
-type IDHandler interface {
-	GetElements(id IdentityType) map[string]string
-	FromElements(map[string]string) IdentityType
+// WalletStore is the interface for implementations that provide backing storage for identities in a wallet.
+// To create create a new backing store, implement all the methods defined in this interface and provide
+// a factory method that wraps an instance of this in a new Wallet object. E.g:
+//   func NewMyWallet() *Wallet {
+//	   store := &myWalletStore{ }
+//	   return &Wallet{store}
+//   }
+type WalletStore interface {
+	Put(label string, stream []byte) error
+	Get(label string) ([]byte, error)
+	List() ([]string, error)
+	Exists(label string) bool
+	Remove(label string) error
 }
