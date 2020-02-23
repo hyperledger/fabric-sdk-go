@@ -34,6 +34,7 @@ The packages intended for end developer usage are within the pkg/client folder a
 - [Dynamic Endorser Selection](test/integration/pkg/fabsdk/provider/sdk_provider_test.go): An example that uses dynamic endorser selection (based on chaincode policy)
 - [E2E PKCS11 Test](test/integration/e2e/pkcs11/e2e_test.go): E2E Test using a PKCS11 crypto suite and configuration
 - [CLI](https://github.com/securekey/fabric-examples/tree/master/fabric-cli/): An example CLI for Fabric built with the Go SDK.
+- [Fabcar](https://github.com/basilky/gosdk-example) example
 - More examples needed!
 
 ### Community
