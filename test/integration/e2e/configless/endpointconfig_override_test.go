@@ -438,7 +438,7 @@ func (m *exampleOrderersConfig) OrderersConfig() []fab.OrdererConfig {
 type exampleOrdererConfig struct{}
 
 //OrdererConfig overrides EndpointConfig's OrdererConfig function which returns the ordererConfig instance for the name/URL arg
-func (m *exampleOrdererConfig) OrdererConfig(ordererNameOrURL string) (*fab.OrdererConfig, bool) {
+func (m *exampleOrdererConfig) OrdererConfig(ordererNameOrURL string) (*fab.OrdererConfig, bool, bool) {
 	orderer, ok := networkConfig.Orderers[strings.ToLower(ordererNameOrURL)]
 	if !ok {
 		// EntityMatchers are not used in this implementation, below is an example of how to use them if needed, see default implementation for live example
@@ -447,10 +447,10 @@ func (m *exampleOrdererConfig) OrdererConfig(ordererNameOrURL string) (*fab.Orde
 		//	return nil, errors.WithStack(status.New(status.ClientStatus, status.NoMatchingOrdererEntity.ToInt32(), "no matching orderer config found", nil))
 		//}
 		//orderer = *matchingOrdererConfig
-		return nil, false
+		return nil, false, false
 	}
 
-	return &orderer, true
+	return &orderer, true, false
 }
 
 type examplePeersConfig struct {
@@ -678,7 +678,7 @@ func (m *exampleChannelOrderers) ChannelOrderers(channelName string) []fab.Order
 	channel := chCfg.ChannelConfig(channelName)
 
 	for _, chOrderer := range channel.Orderers {
-		orderer, ok := oCfg.OrdererConfig(chOrderer)
+		orderer, ok, _ := oCfg.OrdererConfig(chOrderer)
 		if !ok || orderer == nil {
 			return nil
 		}
