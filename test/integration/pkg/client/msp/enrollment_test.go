@@ -125,6 +125,42 @@ func testRegisterEnrollWithCAInstance(t *testing.T, ctxProvider context.ClientPr
 
 	checkCertAttributes(t, si.EnrollmentCertificate(), testAttributes)
 
+	revokeResponse, err := mspClient.Revoke(&msp.RevocationRequest{Name: username, GenCRL: true})
+	if err != nil {
+		t.Fatalf("Revoke return error %s", err)
+	}
+	if revokeResponse.CRL == nil {
+		t.Fatal("Couldn't retrieve CRL")
+	}
+	ok, err := isInCRL(si.EnrollmentCertificate(), revokeResponse.CRL)
+	if err != nil {
+		t.Fatalf("Couldn't check if certificate is in CRL %s", err)
+	}
+	if !ok {
+		t.Fatal("Certificate is not in CRL")
+	}
+
+}
+
+func isInCRL(certBytes, crlBytes []byte) (bool, error) {
+	decoded, _ := pem.Decode(certBytes)
+	if decoded == nil {
+		return false, errors.New("Failed cert decoding")
+	}
+	cert, err := x509.ParseCertificate(decoded.Bytes)
+	if err != nil {
+		return false, err
+	}
+	crl, err := x509.ParseCRL(crlBytes)
+	if err != nil {
+		return false, err
+	}
+	for _, revokedCert := range crl.TBSCertList.RevokedCertificates {
+		if cert.SerialNumber.Cmp(revokedCert.SerialNumber) == 0 {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 func TestEnrollWithOptions(t *testing.T) {

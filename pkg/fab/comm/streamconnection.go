@@ -21,13 +21,14 @@ import (
 )
 
 // StreamProvider creates a GRPC stream
-type StreamProvider func(conn *grpc.ClientConn) (grpc.ClientStream, error)
+type StreamProvider func(conn *grpc.ClientConn) (grpc.ClientStream, func(), error)
 
 // StreamConnection manages the GRPC connection and client stream
 type StreamConnection struct {
 	*GRPCConnection
 	chConfig fab.ChannelCfg
 	stream   grpc.ClientStream
+	cancel   func()
 	lock     sync.Mutex
 }
 
@@ -38,7 +39,7 @@ func NewStreamConnection(ctx fabcontext.Client, chConfig fab.ChannelCfg, streamP
 		return nil, err
 	}
 
-	stream, err := streamProvider(conn.conn)
+	stream, cancel, err := streamProvider(conn.conn)
 	if err != nil {
 		conn.commManager.ReleaseConn(conn.conn)
 		return nil, errors.Wrapf(err, "could not create stream to %s", url)
@@ -70,6 +71,7 @@ func NewStreamConnection(ctx fabcontext.Client, chConfig fab.ChannelCfg, streamP
 		GRPCConnection: conn,
 		chConfig:       chConfig,
 		stream:         stream,
+		cancel:         cancel,
 	}, nil
 }
 
@@ -88,6 +90,9 @@ func (c *StreamConnection) Close() {
 	}
 
 	logger.Debug("Closing stream....")
+
+	c.cancel()
+
 	if err := c.stream.CloseSend(); err != nil {
 		logger.Warnf("error closing GRPC stream: %s", err)
 	}
