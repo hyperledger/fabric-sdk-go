@@ -154,9 +154,8 @@ func isInCRL(certBytes, crlBytes []byte) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	revokeSuccess := false
 	for _, revokedCert := range crl.TBSCertList.RevokedCertificates {
-		if cert.SerialNumber.Cmp(revokedCert.SerialNumber) == 0 && !revokeSuccess {
+		if cert.SerialNumber.Cmp(revokedCert.SerialNumber) == 0 {
 			return true, nil
 		}
 	}
