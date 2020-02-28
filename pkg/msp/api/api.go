@@ -8,8 +8,6 @@ package api
 
 import (
 	"errors"
-
-	"github.com/cloudflare/cfssl/csr"
 )
 
 var (
@@ -87,18 +85,8 @@ type EnrollmentRequest struct {
 
 // CSRInfo is Certificate Signing Request (CSR) Information
 type CSRInfo struct {
-	CN           string
-	Names        []csr.Name
-	Hosts        []string
-	KeyRequest   *BasicKeyRequest
-	CA           *csr.CAConfig
-	SerialNumber string
-}
-
-// BasicKeyRequest encapsulates size and algorithm for the key to be generated
-type BasicKeyRequest struct {
-	Algo string
-	Size int
+	CN    string
+	Hosts []string
 }
 
 // ReenrollmentRequest is a request to reenroll an identity.

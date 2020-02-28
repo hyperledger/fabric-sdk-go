@@ -385,7 +385,9 @@ func (c *Client) Reenroll(enrollmentID string, opts ...EnrollmentOption) error {
 		Profile: eo.profile,
 		Label:   eo.label,
 		CAName:  c.caName,
+		CSR:     createCSRInfo(eo.csr),
 	}
+
 	if req.CAName == "" {
 		req.CAName = c.caName
 	}
@@ -672,21 +674,9 @@ func createCSRInfo(csr *CSRInfo) *mspapi.CSRInfo {
 		return nil
 	}
 
-	var kr *mspapi.BasicKeyRequest
-	if csr.KeyRequest != nil {
-		kr = &mspapi.BasicKeyRequest{
-			Algo: csr.KeyRequest.Algo,
-			Size: csr.KeyRequest.Size,
-		}
-	}
-
 	return &mspapi.CSRInfo{
-		CA:           csr.CA,
-		CN:           csr.CN,
-		Hosts:        csr.Hosts,
-		KeyRequest:   kr,
-		Names:        csr.Names,
-		SerialNumber: csr.SerialNumber,
+		CN:    csr.CN,
+		Hosts: csr.Hosts,
 	}
 }
 

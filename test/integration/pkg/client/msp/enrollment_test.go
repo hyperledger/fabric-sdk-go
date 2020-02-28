@@ -7,13 +7,17 @@ SPDX-License-Identifier: Apache-2.0
 package msp
 
 import (
+	"crypto/x509"
+	"encoding/pem"
 	"fmt"
 	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
+	mspctx "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 )
 
@@ -265,8 +269,124 @@ func TestEnrollWithProfile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Enroll failed: %s", err)
 	}
+
 }
 
+func TestEnrollWithCSR(t *testing.T) {
+	// Instantiate the SDK
+	sdk, err := fabsdk.New(integration.ConfigBackend)
+	if err != nil {
+		t.Fatalf("SDK init failed: %s", err)
+	}
+	defer sdk.Close()
+
+	// Delete all private keys from the crypto suite store
+	// and users from the user store at the end
+	integration.CleanupUserData(t, sdk)
+	defer integration.CleanupUserData(t, sdk)
+
+	ctxProvider := sdk.Context()
+
+	// Get the Client.
+	// Without WithOrg option, uses default client organization.
+	mspClient, err := msp.New(ctxProvider)
+	if err != nil {
+		t.Fatalf("failed to create CA client: %s", err)
+	}
+
+	// As this integration test spawns a fresh CA instance,
+	// we have to enroll the CA registrar first. Otherwise,
+	// CA operations that require the registrar's identity
+	// will be rejected by the CA.
+	registrarEnrollID, registrarEnrollSecret := getRegistrarEnrollmentCredentials(t, ctxProvider)
+
+	err = mspClient.Enroll(registrarEnrollID, msp.WithSecret(registrarEnrollSecret))
+	if err != nil {
+		t.Fatalf("Enroll failed: %s", err)
+	}
+
+	// Generate a random user name
+	username := integration.GenerateRandomID()
+
+	// Register the new user
+	enrollmentSecret, err := mspClient.Register(&msp.RegistrationRequest{
+		Name: username,
+		Type: IdentityTypeUser,
+		// Affiliation is mandatory. "org1" and "org2" are hardcoded as CA defaults
+		// See https://github.com/hyperledger/fabric-ca/blob/release/cmd/fabric-ca-server/config.go
+		Affiliation: "org2",
+	})
+	if err != nil {
+		t.Fatalf("Registration failed: %s", err)
+	}
+
+	extraHosts := []string{"localhost"}
+	csr := &msp.CSRInfo{
+		CN:    username,
+		Hosts: extraHosts,
+	}
+
+	err = mspClient.Enroll(username, msp.WithSecret(enrollmentSecret), msp.WithCSR(csr))
+	if err != nil {
+		t.Fatalf("Enroll failed: %s", err)
+	}
+
+	// Get the new user's signing identity
+	si, err := mspClient.GetSigningIdentity(username)
+	if err != nil {
+		t.Fatalf("GetSigningIdentity failed: %s", err)
+	}
+
+	has, err := hasHost(si, extraHosts[0])
+	if err != nil {
+		t.Fatalf("Could not check for host in Signing Identity: %s", err)
+	}
+	if !has {
+		t.Fatalf("Missing host [%s] in Signing Identity", extraHosts[0])
+	}
+
+	err = mspClient.Reenroll(username, msp.WithSecret(enrollmentSecret), msp.WithCSR(csr))
+	if err != nil {
+		t.Fatalf("Reenroll failed: %s", err)
+	}
+
+	// Get the new user's signing identity
+	si, err = mspClient.GetSigningIdentity(username)
+	if err != nil {
+		t.Fatalf("GetSigningIdentity failed: %s", err)
+	}
+
+	has, err = hasHost(si, extraHosts[0])
+	if err != nil {
+		t.Fatalf("Could not check for host in Signing Identity at reenroll: %s", err)
+	}
+	if !has {
+		t.Fatalf("Missing host [%s] in Signing Identity at reenroll", extraHosts[0])
+	}
+
+}
+
+func hasHost(si mspctx.SigningIdentity, host string) (bool, error) {
+	block, _ := pem.Decode(si.EnrollmentCertificate())
+	if block == nil || block.Type != "CERTIFICATE" {
+		return false, errors.New("Public cert invalid, cannot decode")
+	}
+
+	pub, err := x509.ParseCertificate(block.Bytes)
+	if err != nil {
+		return false, errors.New("Could not decode Signing Identity certificate")
+	}
+
+	hasExtraHost := false
+	for _, certHost := range pub.DNSNames {
+		if certHost == host {
+			hasExtraHost = true
+			break
+		}
+	}
+
+	return hasExtraHost, nil
+}
 func getRegistrarEnrollmentCredentials(t *testing.T, ctxProvider context.ClientProvider) (string, string) {
 
 	return getRegistrarEnrollmentCredentialsWithCAInstance(t, ctxProvider, "")

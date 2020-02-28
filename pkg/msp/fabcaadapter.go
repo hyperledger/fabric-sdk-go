@@ -83,6 +83,7 @@ func (c *fabricCAAdapter) Reenroll(key core.Key, cert []byte, request *api.Reenr
 		CAName:  c.caClient.Config.CAName,
 		Profile: request.Profile,
 		Label:   request.Label,
+		CSR:     createCSRInfo(request.CSR),
 	}
 	if len(request.AttrReqs) > 0 {
 		attrs := make([]*caapi.AttributeRequest, len(request.AttrReqs))
@@ -538,21 +539,9 @@ func createCSRInfo(csr *api.CSRInfo) *caapi.CSRInfo {
 		return nil
 	}
 
-	var kr *caapi.BasicKeyRequest
-	if csr.KeyRequest != nil {
-		kr = &caapi.BasicKeyRequest{
-			Algo: csr.KeyRequest.Algo,
-			Size: csr.KeyRequest.Size,
-		}
-	}
-
 	return &caapi.CSRInfo{
-		CA:           csr.CA,
-		CN:           csr.CN,
-		Hosts:        csr.Hosts,
-		KeyRequest:   kr,
-		Names:        csr.Names,
-		SerialNumber: csr.SerialNumber,
+		CN:    csr.CN,
+		Hosts: csr.Hosts,
 	}
 }
 

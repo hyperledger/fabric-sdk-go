@@ -6,8 +6,6 @@ SPDX-License-Identifier: Apache-2.0
 
 package msp
 
-import "github.com/cloudflare/cfssl/csr"
-
 // AttributeRequest is a request for an attribute.
 type AttributeRequest struct {
 	Name     string
@@ -200,16 +198,6 @@ type GetCAInfoResponse struct {
 
 // CSRInfo is Certificate Signing Request (CSR) Information
 type CSRInfo struct {
-	CN           string
-	Names        []csr.Name
-	Hosts        []string
-	KeyRequest   *BasicKeyRequest
-	CA           *csr.CAConfig
-	SerialNumber string
-}
-
-// BasicKeyRequest encapsulates size and algorithm for the key to be generated
-type BasicKeyRequest struct {
-	Algo string
-	Size int
+	CN    string
+	Hosts []string
 }
