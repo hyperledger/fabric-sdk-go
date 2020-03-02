@@ -327,8 +327,8 @@ func TestCapabilities(t *testing.T) {
 	assert.Truef(t, chConfig.HasCapability(fab.ApplicationGroupKey, fab.V1_1Capability), "expecting application capability [%s] since [%s] is supported", fab.V1_1Capability, fab.V1_2Capability)
 	assert.Truef(t, chConfig.HasCapability(fab.ApplicationGroupKey, pvtExpCapability), "expecting application capability [%s]", pvtExpCapability)
 	assert.Falsef(t, chConfig.HasCapability(fab.ApplicationGroupKey, resourceTreeExpCapability), "not expecting application capability [%s]", resourceTreeExpCapability)
-	assert.Truef(t, chConfig.HasCapability(fab.ApplicationGroupKey, V3Capability), "not expecting application capability [%s]", V3Capability)
-	assert.Truef(t, chConfig.HasCapability(fab.ApplicationGroupKey, V1_4Capability), "not expecting application capability [%s]", V1_4Capability)
+	assert.Truef(t, chConfig.HasCapability(fab.ApplicationGroupKey, V3Capability), "expecting application capability [%s]", V3Capability)
+	assert.Truef(t, chConfig.HasCapability(fab.ApplicationGroupKey, V1_4Capability), "expecting application capability [%s]", V1_4Capability)
 }
 
 func testResolveOptsDefaultValues(t *testing.T, channelID string) {
