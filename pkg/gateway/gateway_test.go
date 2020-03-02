@@ -102,7 +102,7 @@ func TestConnectWithSDK(t *testing.T) {
 
 func TestConnectWithIdentity(t *testing.T) {
 	wallet := NewInMemoryWallet()
-	wallet.Put("user", NewX509Identity(testCert, testPrivKey))
+	wallet.Put("user", NewX509Identity("msp", testCert, testPrivKey))
 
 	gw, err := Connect(
 		WithConfig(config.FromFile("testdata/connection-tls.json")),
@@ -245,13 +245,28 @@ func TestGetPeersForOrg(t *testing.T) {
 	}
 }
 
-func TestGetNetwork(t *testing.T) {
+func TestGetNetworkWithIdentity(t *testing.T) {
 	wallet := NewInMemoryWallet()
-	wallet.Put("user", NewX509Identity(testCert, testPrivKey))
+	wallet.Put("user", NewX509Identity("msp", testCert, testPrivKey))
 
 	gw, err := Connect(
 		WithConfig(config.FromFile("testdata/connection-tls.json")),
 		WithIdentity(wallet, "user"))
+
+	if err != nil {
+		t.Fatalf("Failed to create gateway: %s", err)
+	}
+
+	_, err = gw.GetNetwork("mychannel")
+	if err == nil {
+		t.Fatalf("Failed to get network: %s", err)
+	}
+}
+
+func TestGetNetworkWithUser(t *testing.T) {
+	gw, err := Connect(
+		WithConfig(config.FromFile("testdata/connection-tls.json")),
+		WithUser("user1"))
 
 	if err != nil {
 		t.Fatalf("Failed to create gateway: %s", err)

@@ -21,3 +21,9 @@ func TestGatewayFromSDK(t *testing.T) {
 		RunWithSDK(t)
 	})
 }
+
+func TestGatewayWithWallet(t *testing.T) {
+	t.Run("Base", func(t *testing.T) {
+		RunWithWallet(t)
+	})
+}

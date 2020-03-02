@@ -48,7 +48,7 @@ func TestSubmitTransaction(t *testing.T) {
 
 	contr := nw.GetContract("contract1")
 
-	result, err := contr.SubmitTransaction("txn1")
+	result, err := contr.SubmitTransaction("txn1", "arg1", "arg2")
 
 	if err != nil {
 		t.Fatalf("Failed to submit transaction: %s", err)
@@ -72,7 +72,7 @@ func TestEvaluateTransaction(t *testing.T) {
 
 	contr := nw.GetContract("contract1")
 
-	result, err := contr.EvaluateTransaction("txn1")
+	result, err := contr.EvaluateTransaction("txn1", "arg1", "arg2")
 
 	if err != nil {
 		t.Fatalf("Failed to evaluate transaction: %s", err)
