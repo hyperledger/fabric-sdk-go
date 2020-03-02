@@ -42,17 +42,21 @@ type DeliverConnection struct {
 }
 
 // StreamProvider creates a deliver stream
-type StreamProvider func(pb.DeliverClient) (deliverStream, error)
+type StreamProvider func(pb.DeliverClient) (stream deliverStream, cancel func(), err error)
 
 var (
 	// Deliver creates a Deliver stream
-	Deliver = func(client pb.DeliverClient) (deliverStream, error) {
-		return client.Deliver(context.Background())
+	Deliver = func(client pb.DeliverClient) (deliverStream, func(), error) {
+		ctx, cancel := context.WithCancel(context.Background())
+		stream, err := client.Deliver(ctx)
+		return stream, cancel, err
 	}
 
 	// DeliverFiltered creates a DeliverFiltered stream
-	DeliverFiltered = func(client pb.DeliverClient) (deliverStream, error) {
-		return client.DeliverFiltered(context.Background())
+	DeliverFiltered = func(client pb.DeliverClient) (deliverStream, func(), error) {
+		ctx, cancel := context.WithCancel(context.Background())
+		stream, err := client.DeliverFiltered(ctx)
+		return stream, cancel, err
 	}
 )
 
@@ -61,7 +65,7 @@ func New(ctx fabcontext.Client, chConfig fab.ChannelCfg, streamProvider StreamPr
 	logger.Debugf("Connecting to %s...", url)
 	connect, err := comm.NewStreamConnection(
 		ctx, chConfig,
-		func(grpcconn *grpc.ClientConn) (grpc.ClientStream, error) {
+		func(grpcconn *grpc.ClientConn) (grpc.ClientStream, func(), error) {
 			return streamProvider(pb.NewDeliverClient(grpcconn))
 		},
 		url, opts...,

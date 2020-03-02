@@ -151,7 +151,8 @@ FABRIC_TOOLS_DEVSTABLE_TAG  := stable
 ifdef JENKINS_URL
 export FABRIC_SDKGO_DEPEND_INSTALL=true
 FABRIC_SDK_CHAINCODED            := true
-FABRIC_SDKGO_TEST_CHANGED        := true
+# TODO: disabled FABRIC_SDKGO_TEST_CHANGED optimization - while tests are being fixed.
+FABRIC_SDKGO_TEST_CHANGED        := false
 FABRIC_SDK_DEPRECATED_UNITTEST   := false
 FABRIC_STABLE_INTTEST            := true
 FABRIC_STABLE_PKCS11_INTTEST     := true

@@ -93,7 +93,7 @@ type CommManager interface {
 type EndpointConfig interface {
 	Timeout(TimeoutType) time.Duration
 	OrderersConfig() []OrdererConfig
-	OrdererConfig(nameOrURL string) (*OrdererConfig, bool)
+	OrdererConfig(nameOrURL string) (*OrdererConfig, bool, bool)
 	PeersConfig(org string) ([]PeerConfig, bool)
 	PeerConfig(nameOrURL string) (*PeerConfig, bool)
 	NetworkConfig() *NetworkConfig

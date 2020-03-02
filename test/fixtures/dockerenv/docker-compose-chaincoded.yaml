@@ -35,8 +35,8 @@ services:
       - ${GOPATH}/pkg/mod:/opt/gopath/pkg/mod
       - ../../../test/scripts:/opt/scripts
       - ../../../scripts/_go/src/chaincoded:/opt/chaincoded
-      - ../../../test/fixtures/testdata/src/github.com/example_cc:/opt/chaincodes/github.com/example_cc
-      - ../../../test/fixtures/testdata/src/github.com/example_pvt_cc:/opt/chaincodes/github.com/example_pvt_cc
+      - ../../../test/fixtures/testdata/go/src/github.com/example_cc:/opt/chaincodes/github.com/example_cc
+      - ../../../test/fixtures/testdata/go/src/github.com/example_pvt_cc:/opt/chaincodes/github.com/example_pvt_cc
     command: /opt/scripts/chaincoded.sh
     #comment out logging.driver in order to render the debug logs
     #logging:

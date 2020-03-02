@@ -436,61 +436,23 @@ func loadConfig(configItems *ChannelCfg, versionsGroup *common.ConfigGroup, grou
 		}
 	}
 
-	return loadConfigGroupPolicies(versionsGroup, group)
+	loadConfigGroupPolicies(versionsGroup, group)
+
+	return nil
 }
 
-func loadConfigGroupPolicies(versionsGroup *common.ConfigGroup, group *common.ConfigGroup) error {
+func loadConfigGroupPolicies(versionsGroup *common.ConfigGroup, group *common.ConfigGroup) {
 	policies := group.GetPolicies()
 	if policies != nil {
 		versionsGroup.Policies = make(map[string]*common.ConfigPolicy)
 		for key, configPolicy := range policies {
 			versionsGroup.Policies[key] = &common.ConfigPolicy{}
-			err := loadConfigPolicy(versionsGroup.Policies[key], configPolicy)
-			if err != nil {
-				return err
-			}
+
+			versionsGroup.Policies[key].Version = configPolicy.Version
+			versionsGroup.Policies[key].Policy = configPolicy.Policy
+			versionsGroup.Policies[key].ModPolicy = configPolicy.ModPolicy
 		}
 	}
-
-	return nil
-
-}
-
-func loadConfigPolicy(versionsPolicy *common.ConfigPolicy, configPolicy *common.ConfigPolicy) error {
-	versionsPolicy.Version = configPolicy.Version
-	return loadPolicy(configPolicy.Policy)
-}
-
-func loadPolicy(policy *common.Policy) error {
-
-	policyType := common.Policy_PolicyType(policy.Type)
-
-	switch policyType {
-	case common.Policy_SIGNATURE:
-		sigPolicyEnv := &common.SignaturePolicyEnvelope{}
-		err := proto.Unmarshal(policy.Value, sigPolicyEnv)
-		if err != nil {
-			return errors.Wrap(err, "unmarshal signature policy envelope from config failed")
-		}
-		// TODO: Do something with this value
-
-	case common.Policy_MSP:
-		// TODO: Not implemented yet
-
-	case common.Policy_IMPLICIT_META:
-		implicitMetaPolicy := &common.ImplicitMetaPolicy{}
-		err := proto.Unmarshal(policy.Value, implicitMetaPolicy)
-		if err != nil {
-			return errors.Wrap(err, "unmarshal implicit meta policy from config failed")
-		}
-		// TODO: Do something with this value
-	case common.Policy_UNKNOWN:
-		// TODO: Not implemented yet
-
-	default:
-		return errors.Errorf("unknown policy type %v", policyType)
-	}
-	return nil
 }
 
 func loadAnchorPeers(configValue *common.ConfigValue, configItems *ChannelCfg, org string) error {
