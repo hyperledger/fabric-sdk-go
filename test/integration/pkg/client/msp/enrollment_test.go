@@ -320,7 +320,7 @@ func TestEnrollWithCSR(t *testing.T) {
 		t.Fatalf("Registration failed: %s", err)
 	}
 
-	extraHosts := []string{"localhost"}
+	extraHosts := []string{"localhost", "example.com", "127.0.0.1"}
 	csr := &msp.CSRInfo{
 		CN:    username,
 		Hosts: extraHosts,
@@ -337,7 +337,7 @@ func TestEnrollWithCSR(t *testing.T) {
 		t.Fatalf("GetSigningIdentity failed: %s", err)
 	}
 
-	has, err := hasHost(si, extraHosts[0])
+	has, err := hasHosts(si, extraHosts)
 	if err != nil {
 		t.Fatalf("Could not check for host in Signing Identity: %s", err)
 	}
@@ -356,7 +356,7 @@ func TestEnrollWithCSR(t *testing.T) {
 		t.Fatalf("GetSigningIdentity failed: %s", err)
 	}
 
-	has, err = hasHost(si, extraHosts[0])
+	has, err = hasHosts(si, extraHosts)
 	if err != nil {
 		t.Fatalf("Could not check for host in Signing Identity at reenroll: %s", err)
 	}
@@ -366,7 +366,7 @@ func TestEnrollWithCSR(t *testing.T) {
 
 }
 
-func hasHost(si mspctx.SigningIdentity, host string) (bool, error) {
+func hasHosts(si mspctx.SigningIdentity, hosts []string) (bool, error) {
 	block, _ := pem.Decode(si.EnrollmentCertificate())
 	if block == nil || block.Type != "CERTIFICATE" {
 		return false, errors.New("Public cert invalid, cannot decode")
@@ -377,10 +377,18 @@ func hasHost(si mspctx.SigningIdentity, host string) (bool, error) {
 		return false, errors.New("Could not decode Signing Identity certificate")
 	}
 
-	hasExtraHost := false
-	for _, certHost := range pub.DNSNames {
-		if certHost == host {
-			hasExtraHost = true
+	certHosts := make(map[string]struct{}, len(pub.DNSNames)+len(pub.IPAddresses))
+	for _, host := range pub.DNSNames {
+		certHosts[host] = struct{}{}
+	}
+	for _, host := range pub.IPAddresses {
+		certHosts[host.String()] = struct{}{}
+	}
+
+	hasExtraHost := true
+	for _, requestedHost := range hosts {
+		if _, ok := certHosts[requestedHost]; !ok {
+			hasExtraHost = false
 			break
 		}
 	}
