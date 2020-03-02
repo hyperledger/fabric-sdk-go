@@ -215,7 +215,7 @@ func (f *ChannelConfigFromOrdererProviderFactory) CreateInfraProvider(config fab
 func setupOrderer(t *testing.T, endPointConfig fab.EndpointConfig, address string) fab.Orderer {
 
 	//Get orderer config by orderer address
-	oCfg, ok := endPointConfig.OrdererConfig(resolveOrdererAddress(address))
+	oCfg, ok, _ := endPointConfig.OrdererConfig(resolveOrdererAddress(address))
 	require.True(t, ok)
 
 	o, err := orderer.New(endPointConfig, orderer.FromOrdererConfig(oCfg))
