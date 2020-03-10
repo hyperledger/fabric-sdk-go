@@ -38,7 +38,13 @@ func TestCreateTransaction(t *testing.T) {
 func TestSubmitTransaction(t *testing.T) {
 	c := mockChannelProvider("mychannel")
 
-	gw := &Gateway{}
+	gw := &Gateway{
+		options: &gatewayOptions{
+			CommitHandler: DefaultCommitHandlers.OrgAll,
+			Discovery:     defaultDiscovery,
+			Timeout:       defaultTimeout,
+		},
+	}
 
 	nw, err := newNetwork(gw, c)
 
@@ -62,7 +68,13 @@ func TestSubmitTransaction(t *testing.T) {
 func TestEvaluateTransaction(t *testing.T) {
 	c := mockChannelProvider("mychannel")
 
-	gw := &Gateway{}
+	gw := &Gateway{
+		options: &gatewayOptions{
+			CommitHandler: DefaultCommitHandlers.OrgAll,
+			Discovery:     defaultDiscovery,
+			Timeout:       defaultTimeout,
+		},
+	}
 
 	nw, err := newNetwork(gw, c)
 
