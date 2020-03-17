@@ -9,6 +9,7 @@ package gateway
 import (
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
@@ -71,6 +72,10 @@ func TestConnectNoOptions(t *testing.T) {
 	if options.Discovery != true {
 		t.Fatal("Discovery not correctly initialized")
 	}
+
+	if options.Timeout != defaultTimeout {
+		t.Fatal("Timeout not correctly initialized")
+	}
 }
 
 func TestConnectWithSDK(t *testing.T) {
@@ -97,6 +102,10 @@ func TestConnectWithSDK(t *testing.T) {
 
 	if options.Discovery != true {
 		t.Fatal("Discovery not correctly initialized")
+	}
+
+	if options.Timeout != defaultTimeout {
+		t.Fatal("Timeout not correctly initialized")
 	}
 }
 
@@ -155,6 +164,23 @@ func TestConnectWithDiscovery(t *testing.T) {
 
 	if options.Discovery != false {
 		t.Fatal("Discovery not set correctly")
+	}
+}
+
+func TestConnectWithTimout(t *testing.T) {
+	gw, err := Connect(
+		WithConfig(config.FromFile("testdata/connection-tls.json")),
+		WithUser("user1"),
+		WithTimeout(20*time.Second),
+	)
+	if err != nil {
+		t.Fatalf("Failed to create gateway: %s", err)
+	}
+
+	options := gw.options
+
+	if options.Timeout != 20*time.Second {
+		t.Fatal("Timeout not set correctly")
 	}
 }
 

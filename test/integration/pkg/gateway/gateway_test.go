@@ -27,3 +27,9 @@ func TestGatewayWithWallet(t *testing.T) {
 		RunWithWallet(t)
 	})
 }
+
+func TestTransientData(t *testing.T) {
+	t.Run("Base", func(t *testing.T) {
+		RunWithTransient(t)
+	})
+}

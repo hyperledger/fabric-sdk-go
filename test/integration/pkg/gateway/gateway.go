@@ -98,6 +98,28 @@ func RunWithWallet(t *testing.T) {
 	testGateway(gw, t)
 }
 
+// RunWithTransient tests sending transient data
+func RunWithTransient(t *testing.T) {
+	configPath := integration.GetConfigPath("config_e2e.yaml")
+
+	gw, err := gateway.Connect(
+		gateway.WithConfig(config.FromFile(configPath)),
+		gateway.WithUser("User1"),
+	)
+	if err != nil {
+		t.Fatalf("Failed to create new Gateway: %s", err)
+	}
+	defer gw.Close()
+
+	nw, err := gw.GetNetwork(channelID)
+	if err != nil {
+		t.Fatalf("Failed to get network: %s", err)
+	}
+
+	contract := nw.GetContract(ccID)
+	testTransientData(contract, t)
+}
+
 func testGateway(gw *gateway.Gateway, t *testing.T) {
 	nw, err := gw.GetNetwork(channelID)
 	if err != nil {
@@ -146,6 +168,25 @@ func runContract(contract *gateway.Contract, t *testing.T) {
 
 	if newvalue != value+1 {
 		t.Fatalf("Incorrect response: %s", response)
+	}
+}
+
+func testTransientData(contract *gateway.Contract, t *testing.T) {
+	transient := make(map[string][]byte)
+	transient["result"] = []byte("8500")
+
+	txn, err := contract.CreateTransaction("invoke", gateway.WithTransient(transient))
+	if err != nil {
+		t.Fatalf("Failed to create transaction: %s", err)
+	}
+
+	result, err := txn.Submit("move", "a", "b", "1")
+	if err != nil {
+		t.Fatalf("Failed to submit transaction: %s", err)
+	}
+
+	if string(result) != "8500" {
+		t.Fatalf("Incorrect result: %s", string(result))
 	}
 }
 
