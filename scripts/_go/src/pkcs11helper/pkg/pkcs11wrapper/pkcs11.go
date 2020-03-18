@@ -236,7 +236,11 @@ func (p11w *Pkcs11Wrapper) ImportECKey(ec EcdsaKey) (err error) {
 		return
 	}
 
-	ec.GenSKI()
+	err = ec.GenSKI()
+	if err != nil {
+		err = errors.New(fmt.Sprintf("failed to generate SKI, error: %s", err))
+		return
+	}
 
 	marshaledOID, err := GetECParamMarshaled(ec.PrivKey.Params().Name)
 	if err != nil {
