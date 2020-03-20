@@ -48,7 +48,7 @@ func (k *EcdsaKey) GenSKI() error {
 	hash := sha256.New()
 	_, err := hash.Write(raw)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to write hash")
+		return errors.Wrap(err, "Failed to write hash")
 	}
 	k.SKI.Sha256Bytes = hash.Sum(nil)
 	k.SKI.Sha256 = hex.EncodeToString(k.SKI.Sha256Bytes)
@@ -56,7 +56,7 @@ func (k *EcdsaKey) GenSKI() error {
 	hash = sha1.New()
 	_, err = hash.Write(raw)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to write hash")
+		return errors.Wrap(err, "Failed to write hash")
 	}
 	k.SKI.Sha1Bytes = hash.Sum(nil)
 	k.SKI.Sha1 = hex.EncodeToString(k.SKI.Sha1Bytes)

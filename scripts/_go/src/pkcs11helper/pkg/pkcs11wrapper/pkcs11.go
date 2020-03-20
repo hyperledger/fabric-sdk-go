@@ -238,7 +238,7 @@ func (p11w *Pkcs11Wrapper) ImportECKey(ec EcdsaKey) (err error) {
 
 	err = ec.GenSKI()
 	if err != nil {
-		err = errors.Wrapf(err, "failed to generate SKI")
+		err = errors.Wrap(err, "failed to generate SKI")
 		return
 	}
 
