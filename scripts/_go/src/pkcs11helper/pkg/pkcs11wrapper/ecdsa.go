@@ -17,6 +17,7 @@ import (
 	"encoding/hex"
 	"encoding/pem"
 	"fmt"
+	"github.com/pkg/errors"
 	"io/ioutil"
 	"math/big"
 )
@@ -35,9 +36,9 @@ type SubjectKeyIdentifier struct {
 }
 
 // SKI returns the subject key identifier of this key.
-func (k *EcdsaKey) GenSKI() (ski []byte) {
+func (k *EcdsaKey) GenSKI() error {
 	if k.PubKey == nil {
-		return nil
+		return errors.New("PubKey is empty")
 	}
 
 	// Marshall the public key
@@ -45,16 +46,22 @@ func (k *EcdsaKey) GenSKI() (ski []byte) {
 
 	// Hash it
 	hash := sha256.New()
-	hash.Write(raw)
+	_, err := hash.Write(raw)
+	if err != nil {
+		return errors.Wrap(err, "Failed to write hash")
+	}
 	k.SKI.Sha256Bytes = hash.Sum(nil)
 	k.SKI.Sha256 = hex.EncodeToString(k.SKI.Sha256Bytes)
 
 	hash = sha1.New()
-	hash.Write(raw)
+	_, err = hash.Write(raw)
+	if err != nil {
+		return errors.Wrap(err, "Failed to write hash")
+	}
 	k.SKI.Sha1Bytes = hash.Sum(nil)
 	k.SKI.Sha1 = hex.EncodeToString(k.SKI.Sha1Bytes)
 
-	return
+	return nil
 }
 
 func (k *EcdsaKey) Generate(namedCurve string) (err error) {
