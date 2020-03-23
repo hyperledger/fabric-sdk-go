@@ -8,6 +8,7 @@ package gateway
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
@@ -15,6 +16,11 @@ import (
 	mspProvider "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/pkg/errors"
+)
+
+const (
+	defaultTimeout   = 5 * time.Minute
+	defaultDiscovery = true
 )
 
 // Gateway is the entry point to a Fabric network
@@ -30,6 +36,7 @@ type gatewayOptions struct {
 	User          string
 	CommitHandler CommitHandlerFactory
 	Discovery     bool
+	Timeout       time.Duration
 }
 
 // Option functional arguments can be supplied when connecting to the gateway.
@@ -48,7 +55,8 @@ func Connect(config ConfigOption, identity IdentityOption, options ...Option) (*
 	g := &Gateway{
 		options: &gatewayOptions{
 			CommitHandler: DefaultCommitHandlers.OrgAll,
-			Discovery:     true,
+			Discovery:     defaultDiscovery,
+			Timeout:       defaultTimeout,
 		},
 	}
 
@@ -129,7 +137,7 @@ func WithSDK(sdk *fabsdk.FabricSDK) ConfigOption {
 // WithIdentity is an optional argument to the Connect method which specifies
 // the identity that is to be used to connect to the network.
 // All operations under this gateway connection will be performed using this identity.
-func WithIdentity(wallet Wallet, label string) IdentityOption {
+func WithIdentity(wallet wallet, label string) IdentityOption {
 	return func(gw *Gateway) error {
 		mspClient, err := msp.New(gw.getSDK().Context(), msp.WithOrg(gw.getOrg()))
 		if err != nil {
@@ -144,7 +152,7 @@ func WithIdentity(wallet Wallet, label string) IdentityOption {
 		var identity mspProvider.SigningIdentity
 		switch v := creds.(type) {
 		case *X509Identity:
-			identity, err = mspClient.CreateSigningIdentity(mspProvider.WithCert([]byte(v.Cert())), mspProvider.WithPrivateKey([]byte(v.Key())))
+			identity, err = mspClient.CreateSigningIdentity(mspProvider.WithCert([]byte(v.Certificate())), mspProvider.WithPrivateKey([]byte(v.Key())))
 			if err != nil {
 				return err
 			}
@@ -181,6 +189,15 @@ func WithCommitHandler(handler CommitHandlerFactory) Option {
 func WithDiscovery(discovery bool) Option {
 	return func(gw *Gateway) error {
 		gw.options.Discovery = discovery
+		return nil
+	}
+}
+
+// WithTimeout is an optional argument to the Connect method which
+// defines the commit timeout for all transaction submissions for this gateway.
+func WithTimeout(timeout time.Duration) Option {
+	return func(gw *Gateway) error {
+		gw.options.Timeout = timeout
 		return nil
 	}
 }

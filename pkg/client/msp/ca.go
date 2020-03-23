@@ -55,6 +55,8 @@ type RevocationRequest struct {
 	Reason string
 	// CAName is the name of the CA to connect to
 	CAName string
+	// GenCRL specifies whether to generate a CRL
+	GenCRL bool
 }
 
 // RevocationResponse represents response from the server for a revocation request
@@ -194,4 +196,10 @@ type GetCAInfoResponse struct {
 	IssuerRevocationPublicKey []byte
 	// Version of the server
 	Version string
+}
+
+// CSRInfo is Certificate Signing Request (CSR) Information
+type CSRInfo struct {
+	CN    string
+	Hosts []string
 }

@@ -6,49 +6,57 @@ SPDX-License-Identifier: Apache-2.0
 
 package gateway
 
+import "encoding/json"
+
+const x509Type = "X.509"
+
 // X509Identity represents an X509 identity
 type X509Identity struct {
-	Identity
-	cert string
-	key  string
+	Version     int         `json:"version"`
+	MspID       string      `json:"mspId"`
+	IDType      string      `json:"type"`
+	Credentials credentials `json:"credentials"`
+}
+
+type credentials struct {
+	Certificate string `json:"certificate"`
+	Key         string `json:"privateKey"`
 }
 
 // Type returns X509 for this identity type
-func (x *X509Identity) Type() string {
-	return "X509"
+func (x *X509Identity) idType() string {
+	return x509Type
 }
 
-// Cert returns the X509 certificate PEM
-func (x *X509Identity) Cert() string {
-	return x.cert
+func (x *X509Identity) mspID() string {
+	return x.MspID
+}
+
+// Certificate returns the X509 certificate PEM
+func (x *X509Identity) Certificate() string {
+	return x.Credentials.Certificate
 }
 
 // Key returns the private key PEM
 func (x *X509Identity) Key() string {
-	return x.key
+	return x.Credentials.Key
 }
 
 // NewX509Identity creates an X509 identity for storage in a wallet
-func NewX509Identity(cert string, key string) *X509Identity {
-	return &X509Identity{Identity{"X509"}, cert, key}
+func NewX509Identity(mspid string, cert string, key string) *X509Identity {
+	return &X509Identity{1, mspid, x509Type, credentials{cert, key}}
 }
 
-type x509IdentityHandler struct{}
+func (x *X509Identity) toJSON() ([]byte, error) {
+	return json.Marshal(x)
+}
 
-func (x *x509IdentityHandler) GetElements(id IdentityType) map[string]string {
-	r, _ := id.(*X509Identity)
+func (x *X509Identity) fromJSON(data []byte) (Identity, error) {
+	err := json.Unmarshal(data, x)
 
-	return map[string]string{
-		"cert": r.cert,
-		"key":  r.key,
+	if err != nil {
+		return nil, err
 	}
-}
 
-func (x *x509IdentityHandler) FromElements(elements map[string]string) IdentityType {
-	y := &X509Identity{Identity{"X509"}, elements["cert"], elements["key"]}
-	return y
-}
-
-func newX509IdentityHandler() *x509IdentityHandler {
-	return &x509IdentityHandler{}
+	return x, nil
 }

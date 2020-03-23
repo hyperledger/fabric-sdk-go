@@ -79,6 +79,14 @@ type EnrollmentRequest struct {
 	// The type of the enrollment request: x509 or idemix
 	// The default is a request for an X509 enrollment certificate
 	Type string
+	// CSR is Certificate Signing Request info
+	CSR *CSRInfo
+}
+
+// CSRInfo is Certificate Signing Request (CSR) Information
+type CSRInfo struct {
+	CN    string
+	Hosts []string
 }
 
 // ReenrollmentRequest is a request to reenroll an identity.
@@ -95,6 +103,8 @@ type ReenrollmentRequest struct {
 	// AttrReqs are requests for attributes to add to the certificate.
 	// Each attribute is added only if the requestor owns the attribute.
 	AttrReqs []*AttributeRequest
+	// CSR is Certificate Signing Request info
+	CSR *CSRInfo
 }
 
 // Attribute defines additional attributes that may be passed along during registration
@@ -119,6 +129,8 @@ type RevocationRequest struct {
 	Reason string
 	// CAName is the name of the CA to connect to
 	CAName string
+	// GenCRL specifies whether to generate a CRL
+	GenCRL bool
 }
 
 // RevocationResponse represents response from the server for a revocation request

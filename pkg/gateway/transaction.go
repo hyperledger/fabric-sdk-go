@@ -8,6 +8,7 @@ package gateway
 
 import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/pkg/errors"
 )
 
@@ -76,7 +77,13 @@ func (txn *Transaction) Evaluate(args ...string) ([]byte, error) {
 	}
 	txn.request.Args = bytes
 
-	response, err := txn.contract.client.Query(*txn.request, channel.WithTargets(txn.contract.network.peers[0]))
+	var options []channel.RequestOption
+	options = append(options, channel.WithTimeout(fab.Query, txn.contract.network.gateway.options.Timeout))
+
+	response, err := txn.contract.client.Query(
+		*txn.request,
+		options...,
+	)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to evaluate")
 	}
@@ -94,7 +101,16 @@ func (txn *Transaction) Submit(args ...string) ([]byte, error) {
 	}
 	txn.request.Args = bytes
 
-	response, err := txn.contract.client.Execute(*txn.request)
+	var options []channel.RequestOption
+	if txn.endorsingPeers != nil {
+		options = append(options, channel.WithTargetEndpoints(txn.endorsingPeers...))
+	}
+	options = append(options, channel.WithTimeout(fab.Execute, txn.contract.network.gateway.options.Timeout))
+
+	response, err := txn.contract.client.Execute(
+		*txn.request,
+		options...,
+	)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to submit")
 	}

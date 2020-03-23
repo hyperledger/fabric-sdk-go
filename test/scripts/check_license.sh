@@ -12,7 +12,7 @@ function filterExcludedFiles {
   | grep -v .pem$ | grep -v .block$ | grep -v .tx$ | grep -v ^LICENSE$ | grep -v _sk$ \
   | grep -v .key$ | grep -v .crt$ | grep -v \\.gen.go$ | grep -v \\.json$ | grep -v Gopkg.lock$ \
   | grep -v .md$ | grep -v ^vendor/ | grep -v ^build/ | grep -v .pb.go$ | grep -v ci.properties$ \
-  | grep -v go.sum$ |sort -u`
+  | grep -v go.sum$ | grep -v .id$ |sort -u`
 }
 
 CHECK=$(git diff --name-only --diff-filter=ACMRTUXB HEAD)
