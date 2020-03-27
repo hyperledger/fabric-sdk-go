@@ -16,7 +16,6 @@ import (
 	gprotoext "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/gossip/protoext"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	fabdiscovery "github.com/hyperledger/fabric-sdk-go/pkg/fab/discovery"
-	discmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/discovery/mocks"
 )
 
 // MockDiscoveryClient implements a mock Discover service
@@ -36,8 +35,16 @@ func NewMockDiscoveryClient() *MockDiscoveryClient {
 }
 
 // Send sends a Discovery request
-func (m *MockDiscoveryClient) Send(ctx reqcontext.Context, req *fabdiscovery.Request, targets ...fab.PeerConfig) ([]fabdiscovery.Response, error) {
-	return m.responses(), nil
+func (m *MockDiscoveryClient) Send(ctx reqcontext.Context, req *fabdiscovery.Request, targets ...fab.PeerConfig) (<-chan fabdiscovery.Response, error) {
+	respCh := make(chan fabdiscovery.Response, len(targets))
+
+	for _, r := range m.responses() {
+		respCh <- r
+	}
+
+	close(respCh)
+
+	return respCh, nil
 }
 
 // SetResponses sets the responses that the mock client should return from the Send function
@@ -61,10 +68,15 @@ func (m *MockDiscoveryClient) responses() []fabdiscovery.Response {
 type mockDiscoverResponse struct {
 	discclient.Response
 	target string
+	err    error
 }
 
 func (r *mockDiscoverResponse) Target() string {
 	return r.target
+}
+
+func (r *mockDiscoverResponse) Error() error {
+	return r.err
 }
 
 type response struct {
@@ -122,7 +134,7 @@ func (cr *localResponse) Peers() ([]*discclient.Peer, error) {
 // MockDiscoverEndpointResponse contains a mock response for the discover client
 type MockDiscoverEndpointResponse struct {
 	Target        string
-	PeerEndpoints []*discmocks.MockDiscoveryPeerEndpoint
+	PeerEndpoints []*MockDiscoveryPeerEndpoint
 	Error         error
 }
 
@@ -146,7 +158,7 @@ func (b *MockDiscoverEndpointResponse) Build() fabdiscovery.Response {
 	}
 }
 
-func newAliveMessage(endpoint *discmocks.MockDiscoveryPeerEndpoint) *gprotoext.SignedGossipMessage {
+func newAliveMessage(endpoint *MockDiscoveryPeerEndpoint) *gprotoext.SignedGossipMessage {
 	return &gprotoext.SignedGossipMessage{
 		GossipMessage: &gossip.GossipMessage{
 			Content: &gossip.GossipMessage_AliveMsg{
@@ -160,7 +172,7 @@ func newAliveMessage(endpoint *discmocks.MockDiscoveryPeerEndpoint) *gprotoext.S
 	}
 }
 
-func newStateInfoMessage(endpoint *discmocks.MockDiscoveryPeerEndpoint) *gprotoext.SignedGossipMessage {
+func newStateInfoMessage(endpoint *MockDiscoveryPeerEndpoint) *gprotoext.SignedGossipMessage {
 	return &gprotoext.SignedGossipMessage{
 		GossipMessage: &gossip.GossipMessage{
 			Content: &gossip.GossipMessage_StateInfo{

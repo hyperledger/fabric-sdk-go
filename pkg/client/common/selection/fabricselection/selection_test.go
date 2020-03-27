@@ -10,11 +10,11 @@ package fabricselection
 
 import (
 	"fmt"
+	"github.com/pkg/errors"
 	"strings"
 	"testing"
 	"time"
 
-	clientmocks "github.com/hyperledger/fabric-sdk-go/pkg/client/common/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/balancer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/options"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/sorter/blockheightsorter"
@@ -114,7 +114,7 @@ func TestSelection(t *testing.T) {
 	}
 	ctx.SetEndpointConfig(config)
 
-	discClient := clientmocks.NewMockDiscoveryClient()
+	discClient := discmocks.NewMockDiscoveryClient()
 
 	SetClientProvider(func(ctx contextAPI.Client) (DiscoveryClient, error) {
 		return discClient, nil
@@ -123,8 +123,8 @@ func TestSelection(t *testing.T) {
 	var service *Service
 
 	errHandler := func(ctxt fab.ClientContext, channelID string, err error) {
-		derr, ok := err.(DiscoveryError)
-		if ok && derr.Error() == AccessDenied {
+		derr, ok := errors.Cause(err).(DiscoveryError)
+		if ok && derr.IsAccessDenied() {
 			service.Close()
 		}
 	}
@@ -142,17 +142,17 @@ func TestSelection(t *testing.T) {
 	t.Run("Error", func(t *testing.T) {
 		// Error condition
 		discClient.SetResponses(
-			&clientmocks.MockDiscoverEndpointResponse{
+			&discmocks.MockDiscoverEndpointResponse{
 				PeerEndpoints: []*discmocks.MockDiscoveryPeerEndpoint{},
 				Error:         fmt.Errorf("simulated response error"),
 			},
 		)
-		testSelectionError(t, service, "error getting channel response for channel [testchannel]: simulated response error")
+		testSelectionError(t, service, "error getting channel response for channel [testchannel]: no successful response received from any peer: simulated response error")
 	})
 
 	t.Run("CCtoCC", func(t *testing.T) {
 		discClient.SetResponses(
-			&clientmocks.MockDiscoverEndpointResponse{
+			&discmocks.MockDiscoverEndpointResponse{
 				PeerEndpoints: []*discmocks.MockDiscoveryPeerEndpoint{
 					peer2Org1Endpoint, peer2Org3Endpoint, peer2Org2Endpoint,
 					peer1Org1Endpoint, peer1Org2Endpoint, peer1Org3Endpoint,
@@ -212,7 +212,7 @@ func TestSelection(t *testing.T) {
 
 	t.Run("Fatal Error", func(t *testing.T) {
 		discClient.SetResponses(
-			&clientmocks.MockDiscoverEndpointResponse{
+			&discmocks.MockDiscoverEndpointResponse{
 				PeerEndpoints: []*discmocks.MockDiscoveryPeerEndpoint{},
 				Error:         fmt.Errorf(AccessDenied),
 			},
@@ -231,13 +231,13 @@ func TestWithDiscoveryFilter(t *testing.T) {
 	}
 	ctx.SetEndpointConfig(config)
 
-	discClient := clientmocks.NewMockDiscoveryClient()
+	discClient := discmocks.NewMockDiscoveryClient()
 	SetClientProvider(func(ctx contextAPI.Client) (DiscoveryClient, error) {
 		return discClient, nil
 	})
 
 	discClient.SetResponses(
-		&clientmocks.MockDiscoverEndpointResponse{
+		&discmocks.MockDiscoverEndpointResponse{
 			PeerEndpoints: []*discmocks.MockDiscoveryPeerEndpoint{
 				peer2Org1Endpoint, peer2Org3Endpoint, peer2Org2Endpoint,
 				peer1Org1Endpoint, peer1Org2Endpoint, peer1Org3Endpoint,
