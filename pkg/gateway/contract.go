@@ -6,7 +6,10 @@ SPDX-License-Identifier: Apache-2.0
 
 package gateway
 
-import "github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
+import (
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
+)
 
 // A Contract object represents a smart contract instance in a network.
 // Applications should get a Contract instance from a Network using the GetContract method
@@ -60,4 +63,21 @@ func (c *Contract) SubmitTransaction(name string, args ...string) ([]byte, error
 // be created for each transaction invocation.
 func (c *Contract) CreateTransaction(name string, args ...TransactionOption) (*Transaction, error) {
 	return newTransaction(name, c, args...)
+}
+
+// RegisterEvent registers for chaincode events. Unregister must be called when the registration is no longer needed.
+//  Parameters:
+//  eventFilter is the chaincode event filter (regular expression) for which events are to be received
+//
+//  Returns:
+//  the registration and a channel that is used to receive events. The channel is closed when Unregister is called.
+func (c *Contract) RegisterEvent(eventFilter string) (fab.Registration, <-chan *fab.CCEvent, error) {
+	return c.network.event.RegisterChaincodeEvent(c.chaincodeID, eventFilter)
+}
+
+// Unregister removes the given registration and closes the event channel.
+//  Parameters:
+//  registration is the registration handle that was returned from RegisterContractEvent method
+func (c *Contract) Unregister(registration fab.Registration) {
+	c.network.event.Unregister(registration)
 }

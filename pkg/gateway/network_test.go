@@ -48,6 +48,56 @@ func TestGetContract(t *testing.T) {
 	}
 }
 
+func TestBlockEvent(t *testing.T) {
+
+	gw := &Gateway{
+		options: &gatewayOptions{
+			Discovery: defaultDiscovery,
+			Timeout:   defaultTimeout,
+		},
+	}
+
+	c := mockChannelProvider("mychannel")
+
+	nw, err := newNetwork(gw, c)
+
+	if err != nil {
+		t.Fatalf("Failed to create network: %s", err)
+	}
+
+	reg, _, err := nw.RegisterBlockEvent()
+	if err != nil {
+		t.Fatalf("Failed to register block event: %s", err)
+	}
+
+	nw.Unregister(reg)
+}
+
+func TestFilteredBlocktEvent(t *testing.T) {
+
+	gw := &Gateway{
+		options: &gatewayOptions{
+			Discovery: defaultDiscovery,
+			Timeout:   defaultTimeout,
+		},
+	}
+
+	c := mockChannelProvider("mychannel")
+
+	nw, err := newNetwork(gw, c)
+
+	if err != nil {
+		t.Fatalf("Failed to create network: %s", err)
+	}
+
+	reg, _, err := nw.RegisterFilteredBlockEvent()
+	if err != nil {
+		t.Fatalf("Failed to register filtered block event: %s", err)
+	}
+
+	nw.Unregister(reg)
+}
+
 func mockChannelProvider(channelID string) context.ChannelProvider {
 
 	channelProvider := func() (context.Channel, error) {

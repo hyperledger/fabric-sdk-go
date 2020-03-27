@@ -7,7 +7,11 @@ SPDX-License-Identifier: Apache-2.0
 package gateway
 
 import (
+	"github.com/hyperledger/fabric-protos-go/peer"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel/invoke"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/pkg/errors"
 )
@@ -24,6 +28,7 @@ type Transaction struct {
 	contract       *Contract
 	request        *channel.Request
 	endorsingPeers []string
+	eventch        chan *fab.TxStatusEvent
 }
 
 // TransactionOption functional arguments can be supplied when creating a transaction object
@@ -107,7 +112,8 @@ func (txn *Transaction) Submit(args ...string) ([]byte, error) {
 	}
 	options = append(options, channel.WithTimeout(fab.Execute, txn.contract.network.gateway.options.Timeout))
 
-	response, err := txn.contract.client.Execute(
+	response, err := txn.contract.client.InvokeHandler(
+		newSubmitHandler(txn.eventch),
 		*txn.request,
 		options...,
 	)
@@ -116,4 +122,82 @@ func (txn *Transaction) Submit(args ...string) ([]byte, error) {
 	}
 
 	return response.Payload, nil
+}
+
+// RegisterCommitEvent registers for a commit event for this transaction.
+//  Returns:
+//  the channel that is used to receive the event. The channel is closed after the event is queued.
+func (txn *Transaction) RegisterCommitEvent() <-chan *fab.TxStatusEvent {
+	txn.eventch = make(chan *fab.TxStatusEvent, 1)
+	return txn.eventch
+}
+
+func newSubmitHandler(eventch chan *fab.TxStatusEvent) invoke.Handler {
+	return invoke.NewSelectAndEndorseHandler(
+		invoke.NewEndorsementValidationHandler(
+			invoke.NewSignatureValidationHandler(&commitTxHandler{eventch}),
+		),
+	)
+}
+
+type commitTxHandler struct {
+	eventch chan *fab.TxStatusEvent
+}
+
+//Handle handles commit tx
+func (c *commitTxHandler) Handle(requestContext *invoke.RequestContext, clientContext *invoke.ClientContext) {
+	txnID := requestContext.Response.TransactionID
+
+	//Register Tx event
+	reg, statusNotifier, err := clientContext.EventService.RegisterTxStatusEvent(string(txnID)) // TODO: Change func to use TransactionID instead of string
+	if err != nil {
+		requestContext.Error = errors.Wrap(err, "error registering for TxStatus event")
+		return
+	}
+	defer clientContext.EventService.Unregister(reg)
+	_, err = createAndSendTransaction(clientContext.Transactor, requestContext.Response.Proposal, requestContext.Response.Responses)
+	if err != nil {
+		requestContext.Error = errors.Wrap(err, "CreateAndSendTransaction failed")
+		return
+	}
+
+	select {
+	case txStatus := <-statusNotifier:
+		if c.eventch != nil {
+			c.eventch <- txStatus
+			close(c.eventch)
+		}
+		requestContext.Response.TxValidationCode = txStatus.TxValidationCode
+
+		if txStatus.TxValidationCode != peer.TxValidationCode_VALID {
+			requestContext.Error = status.New(status.EventServerStatus, int32(txStatus.TxValidationCode),
+				"received invalid transaction", nil)
+			return
+		}
+	case <-requestContext.Ctx.Done():
+		requestContext.Error = status.New(status.ClientStatus, status.Timeout.ToInt32(),
+			"Execute didn't receive block event", nil)
+		return
+	}
+}
+
+func createAndSendTransaction(sender fab.Sender, proposal *fab.TransactionProposal, resps []*fab.TransactionProposalResponse) (*fab.TransactionResponse, error) {
+
+	txnRequest := fab.TransactionRequest{
+		Proposal:          proposal,
+		ProposalResponses: resps,
+	}
+
+	tx, err := sender.CreateTransaction(txnRequest)
+	if err != nil {
+		return nil, errors.WithMessage(err, "CreateTransaction failed")
+	}
+
+	transactionResponse, err := sender.SendTransaction(tx)
+	if err != nil {
+		return nil, errors.WithMessage(err, "SendTransaction failed")
+
+	}
+
+	return transactionResponse, nil
 }

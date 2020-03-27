@@ -8,6 +8,7 @@ package gateway
 
 import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/event"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/pkg/errors"
@@ -20,6 +21,7 @@ type Network struct {
 	gateway *Gateway
 	client  *channel.Client
 	peers   []fab.Peer
+	event   *event.Client
 }
 
 func newNetwork(gateway *Gateway, channelProvider context.ChannelProvider) (*Network, error) {
@@ -54,6 +56,11 @@ func newNetwork(gateway *Gateway, channelProvider context.ChannelProvider) (*Net
 
 	n.peers = peers
 
+	n.event, err = event.New(channelProvider, event.WithBlockEvents())
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to create new event client")
+	}
+
 	return &n, nil
 }
 
@@ -65,4 +72,25 @@ func (n *Network) Name() string {
 // GetContract returns instance of a smart contract on the current network.
 func (n *Network) GetContract(chaincodeID string) *Contract {
 	return newContract(n, chaincodeID, "")
+}
+
+// RegisterBlockEvent registers for block events. Unregister must be called when the registration is no longer needed.
+//  Returns:
+//  the registration and a channel that is used to receive events. The channel is closed when Unregister is called.
+func (n *Network) RegisterBlockEvent() (fab.Registration, <-chan *fab.BlockEvent, error) {
+	return n.event.RegisterBlockEvent()
+}
+
+// RegisterFilteredBlockEvent registers for filtered block events. Unregister must be called when the registration is no longer needed.
+//  Returns:
+//  the registration and a channel that is used to receive events. The channel is closed when Unregister is called.
+func (n *Network) RegisterFilteredBlockEvent() (fab.Registration, <-chan *fab.FilteredBlockEvent, error) {
+	return n.event.RegisterFilteredBlockEvent()
+}
+
+// Unregister removes the given registration and closes the event channel.
+//  Parameters:
+//  registration is the registration handle that was returned from RegisterBlockEvent method
+func (n *Network) Unregister(registration fab.Registration) {
+	n.event.Unregister(registration)
 }
