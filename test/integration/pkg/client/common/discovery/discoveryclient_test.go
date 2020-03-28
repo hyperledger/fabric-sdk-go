@@ -358,15 +358,22 @@ func setupOrgContext(t *testing.T) []*integration.OrgContext {
 	}
 }
 
-func sendEndorserQuery(t *testing.T, ctx contextAPI.Client, client *discovery.Client, interest *fabdiscovery.ChaincodeInterest, peerConfig fab.PeerConfig) (discclient.ChannelResponse, error) {
+func sendEndorserQuery(t *testing.T, ctx contextAPI.Client, client discovery.Client, interest *fabdiscovery.ChaincodeInterest, peerConfig fab.PeerConfig) (discclient.ChannelResponse, error) {
 	req, err := discovery.NewRequest().OfChannel(orgChannelID).AddEndorsersQuery(interest)
 	require.NoError(t, err, "error adding endorsers query")
 
 	reqCtx, cancel := context.NewRequest(ctx, context.WithTimeout(10*time.Second))
 	defer cancel()
 
-	responses, err := client.Send(reqCtx, req, peerConfig)
+	responsesCh, err := client.Send(reqCtx, req, peerConfig)
 	require.NoError(t, err, "error calling discover service send")
+
+	var responses []discovery.Response
+
+	for resp := range responsesCh {
+		responses = append(responses, resp)
+	}
+
 	require.NotEmpty(t, responses, "expecting one response but got none")
 
 	chanResp := responses[0].ForChannel(orgChannelID)

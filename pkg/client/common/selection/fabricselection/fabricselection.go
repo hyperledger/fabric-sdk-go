@@ -10,7 +10,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/multi"
 	"strings"
 	"time"
 
@@ -18,6 +17,7 @@ import (
 	discclient "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/discovery/client"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/random"
 	soptions "github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/options"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/multi"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
@@ -180,7 +180,7 @@ func (s *Service) getEndorsers(chaincodes []*fab.ChaincodeCall, chResponse discc
 	}
 
 	endpoints, err := chResponse.Endorsers(asInvocationChain(chaincodes), newFilter(s.ctx, peers, peerFilter, sorter))
-	if err != nil && newDiscoveryError(err).isTransient() {
+	if err != nil && newDiscoveryError(err).IsTransient() {
 		return nil, status.New(status.DiscoveryServerStatus, int32(status.QueryEndorsers), fmt.Sprintf("error getting endorsers: %s", err), []interface{}{})
 	}
 
@@ -259,11 +259,13 @@ func (s *Service) query(req *fabdiscovery.Request, chaincodes []*fab.ChaincodeCa
 		if _, err := chResp.Endorsers(invocChain, discclient.NoFilter); err != nil {
 			logger.Debugf("... got error response from [%s]: %s", response.Target(), err)
 
-			if discoveryErr := newDiscoveryError(err); discoveryErr.isTransient() {
+			if discoveryErr := newDiscoveryError(err); discoveryErr.IsTransient() {
 				logger.Debugf("Got transient error: %s", discoveryErr)
 				errMsg := fmt.Sprintf("error received from Discovery Server: %s", discoveryErr)
 
 				return nil, status.New(status.DiscoveryServerStatus, int32(status.QueryEndorsers), errMsg, []interface{}{})
+			} else if discoveryErr.IsAccessDenied() {
+				logger.Debugf("Got access denied from target [%s]: %s", response.Target(), discoveryErr)
 			}
 
 			respErrors = append(respErrors, err)
@@ -271,6 +273,9 @@ func (s *Service) query(req *fabdiscovery.Request, chaincodes []*fab.ChaincodeCa
 		}
 
 		logger.Debugf("... got success response from [%s]", response.Target())
+
+		//got successful response, cancel all outstanding requests
+		cancel()
 
 		return chResp, nil
 	}
@@ -365,11 +370,13 @@ func (e DiscoveryError) Error() string {
 	return string(e)
 }
 
-func (e DiscoveryError) isTransient() bool {
+//IsTransient checks if error is about peer being unable to ding chaincode or endorsement combination wasn't satisfied
+func (e DiscoveryError) IsTransient() bool {
 	return strings.Contains(e.Error(), "failed constructing descriptor for chaincodes") ||
 		strings.Contains(e.Error(), "no endorsement combination can be satisfied")
 }
 
+//IsAccessDenied checks if response contains access denied msg
 func (e DiscoveryError) IsAccessDenied() bool {
 	return strings.Contains(e.Error(), AccessDenied)
 }

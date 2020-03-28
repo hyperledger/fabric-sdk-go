@@ -47,9 +47,9 @@ func TestLocalProvider(t *testing.T) {
 	}
 	config.SetCustomNetworkPeerCfg([]pfab.NetworkPeer{peer1Org1, peer1Org2})
 
-	discClient := discmocks.NewMockDiscoveryClient()
+	discClient := discovery.NewMockDiscoveryClient()
 	discClient.SetResponses(
-		&discmocks.MockDiscoverEndpointResponse{
+		&discovery.MockDiscoverEndpointResponse{
 			PeerEndpoints: []*discmocks.MockDiscoveryPeerEndpoint{},
 		},
 	)

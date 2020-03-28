@@ -8,6 +8,9 @@ package discovery
 
 import (
 	"context"
+	"strings"
+	"sync"
+
 	"github.com/hyperledger/fabric-protos-go/discovery"
 	discclient "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/discovery/client"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
@@ -17,8 +20,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/comm"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
-	"strings"
-	"sync"
 )
 
 var logger = logging.NewLogger("fabsdk/fab")
@@ -27,6 +28,9 @@ const (
 	signerCacheSize = 10 // TODO: set an appropriate value (and perhaps make configurable)
 )
 
+//Client gives ability to send discovery request to multiple targets.
+//There are cases when multiple targets requested and some of them are hanging, recommended to cancel ctx after first successful response.
+//Note: "access denied" is a success response, so check for it after response evaluation.
 type Client interface {
 	Send(ctx context.Context, req *Request, targets ...fab.PeerConfig) (<-chan Response, error)
 }

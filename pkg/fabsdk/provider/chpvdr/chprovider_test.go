@@ -9,7 +9,6 @@ SPDX-License-Identifier: Apache-2.0
 package chpvdr
 
 import (
-	"errors"
 	"sync"
 	"testing"
 	"time"
@@ -23,9 +22,11 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/chconfig"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/discovery"
 	discmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/discovery/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -121,13 +122,13 @@ func TestCloseContext(t *testing.T) {
 
 	SetChannelConfig(chconfig.NewChannelCfg(""), testChannelCfg)
 
-	discClient := discmocks.NewMockDiscoveryClient()
-	dynamicdiscovery.SetClientProvider(func(ctx context.Client) (dynamicdiscovery.DiscoveryClient, error) {
+	discClient := discovery.NewMockDiscoveryClient()
+	dynamicdiscovery.SetClientProvider(func(ctx context.Client) (discovery.Client, error) {
 		return discClient, nil
 	})
 
 	discClient.SetResponses(
-		&discmocks.MockDiscoverEndpointResponse{
+		&discovery.MockDiscoverEndpointResponse{
 			PeerEndpoints: []*discmocks.MockDiscoveryPeerEndpoint{},
 		},
 	)
@@ -189,8 +190,8 @@ func TestDiscoveryAccessDenied(t *testing.T) {
 
 	SetChannelConfig(chconfig.NewChannelCfg(""), testChannelCfg)
 
-	discClient := discmocks.NewMockDiscoveryClient()
-	dynamicdiscovery.SetClientProvider(func(ctx context.Client) (dynamicdiscovery.DiscoveryClient, error) {
+	discClient := discovery.NewMockDiscoveryClient()
+	dynamicdiscovery.SetClientProvider(func(ctx context.Client) (discovery.Client, error) {
 		return discClient, nil
 	})
 
@@ -215,14 +216,14 @@ func TestDiscoveryAccessDenied(t *testing.T) {
 	}
 
 	errHandler := func(ctxt fab.ClientContext, channelID string, err error) {
-		if derr, ok := err.(dynamicdiscovery.DiscoveryError); ok && derr.Error() == dynamicdiscovery.AccessDenied && derr.Error() == dynamicdiscovery.AccessDenied {
+		if derr, ok := errors.Cause(err).(dynamicdiscovery.DiscoveryError); ok && derr.IsAccessDenied() {
 			// Spawn a new Go routine or else we'll hit a deadlock when closing the context
 			go func() {
 				channelProvider.CloseContext(ctxt)
 
 				// Reset the error
 				discClient.SetResponses(
-					&discmocks.MockDiscoverEndpointResponse{
+					&discovery.MockDiscoverEndpointResponse{
 						PeerEndpoints: []*discmocks.MockDiscoveryPeerEndpoint{},
 					},
 				)
@@ -239,20 +240,20 @@ func TestDiscoveryAccessDenied(t *testing.T) {
 	)
 	defer channelProvider.Close()
 
-	discovery := newDiscovery("user1", "org1")
+	discoveryService := newDiscovery("user1", "org1")
 
 	// First set a successful response
 	discClient.SetResponses(
-		&discmocks.MockDiscoverEndpointResponse{
+		&discovery.MockDiscoverEndpointResponse{
 			PeerEndpoints: []*discmocks.MockDiscoveryPeerEndpoint{},
 		},
 	)
 
-	_, err := discovery.GetPeers()
+	_, err := discoveryService.GetPeers()
 	require.NoError(t, err)
 
 	discClient.SetResponses(
-		&discmocks.MockDiscoverEndpointResponse{
+		&discovery.MockDiscoverEndpointResponse{
 			Error: errors.New("access denied"),
 		},
 	)
@@ -260,20 +261,20 @@ func TestDiscoveryAccessDenied(t *testing.T) {
 	time.Sleep(10 * time.Millisecond)
 
 	// Subsequent calls on the old discovery should fail since the service is closed
-	_, err = discovery.GetPeers()
+	_, err = discoveryService.GetPeers()
 	require.Error(t, err)
 	assert.Equal(t, "Discovery client has been closed", err.Error())
 
 	time.Sleep(10 * time.Millisecond)
 
 	// Subsequent calls should succeed since the error handler should have replaced the discovery service
-	discovery = getDiscovery()
-	_, err = discovery.GetPeers()
+	discoveryService = getDiscovery()
+	_, err = discoveryService.GetPeers()
 	require.NoError(t, err)
 
 	// Set a transient error
 	discClient.SetResponses(
-		&discmocks.MockDiscoverEndpointResponse{
+		&discovery.MockDiscoverEndpointResponse{
 			Error: errors.New("some transient error"),
 		},
 	)
@@ -282,7 +283,7 @@ func TestDiscoveryAccessDenied(t *testing.T) {
 	time.Sleep(10 * time.Millisecond)
 
 	// Calls should still succeed since the error handler ignores transient errors
-	_, err = discovery.GetPeers()
+	_, err = discoveryService.GetPeers()
 	require.NoError(t, err)
 }
 
@@ -296,8 +297,8 @@ func TestSelectionAccessDenied(t *testing.T) {
 
 	SetChannelConfig(chconfig.NewChannelCfg(""), testChannelCfg)
 
-	discClient := discmocks.NewMockDiscoveryClient()
-	dynamicdiscovery.SetClientProvider(func(ctx context.Client) (dynamicdiscovery.DiscoveryClient, error) {
+	discClient := discovery.NewMockDiscoveryClient()
+	dynamicdiscovery.SetClientProvider(func(ctx context.Client) (discovery.Client, error) {
 		return discClient, nil
 	})
 	fabricselection.SetClientProvider(func(ctx context.Client) (fabricselection.DiscoveryClient, error) {
@@ -326,14 +327,14 @@ func TestSelectionAccessDenied(t *testing.T) {
 	}
 
 	errHandler := func(ctxt fab.ClientContext, channelID string, err error) {
-		if derr, ok := err.(fabricselection.DiscoveryError); ok && derr.Error() == fabricselection.AccessDenied {
+		if derr, ok := errors.Cause(err).(fabricselection.DiscoveryError); ok && derr.IsAccessDenied() {
 			// Spawn a new Go routine or else we'll hit a deadlock when closing the context
 			go func() {
 				channelProvider.CloseContext(ctxt)
 
 				// Reset the error
 				discClient.SetResponses(
-					&discmocks.MockDiscoverEndpointResponse{
+					&discovery.MockDiscoverEndpointResponse{
 						PeerEndpoints: []*discmocks.MockDiscoveryPeerEndpoint{},
 					},
 				)
@@ -352,7 +353,7 @@ func TestSelectionAccessDenied(t *testing.T) {
 
 	// First set a successful response
 	discClient.SetResponses(
-		&discmocks.MockDiscoverEndpointResponse{
+		&discovery.MockDiscoverEndpointResponse{
 			PeerEndpoints: []*discmocks.MockDiscoveryPeerEndpoint{},
 		},
 	)
@@ -364,7 +365,7 @@ func TestSelectionAccessDenied(t *testing.T) {
 
 	// Now set an error response
 	discClient.SetResponses(
-		&discmocks.MockDiscoverEndpointResponse{
+		&discovery.MockDiscoverEndpointResponse{
 			Error: errors.New("access denied"),
 		},
 	)

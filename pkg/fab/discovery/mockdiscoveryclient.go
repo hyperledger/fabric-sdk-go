@@ -4,10 +4,10 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package mocks
+package discovery
 
 import (
-	reqcontext "context"
+	"context"
 	"sync"
 
 	"github.com/hyperledger/fabric-protos-go/discovery"
@@ -15,18 +15,18 @@ import (
 	discclient "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/discovery/client"
 	gprotoext "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/gossip/protoext"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
-	fabdiscovery "github.com/hyperledger/fabric-sdk-go/pkg/fab/discovery"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/discovery/mocks"
 )
 
 // MockDiscoveryClient implements a mock Discover service
 type MockDiscoveryClient struct {
-	resp []fabdiscovery.Response
+	resp []Response
 	lock sync.RWMutex
 }
 
 // MockResponseBuilder builds a mock discovery response
 type MockResponseBuilder interface {
-	Build() fabdiscovery.Response
+	Build() Response
 }
 
 // NewMockDiscoveryClient returns a new mock Discover service
@@ -35,8 +35,8 @@ func NewMockDiscoveryClient() *MockDiscoveryClient {
 }
 
 // Send sends a Discovery request
-func (m *MockDiscoveryClient) Send(ctx reqcontext.Context, req *fabdiscovery.Request, targets ...fab.PeerConfig) (<-chan fabdiscovery.Response, error) {
-	respCh := make(chan fabdiscovery.Response, len(targets))
+func (m *MockDiscoveryClient) Send(ctx context.Context, req *Request, targets ...fab.PeerConfig) (<-chan Response, error) {
+	respCh := make(chan Response, len(targets))
 
 	for _, r := range m.responses() {
 		respCh <- r
@@ -59,7 +59,7 @@ func (m *MockDiscoveryClient) SetResponses(responses ...MockResponseBuilder) {
 	}
 }
 
-func (m *MockDiscoveryClient) responses() []fabdiscovery.Response {
+func (m *MockDiscoveryClient) responses() []Response {
 	m.lock.RLock()
 	defer m.lock.RUnlock()
 	return m.resp
@@ -79,19 +79,19 @@ func (r *mockDiscoverResponse) Error() error {
 	return r.err
 }
 
-type response struct {
+type fakeResponse struct {
 	peers []*discclient.Peer
 	err   error
 }
 
-func (r *response) ForChannel(string) discclient.ChannelResponse {
+func (r *fakeResponse) ForChannel(string) discclient.ChannelResponse {
 	return &channelResponse{
 		peers: r.peers,
 		err:   r.err,
 	}
 }
 
-func (r *response) ForLocal() discclient.LocalResponse {
+func (r *fakeResponse) ForLocal() discclient.LocalResponse {
 	return &localResponse{
 		peers: r.peers,
 		err:   r.err,
@@ -134,12 +134,12 @@ func (cr *localResponse) Peers() ([]*discclient.Peer, error) {
 // MockDiscoverEndpointResponse contains a mock response for the discover client
 type MockDiscoverEndpointResponse struct {
 	Target        string
-	PeerEndpoints []*MockDiscoveryPeerEndpoint
+	PeerEndpoints []*mocks.MockDiscoveryPeerEndpoint
 	Error         error
 }
 
 // Build builds a mock discovery response
-func (b *MockDiscoverEndpointResponse) Build() fabdiscovery.Response {
+func (b *MockDiscoverEndpointResponse) Build() Response {
 	var peers discclient.Endorsers
 	for _, endpoint := range b.PeerEndpoints {
 		peer := &discclient.Peer{
@@ -150,7 +150,7 @@ func (b *MockDiscoverEndpointResponse) Build() fabdiscovery.Response {
 		peers = append(peers, peer)
 	}
 	return &mockDiscoverResponse{
-		Response: &response{
+		Response: &fakeResponse{
 			peers: peers,
 			err:   b.Error,
 		},
@@ -158,7 +158,7 @@ func (b *MockDiscoverEndpointResponse) Build() fabdiscovery.Response {
 	}
 }
 
-func newAliveMessage(endpoint *MockDiscoveryPeerEndpoint) *gprotoext.SignedGossipMessage {
+func newAliveMessage(endpoint *mocks.MockDiscoveryPeerEndpoint) *gprotoext.SignedGossipMessage {
 	return &gprotoext.SignedGossipMessage{
 		GossipMessage: &gossip.GossipMessage{
 			Content: &gossip.GossipMessage_AliveMsg{
@@ -172,7 +172,7 @@ func newAliveMessage(endpoint *MockDiscoveryPeerEndpoint) *gprotoext.SignedGossi
 	}
 }
 
-func newStateInfoMessage(endpoint *MockDiscoveryPeerEndpoint) *gprotoext.SignedGossipMessage {
+func newStateInfoMessage(endpoint *mocks.MockDiscoveryPeerEndpoint) *gprotoext.SignedGossipMessage {
 	return &gprotoext.SignedGossipMessage{
 		GossipMessage: &gossip.GossipMessage{
 			Content: &gossip.GossipMessage_StateInfo{

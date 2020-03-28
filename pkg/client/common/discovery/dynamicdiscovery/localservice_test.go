@@ -43,9 +43,9 @@ func TestLocalDiscoveryService(t *testing.T) {
 	}
 	config.SetCustomNetworkPeerCfg([]pfab.NetworkPeer{peer1})
 
-	discClient := discmocks.NewMockDiscoveryClient()
+	discClient := fabDiscovery.NewMockDiscoveryClient()
 	discClient.SetResponses(
-		&discmocks.MockDiscoverEndpointResponse{
+		&fabDiscovery.MockDiscoverEndpointResponse{
 			PeerEndpoints: []*discmocks.MockDiscoveryPeerEndpoint{},
 		},
 	)
@@ -85,7 +85,7 @@ func TestLocalDiscoveryService(t *testing.T) {
 	assert.Equal(t, 0, len(peers))
 
 	discClient.SetResponses(
-		&discmocks.MockDiscoverEndpointResponse{
+		&fabDiscovery.MockDiscoverEndpointResponse{
 			PeerEndpoints: []*discmocks.MockDiscoveryPeerEndpoint{
 				{
 					MSPID:        mspID1,
@@ -103,7 +103,7 @@ func TestLocalDiscoveryService(t *testing.T) {
 	assert.Equal(t, 1, len(peers), "Expecting 1 peer")
 
 	discClient.SetResponses(
-		&discmocks.MockDiscoverEndpointResponse{
+		&fabDiscovery.MockDiscoverEndpointResponse{
 			PeerEndpoints: []*discmocks.MockDiscoveryPeerEndpoint{
 				{
 					MSPID:        mspID1,
@@ -136,7 +136,7 @@ func TestLocalDiscoveryService(t *testing.T) {
 
 	// Fatal error (access denied can be due due a user being revoked)
 	discClient.SetResponses(
-		&discmocks.MockDiscoverEndpointResponse{
+		&fabDiscovery.MockDiscoverEndpointResponse{
 			Error: errors.New(AccessDenied),
 		},
 	)

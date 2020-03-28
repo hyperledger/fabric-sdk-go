@@ -1,8 +1,15 @@
+/*
+Copyright SecureKey Technologies Inc. All Rights Reserved.
+
+SPDX-License-Identifier: Apache-2.0
+*/
+
 package dynamicdiscovery
 
 import (
-	"github.com/pkg/errors"
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
 const (
@@ -16,14 +23,17 @@ type DiscoveryError struct {
 	target string
 }
 
+//Error returns string representation with target
 func (e DiscoveryError) Error() string {
 	return errors.Wrapf(e.error, "target [%s]", e.target).Error()
 }
 
+//Target returns url of the peer
 func (e DiscoveryError) Target() string {
 	return e.target
 }
 
+//IsAccessDenied checks if response contains access denied msg
 func (e DiscoveryError) IsAccessDenied() bool {
 	return strings.Contains(e.Error(), AccessDenied)
 }

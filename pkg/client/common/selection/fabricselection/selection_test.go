@@ -10,6 +10,7 @@ package fabricselection
 
 import (
 	"fmt"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/discovery"
 	"github.com/pkg/errors"
 	"strings"
 	"testing"
@@ -114,7 +115,7 @@ func TestSelection(t *testing.T) {
 	}
 	ctx.SetEndpointConfig(config)
 
-	discClient := discmocks.NewMockDiscoveryClient()
+	discClient := discovery.NewMockDiscoveryClient()
 
 	SetClientProvider(func(ctx contextAPI.Client) (DiscoveryClient, error) {
 		return discClient, nil
@@ -142,7 +143,7 @@ func TestSelection(t *testing.T) {
 	t.Run("Error", func(t *testing.T) {
 		// Error condition
 		discClient.SetResponses(
-			&discmocks.MockDiscoverEndpointResponse{
+			&discovery.MockDiscoverEndpointResponse{
 				PeerEndpoints: []*discmocks.MockDiscoveryPeerEndpoint{},
 				Error:         fmt.Errorf("simulated response error"),
 			},
@@ -152,7 +153,7 @@ func TestSelection(t *testing.T) {
 
 	t.Run("CCtoCC", func(t *testing.T) {
 		discClient.SetResponses(
-			&discmocks.MockDiscoverEndpointResponse{
+			&discovery.MockDiscoverEndpointResponse{
 				PeerEndpoints: []*discmocks.MockDiscoveryPeerEndpoint{
 					peer2Org1Endpoint, peer2Org3Endpoint, peer2Org2Endpoint,
 					peer1Org1Endpoint, peer1Org2Endpoint, peer1Org3Endpoint,
@@ -212,7 +213,7 @@ func TestSelection(t *testing.T) {
 
 	t.Run("Fatal Error", func(t *testing.T) {
 		discClient.SetResponses(
-			&discmocks.MockDiscoverEndpointResponse{
+			&discovery.MockDiscoverEndpointResponse{
 				PeerEndpoints: []*discmocks.MockDiscoveryPeerEndpoint{},
 				Error:         fmt.Errorf(AccessDenied),
 			},
@@ -231,13 +232,13 @@ func TestWithDiscoveryFilter(t *testing.T) {
 	}
 	ctx.SetEndpointConfig(config)
 
-	discClient := discmocks.NewMockDiscoveryClient()
+	discClient := discovery.NewMockDiscoveryClient()
 	SetClientProvider(func(ctx contextAPI.Client) (DiscoveryClient, error) {
 		return discClient, nil
 	})
 
 	discClient.SetResponses(
-		&discmocks.MockDiscoverEndpointResponse{
+		&discovery.MockDiscoverEndpointResponse{
 			PeerEndpoints: []*discmocks.MockDiscoveryPeerEndpoint{
 				peer2Org1Endpoint, peer2Org3Endpoint, peer2Org2Endpoint,
 				peer1Org1Endpoint, peer1Org2Endpoint, peer1Org3Endpoint,

@@ -50,9 +50,9 @@ func TestDiscoveryService(t *testing.T) {
 	}
 	ctx.SetEndpointConfig(config)
 
-	discClient := discmocks.NewMockDiscoveryClient()
+	discClient := fabDiscovery.NewMockDiscoveryClient()
 	discClient.SetResponses(
-		&discmocks.MockDiscoverEndpointResponse{
+		&fabDiscovery.MockDiscoverEndpointResponse{
 			PeerEndpoints: []*discmocks.MockDiscoveryPeerEndpoint{},
 			Target:        peer1MSP1,
 		},
@@ -84,7 +84,7 @@ func TestDiscoveryService(t *testing.T) {
 	assert.Equal(t, 0, len(peers))
 
 	discClient.SetResponses(
-		&discmocks.MockDiscoverEndpointResponse{
+		&fabDiscovery.MockDiscoverEndpointResponse{
 			PeerEndpoints: []*discmocks.MockDiscoveryPeerEndpoint{
 				{
 					MSPID:        mspID1,
@@ -102,7 +102,7 @@ func TestDiscoveryService(t *testing.T) {
 	assert.Equalf(t, 1, len(peers), "Expected 1 peer")
 
 	discClient.SetResponses(
-		&discmocks.MockDiscoverEndpointResponse{
+		&fabDiscovery.MockDiscoverEndpointResponse{
 			PeerEndpoints: []*discmocks.MockDiscoveryPeerEndpoint{
 				{
 					MSPID:        mspID1,
@@ -131,7 +131,7 @@ func TestDiscoveryService(t *testing.T) {
 
 	// Non-fatal error
 	discClient.SetResponses(
-		&discmocks.MockDiscoverEndpointResponse{
+		&fabDiscovery.MockDiscoverEndpointResponse{
 			Error: errors.New("some transient error"),
 		},
 	)
@@ -145,7 +145,7 @@ func TestDiscoveryService(t *testing.T) {
 
 	// Fatal error (access denied can be due a user being revoked)
 	discClient.SetResponses(
-		&discmocks.MockDiscoverEndpointResponse{
+		&fabDiscovery.MockDiscoverEndpointResponse{
 			Error: errors.New(AccessDenied),
 		},
 	)
@@ -185,9 +185,9 @@ func TestDiscoveryServiceWithNewOrgJoined(t *testing.T) {
 	}
 	ctx.SetEndpointConfig(config)
 
-	discClient := discmocks.NewMockDiscoveryClient()
+	discClient := fabDiscovery.NewMockDiscoveryClient()
 	discClient.SetResponses(
-		&discmocks.MockDiscoverEndpointResponse{
+		&fabDiscovery.MockDiscoverEndpointResponse{
 			PeerEndpoints: []*discmocks.MockDiscoveryPeerEndpoint{},
 		},
 	)
@@ -211,7 +211,7 @@ func TestDiscoveryServiceWithNewOrgJoined(t *testing.T) {
 	assert.Equal(t, 0, len(peers))
 
 	discClient.SetResponses(
-		&discmocks.MockDiscoverEndpointResponse{
+		&fabDiscovery.MockDiscoverEndpointResponse{
 			PeerEndpoints: []*discmocks.MockDiscoveryPeerEndpoint{
 				{
 					MSPID:        mspID1,
@@ -229,7 +229,7 @@ func TestDiscoveryServiceWithNewOrgJoined(t *testing.T) {
 	assert.Equalf(t, 1, len(peers), "Expected 1 peer")
 
 	discClient.SetResponses(
-		&discmocks.MockDiscoverEndpointResponse{
+		&fabDiscovery.MockDiscoverEndpointResponse{
 			PeerEndpoints: []*discmocks.MockDiscoveryPeerEndpoint{
 				{
 					MSPID:        mspID1,
