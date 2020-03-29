@@ -359,15 +359,17 @@ func (p *peerEndpoint) BlockHeight() uint64 {
 }
 
 // DiscoveryError is an error originating at the Discovery service
-type DiscoveryError string
+type DiscoveryError struct {
+	error
+}
 
 func newDiscoveryError(err error) DiscoveryError {
-	return DiscoveryError(err.Error())
+	return DiscoveryError{err}
 }
 
 // Error returns the error message
 func (e DiscoveryError) Error() string {
-	return string(e)
+	return e.Error()
 }
 
 //IsTransient checks if error is about peer being unable to ding chaincode or endorsement combination wasn't satisfied
