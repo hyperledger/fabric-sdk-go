@@ -520,14 +520,17 @@ func loadConfigValue(configItems *ChannelCfg, key string, versionsValue *common.
 
 	switch key {
 	case channelConfig.AnchorPeersKey:
+		versionsValue.Value = configValue.Value
 		if err := loadAnchorPeers(configValue, configItems, org); err != nil {
 			return err
 		}
 	case channelConfig.MSPKey:
+		versionsValue.Value = configValue.Value
 		if err := loadMSPKey(configValue, configItems); err != nil {
 			return err
 		}
 	case channelConfig.CapabilitiesKey:
+		versionsValue.Value = configValue.Value
 		if err := loadCapabilities(configValue, configItems, groupName); err != nil {
 			return err
 		}
