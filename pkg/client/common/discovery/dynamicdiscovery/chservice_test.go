@@ -68,10 +68,17 @@ func TestDiscoveryService(t *testing.T) {
 		WithRefreshInterval(10*time.Millisecond),
 		WithResponseTimeout(100*time.Millisecond),
 		WithErrorHandler(
-			func(ctxt fab.ClientContext, channelID string, err error) {
+			func(ctx fab.ClientContext, channelID string, err error) {
 				derr, ok := errors.Cause(err).(DiscoveryError)
-				if ok && derr.IsAccessDenied() {
-					service.Close()
+
+				if ok {
+					//peer1MSP1 or peer1MSP2, depending on request
+					assert.NotEmpty(t, derr.Target())
+					assert.NotEmpty(t, derr.Error())
+
+					if derr.IsAccessDenied() {
+						service.Close()
+					}
 				}
 			},
 		),
@@ -92,6 +99,7 @@ func TestDiscoveryService(t *testing.T) {
 					LedgerHeight: 5,
 				},
 			},
+			Target: peer1MSP2,
 		},
 	)
 
@@ -115,6 +123,7 @@ func TestDiscoveryService(t *testing.T) {
 					LedgerHeight: 15,
 				},
 			},
+			Target: peer1MSP1,
 		},
 	)
 
@@ -132,7 +141,8 @@ func TestDiscoveryService(t *testing.T) {
 	// Non-fatal error
 	discClient.SetResponses(
 		&fabDiscovery.MockDiscoverEndpointResponse{
-			Error: errors.New("some transient error"),
+			Error:  errors.New("some transient error"),
+			Target: peer1MSP1,
 		},
 	)
 
@@ -146,7 +156,8 @@ func TestDiscoveryService(t *testing.T) {
 	// Fatal error (access denied can be due a user being revoked)
 	discClient.SetResponses(
 		&fabDiscovery.MockDiscoverEndpointResponse{
-			Error: errors.New(AccessDenied),
+			Error:  errors.New(AccessDenied),
+			Target: peer1MSP1,
 		},
 	)
 
