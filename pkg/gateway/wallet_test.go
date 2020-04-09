@@ -19,9 +19,9 @@ func testWalletSuite(t *testing.T, gen walletGenerator) {
 		title string
 		run   func(t *testing.T, wallet *Wallet)
 	}{
-		{"testInsertionAndExistance", testInsertionAndExistance},
 		{"testNonExistance", testNonExistance},
 		{"testLookupNonExist", testLookupNonExist},
+		{"testInsertionAndExistance", testInsertionAndExistance},
 		{"testInsertionAndLookup", testInsertionAndLookup},
 		{"testContentsOfWallet", testContentsOfWallet},
 		{"testRemovalFromWallet", testRemovalFromWallet},
