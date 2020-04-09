@@ -17,6 +17,8 @@ require (
 	github.com/golang/mock v1.2.0
 	github.com/golang/protobuf v1.3.2
 	github.com/google/certificate-transparency-go v0.0.0-20180222191210-5ab67e519c93 // indirect
+	github.com/hashicorp/vault/api v1.0.5-0.20200117231345-460d63e36490
+    github.com/hashicorp/vault/sdk v0.1.14-0.20200305172021-03a3749f220d // indirect
 	github.com/hashicorp/hcl v0.0.0-20180404174102-ef8a98b0bbce // indirect
 	github.com/hyperledger/fabric-lib-go v1.0.0
 	github.com/hyperledger/fabric-protos-go v0.0.0-20191121202242-f5500d5e3e85
