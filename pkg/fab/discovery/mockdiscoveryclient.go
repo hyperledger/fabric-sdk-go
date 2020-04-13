@@ -155,6 +155,7 @@ func (b *MockDiscoverEndpointResponse) Build() Response {
 			err:   b.Error,
 		},
 		target: b.Target,
+		err:    b.Error,
 	}
 }
 

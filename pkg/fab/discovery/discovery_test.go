@@ -89,6 +89,10 @@ func TestDiscoveryClient(t *testing.T) {
 	assert.Equal(t, 2, len(peers))
 	t.Logf("Got success response from channel query [%s]: Num Peers: %d", response.Target(), len(peers))
 
+	responsesCh, err = client.Send(ctx, req)
+	assert.Error(t, err)
+	assert.EqualError(t, err, "no targets specified")
+
 }
 
 var discoverServer *discmocks.MockDiscoveryServer

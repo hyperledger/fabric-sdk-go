@@ -167,6 +167,16 @@ func TestDiscoveryService(t *testing.T) {
 	_, err = service.GetPeers()
 	require.Error(t, err)
 	assert.Equal(t, "Discovery client has been closed", err.Error())
+
+	ctx = mocks.NewMockContext(mspmocks.NewMockSigningIdentity("test", mspID1))
+	ctx.SetEndpointConfig(mocks.NewMockEndpointConfig())
+
+	service, err = NewChannelService(ctx, mocks.NewMockMembership(), "noChannelPeers")
+	require.NoError(t, err)
+
+	_, err = service.GetPeers()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "no channel peers configured for channel [noChannelPeers]")
 }
 
 func TestDiscoveryServiceWithNewOrgJoined(t *testing.T) {

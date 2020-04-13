@@ -211,7 +211,7 @@ func TestSelection(t *testing.T) {
 		testSelectionPrioritySelector(t, service)
 	})
 
-	t.Run("Fatal Error", func(t *testing.T) {
+	t.Run("Fatal Error Access Denied", func(t *testing.T) {
 		discClient.SetResponses(
 			&discovery.MockDiscoverEndpointResponse{
 				PeerEndpoints: []*discmocks.MockDiscoveryPeerEndpoint{},
@@ -221,6 +221,24 @@ func TestSelection(t *testing.T) {
 		// Wait for cache to refresh
 		time.Sleep(20 * time.Millisecond)
 		testSelectionError(t, service, "Selection service has been closed")
+	})
+
+	t.Run("Fatal Error Transient error", func(t *testing.T) {
+		service, err = New(
+			ctx, channelID,
+			mocks.NewMockDiscoveryService(nil, peer1Org1, peer2Org1, peer1Org2, peer2Org2, peer1Org3, peer2Org3),
+		)
+		require.NoError(t, err)
+		defer service.Close()
+		discClient.SetResponses(
+			&discovery.MockDiscoverEndpointResponse{
+				PeerEndpoints: []*discmocks.MockDiscoveryPeerEndpoint{},
+				Error:         fmt.Errorf("failed constructing descriptor for chaincodes"),
+			},
+		)
+		// Wait for cache to refresh
+		time.Sleep(20 * time.Millisecond)
+		testSelectionError(t, service, "failed constructing descriptor for chaincodes")
 	})
 }
 
@@ -298,7 +316,7 @@ func TestWithDiscoveryFilter(t *testing.T) {
 func testSelectionError(t *testing.T, service *Service, expectedErrMsg string) {
 	endorsers, err := service.GetEndorsersForChaincode([]*fab.ChaincodeCall{{ID: cc1}})
 	require.Error(t, err)
-	assert.Equal(t, expectedErrMsg, err.Error())
+	assert.Contains(t, err.Error(), expectedErrMsg)
 	assert.Equal(t, 0, len(endorsers))
 }
 

@@ -148,4 +148,21 @@ func TestLocalDiscoveryService(t *testing.T) {
 	_, err = service.GetPeers()
 	require.Error(t, err)
 	assert.Equal(t, "Discovery client has been closed", err.Error())
+
+	emptyPeersArr := make([]fab.NetworkPeer, 0)
+	config.SetCustomNetworkPeerCfg(emptyPeersArr)
+
+	service = newLocalService(config, mspID1)
+	err = service.Initialize(localCtx)
+	require.NoError(t, err)
+
+	_, err = service.GetPeers()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "no bootstrap peers configured")
+
+	service = newLocalService(config, mspID1)
+
+	_, err = service.GetPeers()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "the service has not been initialized")
 }

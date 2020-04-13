@@ -47,7 +47,10 @@ func (s *LocalService) Close() {
 }
 
 func (s *LocalService) localContext() contextAPI.Local {
-	return s.context().(contextAPI.Local)
+	if ctx, ok := s.context().(contextAPI.Local); ok {
+		return ctx
+	}
+	return nil
 }
 
 func (s *LocalService) queryPeers() ([]fab.Peer, error) {
