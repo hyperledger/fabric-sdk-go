@@ -9,10 +9,10 @@ SPDX-License-Identifier: Apache-2.0
 package dynamicdiscovery
 
 import (
-	"github.com/pkg/errors"
 	"testing"
 	"time"
 
+	"github.com/pkg/errors"
 	contextAPI "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	pfab "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
