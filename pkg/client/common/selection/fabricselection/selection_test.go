@@ -10,8 +10,6 @@ package fabricselection
 
 import (
 	"fmt"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fab/discovery"
-	"github.com/pkg/errors"
 	"strings"
 	"testing"
 	"time"
@@ -21,9 +19,11 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/sorter/blockheightsorter"
 	contextAPI "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	fab "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/discovery"
 	discmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/discovery/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -219,19 +219,6 @@ func TestSelection(t *testing.T) {
 	)
 	require.NoError(t, err)
 	defer serviceNoErrHandling.Close()
-
-	//this is incorrect way to test behaviour when access denied. The message should be propagated inside evaluating func, only at this step we can get such err
-	//t.Run("Fatal Error Access Denied", func(t *testing.T) {
-	//	discClient.SetResponses(
-	//		&discovery.MockDiscoverEndpointResponse{
-	//			PeerEndpoints: []*discmocks.MockDiscoveryPeerEndpoint{},
-	//			Error:         fmt.Errorf(AccessDenied),
-	//		},
-	//	)
-	//	// Wait for cache to refresh
-	//	time.Sleep(20 * time.Millisecond)
-	//	testSelectionError(t, service, "Selection service has been closed")
-	//})
 
 	t.Run("Fatal Error, some error that returned from fab/discovery client ", func(t *testing.T) {
 		discClient.SetResponses(
