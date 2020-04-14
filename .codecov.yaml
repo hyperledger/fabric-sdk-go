@@ -16,5 +16,4 @@ coverage:
 
 ignore:
   - "test/integration/**/*"
-  - "**/*/*mock*.go"
-  - "**/*/mocks"
+  - "*mock*.go"
