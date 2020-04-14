@@ -223,7 +223,7 @@ func TestSelection(t *testing.T) {
 		testSelectionError(t, service, "Selection service has been closed")
 	})
 
-	t.Run("Fatal Error Transient error", func(t *testing.T) {
+	t.Run("Fatal Error, some error that returned from fab/discovery client ", func(t *testing.T) {
 		service, err = New(
 			ctx, channelID,
 			mocks.NewMockDiscoveryService(nil, peer1Org1, peer2Org1, peer1Org2, peer2Org2, peer1Org3, peer2Org3),
@@ -233,12 +233,81 @@ func TestSelection(t *testing.T) {
 		discClient.SetResponses(
 			&discovery.MockDiscoverEndpointResponse{
 				PeerEndpoints: []*discmocks.MockDiscoveryPeerEndpoint{},
-				Error:         fmt.Errorf("failed constructing descriptor for chaincodes"),
+				Error:         fmt.Errorf("some err happened"),
 			},
 		)
 		// Wait for cache to refresh
 		time.Sleep(20 * time.Millisecond)
-		testSelectionError(t, service, "failed constructing descriptor for chaincodes")
+		testSelectionError(t, service, "some err happened")
+	})
+
+	t.Run("Fatal Error Transient error", func(t *testing.T) {
+		service, err = New(
+			ctx, channelID,
+			mocks.NewMockDiscoveryService(nil, peer1Org1, peer2Org1, peer1Org2, peer2Org2, peer1Org3, peer2Org3),
+		)
+		require.NoError(t, err)
+		defer service.Close()
+		discClient.SetResponses(
+			&discovery.MockDiscoverEndpointResponse{
+				PeerEndpoints: []*discmocks.MockDiscoveryPeerEndpoint{
+					{MSPID: "someMSPId"},
+				},
+			},
+		)
+		// Wait for cache to refresh
+		time.Sleep(20 * time.Millisecond)
+		endorsers, err := service.GetEndorsersForChaincode([]*fab.ChaincodeCall{{ID: "notInstalledToAnyPeer"}})
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "no endorsement combination can be satisfied")
+		assert.Contains(t, err.Error(), "Discovery status Code: (11) UNKNOWN")
+		assert.Equal(t, 0, len(endorsers))
+	})
+
+	t.Run("Fatal Error Transient error, cc not installed to peers", func(t *testing.T) {
+		service, err = New(
+			ctx, channelID,
+			mocks.NewMockDiscoveryService(nil, peer1Org1, peer2Org1, peer1Org2, peer2Org2, peer1Org3, peer2Org3),
+		)
+		require.NoError(t, err)
+		defer service.Close()
+		discClient.SetResponses(
+			&discovery.MockDiscoverEndpointResponse{
+				PeerEndpoints: []*discmocks.MockDiscoveryPeerEndpoint{
+					{MSPID: "someMSPId"},
+				},
+			},
+		)
+		// Wait for cache to refresh
+		time.Sleep(20 * time.Millisecond)
+		endorsers, err := service.GetEndorsersForChaincode([]*fab.ChaincodeCall{{ID: "notInstalledToAnyPeer"}})
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "no endorsement combination can be satisfied")
+		assert.Contains(t, err.Error(), "Discovery status Code: (11) UNKNOWN")
+		assert.Equal(t, 0, len(endorsers))
+	})
+
+	t.Run("Fatal Error Access denied on all peers", func(t *testing.T) {
+		service, err = New(
+			ctx, channelID,
+			mocks.NewMockDiscoveryService(nil, peer1Org1, peer2Org1, peer1Org2, peer2Org2, peer1Org3, peer2Org3),
+		)
+		require.NoError(t, err)
+		defer service.Close()
+		discClient.SetResponses(
+			&discovery.MockDiscoverEndpointResponse{
+				AccessDenied: true,
+				PeerEndpoints: []*discmocks.MockDiscoveryPeerEndpoint{
+					{MSPID: "someMSPId"},
+				},
+			},
+		)
+		// Wait for cache to refresh
+		time.Sleep(20 * time.Millisecond)
+		endorsers, err := service.GetEndorsersForChaincode([]*fab.ChaincodeCall{{ID: "someCC"}})
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), AccessDenied)
+		assert.Equal(t, 0, len(endorsers))
 	})
 }
 

@@ -16,6 +16,7 @@ import (
 	gprotoext "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/gossip/protoext"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/discovery/mocks"
+	"github.com/pkg/errors"
 )
 
 // MockDiscoveryClient implements a mock Discover service
@@ -80,15 +81,25 @@ func (r *mockDiscoverResponse) Error() error {
 }
 
 type fakeResponse struct {
-	peers []*discclient.Peer
-	err   error
+	peers        []*discclient.Peer
+	err          error
+	accessDenied bool
 }
 
 func (r *fakeResponse) ForChannel(string) discclient.ChannelResponse {
-	return &channelResponse{
+	chanResp := &channelResponse{
 		peers: r.peers,
 		err:   r.err,
 	}
+
+	//usually "access denied" is a successful response.
+	//The problem is that fakeResponse struct contains only peers arr and not message with content, so need to add bool if access denied
+	//see origins of https://github.com/hyperledger/fabric-sdk-go/pull/62
+	if r.accessDenied {
+		chanResp.err = errors.New("access denied")
+	}
+
+	return chanResp
 }
 
 func (r *fakeResponse) ForLocal() discclient.LocalResponse {
@@ -118,6 +129,13 @@ func (cr *channelResponse) Endorsers(invocationChain discclient.InvocationChain,
 	if cr.err != nil {
 		return nil, cr.err
 	}
+
+	for _, call := range invocationChain {
+		if call.Name == "notInstalledToAnyPeer" {
+			return nil, errors.New("no endorsement combination can be satisfied")
+		}
+	}
+
 	return f.Filter(cr.peers), nil
 }
 
@@ -136,6 +154,8 @@ type MockDiscoverEndpointResponse struct {
 	Target        string
 	PeerEndpoints []*mocks.MockDiscoveryPeerEndpoint
 	Error         error
+	//todo it's really hard to make an expectation in tests, maybe we need to switch to mocks because current thing is stub
+	AccessDenied bool
 }
 
 // Build builds a mock discovery response
@@ -149,13 +169,20 @@ func (b *MockDiscoverEndpointResponse) Build() Response {
 		}
 		peers = append(peers, peer)
 	}
+
+	disResp := &fakeResponse{
+		peers: peers,
+		err:   b.Error,
+	}
+
+	if b.AccessDenied {
+		disResp.accessDenied = true
+	}
+
 	return &mockDiscoverResponse{
-		Response: &fakeResponse{
-			peers: peers,
-			err:   b.Error,
-		},
-		target: b.Target,
-		err:    b.Error,
+		Response: disResp,
+		target:   b.Target,
+		err:      b.Error,
 	}
 }
 
