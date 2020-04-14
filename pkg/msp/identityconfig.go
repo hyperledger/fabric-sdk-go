@@ -7,8 +7,13 @@ SPDX-License-Identifier: Apache-2.0
 package msp
 
 import (
+	"crypto/x509"
+	"encoding/pem"
+	"fmt"
 	"strconv"
 	"strings"
+
+	commtls "github.com/hyperledger/fabric-sdk-go/pkg/core/config/comm/tls"
 
 	"github.com/pkg/errors"
 
@@ -51,6 +56,7 @@ type IdentityConfig struct {
 	caKeyStorePath      string
 	credentialStorePath string
 	caMatchers          []matcherEntry
+	tlsCertPool         commtls.CertPool
 }
 
 //entityMatchers for identity configuration
@@ -83,7 +89,8 @@ type ClientConfig struct {
 //ClientTLSConfig defines client TLS configuration in identity config
 type ClientTLSConfig struct {
 	//Client TLS information
-	Client endpoint.TLSKeyPair
+	Client         endpoint.TLSKeyPair
+	SystemCertPool bool
 }
 
 // CAConfig defines a CA configuration in identity config
@@ -155,6 +162,11 @@ func (c *IdentityConfig) CAServerCerts(caID string) ([][]byte, bool) {
 	return nil, false
 }
 
+// TLSCACertPool returns the configured cert pool.
+func (c *IdentityConfig) TLSCACertPool() commtls.CertPool {
+	return c.tlsCertPool
+}
+
 // CAKeyStorePath returns the same path as KeyStorePath() without the
 // 'keystore' directory added. This is done because the fabric-ca-client
 // adds this to the path
@@ -216,10 +228,70 @@ func (c *IdentityConfig) loadIdentityConfigEntities() error {
 		return errors.WithMessage(err, "failed to load all CA configs ")
 	}
 
+	err = c.loadTLSCertPool(&configEntity)
+	if err != nil {
+		return errors.WithMessage(err, "failed to load TLS Cert Pool")
+	}
+
 	c.caKeyStorePath = pathvar.Subst(c.backend.GetString("client.credentialStore.cryptoStore.path"))
 	c.credentialStorePath = pathvar.Subst(c.backend.GetString("client.credentialStore.path"))
 
 	return nil
+}
+
+func (c *IdentityConfig) loadTLSCertPool(ce *identityConfigEntity) error {
+
+	useSystemCertPool := ce.Client.TLSCerts.SystemCertPool
+
+	var err error
+	c.tlsCertPool, err = commtls.NewCertPool(useSystemCertPool)
+	if err != nil {
+		return errors.WithMessage(err, "failed to create cert pool")
+	}
+
+	// preemptively add all TLS certs to cert pool as adding them at request time
+	// is expensive
+	for _, ca := range c.caConfigs {
+		if len(ca.TLSCAServerCerts) == 0 && !useSystemCertPool {
+			return errors.New(fmt.Sprintf("Org '%s' doesn't have defined tlsCACerts", ca.ID))
+		}
+		for _, cacert := range ca.TLSCAServerCerts {
+			ok := appendCertsFromPEM(c.tlsCertPool, cacert)
+			if !ok {
+				return errors.New("Failed to process certificate")
+			}
+		}
+	}
+
+	//update cert pool
+	if _, err := c.tlsCertPool.Get(); err != nil {
+		return errors.WithMessage(err, "cert pool load failed")
+	}
+	return nil
+}
+
+// see x509.AppendCertsFromPEM
+func appendCertsFromPEM(c commtls.CertPool, pemCerts []byte) (ok bool) {
+	for len(pemCerts) > 0 {
+		var block *pem.Block
+		block, pemCerts = pem.Decode(pemCerts)
+		if block == nil {
+			break
+		}
+		if block.Type != "CERTIFICATE" || len(block.Headers) != 0 {
+			continue
+		}
+
+		cert, err := x509.ParseCertificate(block.Bytes)
+		if err != nil {
+			continue
+		}
+
+		c.Add(cert)
+		ok = true
+	}
+
+	return
 }
 
 //loadClientTLSConfig pre-loads all TLSConfig bytes in client config
@@ -330,27 +402,30 @@ func (c *IdentityConfig) getServerCerts(caConfig *CAConfig) ([][]byte, error) {
 
 	var serverCerts [][]byte
 
-	//check for pems first
+	// check for pems first
 	pems := caConfig.TLSCACerts.Pem
 	if len(pems) > 0 {
 		serverCerts = make([][]byte, len(pems))
-		for i, pem := range pems {
-			serverCerts[i] = []byte(pem)
+		for i, p := range pems {
+			serverCerts[i] = []byte(p)
 		}
 		return serverCerts, nil
 	}
 
-	//check for files if pems not found
-	certFiles := strings.Split(caConfig.TLSCACerts.Path, ",")
-	serverCerts = make([][]byte, len(certFiles))
-	for i, certPath := range certFiles {
-		bytes, err := ioutil.ReadFile(pathvar.Subst(certPath))
-		if err != nil {
-			return nil, errors.WithMessage(err, "failed to load server certs")
+	// check for files if pems not found
+	if caConfig.TLSCACerts.Path != "" {
+		certFiles := strings.Split(caConfig.TLSCACerts.Path, ",")
+		serverCerts = make([][]byte, len(certFiles))
+		for i, certPath := range certFiles {
+			bytes, err := ioutil.ReadFile(pathvar.Subst(certPath))
+			if err != nil {
+				return nil, errors.WithMessage(err, "failed to load server certs")
+			}
+			serverCerts[i] = bytes
 		}
-		serverCerts[i] = bytes
 	}
 
+	// Can return nil. It's OK if SystemCertPool is true
 	return serverCerts, nil
 }
 

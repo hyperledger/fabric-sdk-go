@@ -12,10 +12,19 @@ import (
 	"sync/atomic"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 )
 
 var logger = logging.NewLogger("fabsdk/core")
+
+// CertPool is a thread safe wrapper around the x509 standard library
+// cert pool implementation.
+type CertPool interface {
+	// Get returns the cert pool, optionally adding the provided certs
+	Get() (*x509.CertPool, error)
+	//Add allows adding certificates to CertPool
+	//Call Get() after Add() to get the updated certpool
+	Add(certs ...*x509.Certificate)
+}
 
 // certPool is a thread safe wrapper around the x509 standard library
 // cert pool implementation.
@@ -30,7 +39,7 @@ type certPool struct {
 }
 
 // NewCertPool new CertPool implementation
-func NewCertPool(useSystemCertPool bool) (fab.CertPool, error) {
+func NewCertPool(useSystemCertPool bool) (CertPool, error) {
 
 	c, err := loadSystemCertPool(useSystemCertPool)
 	if err != nil {
