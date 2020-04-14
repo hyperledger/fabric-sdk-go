@@ -211,25 +211,29 @@ func TestSelection(t *testing.T) {
 		testSelectionPrioritySelector(t, service)
 	})
 
-	t.Run("Fatal Error Access Denied", func(t *testing.T) {
-		discClient.SetResponses(
-			&discovery.MockDiscoverEndpointResponse{
-				PeerEndpoints: []*discmocks.MockDiscoveryPeerEndpoint{},
-				Error:         fmt.Errorf(AccessDenied),
-			},
-		)
-		// Wait for cache to refresh
-		time.Sleep(20 * time.Millisecond)
-		testSelectionError(t, service, "Selection service has been closed")
-	})
+	serviceNoErrHandling, err := New(
+		ctx, channelID,
+		mocks.NewMockDiscoveryService(nil, peer1Org1, peer2Org1, peer1Org2, peer2Org2, peer1Org3, peer2Org3),
+		WithRefreshInterval(5*time.Millisecond),
+		WithResponseTimeout(100*time.Millisecond),
+	)
+	require.NoError(t, err)
+	defer serviceNoErrHandling.Close()
+
+	//this is incorrect way to test behaviour when access denied. The message should be propagated inside evaluating func, only at this step we can get such err
+	//t.Run("Fatal Error Access Denied", func(t *testing.T) {
+	//	discClient.SetResponses(
+	//		&discovery.MockDiscoverEndpointResponse{
+	//			PeerEndpoints: []*discmocks.MockDiscoveryPeerEndpoint{},
+	//			Error:         fmt.Errorf(AccessDenied),
+	//		},
+	//	)
+	//	// Wait for cache to refresh
+	//	time.Sleep(20 * time.Millisecond)
+	//	testSelectionError(t, service, "Selection service has been closed")
+	//})
 
 	t.Run("Fatal Error, some error that returned from fab/discovery client ", func(t *testing.T) {
-		service, err = New(
-			ctx, channelID,
-			mocks.NewMockDiscoveryService(nil, peer1Org1, peer2Org1, peer1Org2, peer2Org2, peer1Org3, peer2Org3),
-		)
-		require.NoError(t, err)
-		defer service.Close()
 		discClient.SetResponses(
 			&discovery.MockDiscoverEndpointResponse{
 				PeerEndpoints: []*discmocks.MockDiscoveryPeerEndpoint{},
@@ -238,16 +242,10 @@ func TestSelection(t *testing.T) {
 		)
 		// Wait for cache to refresh
 		time.Sleep(20 * time.Millisecond)
-		testSelectionError(t, service, "some err happened")
+		testSelectionError(t, serviceNoErrHandling, "some err happened")
 	})
 
 	t.Run("Fatal Error Transient error", func(t *testing.T) {
-		service, err = New(
-			ctx, channelID,
-			mocks.NewMockDiscoveryService(nil, peer1Org1, peer2Org1, peer1Org2, peer2Org2, peer1Org3, peer2Org3),
-		)
-		require.NoError(t, err)
-		defer service.Close()
 		discClient.SetResponses(
 			&discovery.MockDiscoverEndpointResponse{
 				PeerEndpoints: []*discmocks.MockDiscoveryPeerEndpoint{
@@ -257,7 +255,7 @@ func TestSelection(t *testing.T) {
 		)
 		// Wait for cache to refresh
 		time.Sleep(20 * time.Millisecond)
-		endorsers, err := service.GetEndorsersForChaincode([]*fab.ChaincodeCall{{ID: "notInstalledToAnyPeer"}})
+		endorsers, err := serviceNoErrHandling.GetEndorsersForChaincode([]*fab.ChaincodeCall{{ID: "notInstalledToAnyPeer"}})
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "no endorsement combination can be satisfied")
 		assert.Contains(t, err.Error(), "Discovery status Code: (11) UNKNOWN")
@@ -265,12 +263,6 @@ func TestSelection(t *testing.T) {
 	})
 
 	t.Run("Fatal Error Transient error, cc not installed to peers", func(t *testing.T) {
-		service, err = New(
-			ctx, channelID,
-			mocks.NewMockDiscoveryService(nil, peer1Org1, peer2Org1, peer1Org2, peer2Org2, peer1Org3, peer2Org3),
-		)
-		require.NoError(t, err)
-		defer service.Close()
 		discClient.SetResponses(
 			&discovery.MockDiscoverEndpointResponse{
 				PeerEndpoints: []*discmocks.MockDiscoveryPeerEndpoint{
@@ -280,7 +272,7 @@ func TestSelection(t *testing.T) {
 		)
 		// Wait for cache to refresh
 		time.Sleep(20 * time.Millisecond)
-		endorsers, err := service.GetEndorsersForChaincode([]*fab.ChaincodeCall{{ID: "notInstalledToAnyPeer"}})
+		endorsers, err := serviceNoErrHandling.GetEndorsersForChaincode([]*fab.ChaincodeCall{{ID: "notInstalledToAnyPeer"}})
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "no endorsement combination can be satisfied")
 		assert.Contains(t, err.Error(), "Discovery status Code: (11) UNKNOWN")
@@ -288,12 +280,6 @@ func TestSelection(t *testing.T) {
 	})
 
 	t.Run("Fatal Error Access denied on all peers", func(t *testing.T) {
-		service, err = New(
-			ctx, channelID,
-			mocks.NewMockDiscoveryService(nil, peer1Org1, peer2Org1, peer1Org2, peer2Org2, peer1Org3, peer2Org3),
-		)
-		require.NoError(t, err)
-		defer service.Close()
 		discClient.SetResponses(
 			&discovery.MockDiscoverEndpointResponse{
 				AccessDenied: true,
@@ -304,8 +290,9 @@ func TestSelection(t *testing.T) {
 		)
 		// Wait for cache to refresh
 		time.Sleep(20 * time.Millisecond)
-		endorsers, err := service.GetEndorsersForChaincode([]*fab.ChaincodeCall{{ID: "someCC"}})
+		endorsers, err := serviceNoErrHandling.GetEndorsersForChaincode([]*fab.ChaincodeCall{{ID: "someCC"}})
 		require.Error(t, err)
+		fmt.Println(err)
 		assert.Contains(t, err.Error(), AccessDenied)
 		assert.Equal(t, 0, len(endorsers))
 	})
