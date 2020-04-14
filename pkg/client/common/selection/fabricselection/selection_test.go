@@ -270,14 +270,12 @@ func TestSelection(t *testing.T) {
 		discClient.SetResponses(
 			&discovery.MockDiscoverEndpointResponse{
 				AccessDenied: true,
-				PeerEndpoints: []*discmocks.MockDiscoveryPeerEndpoint{
-					{MSPID: "someMSPId"},
-				},
+				PeerEndpoints: []*discmocks.MockDiscoveryPeerEndpoint{},
 			},
 		)
 		// Wait for cache to refresh
 		time.Sleep(20 * time.Millisecond)
-		endorsers, err := serviceNoErrHandling.GetEndorsersForChaincode([]*fab.ChaincodeCall{{ID: "someCC"}})
+		endorsers, err := serviceNoErrHandling.GetEndorsersForChaincode([]*fab.ChaincodeCall{{ID: cc1}})
 		require.Error(t, err)
 		fmt.Println(err)
 		assert.Contains(t, err.Error(), AccessDenied)
