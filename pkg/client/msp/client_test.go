@@ -352,10 +352,10 @@ func TestCreateIdentityFailure(t *testing.T) {
 		t.Fatalf("failed to create CA client: %s", err)
 	}
 
-	// Missing required affiliation
-	_, err = c.CreateIdentity(&IdentityRequest{ID: "123"})
-	if err == nil || !strings.Contains(err.Error(), "ID and affiliation are required") {
-		t.Fatalf("Should have failed to create identity due to missing affiliation: %s", err)
+	// Missing required ID
+	_, err = c.CreateIdentity(&IdentityRequest{})
+	if err == nil || !strings.Contains(err.Error(), "ID is required") {
+		t.Fatalf("Should have failed to create identity due to missing ID: %s", err)
 	}
 
 }
@@ -371,7 +371,7 @@ func TestModifyIdentityFailure(t *testing.T) {
 
 	// Missing required ID
 	_, err = c.ModifyIdentity(&IdentityRequest{Affiliation: "org2", Secret: "top-secret", Attributes: []Attribute{{Name: "attName1", Value: "attValue1"}}})
-	if err == nil || !strings.Contains(err.Error(), "ID and affiliation are required") {
+	if err == nil || !strings.Contains(err.Error(), "ID is required") {
 		t.Fatalf("Should have failed to update identity due to missing id: %s", err)
 	}
 
