@@ -7,10 +7,13 @@ SPDX-License-Identifier: Apache-2.0
 package msp
 
 import (
+	"errors"
 	"fmt"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/test/mockfab"
 
 	"github.com/golang/mock/gomock"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
@@ -533,6 +536,39 @@ func TestCAClientKeyPathError(t *testing.T) {
 	_, err := NewCAClient(org1, mockContext)
 	if err == nil || !strings.Contains(err.Error(), "has no corresponding client keys in the configs") {
 		t.Fatalf("Expected error from CAClientKeyPath. Got: %s", err)
+	}
+}
+
+// TestCAClientKeyPathError will test CAClient creation with bad TLSCACertPool
+func TestCAClientTLSCACertPoolError(t *testing.T) {
+
+	f := textFixture{}
+	f.setup()
+	defer f.close()
+
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	certPoolErr := errors.New("certPoolErr")
+	tlsCACertPool := &mockfab.MockCertPool{nil, certPoolErr}
+
+	mockIdentityConfig := mockmspApi.NewMockIdentityConfig(mockCtrl)
+	mockIdentityConfig.EXPECT().CAConfig(org1CA).Return(&msp.CAConfig{}, true).AnyTimes()
+	mockIdentityConfig.EXPECT().CredentialStorePath().Return(dummyUserStorePath).AnyTimes()
+	mockIdentityConfig.EXPECT().CAServerCerts(org1CA).Return([][]byte{[]byte("test")}, true)
+	mockIdentityConfig.EXPECT().CAClientCert(org1CA).Return([]byte(""), true)
+	mockIdentityConfig.EXPECT().CAClientKey(org1CA).Return([]byte("testCAclientkey"), true)
+	mockIdentityConfig.EXPECT().TLSCACertPool().Return(tlsCACertPool)
+
+	mockContext := mockcontext.NewMockClient(mockCtrl)
+	mockContext.EXPECT().EndpointConfig().Return(f.endpointConfig).AnyTimes()
+	mockContext.EXPECT().IdentityConfig().Return(mockIdentityConfig).AnyTimes()
+	mockContext.EXPECT().UserStore().Return(&mockmsp.MockUserStore{}).AnyTimes()
+	mockContext.EXPECT().CryptoSuite().Return(f.cryptoSuite).AnyTimes()
+
+	_, err := NewCAClient(org1, mockContext)
+	if err == nil || !strings.Contains(err.Error(), "couldn't load configured cert pool") {
+		t.Fatalf("Expected error from TLSCACertPool. Got: %s", err)
 	}
 }
 

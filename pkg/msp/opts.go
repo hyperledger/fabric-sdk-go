@@ -8,6 +8,7 @@ package msp
 
 import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
+	commtls "github.com/hyperledger/fabric-sdk-go/pkg/core/config/comm/tls"
 	"github.com/pkg/errors"
 )
 
@@ -21,6 +22,7 @@ type IdentityConfigOptions struct {
 	caClientCert
 	caKeyStorePath
 	credentialStorePath
+	tlsCACertPool
 }
 
 type applier func()
@@ -62,6 +64,11 @@ type credentialStorePath interface {
 	CredentialStorePath() string
 }
 
+// tlsCACertPool interface allows to uniquely override IdentityConfig interface's TLSCACertPool() function
+type tlsCACertPool interface {
+	TLSCACertPool() commtls.CertPool
+}
+
 // BuildIdentityConfigFromOptions will return an IdentityConfig instance pre-built with Optional interfaces
 // provided in fabsdk's WithConfigIdentity(opts...) call
 func BuildIdentityConfigFromOptions(opts ...interface{}) (msp.IdentityConfig, error) {
@@ -90,6 +97,7 @@ func UpdateMissingOptsWithDefaultConfig(c *IdentityConfigOptions, d msp.Identity
 	s.set(c.caClientCert, nil, func() { c.caClientCert = d })
 	s.set(c.caKeyStorePath, nil, func() { c.caKeyStorePath = d })
 	s.set(c.credentialStorePath, nil, func() { c.credentialStorePath = d })
+	s.set(c.tlsCACertPool, nil, func() { c.tlsCACertPool = d })
 
 	return c
 }
@@ -111,6 +119,7 @@ func setIdentityConfigWithOptionInterface(c *IdentityConfigOptions, o interface{
 	s.set(c.caClientCert, func() bool { _, ok := o.(caClientCert); return ok }, func() { c.caClientCert = o.(caClientCert) })
 	s.set(c.caKeyStorePath, func() bool { _, ok := o.(caKeyStorePath); return ok }, func() { c.caKeyStorePath = o.(caKeyStorePath) })
 	s.set(c.credentialStorePath, func() bool { _, ok := o.(credentialStorePath); return ok }, func() { c.credentialStorePath = o.(credentialStorePath) })
+	s.set(c.tlsCACertPool, func() bool { _, ok := o.(tlsCACertPool); return ok }, func() { c.tlsCACertPool = o.(tlsCACertPool) })
 
 	if !s.isSet {
 		return errors.Errorf("option %#v is not a sub interface of IdentityConfig, at least one of its functions must be implemented.", o)

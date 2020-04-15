@@ -144,7 +144,7 @@ func ConfigFromBackend(coreBackend ...core.ConfigBackend) (fab.EndpointConfig, e
 type EndpointConfig struct {
 	backend                  *lookup.ConfigLookup
 	networkConfig            *fab.NetworkConfig
-	tlsCertPool              fab.CertPool
+	tlsCertPool              commtls.CertPool
 	entityMatchers           *entityMatchers
 	peerConfigsByOrg         map[string][]fab.PeerConfig
 	networkPeers             []fab.NetworkPeer
@@ -286,7 +286,7 @@ func (c *EndpointConfig) ChannelOrderers(name string) []fab.OrdererConfig {
 
 // TLSCACertPool returns the configured cert pool. If a certConfig
 // is provided, the certificate is added to the pool
-func (c *EndpointConfig) TLSCACertPool() fab.CertPool {
+func (c *EndpointConfig) TLSCACertPool() commtls.CertPool {
 	return c.tlsCertPool
 }
 
