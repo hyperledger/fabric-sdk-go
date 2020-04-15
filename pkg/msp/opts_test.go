@@ -9,6 +9,10 @@ package msp
 import (
 	"testing"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/test/mockfab"
+
+	commtls "github.com/hyperledger/fabric-sdk-go/pkg/core/config/comm/tls"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	logApi "github.com/hyperledger/fabric-sdk-go/pkg/core/logging/api"
 	"github.com/stretchr/testify/require"
@@ -23,6 +27,7 @@ var (
 	m5 = &mockCaClientCert{}
 	m6 = &mockCaKeyStorePath{}
 	m7 = &mockCredentialStorePath{}
+	m8 = &mockTLSCACertPool{}
 )
 
 func TestCreateCustomFullIdentitytConfig(t *testing.T) {
@@ -75,11 +80,12 @@ func TestCreateCustomIdentityConfig(t *testing.T) {
 	require.Nil(t, ico.caClientCert, "caClientCert created with nil interface but got non nil one: %s. Expected nil interface", ico.caClientCert)
 	require.Nil(t, ico.caKeyStorePath, "caKeyStorePath created with nil interface but got non nil one: %s. Expected nil interface", ico.caKeyStorePath)
 	require.Nil(t, ico.credentialStorePath, "credentialStorePath created with nil interface but got non nil one: %s. Expected nil interface", ico.credentialStorePath)
+	require.Nil(t, ico.tlsCACertPool, "tlsCACertPool created with nil interface but got non nil one: %s. Expected nil interface", ico.tlsCACertPool)
 }
 
 func TestCreateCustomIdentityConfigRemainingFunctions(t *testing.T) {
 	// try to build with the remaining implementations not tested above
-	identityConfigOption, err := BuildIdentityConfigFromOptions(m5, m6, m7)
+	identityConfigOption, err := BuildIdentityConfigFromOptions(m5, m6, m7, m8)
 	if err != nil {
 		t.Fatalf("BuildIdentityConfigFromOptions returned unexpected error %s", err)
 	}
@@ -102,6 +108,10 @@ func TestCreateCustomIdentityConfigRemainingFunctions(t *testing.T) {
 	// test m7 implementation
 	s = ico.CredentialStorePath()
 	require.Equal(t, "test/cred/store/path", s, "CredentialStorePath did not return expected interface value")
+
+	// test m8 implementation
+	p := ico.TLSCACertPool()
+	require.Equal(t, mockTLSCACertPoolInstance, p, "TLSCACertPool did not return expected interface value")
 
 	// verify if an interface was not passed as an option but was not nil, it should be nil (ie these implementations should not be populated in ico: m1, m2, m3 and m4)
 	require.Nil(t, ico.client, "client created with nil interface but got non nil one: %s. Expected nil interface", ico.client)
@@ -130,10 +140,11 @@ func TestCreateCustomIdentityConfigWithSomeDefaultFunctions(t *testing.T) {
 	require.NotNil(t, ico, "build ConfigIdentityOption returned is nil")
 
 	// now check if implementations that were not injected when building the config (ref first line in this function) are nil at this point
-	// ie, verify these implementations should be nil: m5, m6 and m7
+	// ie, verify these implementations should be nil: m5, m6, m7 and m8
 	require.Nil(t, ico.caClientCert, "caClientCert should be nil but got a non-nil one: %s. Expected nil interface", ico.caClientCert)
 	require.Nil(t, ico.caKeyStorePath, "caKeyStorePath should be nil but got non-nil one: %s. Expected nil interface", ico.caKeyStorePath)
 	require.Nil(t, ico.credentialStorePath, "credentialStorePath should be nil but got non-nil one: %s. Expected nil interface", ico.credentialStorePath)
+	require.Nil(t, ico.tlsCACertPool, "tlsCACertPool should be nil but got non-nil one: %s. Expected nil interface", ico.tlsCACertPool)
 
 	// do the same test using IsIdentityConfigFullyOverridden() call
 	require.False(t, IsIdentityConfigFullyOverridden(ico), "IsIdentityConfigFullyOverridden is supposed to return false with an Options instance not implementing all the interface functions")
@@ -168,10 +179,11 @@ func TestCreateCustomIdentityConfigWithSomeDefaultFunctions(t *testing.T) {
 	}
 
 	// now check if implementations that were not injected when building the config (ref first line in this function) are defaulted with m0 this time
-	// ie, verify these implementations should now be populated in ico: m5, m6, m7
+	// ie, verify these implementations should now be populated in ico: m5, m6, m7, m8
 	require.NotNil(t, ico.caClientCert, "caClientCert should be populated with default interface but got nil one: %s. Expected default interface", ico.caClientCert)
 	require.NotNil(t, ico.caKeyStorePath, "caKeyStorePath should be populated with default interface but got nil one: %s. Expected default interface", ico.caKeyStorePath)
 	require.NotNil(t, ico.credentialStorePath, "credentialStorePath should be populated with default interface but got nil one: %s. Expected default interface", ico.credentialStorePath)
+	require.NotNil(t, ico.tlsCACertPool, "tlsCACertPool should be populated with default interface but got nil one: %s. Expected default interface", ico.tlsCACertPool)
 
 	// do the same test using IsIdentityConfigFullyOverridden() call
 	require.True(t, IsIdentityConfigFullyOverridden(ico), "IsIdentityConfigFullyOverridden is supposed to return true since all the interface functions should be implemented")
@@ -232,4 +244,12 @@ type mockCredentialStorePath struct{}
 
 func (m *mockCredentialStorePath) CredentialStorePath() string {
 	return "test/cred/store/path"
+}
+
+type mockTLSCACertPool struct{}
+
+var mockTLSCACertPoolInstance = &mockfab.MockCertPool{}
+
+func (m *mockTLSCACertPool) TLSCACertPool() commtls.CertPool {
+	return mockTLSCACertPoolInstance
 }

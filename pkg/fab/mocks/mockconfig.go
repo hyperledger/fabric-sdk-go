@@ -20,6 +20,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/test/mockfab"
+	commtls "github.com/hyperledger/fabric-sdk-go/pkg/core/config/comm/tls"
 	"github.com/pkg/errors"
 )
 
@@ -32,7 +33,7 @@ type MockConfig struct {
 	customPeerCfg          *fab.PeerConfig
 	customOrdererCfg       *fab.OrdererConfig
 	customRandomOrdererCfg *fab.OrdererConfig
-	CustomTLSCACertPool    fab.CertPool
+	CustomTLSCACertPool    commtls.CertPool
 	chConfig               map[string]*fab.ChannelEndpointConfig
 }
 
@@ -149,7 +150,7 @@ func (c *MockConfig) PeerConfig(nameOrURL string) (*fab.PeerConfig, bool) {
 }
 
 // TLSCACertPool ...
-func (c *MockConfig) TLSCACertPool() fab.CertPool {
+func (c *MockConfig) TLSCACertPool() commtls.CertPool {
 	if c.errorCase {
 		return &mockfab.MockCertPool{Err: errors.New("just to test error scenario")}
 	} else if c.CustomTLSCACertPool != nil {

@@ -16,8 +16,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 )
 
 var goodCert = &x509.Certificate{
@@ -147,7 +145,7 @@ func TestTLSCAConfigWithMultipleCerts(t *testing.T) {
 
 }
 
-func verifyCertPoolInstance(t *testing.T, pool *x509.CertPool, fabPool fab.CertPool, numberOfCertsInPool, numberOfCerts, numberOfCertsByName, numberOfSubjects int, dirty int32) {
+func verifyCertPoolInstance(t *testing.T, pool *x509.CertPool, fabPool CertPool, numberOfCertsInPool, numberOfCerts, numberOfCertsByName, numberOfSubjects int, dirty int32) {
 	assert.NotNil(t, fabPool)
 	tlsCertPool := fabPool.(*certPool)
 	assert.Equal(t, dirty, tlsCertPool.dirty)

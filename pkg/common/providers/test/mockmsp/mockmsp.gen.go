@@ -9,6 +9,7 @@ import (
 
 	gomock "github.com/golang/mock/gomock"
 	msp "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
+	tls "github.com/hyperledger/fabric-sdk-go/pkg/core/config/comm/tls"
 )
 
 // MockIdentityConfig is a mock of IdentityConfig interface
@@ -134,6 +135,20 @@ func (m *MockIdentityConfig) CredentialStorePath() string {
 func (mr *MockIdentityConfigMockRecorder) CredentialStorePath() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CredentialStorePath", reflect.TypeOf((*MockIdentityConfig)(nil).CredentialStorePath))
+}
+
+// TLSCACertPool mocks base method
+func (m *MockIdentityConfig) TLSCACertPool() tls.CertPool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "TLSCACertPool")
+	ret0, _ := ret[0].(tls.CertPool)
+	return ret0
+}
+
+// TLSCACertPool indicates an expected call of TLSCACertPool
+func (mr *MockIdentityConfigMockRecorder) TLSCACertPool() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TLSCACertPool", reflect.TypeOf((*MockIdentityConfig)(nil).TLSCACertPool))
 }
 
 // MockIdentityManager is a mock of IdentityManager interface

@@ -12,6 +12,7 @@ import (
 
 	gomock "github.com/golang/mock/gomock"
 	fab "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
+	tls0 "github.com/hyperledger/fabric-sdk-go/pkg/core/config/comm/tls"
 	metrics "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/metrics"
 )
 
@@ -183,10 +184,10 @@ func (mr *MockEndpointConfigMockRecorder) PeersConfig(arg0 interface{}) *gomock.
 }
 
 // TLSCACertPool mocks base method
-func (m *MockEndpointConfig) TLSCACertPool() fab.CertPool {
+func (m *MockEndpointConfig) TLSCACertPool() tls0.CertPool {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "TLSCACertPool")
-	ret0, _ := ret[0].(fab.CertPool)
+	ret0, _ := ret[0].(tls0.CertPool)
 	return ret0
 }
 

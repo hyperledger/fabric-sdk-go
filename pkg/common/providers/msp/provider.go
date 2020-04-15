@@ -8,6 +8,7 @@ package msp
 
 import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
+	commtls "github.com/hyperledger/fabric-sdk-go/pkg/core/config/comm/tls"
 	logApi "github.com/hyperledger/fabric-sdk-go/pkg/core/logging/api"
 )
 
@@ -29,6 +30,7 @@ type IdentityConfig interface {
 	CAServerCerts(caID string) ([][]byte, bool)
 	CAClientKey(caID string) ([]byte, bool)
 	CAClientCert(caID string) ([]byte, bool)
+	TLSCACertPool() commtls.CertPool
 	CAKeyStorePath() string
 	CredentialStorePath() string
 }
