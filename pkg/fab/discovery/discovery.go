@@ -13,7 +13,6 @@ import (
 
 	"github.com/hyperledger/fabric-protos-go/discovery"
 	discclient "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/discovery/client"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/multi"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
 	fabcontext "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
@@ -29,20 +28,27 @@ const (
 	signerCacheSize = 10 // TODO: set an appropriate value (and perhaps make configurable)
 )
 
+//Client gives ability to send discovery request to multiple targets.
+//There are cases when multiple targets requested and some of them are hanging, recommended to cancel ctx after first successful response.
+//Note: "access denied" is a success response, so check for it after response evaluation.
+type Client interface {
+	Send(ctx context.Context, req *Request, targets ...fab.PeerConfig) (<-chan Response, error)
+}
+
 // Client implements a Discovery client
-type Client struct {
+type client struct {
 	ctx      fabcontext.Client
 	authInfo *discovery.AuthInfo
 }
 
 // New returns a new Discover client
-func New(ctx fabcontext.Client) (*Client, error) {
+func New(ctx fabcontext.Client) (Client, error) {
 	authInfo, err := newAuthInfo(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	return &Client{
+	return &client{
 		ctx:      ctx,
 		authInfo: authInfo,
 	}, nil
@@ -53,59 +59,55 @@ func New(ctx fabcontext.Client) (*Client, error) {
 type Response interface {
 	discclient.Response
 	Target() string
+	Error() error
 }
 
 // Send retrieves information about channel peers, endorsers, and MSP config from the
-// given set of peers. A set of successful responses is returned and/or an error
-// is returned from each of the peers that was unsuccessful (note that if more than one peer returned
-// an error then the returned error may be cast to multi.Errors).
-func (c *Client) Send(ctx context.Context, req *Request, targets ...fab.PeerConfig) ([]Response, error) {
+// given set of peers. A channel of successful responses is returned and an error if there is not targets.
+// Each Response contains Error method to check if there is an error.
+func (c *client) Send(ctx context.Context, req *Request, targets ...fab.PeerConfig) (<-chan Response, error) {
 	if len(targets) == 0 {
 		return nil, errors.New("no targets specified")
 	}
 
-	var lock sync.Mutex
-	var wg sync.WaitGroup
-	wg.Add(len(targets))
-
-	var responses []Response
-	var errs error
-
-	reqCtx, cancel := context.WithCancel(ctx)
-	defer cancel()
+	//buffered channel is used because don't want to handle hanging goroutine on writing to the channel
+	respCh := make(chan Response, len(targets))
+	var requests sync.WaitGroup
 
 	for _, t := range targets {
+		requests.Add(1)
+
 		go func(target fab.PeerConfig) {
-			defer wg.Done()
+			defer requests.Done()
 
-			targetCtx, cancelTarget := context.WithCancel(reqCtx)
-			defer cancelTarget()
+			discoveryResponse, err := c.send(ctx, req.r, target)
+			resp := response{target: target.URL, Response: discoveryResponse}
 
-			resp, err := c.send(targetCtx, req.r, target)
-			lock.Lock()
 			if err != nil {
 				if !isContextCanceled(err) {
-					errs = multi.Append(errs, errors.WithMessage(err, "From target: "+target.URL))
+					resp.err = errors.WithMessage(err, "From target: "+target.URL)
 					logger.Debugf("... got discovery error response from [%s]: %s", target.URL, err)
 				} else {
 					logger.Debugf("... request to [%s] cancelled", target.URL)
 				}
 			} else {
-				responses = append(responses, &response{Response: resp, target: target.URL})
 				logger.Debugf("... got discovery response from [%s]", target.URL)
-
-				// Cancel all outstanding requests
-				cancel()
 			}
-			lock.Unlock()
+
+			respCh <- resp
 		}(t)
 	}
-	wg.Wait()
 
-	return responses, errs
+	//this method is responsible for respCh channel, so we need to wait until all workers are done and close respCh
+	go func() {
+		requests.Wait()
+		close(respCh)
+	}()
+
+	return respCh, nil
 }
 
-func (c *Client) send(reqCtx context.Context, req *discclient.Request, target fab.PeerConfig) (discclient.Response, error) {
+func (c *client) send(reqCtx context.Context, req *discclient.Request, target fab.PeerConfig) (discclient.Response, error) {
 	opts := comm.OptsFromPeerConfig(&target)
 	opts = append(opts, comm.WithConnectTimeout(c.ctx.EndpointConfig().Timeout(fab.DiscoveryConnection)))
 	opts = append(opts, comm.WithParentContext(reqCtx))
@@ -131,11 +133,17 @@ func (c *Client) send(reqCtx context.Context, req *discclient.Request, target fa
 type response struct {
 	discclient.Response
 	target string
+	err    error
 }
 
 // Target returns the target peer URL
-func (r *response) Target() string {
+func (r response) Target() string {
 	return r.target
+}
+
+// Error returns an error if it exists
+func (r response) Error() error {
+	return r.err
 }
 
 func newAuthInfo(ctx fabcontext.Client) (*discovery.AuthInfo, error) {

@@ -14,15 +14,16 @@ import (
 	"testing"
 	"time"
 
-	clientmocks "github.com/hyperledger/fabric-sdk-go/pkg/client/common/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/balancer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/options"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/sorter/blockheightsorter"
 	contextAPI "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	fab "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/discovery"
 	discmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/discovery/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -114,7 +115,7 @@ func TestSelection(t *testing.T) {
 	}
 	ctx.SetEndpointConfig(config)
 
-	discClient := clientmocks.NewMockDiscoveryClient()
+	discClient := discovery.NewMockDiscoveryClient()
 
 	SetClientProvider(func(ctx contextAPI.Client) (DiscoveryClient, error) {
 		return discClient, nil
@@ -123,8 +124,8 @@ func TestSelection(t *testing.T) {
 	var service *Service
 
 	errHandler := func(ctxt fab.ClientContext, channelID string, err error) {
-		derr, ok := err.(DiscoveryError)
-		if ok && derr.Error() == AccessDenied {
+		derr, ok := errors.Cause(err).(DiscoveryError)
+		if ok && derr.IsAccessDenied() {
 			service.Close()
 		}
 	}
@@ -142,17 +143,17 @@ func TestSelection(t *testing.T) {
 	t.Run("Error", func(t *testing.T) {
 		// Error condition
 		discClient.SetResponses(
-			&clientmocks.MockDiscoverEndpointResponse{
+			&discovery.MockDiscoverEndpointResponse{
 				PeerEndpoints: []*discmocks.MockDiscoveryPeerEndpoint{},
 				Error:         fmt.Errorf("simulated response error"),
 			},
 		)
-		testSelectionError(t, service, "error getting channel response for channel [testchannel]: simulated response error")
+		testSelectionError(t, service, "error getting channel response for channel [testchannel]: no successful response received from any peer: simulated response error")
 	})
 
 	t.Run("CCtoCC", func(t *testing.T) {
 		discClient.SetResponses(
-			&clientmocks.MockDiscoverEndpointResponse{
+			&discovery.MockDiscoverEndpointResponse{
 				PeerEndpoints: []*discmocks.MockDiscoveryPeerEndpoint{
 					peer2Org1Endpoint, peer2Org3Endpoint, peer2Org2Endpoint,
 					peer1Org1Endpoint, peer1Org2Endpoint, peer1Org3Endpoint,
@@ -210,16 +211,75 @@ func TestSelection(t *testing.T) {
 		testSelectionPrioritySelector(t, service)
 	})
 
-	t.Run("Fatal Error", func(t *testing.T) {
+	serviceNoErrHandling, err := New(
+		ctx, channelID,
+		mocks.NewMockDiscoveryService(nil, peer1Org1, peer2Org1, peer1Org2, peer2Org2, peer1Org3, peer2Org3),
+		WithRefreshInterval(5*time.Millisecond),
+		WithResponseTimeout(100*time.Millisecond),
+	)
+	require.NoError(t, err)
+	defer serviceNoErrHandling.Close()
+
+	t.Run("Fatal Error, some error that returned from fab/discovery client ", func(t *testing.T) {
 		discClient.SetResponses(
-			&clientmocks.MockDiscoverEndpointResponse{
+			&discovery.MockDiscoverEndpointResponse{
 				PeerEndpoints: []*discmocks.MockDiscoveryPeerEndpoint{},
-				Error:         fmt.Errorf(AccessDenied),
+				Error:         fmt.Errorf("some err happened"),
 			},
 		)
 		// Wait for cache to refresh
 		time.Sleep(20 * time.Millisecond)
-		testSelectionError(t, service, "Selection service has been closed")
+		testSelectionError(t, serviceNoErrHandling, "some err happened")
+	})
+
+	t.Run("Fatal Error Transient error", func(t *testing.T) {
+		discClient.SetResponses(
+			&discovery.MockDiscoverEndpointResponse{
+				PeerEndpoints: []*discmocks.MockDiscoveryPeerEndpoint{
+					{MSPID: "someMSPId"},
+				},
+			},
+		)
+		// Wait for cache to refresh
+		time.Sleep(20 * time.Millisecond)
+		endorsers, err := serviceNoErrHandling.GetEndorsersForChaincode([]*fab.ChaincodeCall{{ID: "notInstalledToAnyPeer"}})
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "no endorsement combination can be satisfied")
+		assert.Contains(t, err.Error(), "Discovery status Code: (11) UNKNOWN")
+		assert.Equal(t, 0, len(endorsers))
+	})
+
+	t.Run("Fatal Error Transient error, cc not installed to peers", func(t *testing.T) {
+		discClient.SetResponses(
+			&discovery.MockDiscoverEndpointResponse{
+				PeerEndpoints: []*discmocks.MockDiscoveryPeerEndpoint{
+					{MSPID: "someMSPId"},
+				},
+			},
+		)
+		// Wait for cache to refresh
+		time.Sleep(20 * time.Millisecond)
+		endorsers, err := serviceNoErrHandling.GetEndorsersForChaincode([]*fab.ChaincodeCall{{ID: "notInstalledToAnyPeer"}})
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "no endorsement combination can be satisfied")
+		assert.Contains(t, err.Error(), "Discovery status Code: (11) UNKNOWN")
+		assert.Equal(t, 0, len(endorsers))
+	})
+
+	t.Run("Fatal Error Access denied on all peers", func(t *testing.T) {
+		discClient.SetResponses(
+			&discovery.MockDiscoverEndpointResponse{
+				AccessDenied: true,
+				PeerEndpoints: []*discmocks.MockDiscoveryPeerEndpoint{},
+			},
+		)
+		// Wait for cache to refresh
+		time.Sleep(20 * time.Millisecond)
+		endorsers, err := serviceNoErrHandling.GetEndorsersForChaincode([]*fab.ChaincodeCall{{ID: cc1}})
+		require.Error(t, err)
+		fmt.Println(err)
+		assert.Contains(t, err.Error(), AccessDenied)
+		assert.Equal(t, 0, len(endorsers))
 	})
 }
 
@@ -231,13 +291,13 @@ func TestWithDiscoveryFilter(t *testing.T) {
 	}
 	ctx.SetEndpointConfig(config)
 
-	discClient := clientmocks.NewMockDiscoveryClient()
+	discClient := discovery.NewMockDiscoveryClient()
 	SetClientProvider(func(ctx contextAPI.Client) (DiscoveryClient, error) {
 		return discClient, nil
 	})
 
 	discClient.SetResponses(
-		&clientmocks.MockDiscoverEndpointResponse{
+		&discovery.MockDiscoverEndpointResponse{
 			PeerEndpoints: []*discmocks.MockDiscoveryPeerEndpoint{
 				peer2Org1Endpoint, peer2Org3Endpoint, peer2Org2Endpoint,
 				peer1Org1Endpoint, peer1Org2Endpoint, peer1Org3Endpoint,
@@ -297,7 +357,7 @@ func TestWithDiscoveryFilter(t *testing.T) {
 func testSelectionError(t *testing.T, service *Service, expectedErrMsg string) {
 	endorsers, err := service.GetEndorsersForChaincode([]*fab.ChaincodeCall{{ID: cc1}})
 	require.Error(t, err)
-	assert.Equal(t, expectedErrMsg, err.Error())
+	assert.Contains(t, err.Error(), expectedErrMsg)
 	assert.Equal(t, 0, len(endorsers))
 }
 

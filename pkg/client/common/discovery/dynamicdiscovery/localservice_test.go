@@ -9,14 +9,14 @@ SPDX-License-Identifier: Apache-2.0
 package dynamicdiscovery
 
 import (
-	"errors"
 	"testing"
 	"time"
 
-	clientmocks "github.com/hyperledger/fabric-sdk-go/pkg/client/common/mocks"
+	"github.com/pkg/errors"
 	contextAPI "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	pfab "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
+	fabDiscovery "github.com/hyperledger/fabric-sdk-go/pkg/fab/discovery"
 	discmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/discovery/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
@@ -43,14 +43,14 @@ func TestLocalDiscoveryService(t *testing.T) {
 	}
 	config.SetCustomNetworkPeerCfg([]pfab.NetworkPeer{peer1})
 
-	discClient := clientmocks.NewMockDiscoveryClient()
+	discClient := fabDiscovery.NewMockDiscoveryClient()
 	discClient.SetResponses(
-		&clientmocks.MockDiscoverEndpointResponse{
+		&fabDiscovery.MockDiscoverEndpointResponse{
 			PeerEndpoints: []*discmocks.MockDiscoveryPeerEndpoint{},
 		},
 	)
 
-	SetClientProvider(func(ctx contextAPI.Client) (DiscoveryClient, error) {
+	SetClientProvider(func(ctx contextAPI.Client) (fabDiscovery.Client, error) {
 		return discClient, nil
 	})
 
@@ -65,8 +65,8 @@ func TestLocalDiscoveryService(t *testing.T) {
 		WithResponseTimeout(2*time.Second),
 		WithErrorHandler(
 			func(ctxt fab.ClientContext, channelID string, err error) {
-				derr, ok := err.(DiscoveryError)
-				if ok && derr.Error() == AccessDenied {
+				derr, ok := errors.Cause(err).(DiscoveryError)
+				if ok && derr.IsAccessDenied() {
 					service.Close()
 				}
 			},
@@ -85,7 +85,7 @@ func TestLocalDiscoveryService(t *testing.T) {
 	assert.Equal(t, 0, len(peers))
 
 	discClient.SetResponses(
-		&clientmocks.MockDiscoverEndpointResponse{
+		&fabDiscovery.MockDiscoverEndpointResponse{
 			PeerEndpoints: []*discmocks.MockDiscoveryPeerEndpoint{
 				{
 					MSPID:        mspID1,
@@ -103,7 +103,7 @@ func TestLocalDiscoveryService(t *testing.T) {
 	assert.Equal(t, 1, len(peers), "Expecting 1 peer")
 
 	discClient.SetResponses(
-		&clientmocks.MockDiscoverEndpointResponse{
+		&fabDiscovery.MockDiscoverEndpointResponse{
 			PeerEndpoints: []*discmocks.MockDiscoveryPeerEndpoint{
 				{
 					MSPID:        mspID1,
@@ -136,7 +136,7 @@ func TestLocalDiscoveryService(t *testing.T) {
 
 	// Fatal error (access denied can be due due a user being revoked)
 	discClient.SetResponses(
-		&clientmocks.MockDiscoverEndpointResponse{
+		&fabDiscovery.MockDiscoverEndpointResponse{
 			Error: errors.New(AccessDenied),
 		},
 	)
@@ -148,4 +148,21 @@ func TestLocalDiscoveryService(t *testing.T) {
 	_, err = service.GetPeers()
 	require.Error(t, err)
 	assert.Equal(t, "Discovery client has been closed", err.Error())
+
+	emptyPeersArr := make([]fab.NetworkPeer, 0)
+	config.SetCustomNetworkPeerCfg(emptyPeersArr)
+
+	service = newLocalService(config, mspID1)
+	err = service.Initialize(localCtx)
+	require.NoError(t, err)
+
+	_, err = service.GetPeers()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "no bootstrap peers configured")
+
+	service = newLocalService(config, mspID1)
+
+	_, err = service.GetPeers()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "the service has not been initialized")
 }
