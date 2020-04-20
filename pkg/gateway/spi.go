@@ -10,18 +10,6 @@ package gateway
 // for implementing alternative gateway strategies, wallets, etc.
 // This is currently experimental and will be implemented in future user stories
 
-// CommitHandlerFactory is currently unimplemented
-type CommitHandlerFactory interface {
-	Create(string, Network) CommitHandler
-}
-
-// CommitHandler is currently unimplemented
-type CommitHandler interface {
-	StartListening()
-	WaitForEvents(int64)
-	CancelListening()
-}
-
 // WalletStore is the interface for implementations that provide backing storage for identities in a wallet.
 // To create create a new backing store, implement all the methods defined in this interface and provide
 // a factory method that wraps an instance of this in a new Wallet object. E.g:

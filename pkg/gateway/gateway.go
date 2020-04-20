@@ -32,11 +32,10 @@ type Gateway struct {
 }
 
 type gatewayOptions struct {
-	Identity      mspProvider.SigningIdentity
-	User          string
-	CommitHandler CommitHandlerFactory
-	Discovery     bool
-	Timeout       time.Duration
+	Identity  mspProvider.SigningIdentity
+	User      string
+	Discovery bool
+	Timeout   time.Duration
 }
 
 // Option functional arguments can be supplied when connecting to the gateway.
@@ -54,9 +53,8 @@ func Connect(config ConfigOption, identity IdentityOption, options ...Option) (*
 
 	g := &Gateway{
 		options: &gatewayOptions{
-			CommitHandler: DefaultCommitHandlers.OrgAll,
-			Discovery:     defaultDiscovery,
-			Timeout:       defaultTimeout,
+			Discovery: defaultDiscovery,
+			Timeout:   defaultTimeout,
 		},
 	}
 
@@ -169,17 +167,6 @@ func WithIdentity(wallet wallet, label string) IdentityOption {
 func WithUser(user string) IdentityOption {
 	return func(gw *Gateway) error {
 		gw.options.User = user
-		return nil
-	}
-}
-
-// WithCommitHandler is an optional argument to the Connect method which
-// allows an alternative commit handler to be specified. The commit handler defines how
-// client code should wait to receive commit events from peers following submit of a transaction.
-// Currently unimplemented.
-func WithCommitHandler(handler CommitHandlerFactory) Option {
-	return func(gw *Gateway) error {
-		gw.options.CommitHandler = handler
 		return nil
 	}
 }

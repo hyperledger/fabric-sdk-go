@@ -14,6 +14,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/pkg/gateway"
@@ -120,6 +121,73 @@ func RunWithTransient(t *testing.T) {
 	testTransientData(contract, t)
 }
 
+// RunWithBlockEvent tests receiving block events
+func RunWithBlockEvent(t *testing.T) {
+	configPath := integration.GetConfigPath("config_e2e.yaml")
+
+	gw, err := gateway.Connect(
+		gateway.WithConfig(config.FromFile(configPath)),
+		gateway.WithUser("User1"),
+	)
+	if err != nil {
+		t.Fatalf("Failed to create new Gateway: %s", err)
+	}
+	defer gw.Close()
+
+	nw, err := gw.GetNetwork(channelID)
+	if err != nil {
+		t.Fatalf("Failed to get network: %s", err)
+	}
+
+	_, notifier1, err := nw.RegisterBlockEvent()
+	if err != nil {
+		t.Fatalf("Failed to register block event: %s", err)
+	}
+
+	_, notifier2, err := nw.RegisterFilteredBlockEvent()
+	if err != nil {
+		t.Fatalf("Failed to register filtered block event: %s", err)
+	}
+
+	contract := nw.GetContract(ccID)
+	runContract(contract, t)
+
+	var bEvent *fab.BlockEvent
+	var fEvent *fab.FilteredBlockEvent
+	for i := 0; i < 2; i++ {
+		select {
+		case bEvent = <-notifier1:
+			t.Logf("Received block event: %#v\n", bEvent)
+		case fEvent = <-notifier2:
+			t.Logf("Received filtered block event: %#v\n", fEvent)
+		case <-time.After(time.Second * 20):
+			t.Fatal("Did NOT receive block event\n")
+		}
+	}
+}
+
+// RunWithContractEvent tests receiving contract events
+func RunWithContractEvent(t *testing.T) {
+	configPath := integration.GetConfigPath("config_e2e.yaml")
+
+	gw, err := gateway.Connect(
+		gateway.WithConfig(config.FromFile(configPath)),
+		gateway.WithUser("User1"),
+	)
+	if err != nil {
+		t.Fatalf("Failed to create new Gateway: %s", err)
+	}
+	defer gw.Close()
+
+	nw, err := gw.GetNetwork(channelID)
+	if err != nil {
+		t.Fatalf("Failed to get network: %s", err)
+	}
+
+	contract := nw.GetContract(ccID)
+	testContractEvent(contract, t)
+}
+
 func testGateway(gw *gateway.Gateway, t *testing.T) {
 	nw, err := gw.GetNetwork(channelID)
 	if err != nil {
@@ -180,6 +248,8 @@ func testTransientData(contract *gateway.Contract, t *testing.T) {
 		t.Fatalf("Failed to create transaction: %s", err)
 	}
 
+	notifier := txn.RegisterCommitEvent()
+
 	result, err := txn.Submit("move", "a", "b", "1")
 	if err != nil {
 		t.Fatalf("Failed to submit transaction: %s", err)
@@ -188,6 +258,43 @@ func testTransientData(contract *gateway.Contract, t *testing.T) {
 	if string(result) != "8500" {
 		t.Fatalf("Incorrect result: %s", string(result))
 	}
+
+	var cEvent *fab.TxStatusEvent
+	select {
+	case cEvent = <-notifier:
+		t.Logf("Received commit event: %#v\n", cEvent)
+	case <-time.After(time.Second * 20):
+		t.Fatal("Did NOT receive commit event\n")
+	}
+
+}
+
+func testContractEvent(contract *gateway.Contract, t *testing.T) {
+	eventID := "test([a-zA-Z]+)"
+
+	reg, notifier, err := contract.RegisterEvent(eventID)
+	if err != nil {
+		t.Fatalf("Failed to register contract event: %s", err)
+	}
+	defer contract.Unregister(reg)
+
+	_, err = contract.SubmitTransaction("invoke", "move", "a", "b", "1")
+	if err != nil {
+		t.Fatalf("Failed to submit transaction: %s", err)
+	}
+
+	var ccEvent *fab.CCEvent
+	select {
+	case ccEvent = <-notifier:
+		t.Logf("Received CC event: %#v\n", ccEvent)
+		payload := string(ccEvent.Payload)
+		if payload != "Test Payload" {
+			t.Fatalf("Received incorrect event payload: %s", payload)
+		}
+	case <-time.After(time.Second * 20):
+		t.Fatalf("Did NOT receive CC event for eventId(%s)\n", eventID)
+	}
+
 }
 
 func populateWallet(wallet *gateway.Wallet) error {

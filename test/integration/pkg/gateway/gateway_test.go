@@ -33,3 +33,15 @@ func TestTransientData(t *testing.T) {
 		RunWithTransient(t)
 	})
 }
+
+func TestContractEvent(t *testing.T) {
+	t.Run("Base", func(t *testing.T) {
+		RunWithContractEvent(t)
+	})
+}
+
+func TestBlockEvent(t *testing.T) {
+	t.Run("Base", func(t *testing.T) {
+		RunWithBlockEvent(t)
+	})
+}

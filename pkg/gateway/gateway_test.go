@@ -65,10 +65,6 @@ func TestConnectNoOptions(t *testing.T) {
 
 	options := gw.options
 
-	if options.CommitHandler != DefaultCommitHandlers.OrgAll {
-		t.Fatal("DefaultCommitHandler not correctly initialized")
-	}
-
 	if options.Discovery != true {
 		t.Fatal("Discovery not correctly initialized")
 	}
@@ -95,10 +91,6 @@ func TestConnectWithSDK(t *testing.T) {
 	}
 
 	options := gw.options
-
-	if options.CommitHandler != DefaultCommitHandlers.OrgAll {
-		t.Fatal("DefaultCommitHandler not correctly initialized")
-	}
 
 	if options.Discovery != true {
 		t.Fatal("Discovery not correctly initialized")
@@ -133,23 +125,6 @@ func TestConnectWithIdentity(t *testing.T) {
 	}
 }
 
-func TestConnectWithCommitHandler(t *testing.T) {
-	gw, err := Connect(
-		WithConfig(config.FromFile("testdata/connection-tls.json")),
-		WithUser("user1"),
-		WithCommitHandler(DefaultCommitHandlers.OrgAny),
-	)
-	if err != nil {
-		t.Fatalf("Failed to create gateway: %s", err)
-	}
-
-	options := gw.options
-
-	if options.CommitHandler != DefaultCommitHandlers.OrgAny {
-		t.Fatal("CommitHandler not set correctly")
-	}
-}
-
 func TestConnectWithDiscovery(t *testing.T) {
 	gw, err := Connect(
 		WithConfig(config.FromFile("testdata/connection-tls.json")),
@@ -181,28 +156,6 @@ func TestConnectWithTimout(t *testing.T) {
 
 	if options.Timeout != 20*time.Second {
 		t.Fatal("Timeout not set correctly")
-	}
-}
-
-func TestConnectWithMultipleOptions(t *testing.T) {
-	gw, err := Connect(
-		WithConfig(config.FromFile("testdata/connection-tls.json")),
-		WithUser("user1"),
-		WithCommitHandler(DefaultCommitHandlers.OrgAny),
-		WithDiscovery(false),
-	)
-	if err != nil {
-		t.Fatalf("Failed to create gateway: %s", err)
-	}
-
-	options := gw.options
-
-	if options.Discovery != false {
-		t.Fatal("Discovery not set correctly")
-	}
-
-	if options.CommitHandler != DefaultCommitHandlers.OrgAny {
-		t.Fatal("CommitHandler not set correctly")
 	}
 }
 
