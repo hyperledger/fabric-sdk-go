@@ -18,7 +18,6 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/discovery/dynamicdiscovery"
-	clientmocks "github.com/hyperledger/fabric-sdk-go/pkg/client/common/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/fabricselection"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
@@ -26,6 +25,7 @@ import (
 	context2 "github.com/hyperledger/fabric-sdk-go/pkg/context"
 	contextImpl "github.com/hyperledger/fabric-sdk-go/pkg/context"
 	configImpl "github.com/hyperledger/fabric-sdk-go/pkg/core/config"
+	fabDiscovery "github.com/hyperledger/fabric-sdk-go/pkg/fab/discovery"
 	discmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/discovery/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defsvc"
@@ -377,9 +377,9 @@ func TestCloseContext(t *testing.T) {
 	chCfg.MockCapabilities[fab.ApplicationGroupKey][fab.V1_2Capability] = true
 	chpvdr.SetChannelConfig(chCfg)
 
-	discClient := clientmocks.NewMockDiscoveryClient()
+	discClient := fabDiscovery.NewMockDiscoveryClient()
 	dynamicdiscovery.SetClientProvider(
-		func(ctx context.Client) (dynamicdiscovery.DiscoveryClient, error) {
+		func(ctx context.Client) (fabDiscovery.Client, error) {
 			return discClient, nil
 		},
 	)
@@ -405,7 +405,7 @@ func TestCloseContext(t *testing.T) {
 	_, discovery2 := getDiscovery(sdkValidClientOrg2, sdkValidClientUser)
 
 	discClient.SetResponses(
-		&clientmocks.MockDiscoverEndpointResponse{
+		&fabDiscovery.MockDiscoverEndpointResponse{
 			PeerEndpoints: []*discmocks.MockDiscoveryPeerEndpoint{},
 		},
 	)
@@ -439,8 +439,8 @@ func TestErrorHandler(t *testing.T) {
 	core, err := newMockCorePkg(c)
 	require.NoError(t, err)
 
-	discClient := clientmocks.NewMockDiscoveryClient()
-	dynamicdiscovery.SetClientProvider(func(ctx context.Client) (dynamicdiscovery.DiscoveryClient, error) {
+	discClient := fabDiscovery.NewMockDiscoveryClient()
+	dynamicdiscovery.SetClientProvider(func(ctx context.Client) (fabDiscovery.Client, error) {
 		return discClient, nil
 	})
 	fabricselection.SetClientProvider(func(ctx context.Client) (fabricselection.DiscoveryClient, error) {
@@ -486,8 +486,13 @@ func TestErrorHandler(t *testing.T) {
 	}
 
 	errHandler := func(ctxt fab.ClientContext, channelID string, err error) {
+		//todo this misunderstanding with DiscoveryError will be removed once fabricselection is fixed
+		//https://github.com/hyperledger/fabric-sdk-go/pull/62#issuecomment-605343770
+		selectionDiscoveryErr, selectionOk := errors.Cause(err).(fabricselection.DiscoveryError)
+		dynamicDiscoveryErr, discoveryOk := errors.Cause(err).(dynamicdiscovery.DiscoveryError)
+
 		// Analyse the error to see if it needs handling
-		if err.Error() != dynamicdiscovery.AccessDenied {
+		if (selectionOk && !selectionDiscoveryErr.IsAccessDenied()) || (discoveryOk && !dynamicDiscoveryErr.IsAccessDenied()) {
 			// Transient error; no handling necessary
 			return
 		}
@@ -498,7 +503,7 @@ func TestErrorHandler(t *testing.T) {
 
 			// Reset the successful response
 			discClient.SetResponses(
-				&clientmocks.MockDiscoverEndpointResponse{
+				&fabDiscovery.MockDiscoverEndpointResponse{
 					PeerEndpoints: []*discmocks.MockDiscoveryPeerEndpoint{},
 				},
 			)
@@ -536,7 +541,7 @@ func TestErrorHandler(t *testing.T) {
 
 	// First set a successful response
 	discClient.SetResponses(
-		&clientmocks.MockDiscoverEndpointResponse{
+		&fabDiscovery.MockDiscoverEndpointResponse{
 			PeerEndpoints: []*discmocks.MockDiscoveryPeerEndpoint{},
 		},
 	)
@@ -552,7 +557,7 @@ func TestErrorHandler(t *testing.T) {
 
 	// Simulate a transient error
 	discClient.SetResponses(
-		&clientmocks.MockDiscoverEndpointResponse{
+		&fabDiscovery.MockDiscoverEndpointResponse{
 			Error: errors.New("some transient error"),
 		},
 	)
@@ -570,7 +575,7 @@ func TestErrorHandler(t *testing.T) {
 
 	// Simulate an access-denied (could be due to a user being revoked)
 	discClient.SetResponses(
-		&clientmocks.MockDiscoverEndpointResponse{
+		&fabDiscovery.MockDiscoverEndpointResponse{
 			Error: errors.New(dynamicdiscovery.AccessDenied),
 		},
 	)

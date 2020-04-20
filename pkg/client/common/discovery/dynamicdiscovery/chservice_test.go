@@ -9,12 +9,12 @@ SPDX-License-Identifier: Apache-2.0
 package dynamicdiscovery
 
 import (
-	"errors"
+	fabDiscovery "github.com/hyperledger/fabric-sdk-go/pkg/fab/discovery"
+	"github.com/pkg/errors"
 	"testing"
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/discovery"
-	clientmocks "github.com/hyperledger/fabric-sdk-go/pkg/client/common/mocks"
 	contextAPI "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	pfab "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
@@ -23,10 +23,6 @@ import (
 	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-)
-
-const (
-	peer1MSP2 = "peer1.org2.com:9999"
 )
 
 func TestDiscoveryService(t *testing.T) {
@@ -54,14 +50,15 @@ func TestDiscoveryService(t *testing.T) {
 	}
 	ctx.SetEndpointConfig(config)
 
-	discClient := clientmocks.NewMockDiscoveryClient()
+	discClient := fabDiscovery.NewMockDiscoveryClient()
 	discClient.SetResponses(
-		&clientmocks.MockDiscoverEndpointResponse{
+		&fabDiscovery.MockDiscoverEndpointResponse{
 			PeerEndpoints: []*discmocks.MockDiscoveryPeerEndpoint{},
+			Target:        peer1MSP1,
 		},
 	)
 
-	SetClientProvider(func(ctx contextAPI.Client) (DiscoveryClient, error) {
+	SetClientProvider(func(ctx contextAPI.Client) (fabDiscovery.Client, error) {
 		return discClient, nil
 	})
 
@@ -71,10 +68,17 @@ func TestDiscoveryService(t *testing.T) {
 		WithRefreshInterval(10*time.Millisecond),
 		WithResponseTimeout(100*time.Millisecond),
 		WithErrorHandler(
-			func(ctxt fab.ClientContext, channelID string, err error) {
-				derr, ok := err.(DiscoveryError)
-				if ok && derr.Error() == AccessDenied {
-					service.Close()
+			func(ctx fab.ClientContext, channelID string, err error) {
+				derr, ok := errors.Cause(err).(DiscoveryError)
+
+				if ok {
+					//peer1MSP1 or peer1MSP2, depending on request
+					assert.NotEmpty(t, derr.Target())
+					assert.NotEmpty(t, derr.Error())
+
+					if derr.IsAccessDenied() {
+						service.Close()
+					}
 				}
 			},
 		),
@@ -87,7 +91,7 @@ func TestDiscoveryService(t *testing.T) {
 	assert.Equal(t, 0, len(peers))
 
 	discClient.SetResponses(
-		&clientmocks.MockDiscoverEndpointResponse{
+		&fabDiscovery.MockDiscoverEndpointResponse{
 			PeerEndpoints: []*discmocks.MockDiscoveryPeerEndpoint{
 				{
 					MSPID:        mspID1,
@@ -95,6 +99,7 @@ func TestDiscoveryService(t *testing.T) {
 					LedgerHeight: 5,
 				},
 			},
+			Target: peer1MSP2,
 		},
 	)
 
@@ -105,7 +110,7 @@ func TestDiscoveryService(t *testing.T) {
 	assert.Equalf(t, 1, len(peers), "Expected 1 peer")
 
 	discClient.SetResponses(
-		&clientmocks.MockDiscoverEndpointResponse{
+		&fabDiscovery.MockDiscoverEndpointResponse{
 			PeerEndpoints: []*discmocks.MockDiscoveryPeerEndpoint{
 				{
 					MSPID:        mspID1,
@@ -118,6 +123,7 @@ func TestDiscoveryService(t *testing.T) {
 					LedgerHeight: 15,
 				},
 			},
+			Target: peer1MSP1,
 		},
 	)
 
@@ -134,8 +140,9 @@ func TestDiscoveryService(t *testing.T) {
 
 	// Non-fatal error
 	discClient.SetResponses(
-		&clientmocks.MockDiscoverEndpointResponse{
-			Error: errors.New("some transient error"),
+		&fabDiscovery.MockDiscoverEndpointResponse{
+			Error:  errors.New("some transient error"),
+			Target: peer1MSP1,
 		},
 	)
 
@@ -146,10 +153,11 @@ func TestDiscoveryService(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equalf(t, 2, len(peers), "Expected 2 peers")
 
-	// Fatal error (access denied can be due due a user being revoked)
+	// Fatal error (access denied can be due a user being revoked)
 	discClient.SetResponses(
-		&clientmocks.MockDiscoverEndpointResponse{
-			Error: errors.New(AccessDenied),
+		&fabDiscovery.MockDiscoverEndpointResponse{
+			Error:  errors.New(AccessDenied),
+			Target: peer1MSP1,
 		},
 	)
 
@@ -159,6 +167,16 @@ func TestDiscoveryService(t *testing.T) {
 	_, err = service.GetPeers()
 	require.Error(t, err)
 	assert.Equal(t, "Discovery client has been closed", err.Error())
+
+	ctx = mocks.NewMockContext(mspmocks.NewMockSigningIdentity("test", mspID1))
+	ctx.SetEndpointConfig(mocks.NewMockEndpointConfig())
+
+	service, err = NewChannelService(ctx, mocks.NewMockMembership(), "noChannelPeers")
+	require.NoError(t, err)
+
+	_, err = service.GetPeers()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "no channel peers configured for channel [noChannelPeers]")
 }
 
 func TestDiscoveryServiceWithNewOrgJoined(t *testing.T) {
@@ -188,14 +206,14 @@ func TestDiscoveryServiceWithNewOrgJoined(t *testing.T) {
 	}
 	ctx.SetEndpointConfig(config)
 
-	discClient := clientmocks.NewMockDiscoveryClient()
+	discClient := fabDiscovery.NewMockDiscoveryClient()
 	discClient.SetResponses(
-		&clientmocks.MockDiscoverEndpointResponse{
+		&fabDiscovery.MockDiscoverEndpointResponse{
 			PeerEndpoints: []*discmocks.MockDiscoveryPeerEndpoint{},
 		},
 	)
 
-	SetClientProvider(func(ctx contextAPI.Client) (DiscoveryClient, error) {
+	SetClientProvider(func(ctx contextAPI.Client) (fabDiscovery.Client, error) {
 		return discClient, nil
 	})
 
@@ -214,7 +232,7 @@ func TestDiscoveryServiceWithNewOrgJoined(t *testing.T) {
 	assert.Equal(t, 0, len(peers))
 
 	discClient.SetResponses(
-		&clientmocks.MockDiscoverEndpointResponse{
+		&fabDiscovery.MockDiscoverEndpointResponse{
 			PeerEndpoints: []*discmocks.MockDiscoveryPeerEndpoint{
 				{
 					MSPID:        mspID1,
@@ -232,7 +250,7 @@ func TestDiscoveryServiceWithNewOrgJoined(t *testing.T) {
 	assert.Equalf(t, 1, len(peers), "Expected 1 peer")
 
 	discClient.SetResponses(
-		&clientmocks.MockDiscoverEndpointResponse{
+		&fabDiscovery.MockDiscoverEndpointResponse{
 			PeerEndpoints: []*discmocks.MockDiscoveryPeerEndpoint{
 				{
 					MSPID:        mspID1,

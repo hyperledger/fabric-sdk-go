@@ -7,10 +7,13 @@ SPDX-License-Identifier: Apache-2.0
 package msp
 
 import (
+	"errors"
 	"fmt"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/test/mockfab"
 
 	"github.com/golang/mock/gomock"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
@@ -218,12 +221,7 @@ func TestCreateIdentity(t *testing.T) {
 
 	// Create without required parameters
 	_, err = f.caClient.CreateIdentity(&api.IdentityRequest{Affiliation: "Org1"})
-	if err == nil || !strings.Contains(err.Error(), "ID and affiliation are required") {
-		t.Fatal("Expected error due to missing required parameters")
-	}
-
-	_, err = f.caClient.CreateIdentity(&api.IdentityRequest{ID: "Some name"})
-	if err == nil || !strings.Contains(err.Error(), "ID and affiliation are required") {
+	if err == nil || !strings.Contains(err.Error(), "ID is required") {
 		t.Fatal("Expected error due to missing required parameters")
 	}
 
@@ -232,6 +230,15 @@ func TestCreateIdentity(t *testing.T) {
 	attributes = append(attributes, api.Attribute{Name: "test1", Value: "test2"})
 	attributes = append(attributes, api.Attribute{Name: "test2", Value: "test3"})
 	identity, err := f.caClient.CreateIdentity(&api.IdentityRequest{ID: "test", Affiliation: "test", Attributes: attributes})
+	if err != nil {
+		t.Fatalf("create identity return error %s", err)
+	}
+	if identity.Secret != "top-secret" {
+		t.Fatalf("create identity returned wrong value %s", identity.Secret)
+	}
+
+	// Create identity with ID only
+	identity, err = f.caClient.CreateIdentity(&api.IdentityRequest{ID: "test1"})
 	if err != nil {
 		t.Fatalf("create identity return error %s", err)
 	}
@@ -255,17 +262,21 @@ func TestModifyIdentity(t *testing.T) {
 
 	// Update without required parameters
 	_, err = f.caClient.ModifyIdentity(&api.IdentityRequest{Affiliation: "Org1"})
-	if err == nil || !strings.Contains(err.Error(), "ID and affiliation are required") {
-		t.Fatal("Expected error due to missing required parameters")
-	}
-
-	_, err = f.caClient.ModifyIdentity(&api.IdentityRequest{ID: "Some name"})
-	if err == nil || !strings.Contains(err.Error(), "ID and affiliation are required") {
+	if err == nil || !strings.Contains(err.Error(), "ID is required") {
 		t.Fatal("Expected error due to missing required parameters")
 	}
 
 	// Update identity with valid request
 	identity, err := f.caClient.ModifyIdentity(&api.IdentityRequest{ID: "123", Affiliation: "org2", Secret: "new-top-secret"})
+	if err != nil {
+		t.Fatalf("update identity return error %s", err)
+	}
+	if identity.Secret != "new-top-secret" {
+		t.Fatalf("update identity returned wrong value: %s", identity.Secret)
+	}
+
+	// Update identity without affiliation
+	identity, err = f.caClient.ModifyIdentity(&api.IdentityRequest{ID: "123", Secret: "new-top-secret"})
 	if err != nil {
 		t.Fatalf("update identity return error %s", err)
 	}
@@ -533,6 +544,39 @@ func TestCAClientKeyPathError(t *testing.T) {
 	_, err := NewCAClient(org1, mockContext)
 	if err == nil || !strings.Contains(err.Error(), "has no corresponding client keys in the configs") {
 		t.Fatalf("Expected error from CAClientKeyPath. Got: %s", err)
+	}
+}
+
+// TestCAClientKeyPathError will test CAClient creation with bad TLSCACertPool
+func TestCAClientTLSCACertPoolError(t *testing.T) {
+
+	f := textFixture{}
+	f.setup()
+	defer f.close()
+
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	certPoolErr := errors.New("certPoolErr")
+	tlsCACertPool := &mockfab.MockCertPool{nil, certPoolErr}
+
+	mockIdentityConfig := mockmspApi.NewMockIdentityConfig(mockCtrl)
+	mockIdentityConfig.EXPECT().CAConfig(org1CA).Return(&msp.CAConfig{}, true).AnyTimes()
+	mockIdentityConfig.EXPECT().CredentialStorePath().Return(dummyUserStorePath).AnyTimes()
+	mockIdentityConfig.EXPECT().CAServerCerts(org1CA).Return([][]byte{[]byte("test")}, true)
+	mockIdentityConfig.EXPECT().CAClientCert(org1CA).Return([]byte(""), true)
+	mockIdentityConfig.EXPECT().CAClientKey(org1CA).Return([]byte("testCAclientkey"), true)
+	mockIdentityConfig.EXPECT().TLSCACertPool().Return(tlsCACertPool)
+
+	mockContext := mockcontext.NewMockClient(mockCtrl)
+	mockContext.EXPECT().EndpointConfig().Return(f.endpointConfig).AnyTimes()
+	mockContext.EXPECT().IdentityConfig().Return(mockIdentityConfig).AnyTimes()
+	mockContext.EXPECT().UserStore().Return(&mockmsp.MockUserStore{}).AnyTimes()
+	mockContext.EXPECT().CryptoSuite().Return(f.cryptoSuite).AnyTimes()
+
+	_, err := NewCAClient(org1, mockContext)
+	if err == nil || !strings.Contains(err.Error(), "couldn't load configured cert pool") {
+		t.Fatalf("Expected error from TLSCACertPool. Got: %s", err)
 	}
 }
 

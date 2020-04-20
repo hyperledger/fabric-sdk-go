@@ -4,10 +4,10 @@ Copyright SecureKey Technologies Inc. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package mocks
+package discovery
 
 import (
-	reqcontext "context"
+	"context"
 	"sync"
 
 	"github.com/hyperledger/fabric-protos-go/discovery"
@@ -15,19 +15,19 @@ import (
 	discclient "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/discovery/client"
 	gprotoext "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/gossip/protoext"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
-	fabdiscovery "github.com/hyperledger/fabric-sdk-go/pkg/fab/discovery"
-	discmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/discovery/mocks"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/discovery/mocks"
+	"github.com/pkg/errors"
 )
 
 // MockDiscoveryClient implements a mock Discover service
 type MockDiscoveryClient struct {
-	resp []fabdiscovery.Response
+	resp []Response
 	lock sync.RWMutex
 }
 
 // MockResponseBuilder builds a mock discovery response
 type MockResponseBuilder interface {
-	Build() fabdiscovery.Response
+	Build() Response
 }
 
 // NewMockDiscoveryClient returns a new mock Discover service
@@ -36,8 +36,16 @@ func NewMockDiscoveryClient() *MockDiscoveryClient {
 }
 
 // Send sends a Discovery request
-func (m *MockDiscoveryClient) Send(ctx reqcontext.Context, req *fabdiscovery.Request, targets ...fab.PeerConfig) ([]fabdiscovery.Response, error) {
-	return m.responses(), nil
+func (m *MockDiscoveryClient) Send(ctx context.Context, req *Request, targets ...fab.PeerConfig) (<-chan Response, error) {
+	respCh := make(chan Response, len(targets))
+
+	for _, r := range m.responses() {
+		respCh <- r
+	}
+
+	close(respCh)
+
+	return respCh, nil
 }
 
 // SetResponses sets the responses that the mock client should return from the Send function
@@ -52,7 +60,7 @@ func (m *MockDiscoveryClient) SetResponses(responses ...MockResponseBuilder) {
 	}
 }
 
-func (m *MockDiscoveryClient) responses() []fabdiscovery.Response {
+func (m *MockDiscoveryClient) responses() []Response {
 	m.lock.RLock()
 	defer m.lock.RUnlock()
 	return m.resp
@@ -61,25 +69,40 @@ func (m *MockDiscoveryClient) responses() []fabdiscovery.Response {
 type mockDiscoverResponse struct {
 	discclient.Response
 	target string
+	err    error
 }
 
 func (r *mockDiscoverResponse) Target() string {
 	return r.target
 }
 
-type response struct {
-	peers []*discclient.Peer
-	err   error
+func (r *mockDiscoverResponse) Error() error {
+	return r.err
 }
 
-func (r *response) ForChannel(string) discclient.ChannelResponse {
-	return &channelResponse{
+type fakeResponse struct {
+	peers        []*discclient.Peer
+	err          error
+	accessDenied bool
+}
+
+func (r *fakeResponse) ForChannel(string) discclient.ChannelResponse {
+	chanResp := &channelResponse{
 		peers: r.peers,
 		err:   r.err,
 	}
+
+	//usually "access denied" is a successful response.
+	//The problem is that fakeResponse struct contains only peers arr and not message with content, so need to add bool if access denied
+	//see origins of https://github.com/hyperledger/fabric-sdk-go/pull/62
+	if r.accessDenied {
+		chanResp.err = errors.New("access denied")
+	}
+
+	return chanResp
 }
 
-func (r *response) ForLocal() discclient.LocalResponse {
+func (r *fakeResponse) ForLocal() discclient.LocalResponse {
 	return &localResponse{
 		peers: r.peers,
 		err:   r.err,
@@ -106,6 +129,13 @@ func (cr *channelResponse) Endorsers(invocationChain discclient.InvocationChain,
 	if cr.err != nil {
 		return nil, cr.err
 	}
+
+	for _, call := range invocationChain {
+		if call.Name == "notInstalledToAnyPeer" {
+			return nil, errors.New("no endorsement combination can be satisfied")
+		}
+	}
+
 	return f.Filter(cr.peers), nil
 }
 
@@ -122,12 +152,14 @@ func (cr *localResponse) Peers() ([]*discclient.Peer, error) {
 // MockDiscoverEndpointResponse contains a mock response for the discover client
 type MockDiscoverEndpointResponse struct {
 	Target        string
-	PeerEndpoints []*discmocks.MockDiscoveryPeerEndpoint
+	PeerEndpoints []*mocks.MockDiscoveryPeerEndpoint
 	Error         error
+	//todo it's really hard to make an expectation in tests, maybe we need to switch to mocks because current thing is stub
+	AccessDenied bool
 }
 
 // Build builds a mock discovery response
-func (b *MockDiscoverEndpointResponse) Build() fabdiscovery.Response {
+func (b *MockDiscoverEndpointResponse) Build() Response {
 	var peers discclient.Endorsers
 	for _, endpoint := range b.PeerEndpoints {
 		peer := &discclient.Peer{
@@ -137,16 +169,24 @@ func (b *MockDiscoverEndpointResponse) Build() fabdiscovery.Response {
 		}
 		peers = append(peers, peer)
 	}
+
+	disResp := &fakeResponse{
+		peers: peers,
+		err:   b.Error,
+	}
+
+	if b.AccessDenied {
+		disResp.accessDenied = true
+	}
+
 	return &mockDiscoverResponse{
-		Response: &response{
-			peers: peers,
-			err:   b.Error,
-		},
-		target: b.Target,
+		Response: disResp,
+		target:   b.Target,
+		err:      b.Error,
 	}
 }
 
-func newAliveMessage(endpoint *discmocks.MockDiscoveryPeerEndpoint) *gprotoext.SignedGossipMessage {
+func newAliveMessage(endpoint *mocks.MockDiscoveryPeerEndpoint) *gprotoext.SignedGossipMessage {
 	return &gprotoext.SignedGossipMessage{
 		GossipMessage: &gossip.GossipMessage{
 			Content: &gossip.GossipMessage_AliveMsg{
@@ -160,7 +200,7 @@ func newAliveMessage(endpoint *discmocks.MockDiscoveryPeerEndpoint) *gprotoext.S
 	}
 }
 
-func newStateInfoMessage(endpoint *discmocks.MockDiscoveryPeerEndpoint) *gprotoext.SignedGossipMessage {
+func newStateInfoMessage(endpoint *mocks.MockDiscoveryPeerEndpoint) *gprotoext.SignedGossipMessage {
 	return &gprotoext.SignedGossipMessage{
 		GossipMessage: &gossip.GossipMessage{
 			Content: &gossip.GossipMessage_StateInfo{

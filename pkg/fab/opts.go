@@ -13,6 +13,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
+	commtls "github.com/hyperledger/fabric-sdk-go/pkg/core/config/comm/tls"
 )
 
 // EndpointConfigOptions represents EndpointConfig interface with overridable interface functions
@@ -89,7 +90,7 @@ type channelOrderers interface {
 
 // tlsCACertPool interface allows to uniquely override EndpointConfig interface's TLSCACertPool() function
 type tlsCACertPool interface {
-	TLSCACertPool() fab.CertPool
+	TLSCACertPool() commtls.CertPool
 }
 
 // tlsClientCerts interface allows to uniquely override EndpointConfig interface's TLSClientCerts() function

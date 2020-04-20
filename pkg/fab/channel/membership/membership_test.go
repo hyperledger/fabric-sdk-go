@@ -99,13 +99,11 @@ func TestCertSignedWithUnknownAuthority(t *testing.T) {
 
 //TestRevokedCertificate
 func TestRevokedCertificate(t *testing.T) {
-	var err error
+
 	goodMSPID := "GoodMSP"
 	ctx := mocks.NewMockProviderContext()
 	cfg := mocks.NewMockChannelCfg("")
-	if err != nil {
-		t.Fatalf("Error %s", err)
-	}
+
 	// Test good config input
 	cfg.MockMSPs = []*mb.MSPConfig{buildMSPConfig(goodMSPID, []byte(orgTwoCA))}
 	m, err := New(Context{Providers: ctx, EndpointConfig: mocks.NewMockEndpointConfig()}, cfg)

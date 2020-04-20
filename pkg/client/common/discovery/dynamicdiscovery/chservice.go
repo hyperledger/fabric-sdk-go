@@ -9,6 +9,7 @@ package dynamicdiscovery
 import (
 	discclient "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/discovery/client"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/random"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/multi"
 	coptions "github.com/hyperledger/fabric-sdk-go/pkg/common/options"
 	contextAPI "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
@@ -73,17 +74,32 @@ func (s *ChannelService) doQueryPeers() ([]fab.Peer, error) {
 	}
 
 	reqCtx, cancel := reqContext.NewRequest(ctx, reqContext.WithTimeout(s.responseTimeout))
+
 	defer cancel()
 
 	req := fabdiscovery.NewRequest().OfChannel(s.channelID).AddPeersQuery()
-	responses, err := s.discoveryClient().Send(reqCtx, req, targets...)
+	responsesCh, err := s.discoveryClient().Send(reqCtx, req, targets...)
+
 	if err != nil {
-		if len(responses) == 0 {
-			return nil, errors.Wrapf(err, "error calling discover service send")
-		}
-		logger.Warnf("Received %d response(s) and one or more errors from discovery client: %s", len(responses), err)
+		return nil, errors.Wrapf(err, "error calling discover service send")
 	}
-	return s.evaluate(ctx, responses)
+
+	var respErrors []error
+
+	for resp := range responsesCh {
+		peers, err := s.evaluate(ctx, resp)
+
+		if err == nil {
+			//got successful response, cancel all outstanding requests to other targets
+			cancel()
+
+			return peers, nil
+		}
+
+		respErrors = append(respErrors, err)
+	}
+
+	return nil, errors.Wrap(multi.New(respErrors...), "no successful response received from any peer")
 }
 
 func (s *ChannelService) getTargets(ctx contextAPI.Client) ([]fab.PeerConfig, error) {
@@ -99,26 +115,24 @@ func (s *ChannelService) getTargets(ctx contextAPI.Client) ([]fab.PeerConfig, er
 }
 
 // evaluate validates the responses and returns the peers
-func (s *ChannelService) evaluate(ctx contextAPI.Client, responses []fabdiscovery.Response) ([]fab.Peer, error) {
-	if len(responses) == 0 {
-		return nil, errors.New("no successful response received from any peer")
+func (s *ChannelService) evaluate(clientCtx contextAPI.Client, response fabdiscovery.Response) ([]fab.Peer, error) {
+	if err := response.Error(); err != nil {
+		logger.Warnf("error from discovery request [%s]: %s", response.Target(), err)
+		return nil, newDiscoveryError(err, response.Target())
+	}
+
+	endpoints, err := response.ForChannel(s.channelID).Peers()
+
+	if err != nil {
+		logger.Warnf("error getting peers from discovery response. target: %s. %s", response.Target(), err)
+		return nil, newDiscoveryError(err, response.Target())
 	}
 
 	// TODO: In a future patch:
 	// - validate the signatures in the responses
 	// For now just pick the first successful response
 
-	var lastErr error
-	for _, response := range responses {
-		endpoints, err := response.ForChannel(s.channelID).Peers()
-		if err != nil {
-			lastErr = DiscoveryError(err)
-			logger.Warnf("error getting peers from discovery response: %s", lastErr)
-			continue
-		}
-		return s.asPeers(ctx, endpoints), nil
-	}
-	return nil, lastErr
+	return s.asPeers(clientCtx, endpoints), nil
 }
 
 func (s *ChannelService) asPeers(ctx contextAPI.Client, endpoints []*discclient.Peer) []fab.Peer {
