@@ -12,6 +12,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	cb "github.com/hyperledger/fabric-protos-go/common"
+	pb "github.com/hyperledger/fabric-protos-go/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/api"
@@ -26,8 +28,6 @@ import (
 	fabclientmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	fabmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
-	cb "github.com/hyperledger/fabric-protos-go/common"
-	pb "github.com/hyperledger/fabric-protos-go/peer"
 	"github.com/pkg/errors"
 )
 
@@ -92,6 +92,46 @@ func TestClientConnect(t *testing.T) {
 		t.Fatalf("expecting connection state %s but got %s", client.Disconnected, eventClient.ConnectionState())
 	}
 	time.Sleep(2 * time.Second)
+}
+
+func TestClientConnect_ImmediateTimeout(t *testing.T) {
+	// Ensures that the dispatcher doesn't deadlock sending to a channel with no listener.
+	// Set the response timeout to 0 so that the client times out immendiately and no longer listens
+	// to the error channel. Since the error channel has a buffer, the dispatcher replies to the error channel
+	// without deadlocking.
+	channelID := "mychannel"
+	eventClient, err := New(
+		newMockContext(),
+		fabmocks.NewMockChannelCfg(channelID),
+		clientmocks.NewDiscoveryService(peer1, peer2),
+		client.WithBlockEvents(),
+		withConnectionProvider(
+			clientmocks.NewProviderFactory().Provider(
+				delivermocks.NewConnection(
+					clientmocks.WithLedger(servicemocks.NewMockLedger(delivermocks.BlockEventFactory, sourceURL)),
+					clientmocks.WithResponseDelay(200*time.Millisecond),
+				),
+			),
+		),
+		WithSeekType(seek.FromBlock),
+		WithBlockNum(0),
+		client.WithResponseTimeout(0*time.Second),
+	)
+	if err != nil {
+		t.Fatalf("error creating channel event client: %s", err)
+	}
+	if eventClient.ConnectionState() != client.Disconnected {
+		t.Fatalf("expecting connection state %s but got %s", client.Disconnected, eventClient.ConnectionState())
+	}
+
+	err = eventClient.Connect()
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "timeout waiting for deliver status response")
+
+	eventClient.respTimeout = 3 * time.Second
+	err = eventClient.Connect()
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "connection is closed")
 }
 
 // TestReconnect tests the ability of the Channel Event Client to retry multiple
