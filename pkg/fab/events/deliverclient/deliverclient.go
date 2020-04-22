@@ -103,7 +103,7 @@ func (c *Client) seek() error {
 		return err
 	}
 
-	errch := make(chan error)
+	errch := make(chan error, 1)
 	err1 := c.Submit(dispatcher.NewSeekEvent(seekInfo, errch))
 	if err1 != nil {
 		return err1

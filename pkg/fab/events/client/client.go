@@ -210,7 +210,7 @@ func (c *Client) connect() error {
 
 	logger.Debug("Submitting connection request...")
 
-	errch := make(chan error)
+	errch := make(chan error, 1)
 	err1 := c.Submit(dispatcher.NewConnectEvent(errch))
 	if err1 != nil {
 		return errors.Errorf("Submit failed %s", err1)
