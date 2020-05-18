@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package gateway
 
 import (
+	"os"
 	"reflect"
 	"testing"
 	"time"
@@ -103,7 +104,7 @@ func TestConnectWithSDK(t *testing.T) {
 
 func TestConnectWithIdentity(t *testing.T) {
 	wallet := NewInMemoryWallet()
-	wallet.Put("user", NewX509Identity("msp", testCert, testPrivKey))
+	wallet.Put("user", NewX509Identity("testMSP", testCert, testPrivKey))
 
 	gw, err := Connect(
 		WithConfig(config.FromFile("testdata/connection-tls.json")),
@@ -120,7 +121,7 @@ func TestConnectWithIdentity(t *testing.T) {
 
 	mspid := gw.options.Identity.Identifier().MSPID
 
-	if !reflect.DeepEqual(mspid, "Org1MSP") {
+	if !reflect.DeepEqual(mspid, "testMSP") {
 		t.Fatalf("Incorrect mspid: %s", mspid)
 	}
 }
@@ -268,4 +269,26 @@ func TestClose(t *testing.T) {
 	}
 
 	gw.Close()
+}
+
+func TestAsLocalhost(t *testing.T) {
+	os.Setenv("DISCOVERY_AS_LOCALHOST", "true")
+
+	wallet := NewInMemoryWallet()
+	wallet.Put("user", NewX509Identity("msp", testCert, testPrivKey))
+
+	gw, err := Connect(
+		WithConfig(config.FromFile("testdata/connection-discovery.json")),
+		WithIdentity(wallet, "user"),
+	)
+
+	if err != nil {
+		t.Fatalf("Failed to create gateway: %s", err)
+	}
+
+	_, err = gw.GetNetwork("mychannel")
+	if err == nil {
+		t.Fatalf("Failed to get network: %s", err)
+	}
+
 }
