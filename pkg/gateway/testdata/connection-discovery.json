@@ -10,6 +10,9 @@
 				},
 				"orderer": "300"
 			}
+		},
+		"cryptoconfig": {
+			"path": "${FABRIC_SDK_GO_PROJECT_PATH}/${CRYPTOCONFIG_FIXTURES_PATH}"
 		}
 	},
 	"organizations": {
@@ -20,25 +23,19 @@
 			],
 			"certificateAuthorities": [
 				"ca-org1"
-			],
-			"adminPrivateKeyPEM": {
-				"path": "src/test/fixtures/crypto-material/crypto-config/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp/keystore/key.pem"
-			},
-			"signedCertPEM": {
-				"path": "src/test/fixtures/crypto-material/crypto-config/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp/signcerts/Admin@org1.example.com-cert.pem"
-			}
+			]
 		}
 	},
 	"peers": {
 		"peer0.org1.example.com": {
-			"url": "grpcs://peer0.org1.example.com:7051",
+			"url": "grpcs://localhost:7051",
 			"grpcOptions": {
 				"hostnameOverride": "peer0.org1.example.com",
 				"ssl-target-name-override": "peer0.org1.example.com",
 				"request-timeout": 120001
 			},
 			"tlsCACerts": {
-				"path": "src/test/fixtures/crypto-material/crypto-config/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/ca.crt"
+				"path": "${FABRIC_SDK_GO_PROJECT_PATH}/${CRYPTOCONFIG_FIXTURES_PATH}/ordererOrganizations/example.com/orderers/orderer.example.com/tls/ca.crt"
 			}
 		}
 	},
@@ -49,14 +46,12 @@
 				"verify": true
 			},
 			"tlsCACerts": {
-				"path": "src/test/fixtures/crypto-material/crypto-config/peerOrganizations/org1.example.com/ca/ca.org1.example.com-cert.pem"
+				"path": "${FABRIC_SDK_GO_PROJECT_PATH}/${CRYPTOCONFIG_FIXTURES_PATH}/peerOrganizations/org1.example.com/ca/ca.org1.example.com-cert.pem"
 			},
-			"registrar": [
-				{
-					"enrollId": "admin",
-					"enrollSecret": "adminpw"
-				}
-			]
+			"registrar": {
+				"enrollId": "admin",
+				"enrollSecret": "adminpw"
+			}
 		}
 	}
 }

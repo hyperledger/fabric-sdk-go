@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package gateway
 
 import (
+	"os"
 	"reflect"
 	"testing"
 	"time"
@@ -103,7 +104,7 @@ func TestConnectWithSDK(t *testing.T) {
 
 func TestConnectWithIdentity(t *testing.T) {
 	wallet := NewInMemoryWallet()
-	wallet.Put("user", NewX509Identity("msp", testCert, testPrivKey))
+	wallet.Put("user", NewX509Identity("testMSP", testCert, testPrivKey))
 
 	gw, err := Connect(
 		WithConfig(config.FromFile("testdata/connection-tls.json")),
@@ -120,7 +121,7 @@ func TestConnectWithIdentity(t *testing.T) {
 
 	mspid := gw.options.Identity.Identifier().MSPID
 
-	if !reflect.DeepEqual(mspid, "Org1MSP") {
+	if !reflect.DeepEqual(mspid, "testMSP") {
 		t.Fatalf("Incorrect mspid: %s", mspid)
 	}
 }
@@ -159,21 +160,6 @@ func TestConnectWithTimout(t *testing.T) {
 	}
 }
 
-func TestGetSDK(t *testing.T) {
-	gw, err := Connect(
-		WithConfig(config.FromFile("testdata/connection-tls.json")),
-		WithUser("user1"),
-	)
-
-	if err != nil {
-		t.Fatalf("Failed to create gateway: %s", err)
-	}
-
-	if gw.getSDK() != gw.sdk {
-		t.Fatal("getSDK() not returning the correct object")
-	}
-}
-
 func TestGetOrg(t *testing.T) {
 	gw, err := Connect(
 		WithConfig(config.FromFile("testdata/connection-tls.json")),
@@ -191,39 +177,6 @@ func TestGetOrg(t *testing.T) {
 	}
 }
 
-func TestGetPeersForOrg(t *testing.T) {
-	gw, err := Connect(
-		WithConfig(config.FromFile("testdata/connection-tls.json")),
-		WithUser("user1"),
-	)
-
-	if err != nil {
-		t.Fatalf("Failed to create gateway: %s", err)
-	}
-
-	peers, err := gw.getPeersForOrg("Org1")
-
-	if err != nil {
-		t.Fatalf("Failed to get peers for org: %s", err)
-	}
-
-	if reflect.DeepEqual(peers, [1]string{"peer0.org1.example.com"}) {
-		t.Fatalf("GetPeersForOrg(Org1) returns: %s", peers)
-	}
-
-	peers, err = gw.getPeersForOrg("Org2")
-
-	if reflect.DeepEqual(peers, [1]string{"peer0.org2.example.com"}) {
-		t.Fatalf("GetPeersForOrg(Org1) returns: %s", peers)
-	}
-
-	peers, err = gw.getPeersForOrg("Org3")
-
-	if err == nil {
-		t.Fatal("GetPeersForOrg(Org3) should have returned error")
-	}
-}
-
 func TestGetNetworkWithIdentity(t *testing.T) {
 	wallet := NewInMemoryWallet()
 	wallet.Put("user", NewX509Identity("msp", testCert, testPrivKey))
@@ -234,6 +187,18 @@ func TestGetNetworkWithIdentity(t *testing.T) {
 
 	if err != nil {
 		t.Fatalf("Failed to create gateway: %s", err)
+	}
+
+	if gw.options.Identity.PublicVersion() != gw.options.Identity {
+		t.Fatal("Incorrect identity")
+	}
+
+	if string(gw.options.Identity.EnrollmentCertificate()) != testCert {
+		t.Fatal("Incorrect identity certificate")
+	}
+
+	if gw.options.Identity.PrivateKey().Symmetric() {
+		t.Fatal("Incorrect identity private key")
 	}
 
 	_, err = gw.GetNetwork("mychannel")
@@ -268,4 +233,26 @@ func TestClose(t *testing.T) {
 	}
 
 	gw.Close()
+}
+
+func TestAsLocalhost(t *testing.T) {
+	os.Setenv("DISCOVERY_AS_LOCALHOST", "true")
+
+	wallet := NewInMemoryWallet()
+	wallet.Put("user", NewX509Identity("msp", testCert, testPrivKey))
+
+	gw, err := Connect(
+		WithConfig(config.FromFile("testdata/connection-discovery.json")),
+		WithIdentity(wallet, "user"),
+	)
+
+	if err != nil {
+		t.Fatalf("Failed to create gateway: %s", err)
+	}
+
+	_, err = gw.GetNetwork("mychannel")
+	if err == nil {
+		t.Fatalf("Failed to get network: %s", err)
+	}
+
 }
