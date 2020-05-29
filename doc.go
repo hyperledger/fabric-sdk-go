@@ -37,4 +37,14 @@ SPDX-License-Identifier: Apache-2.0
 //         Note: you create a new client instance for each context you need.
 //      4) Use the funcs provided by each client to create your solution!
 //      5) Call fabsdk.Close() to release resources and caches.
+//
+// Support for Hyperledger Fabric programming model
+//
+// In order to support the 'Gateway' programming model, the following package is provided:
+//
+// pkg/gateway: Enables Go developers to build client applications using the Hyperledger
+// Fabric programming model as described in the 'Developing Applications' chapter of the Fabric
+// documentation.
+// Reference: https://godoc.org/github.com/hyperledger/fabric-sdk-go/pkg/gateway
+//
 package fabricsdk

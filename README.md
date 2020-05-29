@@ -26,6 +26,8 @@ SDK documentation can be viewed at [GoDoc](https://godoc.org/github.com/hyperled
 
 The packages intended for end developer usage are within the pkg/client folder along with the main SDK package (pkg/fabsdk).
 
+If you wish to use the Fabric 'Gateway' programming model, then the API is in the pkg/gateway folder.
+
 ### Examples
 
 - [E2E Test](test/integration/e2e/end_to_end.go): Basic example that uses SDK to query and execute transaction

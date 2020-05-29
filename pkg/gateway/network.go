@@ -70,6 +70,11 @@ func (n *Network) Name() string {
 }
 
 // GetContract returns instance of a smart contract on the current network.
+//  Parameters:
+//  name is the name of the smart contract
+//
+//  Returns:
+//  A Contract object representing the smart contract
 func (n *Network) GetContract(chaincodeID string) *Contract {
 	return newContract(n, chaincodeID, "")
 }
