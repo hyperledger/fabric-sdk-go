@@ -66,10 +66,6 @@ func TestConnectNoOptions(t *testing.T) {
 
 	options := gw.options
 
-	if options.Discovery != true {
-		t.Fatal("Discovery not correctly initialized")
-	}
-
 	if options.Timeout != defaultTimeout {
 		t.Fatal("Timeout not correctly initialized")
 	}
@@ -92,10 +88,6 @@ func TestConnectWithSDK(t *testing.T) {
 	}
 
 	options := gw.options
-
-	if options.Discovery != true {
-		t.Fatal("Discovery not correctly initialized")
-	}
 
 	if options.Timeout != defaultTimeout {
 		t.Fatal("Timeout not correctly initialized")
@@ -123,23 +115,6 @@ func TestConnectWithIdentity(t *testing.T) {
 
 	if !reflect.DeepEqual(mspid, "testMSP") {
 		t.Fatalf("Incorrect mspid: %s", mspid)
-	}
-}
-
-func TestConnectWithDiscovery(t *testing.T) {
-	gw, err := Connect(
-		WithConfig(config.FromFile("testdata/connection-tls.json")),
-		WithUser("user1"),
-		WithDiscovery(false),
-	)
-	if err != nil {
-		t.Fatalf("Failed to create gateway: %s", err)
-	}
-
-	options := gw.options
-
-	if options.Discovery != false {
-		t.Fatal("Discovery not set correctly")
 	}
 }
 

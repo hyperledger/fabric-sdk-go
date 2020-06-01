@@ -52,7 +52,6 @@ func TestBlockEvent(t *testing.T) {
 
 	gw := &Gateway{
 		options: &gatewayOptions{
-			Discovery: defaultDiscovery,
 			Timeout:   defaultTimeout,
 		},
 	}
@@ -77,7 +76,6 @@ func TestFilteredBlocktEvent(t *testing.T) {
 
 	gw := &Gateway{
 		options: &gatewayOptions{
-			Discovery: defaultDiscovery,
 			Timeout:   defaultTimeout,
 		},
 	}

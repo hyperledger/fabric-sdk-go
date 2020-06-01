@@ -38,8 +38,7 @@ func TestTransactionOptions(t *testing.T) {
 
 	gw := &Gateway{
 		options: &gatewayOptions{
-			Discovery: defaultDiscovery,
-			Timeout:   defaultTimeout,
+			Timeout: defaultTimeout,
 		},
 	}
 
@@ -79,8 +78,7 @@ func TestCommitEvent(t *testing.T) {
 
 	gw := &Gateway{
 		options: &gatewayOptions{
-			Discovery: defaultDiscovery,
-			Timeout:   defaultTimeout,
+			Timeout: defaultTimeout,
 		},
 	}
 

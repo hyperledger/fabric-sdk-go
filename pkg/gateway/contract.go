@@ -34,6 +34,12 @@ func (c *Contract) Name() string {
 // will be evaluated on the endorsing peers but the responses will not be sent to
 // the ordering service and hence will not be committed to the ledger.
 // This can be used for querying the world state.
+//  Parameters:
+//  name is the name of the transaction function to be invoked in the smart contract.
+//  args are the arguments to be sent to the transaction function.
+//
+//  Returns:
+//  The return value of the transaction function in the smart contract.
 func (c *Contract) EvaluateTransaction(name string, args ...string) ([]byte, error) {
 	txn, err := c.CreateTransaction(name)
 
@@ -47,6 +53,12 @@ func (c *Contract) EvaluateTransaction(name string, args ...string) ([]byte, err
 // SubmitTransaction will submit a transaction to the ledger. The transaction function 'name'
 // will be evaluated on the endorsing peers and then submitted to the ordering service
 // for committing to the ledger.
+//  Parameters:
+//  name is the name of the transaction function to be invoked in the smart contract.
+//  args are the arguments to be sent to the transaction function.
+//
+//  Returns:
+//  The return value of the transaction function in the smart contract.
 func (c *Contract) SubmitTransaction(name string, args ...string) ([]byte, error) {
 	txn, err := c.CreateTransaction(name)
 
@@ -61,8 +73,14 @@ func (c *Contract) SubmitTransaction(name string, args ...string) ([]byte, error
 // function implemented by this contract, and provides more control over
 // the transaction invocation using the optional arguments. A new transaction object must
 // be created for each transaction invocation.
-func (c *Contract) CreateTransaction(name string, args ...TransactionOption) (*Transaction, error) {
-	return newTransaction(name, c, args...)
+//  Parameters:
+//  name is the name of the transaction function to be invoked in the smart contract.
+//  opts are the options to be associated with the transaction.
+//
+//  Returns:
+//  A Transaction object for subsequent evaluation or submission.
+func (c *Contract) CreateTransaction(name string, opts ...TransactionOption) (*Transaction, error) {
+	return newTransaction(name, c, opts...)
 }
 
 // RegisterEvent registers for chaincode events. Unregister must be called when the registration is no longer needed.

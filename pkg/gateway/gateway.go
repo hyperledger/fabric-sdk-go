@@ -4,6 +4,16 @@ Copyright 2020 IBM All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
+// Package gateway enables Go developers to build client applications using the Hyperledger
+// Fabric programming model as described in the 'Developing Applications' chapter of the Fabric
+// documentation: https://hyperledger-fabric.readthedocs.io/en/master/developapps/developing_applications.html
+//
+// A Gateway object is created using the Connect() function to connect to a 'gateway' peer
+// as specified in a network configuration file, using an identity stored in a wallet.
+// Interactions with smart contracts are then invoked within the context of this gateway connection.
+//
+// See https://github.com/hyperledger/fabric-samples/blob/master/fabcar/go/fabcar.go
+// for a working sample.
 package gateway
 
 import (
@@ -24,7 +34,6 @@ import (
 
 const (
 	defaultTimeout      = 5 * time.Minute
-	defaultDiscovery    = true
 	localhostEnvVarName = "DISCOVERY_AS_LOCALHOST"
 )
 
@@ -40,10 +49,9 @@ type Gateway struct {
 }
 
 type gatewayOptions struct {
-	Identity  mspProvider.SigningIdentity
-	User      string
-	Discovery bool
-	Timeout   time.Duration
+	Identity mspProvider.SigningIdentity
+	User     string
+	Timeout  time.Duration
 }
 
 // Option functional arguments can be supplied when connecting to the gateway.
@@ -57,12 +65,18 @@ type IdentityOption = func(*Gateway) error
 
 // Connect to a gateway defined by a network config file.
 // Must specify a config option, an identity option and zero or more strategy options.
+//  Parameters:
+//  config is a ConfigOption used to specify the network connection configuration.  This must contain connection details for at least one 'gateway' peer.
+//  identity is an IdentityOption which assigns a signing identity for all interactions under this Gateway connection.
+//  options specifies other gateway options
+//
+//  Returns:
+//  A Transaction object for subsequent evaluation or submission.
 func Connect(config ConfigOption, identity IdentityOption, options ...Option) (*Gateway, error) {
 
 	g := &Gateway{
 		options: &gatewayOptions{
-			Discovery: defaultDiscovery,
-			Timeout:   defaultTimeout,
+			Timeout: defaultTimeout,
 		},
 	}
 
@@ -87,6 +101,12 @@ func Connect(config ConfigOption, identity IdentityOption, options ...Option) (*
 }
 
 // WithConfig configures the gateway from a network config, such as a ccp file.
+//
+//   Parameters:
+//   config is a ConfigProvider function which provides config backend
+//
+//   Returns:
+//   A ConfigOption which can be passed as the first parameter to the Connect() function
 func WithConfig(config core.ConfigProvider) ConfigOption {
 	return func(gw *Gateway) error {
 		config = createGatewayConfigProvider(config, gw.getOrg)
@@ -136,6 +156,12 @@ func WithConfig(config core.ConfigProvider) ConfigOption {
 }
 
 // WithSDK configures the gateway with the configuration from an existing FabricSDK instance
+//
+//   Parameters:
+//   sdk is an instance of fabsdk.FabricSDK from which the configuration is extracted
+//
+//   Returns:
+//   A ConfigOption which can be passed as the first parameter to the Connect() function
 func WithSDK(sdk *fabsdk.FabricSDK) ConfigOption {
 	return func(gw *Gateway) error {
 		gw.sdk = sdk
@@ -159,6 +185,13 @@ func WithSDK(sdk *fabsdk.FabricSDK) ConfigOption {
 // WithIdentity is an optional argument to the Connect method which specifies
 // the identity that is to be used to connect to the network.
 // All operations under this gateway connection will be performed using this identity.
+//
+//   Parameters:
+//   wallet is a Wallet implementation that contains identities
+//   label is the name of the identity in the wallet to associate with the gateway
+//
+//   Returns:
+//   An IdentityOption which can be passed as the second parameter to the Connect() function
 func WithIdentity(wallet wallet, label string) IdentityOption {
 	return func(gw *Gateway) error {
 		creds, err := wallet.Get(label)
@@ -183,19 +216,17 @@ func WithIdentity(wallet wallet, label string) IdentityOption {
 
 // WithUser is an optional argument to the Connect method which specifies
 // the identity that is to be used to connect to the network.
+// The creadentials are extracted from the credential store specified in the connection profile.
 // All operations under this gateway connection will be performed using this identity.
+//
+//   Parameters:
+//   user is the name of the user in the credential store.
+//
+//   Returns:
+//   An IdentityOption which can be passed as the second parameter to the Connect() function
 func WithUser(user string) IdentityOption {
 	return func(gw *Gateway) error {
 		gw.options.User = user
-		return nil
-	}
-}
-
-// WithDiscovery is an optional argument to the Connect method which
-// enables or disables service discovery for all transaction submissions for this gateway.
-func WithDiscovery(discovery bool) Option {
-	return func(gw *Gateway) error {
-		gw.options.Discovery = discovery
 		return nil
 	}
 }
@@ -210,6 +241,11 @@ func WithTimeout(timeout time.Duration) Option {
 }
 
 // GetNetwork returns an object representing a network channel.
+//  Parameters:
+//  name is the name of the network channel
+//
+//  Returns:
+//  A Network object representing the channel
 func (gw *Gateway) GetNetwork(name string) (*Network, error) {
 	var channelProvider context.ChannelProvider
 	if gw.options.Identity != nil {
