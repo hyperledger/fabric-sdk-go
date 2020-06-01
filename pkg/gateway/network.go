@@ -20,7 +20,6 @@ type Network struct {
 	name    string
 	gateway *Gateway
 	client  *channel.Client
-	peers   []fab.Peer
 	event   *event.Client
 }
 
@@ -43,18 +42,6 @@ func newNetwork(gateway *Gateway, channelProvider context.ChannelProvider) (*Net
 	}
 
 	n.name = ctx.ChannelID()
-
-	discovery, err := ctx.ChannelService().Discovery()
-	if err != nil {
-		return nil, errors.Wrap(err, "Failed to create discovery service")
-	}
-
-	peers, err := discovery.GetPeers()
-	if err != nil {
-		return nil, errors.Wrap(err, "Failed to discover peers")
-	}
-
-	n.peers = peers
 
 	n.event, err = event.New(channelProvider, event.WithBlockEvents())
 	if err != nil {
