@@ -1,6 +1,67 @@
+## v1.0.0-beta2 
+Mon  1 Jun 2020 15:47:02 EDT
+
+* [e937e5c3](https://github.com/hyperledger/fabric-sdk-go/commit/e937e5c3) FABG-943 Remove unused code (#76)
+* [ad7b0438](https://github.com/hyperledger/fabric-sdk-go/commit/ad7b0438) FABG-943 Enhance documentation and add examples (#75)
+* [219a09aa](https://github.com/hyperledger/fabric-sdk-go/commit/219a09aa) FABG-936 Support minimal ccp for fabric samples (#74)
+* [5fe41b9c](https://github.com/hyperledger/fabric-sdk-go/commit/5fe41b9c) [FABG-962] Fix deadlock in event service (#72)
+* [c3b3ab65](https://github.com/hyperledger/fabric-sdk-go/commit/c3b3ab65) [FAB-17777](https://jira.hyperledger.org/browse/FAB-17777) Create basic settings.yaml (#71)
+* [2d73fad4](https://github.com/hyperledger/fabric-sdk-go/commit/2d73fad4) FABG-940 Register for block/contract/commit events (#63)
+* [f7729f18](https://github.com/hyperledger/fabric-sdk-go/commit/f7729f18) Removed cancellation of all outstanding requests in discovery service (#62)
+* [594a8dce](https://github.com/hyperledger/fabric-sdk-go/commit/594a8dce) [FABG-959] Unable to specify empty affiliation (#70)
+* [60484ddc](https://github.com/hyperledger/fabric-sdk-go/commit/60484ddc) [FABG-961] Use system cert pool when connecting to fabric-ca (#69)
+* [0e550fc1](https://github.com/hyperledger/fabric-sdk-go/commit/0e550fc1) Simplified upstream patching (#67)
+* [20b887dd](https://github.com/hyperledger/fabric-sdk-go/commit/20b887dd) Update to golangci-lint v1.23.8 (#66)
+* [d7264b5e](https://github.com/hyperledger/fabric-sdk-go/commit/d7264b5e) Fix empty msp, capabilities and anchor peer in ConfigValue (#64)
+* [e2b6c739](https://github.com/hyperledger/fabric-sdk-go/commit/e2b6c739) [[FAB-17632](https://jira.hyperledger.org/browse/FAB-17632)] Exclude unnecessary code from ecdsa.go  (#60)
+* [e71412ff](https://github.com/hyperledger/fabric-sdk-go/commit/e71412ff) FABG-938 Transient Data (#58)
+* [3e8998ec](https://github.com/hyperledger/fabric-sdk-go/commit/3e8998ec) ci: update ci versions and code coverage (#59)
+* [c47f8b4a](https://github.com/hyperledger/fabric-sdk-go/commit/c47f8b4a) FABG-937 FileSystemWallet (#54)
+* [ab4de7e1](https://github.com/hyperledger/fabric-sdk-go/commit/ab4de7e1) [FABG-948] Add support for extra hosts at enrollment (#46)
+* [8bcbcfb4](https://github.com/hyperledger/fabric-sdk-go/commit/8bcbcfb4) Fixed capability version matcher for cases with 3 or more levels (#57)
+* [4919c923](https://github.com/hyperledger/fabric-sdk-go/commit/4919c923) [FABG-949] Add support for generating CRL with Revoke (#49)
+* [ff3bdd73](https://github.com/hyperledger/fabric-sdk-go/commit/ff3bdd73) [FABG-954] Cancel stream context when event client closes (#55)
+* [ae164c98](https://github.com/hyperledger/fabric-sdk-go/commit/ae164c98) fix multi.Errors panic on nil append (#53)
+* [be7b275c](https://github.com/hyperledger/fabric-sdk-go/commit/be7b275c) FABG-933 Gateway package for Go SDK (#51)
+* [745ca5b8](https://github.com/hyperledger/fabric-sdk-go/commit/745ca5b8) FABG-952 codecov ignore integration test paths
+* [8b9e0757](https://github.com/hyperledger/fabric-sdk-go/commit/8b9e0757) [FABG-950] Stablize integrations tests
+* [92bda8e1](https://github.com/hyperledger/fabric-sdk-go/commit/92bda8e1) [FABG-946] Honor Excluded Orderer in SDK Config (#43)
+* [b5424d1f](https://github.com/hyperledger/fabric-sdk-go/commit/b5424d1f) Copying Policy and ModPolicy when fetching config from orderer. (#48)
+* [5f7f0b02](https://github.com/hyperledger/fabric-sdk-go/commit/5f7f0b02) [FABG-947] Terminate event reconnect routine after close (#45)
+* [51ecb63a](https://github.com/hyperledger/fabric-sdk-go/commit/51ecb63a) Correcting debug message (#42)
+* [53615676](https://github.com/hyperledger/fabric-sdk-go/commit/53615676) chore: [FABG-785] removed unnecessary warning from PKCS11 context handle
+* [8f3d32c9](https://github.com/hyperledger/fabric-sdk-go/commit/8f3d32c9) [FABG-785] Supported node chaincode (#40)
+* [700785af](https://github.com/hyperledger/fabric-sdk-go/commit/700785af) Update maintainers list
+* [e7b9b0dc](https://github.com/hyperledger/fabric-sdk-go/commit/e7b9b0dc) [FABG-932] Add java chaincode integration test (#38)
+* [4f8dd0dc](https://github.com/hyperledger/fabric-sdk-go/commit/4f8dd0dc) [FABG-736] Supported java chaincode (#37)
+* [e1055f39](https://github.com/hyperledger/fabric-sdk-go/commit/e1055f39) [FABG-930] Ignore _lifecycle namespace in endorsement handler (#35)
+* [f5bfb4c3](https://github.com/hyperledger/fabric-sdk-go/commit/f5bfb4c3) [FABG-929] Use retry options from channel policy for selection (#36)
+* [6f74e787](https://github.com/hyperledger/fabric-sdk-go/commit/6f74e787) [FABG-927] Fixed third party pin README
+* [17677af8](https://github.com/hyperledger/fabric-sdk-go/commit/17677af8) [FABG-927] Patch upstream
+* [73d44b63](https://github.com/hyperledger/fabric-sdk-go/commit/73d44b63) [FABG-927] Apply upstream
+* [629d3b78](https://github.com/hyperledger/fabric-sdk-go/commit/629d3b78) [FABG-927] Fixed pinning scripts
+* [468cb900](https://github.com/hyperledger/fabric-sdk-go/commit/468cb900) [FABG-925] update codecov project target
+* [22206ad3](https://github.com/hyperledger/fabric-sdk-go/commit/22206ad3) [FABG-925] add codecov
+* [f6335e79](https://github.com/hyperledger/fabric-sdk-go/commit/f6335e79) [FABG-924] Patch upstream.
+* [ba124715](https://github.com/hyperledger/fabric-sdk-go/commit/ba124715) [FABG-924] Apply upstream
+* [fe2f1556](https://github.com/hyperledger/fabric-sdk-go/commit/fe2f1556) [FABG-924] Simplify upstream patching
+* [2d4e7a10](https://github.com/hyperledger/fabric-sdk-go/commit/2d4e7a10) [FABG-921] Update collection.proto message references
+* [e9ab174a](https://github.com/hyperledger/fabric-sdk-go/commit/e9ab174a) [FABG-918] Update stale bot configuration
+* [22b56d7d](https://github.com/hyperledger/fabric-sdk-go/commit/22b56d7d) [FABG-911] PKCS11 context resilience for errors
+* [6fa500f4](https://github.com/hyperledger/fabric-sdk-go/commit/6fa500f4) [FABG-916] Evict connection in TRANSIENT_FAILURE state
+* [d424433b](https://github.com/hyperledger/fabric-sdk-go/commit/d424433b) [FABG-915] Update README with CI badge and remove gerrit
+* [c365e23e](https://github.com/hyperledger/fabric-sdk-go/commit/c365e23e) [FABG-914] Use parent context in Discovery Dial
+* [4dd1938a](https://github.com/hyperledger/fabric-sdk-go/commit/4dd1938a) [FABG-913] Fail-fast for Discovery Service
+* [bbaa6377](https://github.com/hyperledger/fabric-sdk-go/commit/bbaa6377) Add default SECURITY policy
+* [65095eb3](https://github.com/hyperledger/fabric-sdk-go/commit/65095eb3) Defang stalebot
+* [acd13024](https://github.com/hyperledger/fabric-sdk-go/commit/acd13024) [FABG-912] Azure pipeline configuration
+* [c13e0cd0](https://github.com/hyperledger/fabric-sdk-go/commit/c13e0cd0) [FABG-910] Update to golangci-lint v1.19.1
+* [4a6db410](https://github.com/hyperledger/fabric-sdk-go/commit/4a6db410) [FABG-911] PKCS11 context resilience for errors
+
 ## v1.0.0-beta1
 Wed Sep 18 11:37:33 EDT 2019
 
+* [5d7ae7a5](https://github.com/hyperledger/fabric-sdk-go/commit/5d7ae7a5) [FABG-907] Release v1.0.0-beta1
 * [fc08b96a](https://github.com/hyperledger/fabric-sdk-go/commit/fc08b96a) FABG-909 - Multi-org channel config update
 * [ba370d29](https://github.com/hyperledger/fabric-sdk-go/commit/ba370d29) [FABG-908] Update to Go 1.13
 * [d578af09](https://github.com/hyperledger/fabric-sdk-go/commit/d578af09) [FABG-905] Fix the warn
