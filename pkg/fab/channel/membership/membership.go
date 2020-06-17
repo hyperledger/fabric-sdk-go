@@ -167,7 +167,7 @@ func loadMSPs(mspConfigs []*mb.MSPConfig, cs core.CryptoSuite) ([]msp.MSP, error
 		// TODO: Configure MSP version
 		mspOpts := msp.BCCSPNewOpts{
 			NewBaseOpts: msp.NewBaseOpts{
-				Version: msp.MSPv1_1,
+				Version: msp.MSPv1_4_3,
 			},
 		}
 		newMSP, err := msp.New(&mspOpts, cs)
