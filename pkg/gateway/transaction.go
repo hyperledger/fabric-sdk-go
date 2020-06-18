@@ -24,7 +24,6 @@ import (
 // Instances of this class are stateful. A new instance <strong>must</strong>
 // be created for each transaction invocation.
 type Transaction struct {
-	name           string
 	contract       *Contract
 	request        *channel.Request
 	endorsingPeers []string
@@ -35,10 +34,13 @@ type Transaction struct {
 type TransactionOption = func(*Transaction) error
 
 func newTransaction(name string, contract *Contract, options ...TransactionOption) (*Transaction, error) {
+	qname := name
+	if len(contract.name) > 0 {
+		qname = contract.name + ":" + name
+	}
 	txn := &Transaction{
-		name:     name,
 		contract: contract,
-		request:  &channel.Request{ChaincodeID: contract.chaincodeID, Fcn: name},
+		request:  &channel.Request{ChaincodeID: contract.chaincodeID, Fcn: qname},
 	}
 
 	for _, option := range options {

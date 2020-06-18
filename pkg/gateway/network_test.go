@@ -44,7 +44,26 @@ func TestGetContract(t *testing.T) {
 	name := contr.Name()
 
 	if name != "contract1" {
-		t.Fatalf("Incorrect contract name: %s", err)
+		t.Fatalf("Incorrect contract name: %s", name)
+	}
+}
+
+func TestGetContractWithName(t *testing.T) {
+	c := mockChannelProvider("mychannel")
+
+	gw := &Gateway{}
+
+	nw, err := newNetwork(gw, c)
+
+	if err != nil {
+		t.Fatalf("Failed to create network: %s", err)
+	}
+
+	contr := nw.GetContractWithName("contract1", "class1")
+	name := contr.Name()
+
+	if name != "contract1:class1" {
+		t.Fatalf("Incorrect contract name: %s", name)
 	}
 }
 
@@ -52,7 +71,7 @@ func TestBlockEvent(t *testing.T) {
 
 	gw := &Gateway{
 		options: &gatewayOptions{
-			Timeout:   defaultTimeout,
+			Timeout: defaultTimeout,
 		},
 	}
 
@@ -76,7 +95,7 @@ func TestFilteredBlocktEvent(t *testing.T) {
 
 	gw := &Gateway{
 		options: &gatewayOptions{
-			Timeout:   defaultTimeout,
+			Timeout: defaultTimeout,
 		},
 	}
 
