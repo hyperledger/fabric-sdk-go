@@ -26,7 +26,11 @@ func newContract(network *Network, chaincodeID string, name string) *Contract {
 
 // Name returns the name of the smart contract
 func (c *Contract) Name() string {
-	return c.chaincodeID
+	qualifiedName := c.chaincodeID
+	if len(c.name) != 0 {
+		qualifiedName += ":" + c.name
+	}
+	return qualifiedName
 }
 
 // EvaluateTransaction will evaluate a transaction function and return its results.

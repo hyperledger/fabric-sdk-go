@@ -58,12 +58,26 @@ func (n *Network) Name() string {
 
 // GetContract returns instance of a smart contract on the current network.
 //  Parameters:
-//  name is the name of the smart contract
+//  chaincodeID is the name of the chaincode that contains the smart contract
 //
 //  Returns:
 //  A Contract object representing the smart contract
 func (n *Network) GetContract(chaincodeID string) *Contract {
 	return newContract(n, chaincodeID, "")
+}
+
+// GetContractWithName returns instance of a smart contract on the current network.
+// If the chaincode instance contains more
+// than one smart contract class (available using the latest contract programming model), then an
+// individual class can be selected.
+//  Parameters:
+//  chaincodeID is the name of the chaincode that contains the smart contract
+//  name is the class name of the smart contract within the chaincode.
+//
+//  Returns:
+//  A Contract object representing the smart contract
+func (n *Network) GetContractWithName(chaincodeID string, name string) *Contract {
+	return newContract(n, chaincodeID, name)
 }
 
 // RegisterBlockEvent registers for block events. Unregister must be called when the registration is no longer needed.

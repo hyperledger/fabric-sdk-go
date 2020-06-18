@@ -29,8 +29,33 @@ func TestCreateTransaction(t *testing.T) {
 		t.Fatalf("Failed to create transaction: %s", err)
 	}
 
-	name := txn.name
+	name := txn.request.Fcn
 	if name != "txn1" {
+		t.Fatalf("Incorrect transaction name: %s", name)
+	}
+}
+
+func TestCreateTransactionNamespaced(t *testing.T) {
+	c := mockChannelProvider("mychannel")
+
+	gw := &Gateway{}
+
+	nw, err := newNetwork(gw, c)
+
+	if err != nil {
+		t.Fatalf("Failed to create network: %s", err)
+	}
+
+	contr := nw.GetContractWithName("contract1", "class1")
+
+	txn, err := contr.CreateTransaction("txn1")
+
+	if err != nil {
+		t.Fatalf("Failed to create transaction: %s", err)
+	}
+
+	name := txn.request.Fcn
+	if name != "class1:txn1" {
 		t.Fatalf("Incorrect transaction name: %s", name)
 	}
 }
