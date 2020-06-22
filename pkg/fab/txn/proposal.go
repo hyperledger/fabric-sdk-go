@@ -120,17 +120,16 @@ func SendProposal(reqCtx reqContext.Context, proposal *fab.TransactionProposal, 
 			// TODO: The RPC should be timed-out.
 			//resp, err := processor.ProcessTransactionProposal(context.NewRequestOLD(ctx), request)
 			resp, err := processor.ProcessTransactionProposal(reqCtx, request)
+			responseMtx.Lock()
 			if err != nil {
 				logger.Debugf("Received error response from txn proposal processing: %s", err)
-				responseMtx.Lock()
 				errs = append(errs, err)
-				responseMtx.Unlock()
-				return
 			}
 
-			responseMtx.Lock()
 			transactionProposalResponses = append(transactionProposalResponses, resp)
 			responseMtx.Unlock()
+
+			return
 		}(p)
 	}
 	wg.Wait()

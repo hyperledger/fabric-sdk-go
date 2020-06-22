@@ -104,7 +104,7 @@ func (p *peerEndorser) ProcessTransactionProposal(ctx reqContext.Context, reques
 
 	proposalResponse, err := p.sendProposal(ctx, request)
 	if err != nil {
-		tpr := fab.TransactionProposalResponse{Endorser: p.target}
+		tpr := fab.TransactionProposalResponse{Endorser: p.target, ProposalResponse: proposalResponse}
 		return &tpr, errors.Wrapf(err, "Transaction processing for endorser [%s]", p.target)
 	}
 
