@@ -128,8 +128,6 @@ func SendProposal(reqCtx reqContext.Context, proposal *fab.TransactionProposal, 
 
 			transactionProposalResponses = append(transactionProposalResponses, resp)
 			responseMtx.Unlock()
-
-			return
 		}(p)
 	}
 	wg.Wait()
