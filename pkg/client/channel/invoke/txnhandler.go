@@ -52,8 +52,10 @@ func (e *EndorsementHandler) Handle(requestContext *RequestContext, clientContex
 		TxnHeaderOpts...,
 	)
 
-	requestContext.Response.Proposal = proposal
-	requestContext.Response.TransactionID = proposal.TxnID // TODO: still needed?
+	if proposal != nil {
+		requestContext.Response.Proposal = proposal
+		requestContext.Response.TransactionID = proposal.TxnID // TODO: still needed?
+	}
 
 	if err != nil {
 		if len(transactionProposalResponses) > 0 {
