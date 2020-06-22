@@ -156,7 +156,11 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 	}
 
 	if function != "invoke" {
-		return shim.Error("Unknown function call")
+		return pb.Response{
+			Status:  shim.ERROR,
+			Message: "Unknown function call",
+			Payload: []byte("some payload"),
+		}
 	}
 
 	if len(args) < 2 {

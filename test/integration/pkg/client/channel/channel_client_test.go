@@ -572,6 +572,7 @@ func testChaincodeError(t *testing.T, client *channel.Client, ccID string) {
 
 	t.Logf("testChaincodeError err: %s ***** responses: %v", err, r)
 	require.Error(t, err)
+	require.Equal(t, "some payload", string(r.Payload))
 	s, ok := status.FromError(err)
 	require.True(t, ok, "expected status error")
 
