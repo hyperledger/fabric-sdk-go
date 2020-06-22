@@ -59,7 +59,9 @@ func (e *EndorsementHandler) Handle(requestContext *RequestContext, clientContex
 
 	if err != nil {
 		if len(transactionProposalResponses) > 0 {
-			requestContext.Response.Payload = transactionProposalResponses[0].Response.Payload
+			if transactionProposalResponses[0].Response != nil {
+				requestContext.Response.Payload = transactionProposalResponses[0].Response.Payload
+			}
 		}
 		requestContext.Error = err
 		return
