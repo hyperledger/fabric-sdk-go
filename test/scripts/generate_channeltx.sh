@@ -35,7 +35,7 @@ do
    echo "Generating OneOrgChannel artifacts for channel: $i"
 
    echo "Generating channel configuration transaction"
-   $CONFIGTXGEN_CMD -profile OneOrgChannel -outputCreateChannelTx .${FIXTURES_CHANNEL_PATH}/${i}.tx -channelID $i
+   $CONFIGTXGEN_CMD -profile OneOrgChannel -outputCreateChannelTx ${FIXTURES_CHANNEL_PATH}/${i}.tx -channelID $i
 done
 
 for i in "${twoOrgChannels[@]}"
@@ -43,7 +43,7 @@ do
    echo "Generating TwoOrgsChannel artifacts for channel: $i"
 
    echo "Generating channel configuration transaction"
-   $CONFIGTXGEN_CMD -profile TwoOrgsChannel -outputCreateChannelTx .${FIXTURES_CHANNEL_PATH}/${i}.tx -channelID $i
+   $CONFIGTXGEN_CMD -profile TwoOrgsChannel -outputCreateChannelTx ${FIXTURES_CHANNEL_PATH}/${i}.tx -channelID $i
 
    for j in "${orgs[@]}"
    do
@@ -57,7 +57,7 @@ do
    echo "Generating DsChannel (Distributed Signing Identities Channel) artifacts for channel: $i"
 
    echo "Generating channel configuration transaction"
-   $CONFIGTXGEN_CMD -profile DsChannel -outputCreateChannelTx .${FIXTURES_CHANNEL_PATH}/${i}.tx -channelID $i
+   $CONFIGTXGEN_CMD -profile DsChannel -outputCreateChannelTx ${FIXTURES_CHANNEL_PATH}/${i}.tx -channelID $i
 
    for j in "${orgs[@]}"
    do
