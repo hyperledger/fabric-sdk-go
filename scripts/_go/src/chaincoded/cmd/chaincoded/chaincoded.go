@@ -34,6 +34,7 @@ var (
 	containerStartRegEx  = regexp.MustCompile("/containers/(.+)/start")
 	containerUploadRegEx = regexp.MustCompile("/containers/(.+)/archive")
 	waitUploadRegEx      = regexp.MustCompile("/containers/(.+)/wait")
+	inspectImageRegEx    = regexp.MustCompile("/images/(.+)/json")
 )
 
 var peerEndpoints map[string]string
@@ -242,6 +243,14 @@ func (d *chaincoded) handleOtherRequest(w http.ResponseWriter, r *http.Request) 
 	w.WriteHeader(200)
 }
 
+func (d *chaincoded) handleInspectImage(w http.ResponseWriter, r *http.Request) {
+	respBody := []byte("{}")
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	w.Write(respBody)
+}
+
 func (d *chaincoded) handleWaitRequest(w http.ResponseWriter, r *http.Request) {
 	select {}
 }
@@ -305,6 +314,7 @@ func (d *chaincoded) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	uploadMatches := containerUploadRegEx.FindStringSubmatch(r.URL.Path)
 	createMatches := containerCreateRegEx.FindStringSubmatch(r.URL.Path)
 	waitMatches := waitUploadRegEx.FindStringSubmatch(r.URL.Path)
+	inspectMatches := inspectImageRegEx.FindStringSubmatch(r.URL.Path)
 
 	logDebugf("Handling HTTP request [%s]", r.URL)
 	if startMatches != nil {
@@ -316,6 +326,8 @@ func (d *chaincoded) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	} else if waitMatches != nil {
 		logDebugf("Handling handleWaitRequest")
 		d.handleWaitRequest(w, r)
+	} else if inspectMatches != nil {
+		d.handleInspectImage(w, r)
 	} else {
 		d.handleOtherRequest(w, r)
 	}

@@ -7,48 +7,42 @@ SPDX-License-Identifier: Apache-2.0
 package revoked
 
 import (
+	"bytes"
 	"crypto/rand"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"encoding/pem"
+	"io"
+	"io/ioutil"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/hyperledger/fabric-protos-go/common"
+	"github.com/hyperledger/fabric-protos-go/msp"
+	"github.com/pkg/errors"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/utils"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/ledger"
+	mspclient "github.com/hyperledger/fabric-sdk-go/pkg/client/msp"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	contextAPI "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
-	"github.com/pkg/errors"
-
-	"github.com/hyperledger/fabric-sdk-go/pkg/client/ledger"
-	mspclient "github.com/hyperledger/fabric-sdk-go/pkg/client/msp"
-	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
-	packager "github.com/hyperledger/fabric-sdk-go/pkg/fab/ccpackager/gopackager"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
-	"github.com/hyperledger/fabric-sdk-go/test/integration"
-
-	"io/ioutil"
-
-	"bytes"
-
-	"io"
-
-	"time"
-
-	"encoding/pem"
-	"os"
-	"path/filepath"
-
-	"github.com/hyperledger/fabric-protos-go/common"
-	"github.com/hyperledger/fabric-protos-go/msp"
-	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/utils"
-	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
 	msp2 "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
+	packager "github.com/hyperledger/fabric-sdk-go/pkg/fab/ccpackager/gopackager"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
+	"github.com/hyperledger/fabric-sdk-go/test/integration"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -62,9 +56,10 @@ const (
 	ordererOrgName      = "OrdererOrg"
 	channelID           = "orgchannel"
 	configFilename      = "config_test.yaml"
+	revokedPeerURL      = "peer1.org1.example.com:7151"
 	pathRevokeCaRoot    = "peerOrganizations/org1.example.com/ca/"
 	pathParentCert      = "peerOrganizations/org1.example.com/ca/ca.org1.example.com-cert.pem"
-	peerCertToBeRevoked = "peerOrganizations/org1.example.com/peers/peer0.org1.example.com/msp/signcerts/peer0.org1.example.com-cert.pem"
+	peerCertToBeRevoked = "peerOrganizations/org1.example.com/peers/peer1.org1.example.com/msp/signcerts/peer1.org1.example.com-cert.pem"
 	userCertToBeRevoked = "peerOrganizations/org1.example.com/users/User1@org1.example.com/msp/signcerts/User1@org1.example.com-cert.pem"
 )
 
@@ -76,10 +71,6 @@ var CRLTestRetryOpts = retry.Opts{
 	RetryableCodes: retry.TestRetryableCodes,
 }
 
-// Peers used for testing
-var orgTestPeer0 fab.Peer
-var orgTestPeer1 fab.Peer
-
 var msps = []string{"Org1MSP", "Org2MSP"}
 
 //TestPeerRevoke performs peer revoke test
@@ -87,7 +78,6 @@ var msps = []string{"Org1MSP", "Org2MSP"}
 // step 2: update MSP revocation_list in channel config
 // step 3: perform revoke peer test
 func TestPeerAndUserRevoke(t *testing.T) {
-
 	var err error
 	//generate CRLs for Peer & User
 	crlBytes := make([][]byte, 2)
@@ -120,7 +110,6 @@ func TestPeerAndUserRevoke(t *testing.T) {
 
 //joinChannelAndInstallCC joins channel and install/instantiate/query 'exampleCC2'
 func joinChannelAndInstallCC(t *testing.T) {
-
 	sdk, err := fabsdk.New(config.FromFile(integration.GetConfigPath(configFilename)))
 	require.NoError(t, err)
 	defer sdk.Close()
@@ -144,7 +133,6 @@ func joinChannelAndInstallCC(t *testing.T) {
 
 //updateRevocationList update MSP revocation_list in channel config
 func updateRevocationList(t *testing.T, crlBytes [][]byte) {
-
 	sdk, err := fabsdk.New(config.FromFile(integration.GetConfigPath(configFilename)))
 	require.NoError(t, err)
 	defer sdk.Close()
@@ -197,22 +185,16 @@ func waitForConfigUpdate(t *testing.T) {
 
 //testRevokedPeer performs revoke peer test
 func testRevokedPeer(t *testing.T) {
-
 	sdk1, err := fabsdk.New(config.FromFile(integration.GetConfigPath(configFilename)))
 	require.NoError(t, err)
 	defer sdk1.Close()
 
 	//prepare contexts
-	org1AdminClientContext := sdk1.Context(fabsdk.WithUser(org1AdminUser), fabsdk.WithOrg(org1))
 	org1UserChannelClientContext := sdk1.ChannelContext(channelID, fabsdk.WithUser(org1User), fabsdk.WithOrg(org1))
 	org2UserChannelClientContext := sdk1.ChannelContext(channelID, fabsdk.WithUser(org2User), fabsdk.WithOrg(org2))
 
 	// Create chaincode package for example cc
 	createCC(t, sdk1, "exampleCC", "github.com/example_cc", "1", false)
-
-	// Load specific targets for move funds test - one of the
-	//targets has its certificate revoked
-	loadOrgPeers(t, org1AdminClientContext)
 
 	//query with revoked user
 	t.Log("query with revoked user - should fail with 'access denied'")
@@ -261,7 +243,6 @@ func testRevokedUser(t *testing.T) {
 
 //prepareReadWriteSets prepares read write sets for channel config update
 func prepareReadWriteSets(t *testing.T, crlBytes [][]byte, ledgerClient *ledger.Client) (*common.ConfigGroup, *common.ConfigGroup) {
-
 	var readSet, writeSet *common.ConfigGroup
 
 	chCfg, err := ledgerClient.QueryConfig(ledger.WithTargetEndpoints("peer1.org2.example.com"))
@@ -321,7 +302,6 @@ func prepareReadWriteSets(t *testing.T, crlBytes [][]byte, ledgerClient *ledger.
 }
 
 func updateChannelConfig(t *testing.T, readSet *common.ConfigGroup, writeSet *common.ConfigGroup, resmgmtClient *resmgmt.Client, org1MspClient, org2MspClient *mspclient.Client) {
-
 	//read block template and update read/write sets
 	txBytes, err := ioutil.ReadFile(integration.GetChannelConfigTxPath("twoorgs.genesis.block"))
 	require.NoError(t, err)
@@ -387,7 +367,6 @@ func createConfigEnvelopeReader(t *testing.T, blockData []byte, configUpdateByte
 }
 
 func joinChannel(t *testing.T, sdk *fabsdk.FabricSDK) {
-
 	joinChannelFunc := func() error {
 
 		org1AdminClientContext := sdk.Context(fabsdk.WithUser(org1AdminUser), fabsdk.WithOrg(org1))
@@ -468,7 +447,7 @@ func queryCC(t *testing.T, channelClientContext contextAPI.ChannelProvider, ccID
 	}
 
 	resp, err := chClientOrg1User.Query(channel.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCDefaultQueryArgs()},
-		channel.WithRetry(retry.DefaultChannelOpts), channel.WithTargetEndpoints("peer0.org1.example.com"))
+		channel.WithRetry(retry.DefaultChannelOpts), channel.WithTargetEndpoints("peer1.org1.example.com"))
 
 	if success {
 		require.NoError(t, err)
@@ -477,7 +456,7 @@ func queryCC(t *testing.T, channelClientContext contextAPI.ChannelProvider, ccID
 		require.Equal(t, "200", string(resp.Payload))
 	} else {
 		if err == nil || !strings.Contains(err.Error(), expectedMsg) {
-			t.Fatalf("Expected error: '%s' , but got '%s'", expectedMsg, err)
+			t.Fatalf("Expected error: '%s' , but got '%v'", expectedMsg, err)
 		}
 		_, ok := status.FromError(err)
 		assert.True(t, ok, "Expected status error")
@@ -485,7 +464,6 @@ func queryCC(t *testing.T, channelClientContext contextAPI.ChannelProvider, ccID
 }
 
 func createCC(t *testing.T, sdk1 *fabsdk.FabricSDK, name, path, version string, success bool) {
-
 	org1AdminClientContext := sdk1.Context(fabsdk.WithUser(org1AdminUser), fabsdk.WithOrg(org1))
 	org2AdminClientContext := sdk1.Context(fabsdk.WithUser(org2AdminUser), fabsdk.WithOrg(org2))
 
@@ -523,7 +501,7 @@ func createCC(t *testing.T, sdk1 *fabsdk.FabricSDK, name, path, version string, 
 			Args:    integration.ExampleCCInitArgs(),
 			Policy:  ccPolicy,
 		},
-		resmgmt.WithTargetEndpoints("peer0.org1.example.com", "peer0.org2.example.com"),
+		resmgmt.WithTargetEndpoints("peer1.org1.example.com","peer0.org2.example.com"),
 	)
 
 	if success {
@@ -536,31 +514,6 @@ func createCC(t *testing.T, sdk1 *fabsdk.FabricSDK, name, path, version string, 
 		require.Equalf(t, stat.Code, int32(status.SignatureVerificationFailed), "Expecting signature verification error due to revoked cert, but got", err)
 		require.Truef(t, strings.Contains(err.Error(), "the creator certificate is not valid"), "Expecting error message to contain 'the creator certificate is not valid' but got", err)
 	}
-}
-
-func loadOrgPeers(t *testing.T, ctxProvider contextAPI.ClientProvider) {
-
-	ctx, err := ctxProvider()
-	if err != nil {
-		t.Fatalf("context creation failed: %s", err)
-	}
-
-	org1Peers, ok := ctx.EndpointConfig().PeersConfig(org1)
-	assert.True(t, ok)
-
-	org2Peers, ok := ctx.EndpointConfig().PeersConfig(org2)
-	assert.True(t, ok)
-
-	orgTestPeer0, err = ctx.InfraProvider().CreatePeerFromConfig(&fab.NetworkPeer{PeerConfig: org1Peers[0]})
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	orgTestPeer1, err = ctx.InfraProvider().CreatePeerFromConfig(&fab.NetworkPeer{PeerConfig: org2Peers[0]})
-	if err != nil {
-		t.Fatal(err)
-	}
-
 }
 
 func queryRevocationListUpdates(t *testing.T, client *ledger.Client, config fab.EndpointConfig, chID string) bool {
@@ -583,6 +536,10 @@ func isChannelConfigUpdated(t *testing.T, client *ledger.Client, config fab.Endp
 	t.Logf("Performing config update check on %d channel peers in channel '%s'", len(chPeers), chID)
 	updated := len(chPeers) > 0
 	for _, chPeer := range chPeers {
+		if chPeer.URL == revokedPeerURL {
+			continue
+		}
+
 		t.Logf("waiting for [%s] msp update", chPeer.URL)
 		chCfg, err := client.QueryConfig(ledger.WithTargetEndpoints(chPeer.URL))
 		if err != nil || len(chCfg.MSPs()) == 0 {
@@ -597,7 +554,7 @@ func isChannelConfigUpdated(t *testing.T, client *ledger.Client, config fab.Endp
 			if fabMspCfg.Name == "OrdererMSP" {
 				continue
 			}
-			t.Logf("length of revocation list found in peer[%s] is %d", chPeer.URL, len(fabMspCfg.RevocationList))
+			t.Logf("length of revocation list found for MSP[%s] in peer[%s] is %d", fabMspCfg.Name, chPeer.URL, len(fabMspCfg.RevocationList))
 			updated = updated && len(fabMspCfg.RevocationList) > 1
 		}
 	}
@@ -643,7 +600,6 @@ func generateCRL(cerPath string) ([]byte, error) {
 }
 
 func loadPrivateKey(path string) (interface{}, error) {
-
 	raw, err := ioutil.ReadFile(path)
 	if err != nil {
 		return nil, err
@@ -658,7 +614,6 @@ func loadPrivateKey(path string) (interface{}, error) {
 }
 
 func loadCert(path string) (*x509.Certificate, error) {
-
 	raw, err := ioutil.ReadFile(path)
 	if err != nil {
 		return nil, err
@@ -673,7 +628,6 @@ func loadCert(path string) (*x509.Certificate, error) {
 }
 
 func revokeCert(certToBeRevoked *x509.Certificate, parentCert *x509.Certificate, parentKey interface{}) ([]byte, error) {
-
 	//Create a revocation record for the user
 	clientRevocation := pkix.RevokedCertificate{
 		SerialNumber:   certToBeRevoked.SerialNumber,

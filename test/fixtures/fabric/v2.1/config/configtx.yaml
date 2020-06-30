@@ -26,6 +26,7 @@ Organizations:
         ID: OrdererMSP
 
         # MSPDir is the filesystem path which contains the MSP configuration
+        # TODO: Make SDK compatible with latest cryptogen (https://jira.hyperledger.org/browse/FABG-977).
         MSPDir: ../../v1/crypto-config/ordererOrganizations/example.com/msp
 
         # Policies defines the set of policies at this level of the config tree
@@ -56,6 +57,7 @@ Organizations:
         # ID to load the MSP definition as
         ID: Org1MSP
 
+        # TODO: Make SDK compatible with latest cryptogen (https://jira.hyperledger.org/browse/FABG-977).
         MSPDir: ../../v1/crypto-config/peerOrganizations/org1.example.com/msp
 
         # Policies defines the set of policies at this level of the config tree
@@ -93,6 +95,7 @@ Organizations:
         # ID to load the MSP definition as
         ID: Org2MSP
 
+        # TODO: Make SDK compatible with latest cryptogen (https://jira.hyperledger.org/browse/FABG-977).
         MSPDir: ../../v1/crypto-config/peerOrganizations/org2.example.com/msp
 
         # Policies defines the set of policies at this level of the config tree
@@ -404,12 +407,12 @@ Profiles:
         Orderer:
             <<: *OrdererDefaults
             Organizations:
-                - <<: *OrdererOrg
-                  Policies:
-                      <<: *OrdererOrgPolicies
-                      Admins:
-                          Type: Signature
-                          Rule: "OR('OrdererMSP.admin')"
+            - <<: *OrdererOrg
+              Policies:
+                  <<: *OrdererOrgPolicies
+                  Admins:
+                      Type: Signature
+                      Rule: "OR('OrdererMSP.admin')"
         Consortiums:
             TestConsortium:
                 Organizations:
@@ -422,21 +425,22 @@ Profiles:
 
             SampleConsortium:
                 Organizations:
-                    - <<: *Org1
-                      Policies:
-                          <<: *Org1Policies
-                          Admins:
-                              Type: Signature
-                              Rule: "OR('Org1MSP.admin')"
-                    - <<: *Org2
-                      Policies:
-                          <<: *Org2Policies
-                          Admins:
-                              Type: Signature
-                              Rule: "OR('Org2MSP.admin')"
+                - <<: *Org1
+                  Policies:
+                      <<: *Org1Policies
+                      Admins:
+                          Type: Signature
+                          Rule: "OR('Org1MSP.admin')"
+                - <<: *Org2
+                  Policies:
+                      <<: *Org2Policies
+                      Admins:
+                          Type: Signature
+                          Rule: "OR('Org2MSP.admin')"
 
     OneOrgChannel:
         Consortium: TestConsortium
+        <<: *ChannelDefaults
         Application:
             <<: *ApplicationDefaults
             Organizations:
@@ -444,16 +448,18 @@ Profiles:
 
     TwoOrgsChannel:
         Consortium: SampleConsortium
+        <<: *ChannelDefaults
         Application:
             <<: *ApplicationDefaults
             Organizations:
-                - *Org1
-                - *Org2
+            - *Org1
+            - *Org2
 
     DsChannel:
         Consortium: SampleConsortium
+        <<: *ChannelDefaults
         Application:
             <<: *ApplicationDefaults
             Organizations:
-                - *Org1
-                - *Org2
+            - *Org1
+            - *Org2

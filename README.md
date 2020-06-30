@@ -47,8 +47,8 @@ If you wish to use the Fabric 'Gateway' programming model, then the API is in th
 
 ### Current Compatibility
 The SDK's integration tests run against three tagged Fabric versions:
-- prev (currently v1.3.0)
-- stable (currently v1.4.7)
+- prev (currently v1.4.7)
+- stable (currently v2.1.1)
 - prerelease (currently disabled)
 
 Additionally for development purposes integration tests also run against the devstable Fabric version as needed.
@@ -56,6 +56,7 @@ Additionally for development purposes integration tests also run against the dev
 ### Retired versions
 When the 'prev' code level is updated, the last tested fabric-sdk-go commit or tag is listed below.
 
+- fabric v1.3: ac70276
 - fabric v1.2: 5e291d3
 - fabric v1.1: f7ae259
 - fabric v1.0: 5ac5226
