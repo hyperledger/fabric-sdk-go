@@ -42,19 +42,12 @@ func TestCreateUserStore(t *testing.T) {
 }
 
 func newMockUserStore(t *testing.T) msp.UserStore {
-	factory := NewProviderFactory()
-
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 	mockConfig := mockmsp.NewMockIdentityConfig(mockCtrl)
+	mockConfig.EXPECT().CredentialStorePath().Return("/tmp/fabsdkgo_test/store")
 
-	mockClientConfig := msp.ClientConfig{
-		CredentialStore: msp.CredentialStoreType{
-			Path: "/tmp/fabsdkgo_test/store",
-		},
-	}
-	mockConfig.EXPECT().Client().Return(&mockClientConfig)
-
+	factory := NewProviderFactory()
 	userStore, err := factory.CreateUserStore(mockConfig)
 	if err != nil {
 		t.Fatalf("Unexpected error creating user store %s", err)
@@ -64,7 +57,6 @@ func newMockUserStore(t *testing.T) msp.UserStore {
 
 func TestCreateUserStoreByConfig(t *testing.T) {
 	userStore := newMockUserStore(t)
-
 	_, ok := userStore.(*mspimpl.CertFileUserStore)
 	if !ok {
 		t.Fatal("Unexpected user store created")
@@ -72,15 +64,12 @@ func TestCreateUserStoreByConfig(t *testing.T) {
 }
 
 func TestCreateUserStoreEmptyConfig(t *testing.T) {
-	factory := NewProviderFactory()
-
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 	mockConfig := mockmsp.NewMockIdentityConfig(mockCtrl)
+	mockConfig.EXPECT().CredentialStorePath().Return("")
 
-	mockClientConfig := msp.ClientConfig{}
-	mockConfig.EXPECT().Client().Return(&mockClientConfig)
-
+	factory := NewProviderFactory()
 	_, err := factory.CreateUserStore(mockConfig)
 	if err != nil {
 		t.Fatal("Expected user store created")
@@ -88,15 +77,12 @@ func TestCreateUserStoreEmptyConfig(t *testing.T) {
 }
 
 func TestCreateUserStoreFailConfig(t *testing.T) {
-	factory := NewProviderFactory()
-
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 	mockConfig := mockmsp.NewMockIdentityConfig(mockCtrl)
+	mockConfig.EXPECT().CredentialStorePath().Return("")
 
-	mockClientConfig := msp.ClientConfig{}
-	mockConfig.EXPECT().Client().Return(&mockClientConfig)
-
+	factory := NewProviderFactory()
 	_, err := factory.CreateUserStore(mockConfig)
 	if err != nil {
 		t.Fatal("Expected user store created")
