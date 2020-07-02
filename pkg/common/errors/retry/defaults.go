@@ -70,8 +70,6 @@ var DefaultResMgmtOpts = Opts{
 var DefaultRetryableCodes = map[status.Group][]status.Code{
 	status.EndorserClientStatus: {
 		status.EndorsementMismatch,
-		status.PrematureChaincodeExecution,
-		status.ChaincodeAlreadyLaunching,
 		status.ChaincodeNameNotFound,
 	},
 	status.EndorserServerStatus: {
@@ -100,8 +98,6 @@ var DefaultRetryableCodes = map[status.Group][]status.Code{
 var ResMgmtDefaultRetryableCodes = map[status.Group][]status.Code{
 	status.EndorserClientStatus: {
 		status.EndorsementMismatch,
-		status.PrematureChaincodeExecution,
-		status.ChaincodeAlreadyLaunching,
 		status.ChaincodeNameNotFound,
 	},
 	status.EndorserServerStatus: {
@@ -132,9 +128,7 @@ var ResMgmtDefaultRetryableCodes = map[status.Group][]status.Code{
 var ChannelClientRetryableCodes = map[status.Group][]status.Code{
 	status.EndorserClientStatus: {
 		status.ConnectionFailed, status.EndorsementMismatch,
-		status.PrematureChaincodeExecution,
 		status.Code(pb.TxValidationCode_MVCC_READ_CONFLICT),
-		status.ChaincodeAlreadyLaunching,
 		status.ChaincodeNameNotFound,
 	},
 	status.EndorserServerStatus: {
@@ -177,8 +171,6 @@ var TestRetryableCodes = map[status.Group][]status.Code{
 	},
 	status.EndorserClientStatus: {
 		status.ConnectionFailed, status.EndorsementMismatch,
-		status.PrematureChaincodeExecution,
-		status.ChaincodeAlreadyLaunching,
 		status.ChaincodeNameNotFound,
 		status.Code(pb.TxValidationCode_MVCC_READ_CONFLICT),
 	},

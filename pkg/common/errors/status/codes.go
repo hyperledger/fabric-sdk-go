@@ -55,13 +55,6 @@ const (
 	// GenericTransient is generally used by tests to indicate that a retry is possible
 	GenericTransient Code = 12
 
-	// PrematureChaincodeExecution indicates that an attempt was made to invoke a chaincode that's
-	// in the process of being launched.
-	PrematureChaincodeExecution Code = 21
-
-	// ChaincodeAlreadyLaunching indicates that an attempt for multiple simultaneous invokes was made to launch chaincode
-	ChaincodeAlreadyLaunching Code = 22
-
 	// ChaincodeNameNotFound indicates that an that an attempt was made to invoke a chaincode that's not yet initialized
 	ChaincodeNameNotFound Code = 23
 )
@@ -80,8 +73,6 @@ var CodeName = map[int32]string{
 	9:  "MISSING_ENDORSEMENT",
 	11: "QUERY_ENDORSERS",
 	12: "GENERIC_TRANSIENT",
-	21: "PREMATURE_CHAINCODE_EXECUTION",
-	22: "CHAINCODE_ALREADY_LAUNCHING",
 	23: "CHAINCODE_NAME_NOT_FOUND",
 }
 
