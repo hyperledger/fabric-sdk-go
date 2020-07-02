@@ -9,6 +9,7 @@ package peer
 import (
 	reqContext "context"
 	"crypto/x509"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -37,6 +38,8 @@ const (
 	maxCallSendMsgSize = 100 * 1024 * 1024
 	statusCodeUnknown  = "Unknown"
 )
+
+var chaincodeNotFoundPattern = regexp.MustCompile(`chaincode [^ ]+ not found`)
 
 // peerEndorser enables access to a GRPC-based endorser for running transaction proposal simulations
 type peerEndorser struct {
@@ -277,7 +280,7 @@ func extractChaincodeAlreadyLaunchingError(grpcstat *grpcstatus.Status) (int32, 
 	return int32(status.ChaincodeAlreadyLaunching), grpcstat.Message()[index:], nil
 }
 
-func extractChaincodeNameNotFoundError(grpcstat *grpcstatus.Status) (int32, string, error) {
+func extractChaincodeNameNotFoundErrorV1(grpcstat *grpcstatus.Status) (int32, string, error) {
 	if grpcstat.Code().String() != statusCodeUnknown || grpcstat.Message() == "" {
 		return 0, "", errors.New("not a 'could not find chaincode with name' error")
 	}
@@ -289,6 +292,18 @@ func extractChaincodeNameNotFoundError(grpcstat *grpcstatus.Status) (int32, stri
 		}
 	}
 	return int32(status.ChaincodeNameNotFound), grpcstat.Message()[index:], nil
+}
+
+func extractChaincodeNameNotFoundError(grpcstat *grpcstatus.Status) (int32, string, error) {
+	if grpcstat.Code().String() != statusCodeUnknown || grpcstat.Message() == "" {
+		return 0, "", errors.New("not a 'could not find chaincode with name' error")
+	}
+
+	msg := chaincodeNotFoundPattern.FindString(grpcstat.Message())
+	if len(msg) == 0 {
+		return extractChaincodeNameNotFoundErrorV1(grpcstat)
+	}
+	return int32(status.ChaincodeNameNotFound), msg, nil
 }
 
 // getChaincodeResponseStatus gets the actual response status from response.Payload.extension.Response.status, as fabric always returns actual 200

@@ -329,6 +329,12 @@ func TestExtractChaincodeNameNotFoundError(t *testing.T) {
 	assert.EqualValues(t, 0, code)
 	assert.Empty(t, message)
 
+	err = grpcstatus.New(grpcCodes.Unknown, "make sure the chaincode exampleCC2 has been successfully defined on channel orgchannel and try again: chaincode exampleCC2 not found")
+	code, message, extractErr = extractChaincodeNameNotFoundError(err)
+	assert.EqualValues(t, int32(status.ChaincodeNameNotFound), code, "Expected chaincode name not found error")
+	assert.EqualValues(t, "chaincode exampleCC2 not found", message, "Invalid message")
+	assert.Nil(t, extractErr)
+
 }
 
 func TestChaincodeStatusFromResponse(t *testing.T) {
