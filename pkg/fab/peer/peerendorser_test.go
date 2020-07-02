@@ -15,16 +15,14 @@ import (
 	"time"
 
 	"github.com/golang/mock/gomock"
+	pb "github.com/hyperledger/fabric-protos-go/peer"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
 	grpcCodes "google.golang.org/grpc/codes"
 	"google.golang.org/grpc/keepalive"
-	grpcstatus "google.golang.org/grpc/status"
-
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
-	pb "github.com/hyperledger/fabric-protos-go/peer"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/test/mockfab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 )
@@ -256,80 +254,6 @@ func TestEndorserRPCError(t *testing.T) {
 	assert.Equal(t, grpcCodes.Unknown, grpcCode)
 }
 
-func TestExtractChainCodeError(t *testing.T) {
-	expectedMsg := "Chaincode error(status: 500, message: Invalid function (dummy) call)"
-	error := grpcstatus.New(grpcCodes.Unknown, expectedMsg)
-	code, message, _ := extractChaincodeError(error)
-	if code != 500 {
-		t.Fatal("Expected code to be 500")
-	}
-	if message != "Invalid function (dummy) call" {
-		t.Fatal("Expected message not found")
-	}
-}
-
-func TestExtractPrematureExecError(t *testing.T) {
-
-	err := grpcstatus.New(grpcCodes.Unknown, "some error")
-	_, _, e := extractPrematureExecutionError(err)
-	assert.EqualError(t, e, "not a premature execution error")
-
-	err = grpcstatus.New(grpcCodes.Unknown, "transaction returned with failure: premature execution - chaincode (somecc:v1) is being launched")
-	code, message, _ := extractPrematureExecutionError(err)
-	assert.EqualValues(t, int32(status.PrematureChaincodeExecution), code, "Expected premature execution error")
-	assert.EqualValues(t, "premature execution - chaincode (somecc:v1) is being launched", message, "Invalid message")
-
-	err = grpcstatus.New(grpcCodes.Unknown, "transaction returned with failure: premature execution - chaincode (somecc:v1) launched and waiting for registration")
-	code, message, _ = extractPrematureExecutionError(err)
-	assert.EqualValues(t, int32(status.PrematureChaincodeExecution), code, "Expected premature execution error")
-	assert.EqualValues(t, "premature execution - chaincode (somecc:v1) launched and waiting for registration", message, "Invalid message")
-}
-
-func TestExtractChaincodeAlreadyLaunchingError(t *testing.T) {
-
-	err := grpcstatus.New(grpcCodes.Unknown, "some error")
-	_, _, e := extractChaincodeAlreadyLaunchingError(err)
-	assert.EqualError(t, e, "not a chaincode already launching error")
-
-	err = grpcstatus.New(grpcCodes.Unknown, "error executing chaincode: error chaincode is already launching: somecc:v1")
-	code, message, extractErr := extractChaincodeAlreadyLaunchingError(err)
-	assert.EqualValues(t, int32(status.ChaincodeAlreadyLaunching), code, "Expected chaincode already launching error")
-	assert.EqualValues(t, "error chaincode is already launching: somecc:v1", message, "Invalid message")
-	assert.Nil(t, extractErr)
-
-	err = grpcstatus.New(grpcCodes.Unknown, "error executing chaincode: some random error: somecc:v1")
-	code, message, extractErr = extractChaincodeAlreadyLaunchingError(err)
-	assert.NotNil(t, extractErr)
-	assert.EqualValues(t, 0, code)
-	assert.Empty(t, message)
-
-}
-
-func TestExtractChaincodeNameNotFoundError(t *testing.T) {
-
-	err := grpcstatus.New(grpcCodes.Unknown, "some error")
-	_, _, e := extractChaincodeNameNotFoundError(err)
-	assert.EqualError(t, e, "not a 'could not find chaincode with name' error")
-
-	err = grpcstatus.New(grpcCodes.Unknown, "make sure the chaincode uq7q9y7lu7 has been successfully instantiated and try again: getccdata mychannel/uq7q9y7lu7 responded with error: could not find chaincode with name 'uq7q9y7lu7'")
-	code, message, extractErr := extractChaincodeNameNotFoundError(err)
-	assert.EqualValues(t, int32(status.ChaincodeNameNotFound), code, "Expected chaincode name not found error")
-	assert.EqualValues(t, "could not find chaincode with name 'uq7q9y7lu7'", message, "Invalid message")
-	assert.Nil(t, extractErr)
-
-	err = grpcstatus.New(grpcCodes.Unknown, "cannot get package for chaincode (vl5knffa37:v0)")
-	code, message, extractErr = extractChaincodeNameNotFoundError(err)
-	assert.EqualValues(t, int32(status.ChaincodeNameNotFound), code, "Expected chaincode name not found error")
-	assert.EqualValues(t, "cannot get package for chaincode (vl5knffa37:v0)", message, "Invalid message")
-	assert.Nil(t, extractErr)
-
-	err = grpcstatus.New(grpcCodes.Unknown, "error executing chaincode: some random error: somecc:v1")
-	code, message, extractErr = extractChaincodeNameNotFoundError(err)
-	assert.NotNil(t, extractErr)
-	assert.EqualValues(t, 0, code)
-	assert.Empty(t, message)
-}
-
 func TestChaincodeStatusFromResponse(t *testing.T) {
 	//For error response
 	response := &pb.ProposalResponse{
@@ -358,39 +282,6 @@ func TestChaincodeStatusFromResponse(t *testing.T) {
 	err = extractChaincodeErrorFromResponse(response)
 	assert.True(t, ok)
 	assert.Nil(t, err)
-
-	//For error response - premature execution
-	response = &pb.ProposalResponse{
-		Response: &pb.Response{Status: 500, Payload: []byte("Unknown Description"), Message: "transaction returned with failure: premature execution - chaincode (somecc:v1) is being launched"},
-	}
-	err = extractChaincodeErrorFromResponse(response)
-	s, ok = status.FromError(err)
-	assert.True(t, ok)
-	assert.Equal(t, "transaction returned with failure: premature execution - chaincode (somecc:v1) is being launched", s.Message)
-	assert.Equal(t, int32(status.PrematureChaincodeExecution), s.Code)
-	assert.Equal(t, status.EndorserClientStatus, s.Group)
-
-	//For error response -  premature execution
-	response = &pb.ProposalResponse{
-		Response: &pb.Response{Status: 500, Payload: []byte("Unknown Description"), Message: "transaction returned with failure: premature execution - chaincode (somecc:v1) is being launched"},
-	}
-	err = extractChaincodeErrorFromResponse(response)
-	s, ok = status.FromError(err)
-	assert.True(t, ok)
-	assert.Equal(t, "transaction returned with failure: premature execution - chaincode (somecc:v1) is being launched", s.Message)
-	assert.Equal(t, int32(status.PrematureChaincodeExecution), s.Code)
-	assert.Equal(t, status.EndorserClientStatus, s.Group)
-
-	//For error response - chaincode already launching
-	response = &pb.ProposalResponse{
-		Response: &pb.Response{Status: 500, Payload: []byte("Unknown Description"), Message: "error executing chaincode: error chaincode is already launching: somecc:v1"},
-	}
-	err = extractChaincodeErrorFromResponse(response)
-	s, ok = status.FromError(err)
-	assert.True(t, ok)
-	assert.Equal(t, "error executing chaincode: error chaincode is already launching: somecc:v1", s.Message)
-	assert.Equal(t, int32(status.ChaincodeAlreadyLaunching), s.Code)
-	assert.Equal(t, status.EndorserClientStatus, s.Group)
 
 	//For error response - chaincode name not found (v1)
 	response = &pb.ProposalResponse{
