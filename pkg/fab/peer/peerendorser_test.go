@@ -328,13 +328,6 @@ func TestExtractChaincodeNameNotFoundError(t *testing.T) {
 	assert.NotNil(t, extractErr)
 	assert.EqualValues(t, 0, code)
 	assert.Empty(t, message)
-
-	err = grpcstatus.New(grpcCodes.Unknown, "make sure the chaincode exampleCC2 has been successfully defined on channel orgchannel and try again: chaincode exampleCC2 not found")
-	code, message, extractErr = extractChaincodeNameNotFoundError(err)
-	assert.EqualValues(t, int32(status.ChaincodeNameNotFound), code, "Expected chaincode name not found error")
-	assert.EqualValues(t, "chaincode exampleCC2 not found", message, "Invalid message")
-	assert.Nil(t, extractErr)
-
 }
 
 func TestChaincodeStatusFromResponse(t *testing.T) {
@@ -399,7 +392,7 @@ func TestChaincodeStatusFromResponse(t *testing.T) {
 	assert.Equal(t, int32(status.ChaincodeAlreadyLaunching), s.Code)
 	assert.Equal(t, status.EndorserClientStatus, s.Group)
 
-	//For error response - chaincode name not found
+	//For error response - chaincode name not found (v1)
 	response = &pb.ProposalResponse{
 		Response: &pb.Response{Status: 500, Payload: []byte("Unknown Description"), Message: "make sure the chaincode uq7q9y7lu7 has been successfully instantiated and try again: getccdata mychannel/uq7q9y7lu7 responded with error: could not find chaincode with name 'uq7q9y7lu7'"},
 	}
@@ -407,6 +400,17 @@ func TestChaincodeStatusFromResponse(t *testing.T) {
 	s, ok = status.FromError(err)
 	assert.True(t, ok)
 	assert.Equal(t, "make sure the chaincode uq7q9y7lu7 has been successfully instantiated and try again: getccdata mychannel/uq7q9y7lu7 responded with error: could not find chaincode with name 'uq7q9y7lu7'", s.Message)
+	assert.Equal(t, int32(status.ChaincodeNameNotFound), s.Code)
+	assert.Equal(t, status.EndorserClientStatus, s.Group)
+
+	//For error response - chaincode name not found (v2)
+	response = &pb.ProposalResponse{
+		Response: &pb.Response{Status: 500, Payload: []byte("Unknown Description"), Message: "make sure the chaincode exampleCC2 has been successfully defined on channel orgchannel and try again: chaincode exampleCC2 not found"},
+	}
+	err = extractChaincodeErrorFromResponse(response)
+	s, ok = status.FromError(err)
+	assert.True(t, ok)
+	assert.Equal(t, "make sure the chaincode exampleCC2 has been successfully defined on channel orgchannel and try again: chaincode exampleCC2 not found", s.Message)
 	assert.Equal(t, int32(status.ChaincodeNameNotFound), s.Code)
 	assert.Equal(t, status.EndorserClientStatus, s.Group)
 
