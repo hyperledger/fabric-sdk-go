@@ -237,6 +237,8 @@ func extractChaincodeErrorFromResponse(resp *pb.ProposalResponse) error {
 			return status.New(status.EndorserClientStatus, int32(status.ChaincodeAlreadyLaunching), resp.Response.Message, details)
 		} else if strings.Contains(resp.Response.Message, "could not find chaincode with name") {
 			return status.New(status.EndorserClientStatus, int32(status.ChaincodeNameNotFound), resp.Response.Message, details)
+		} else if chaincodeNotFoundPattern.MatchString(resp.Response.Message) {
+			return status.New(status.EndorserClientStatus, int32(status.ChaincodeNameNotFound), resp.Response.Message, details)
 		} else if strings.Contains(resp.Response.Message, "cannot get package for chaincode") {
 			return status.New(status.EndorserClientStatus, int32(status.ChaincodeNameNotFound), resp.Response.Message, details)
 		}
@@ -280,7 +282,7 @@ func extractChaincodeAlreadyLaunchingError(grpcstat *grpcstatus.Status) (int32, 
 	return int32(status.ChaincodeAlreadyLaunching), grpcstat.Message()[index:], nil
 }
 
-func extractChaincodeNameNotFoundErrorV1(grpcstat *grpcstatus.Status) (int32, string, error) {
+func extractChaincodeNameNotFoundError(grpcstat *grpcstatus.Status) (int32, string, error) {
 	if grpcstat.Code().String() != statusCodeUnknown || grpcstat.Message() == "" {
 		return 0, "", errors.New("not a 'could not find chaincode with name' error")
 	}
@@ -292,18 +294,6 @@ func extractChaincodeNameNotFoundErrorV1(grpcstat *grpcstatus.Status) (int32, st
 		}
 	}
 	return int32(status.ChaincodeNameNotFound), grpcstat.Message()[index:], nil
-}
-
-func extractChaincodeNameNotFoundError(grpcstat *grpcstatus.Status) (int32, string, error) {
-	if grpcstat.Code().String() != statusCodeUnknown || grpcstat.Message() == "" {
-		return 0, "", errors.New("not a 'could not find chaincode with name' error")
-	}
-
-	msg := chaincodeNotFoundPattern.FindString(grpcstat.Message())
-	if len(msg) == 0 {
-		return extractChaincodeNameNotFoundErrorV1(grpcstat)
-	}
-	return int32(status.ChaincodeNameNotFound), msg, nil
 }
 
 // getChaincodeResponseStatus gets the actual response status from response.Payload.extension.Response.status, as fabric always returns actual 200
