@@ -447,7 +447,7 @@ func queryCC(t *testing.T, channelClientContext contextAPI.ChannelProvider, ccID
 	}
 
 	resp, err := chClientOrg1User.Query(channel.Request{ChaincodeID: ccID, Fcn: "invoke", Args: integration.ExampleCCDefaultQueryArgs()},
-		channel.WithRetry(retry.DefaultChannelOpts), channel.WithTargetEndpoints("peer1.org1.example.com"))
+		channel.WithRetry(retry.TestRetryOpts), channel.WithTargetEndpoints("peer1.org1.example.com"))
 
 	if success {
 		require.NoError(t, err)
