@@ -28,22 +28,20 @@ func NewProviderFactory() *ProviderFactory {
 
 // CreateUserStore creates a UserStore using the SDK's default implementation
 func (f *ProviderFactory) CreateUserStore(config msp.IdentityConfig) (msp.UserStore, error) {
-
-	stateStorePath := config.Client().CredentialStore.Path
+	stateStorePath := config.CredentialStorePath()
 
 	var userStore msp.UserStore
-
 	if stateStorePath == "" {
-		userStore = mspimpl.NewMemoryUserStore()
-	} else {
-		stateStore, err := kvs.New(&kvs.FileKeyValueStoreOptions{Path: stateStorePath})
-		if err != nil {
-			return nil, errors.WithMessage(err, "CreateNewFileKeyValueStore failed")
-		}
-		userStore, err = mspimpl.NewCertFileUserStore1(stateStore)
-		if err != nil {
-			return nil, errors.Wrapf(err, "creating a user store failed")
-		}
+		return mspimpl.NewMemoryUserStore(), nil
+	}
+
+	stateStore, err := kvs.New(&kvs.FileKeyValueStoreOptions{Path: stateStorePath})
+	if err != nil {
+		return nil, errors.WithMessage(err, "CreateNewFileKeyValueStore failed")
+	}
+	userStore, err = mspimpl.NewCertFileUserStore1(stateStore)
+	if err != nil {
+		return nil, errors.Wrapf(err, "creating a user store failed")
 	}
 
 	return userStore, nil
