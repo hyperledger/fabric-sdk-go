@@ -138,9 +138,8 @@ func Marshal(from interface{}, what string) ([]byte, error) {
 // @param method http method of the request
 // @param uri URI of the request
 // @param body The body of an HTTP request
-// @param fabCACompatibilityMode will set auth token signing for Fabric CA 1.3 (true) or Fabric 1.4+ (false)
 
-func CreateToken(csp core.CryptoSuite, cert []byte, key core.Key, method, uri string, body []byte, fabCACompatibilityMode bool) (string, error) {
+func CreateToken(csp core.CryptoSuite, cert []byte, key core.Key, method, uri string, body []byte) (string, error) {
 	x509Cert, err := GetX509CertificateFromPEM(cert)
 	if err != nil {
 		return "", err
@@ -151,7 +150,7 @@ func CreateToken(csp core.CryptoSuite, cert []byte, key core.Key, method, uri st
 
 	switch publicKey.(type) {
 	case *ecdsa.PublicKey:
-		token, err = GenECDSAToken(csp, cert, key, method, uri, body, fabCACompatibilityMode)
+		token, err = GenECDSAToken(csp, cert, key, method, uri, body)
 		if err != nil {
 			return "", err
 		}
@@ -160,16 +159,11 @@ func CreateToken(csp core.CryptoSuite, cert []byte, key core.Key, method, uri st
 }
 
 //GenECDSAToken signs the http body and cert with ECDSA using EC private key
-func GenECDSAToken(csp core.CryptoSuite, cert []byte, key core.Key, method, uri string, body []byte, fabCACompatibilityMode bool) (string, error) {
+func GenECDSAToken(csp core.CryptoSuite, cert []byte, key core.Key, method, uri string, body []byte) (string, error) {
 	b64body := B64Encode(body)
 	b64cert := B64Encode(cert)
 	b64uri := B64Encode([]byte(uri))
 	payload := method + "." + b64uri + "." + b64body + "." + b64cert
-
-	// TODO remove this condition once Fabric CA v1.3 is not supported by the SDK anymore
-	if fabCACompatibilityMode {
-		payload = b64body + "." + b64cert
-	}
 
 	return genECDSAToken(csp, key, b64cert, payload)
 }
