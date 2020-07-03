@@ -114,7 +114,10 @@ func (fkvs *FileKeyValueStore) Load(key interface{}) (interface{}, error) {
 		return nil, err
 	}
 	if _, err1 := os.Stat(file); os.IsNotExist(err1) {
-		return nil, core.ErrKeyValueNotFound
+		file = filepath.Join(filepath.Dir(file), "priv_sk")
+		if _, err1 := os.Stat(file); os.IsNotExist(err1) {
+			return nil, core.ErrKeyValueNotFound
+		}
 	}
 	bytes, err := ioutil.ReadFile(file) // nolint: gas
 	if err != nil {
