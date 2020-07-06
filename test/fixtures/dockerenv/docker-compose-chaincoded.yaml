@@ -24,11 +24,10 @@ services:
 
   chaincoded:
     # TODO: parameterize golang version
-    image: golang:1.13
+    image: golang:1.14
     environment:
       - DOCKER_HOST=http://dockerd.example.com:2375
       - CHAINCODED_VERBOSE
-      - CORE_CHAINCODE_LOGGING_LEVEL
       - CHAINCODE_PATH=/opt/chaincodes
       - CHAINCODED_PATH=/opt/chaincoded
     volumes:
