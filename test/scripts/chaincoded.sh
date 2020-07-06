@@ -30,8 +30,6 @@ PEERS=(
     peer1.org2.example.com:9052
 )
 
-# Chaincode logs are controlled via the CORE_CHAINCODE_LOGGING_LEVEL environment variable.
-#export CORE_CHAINCODE_LOGGING_LEVEL=debug
 # You can set CHAINCODED_VERBOSE environment variable to see additional chaincoded logs.
 #export CHAINCODED_VERBOSE=true
 

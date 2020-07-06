@@ -16,18 +16,6 @@ func isVerbose() bool {
 	return ok
 }
 
-func getChaincodeLoggingLevel() string {
-	const (
-		defaultChaincodeLoggingLevel = "WARNING"
-	)
-
-	v, ok := os.LookupEnv("CORE_CHAINCODE_LOGGING_LEVEL")
-	if !ok {
-		return defaultChaincodeLoggingLevel
-	}
-	return v
-}
-
 func logDebugf(format string, v ...interface{}) {
 	if isVerbose() {
 		log.Printf(format, v...)

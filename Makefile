@@ -589,6 +589,11 @@ populate: populate-vendor populate-fixtures-stable
 populate-vendor:
 	@go mod vendor
 
+.PHONY: populate-chaincode-vendor
+populate-chaincode-vendor:
+	@cd test/fixtures/testdata/go/src/github.com/example_cc && go mod vendor
+	@cd test/fixtures/testdata/go/src/github.com/example_pvt_cc && go mod vendor
+
 .PHONY: populate-fixtures-stable
 populate-fixtures-stable:
 	@FABRIC_CRYPTOCONFIG_VERSION=$(FABRIC_CRYPTOCONFIG_VER) \
@@ -629,7 +634,7 @@ populate-fixtures-devstable-noforce:
 
 
 .PHONY: clean
-clean: clean-tests clean-fixtures clean-cache clean-populate
+clean: clean-tests clean-fixtures clean-cache clean-populate clean-chaincode-vendor
 
 .PHONY: clean-populate
 clean-populate:
@@ -653,6 +658,11 @@ clean-depend-images: clean-tests
 clean-fixtures:
 	-rm -Rf test/fixtures/fabric/*/crypto-config
 	-rm -Rf test/fixtures/fabric/*/channel
+
+.PHONY: clean-chaincode-vendor
+clean-chaincode-vendor:
+	-rm -Rf test/fixtures/testdata/go/src/github.com/example_cc/vendor
+	-rm -Rf test/fixtures/testdata/go/src/github.com/example_pvt_cc/vendor
 
 .PHONY: clean-tests-build
 clean-tests-build:
