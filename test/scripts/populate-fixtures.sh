@@ -148,6 +148,11 @@ function generateChannelConfig {
     fi
 }
 
+function vendorChaincode {
+    echo "Populating vendor for test chaincode ..."
+    make populate-chaincode-vendor
+}
+
 setCachePath
 
 if ! isPopulateCryptoCurrent || isForceMode; then
@@ -163,3 +168,5 @@ if ! isPopulateChannelCurrent || isForceMode; then
 else
     echo "No need to populate channel fixtures"
 fi
+
+vendorChaincode

@@ -11,6 +11,7 @@ import (
 	"compress/gzip"
 	"context"
 	"encoding/hex"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
@@ -124,16 +125,16 @@ func createChaincodeCmd(ccParams *chaincodeParams, tlsPath string) *exec.Cmd {
 	keyPath := filepath.Join(tlsPath, "client.key")
 	certPath := filepath.Join(tlsPath, "client.crt")
 
-	cmd := exec.Command(ccParams.chaincodeBinary(), tlsPath)
+	peerAddrArg := fmt.Sprintf("-peer.address=%s", ccParams.peerAddr())
+
+	cmd := exec.Command(ccParams.chaincodeBinary(), peerAddrArg)
 	cmd.Stderr = os.Stderr
 	cmd.Env = append(os.Environ(),
-		"CORE_PEER_ADDRESS="+ccParams.peerAddr(),
 		"CORE_CHAINCODE_ID_NAME="+ccParams.chaincodeID(),
 		"CORE_PEER_TLS_ENABLED=TRUE",
 		"CORE_PEER_TLS_ROOTCERT_FILE="+rootCertFile,
 		"CORE_TLS_CLIENT_KEY_PATH="+keyPath,
 		"CORE_TLS_CLIENT_CERT_PATH="+certPath,
-		"CORE_CHAINCODE_LOGGING_LEVEL="+getChaincodeLoggingLevel(),
 	)
 
 	// Chaincode and shim logs are output through Stderr.
