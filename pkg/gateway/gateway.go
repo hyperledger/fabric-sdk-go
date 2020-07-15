@@ -312,10 +312,10 @@ entityMatchers:
       urlSubstitutionExp: localhost:${2}
       sslTargetOverrideUrlSubstitutionExp: ${1}
       mappedHost: ${1}
-  peer:
+  orderer:
     - pattern: ([^:]+):(\\d+)
       urlSubstitutionExp: localhost:${2}
-      sslTargetOverrideUrlSubstitutionExp: localhost
+      sslTargetOverrideUrlSubstitutionExp: ${1}
       mappedHost: ${1}
 */
 func createLocalhostMappings() map[string][]map[string]string {
@@ -336,7 +336,7 @@ func createLocalhostMappings() map[string][]map[string]string {
 	ordererMapping := make(map[string]string)
 	ordererMapping["pattern"] = "([^:]+):(\\d+)"
 	ordererMapping["urlSubstitutionExp"] = "localhost:${2}"
-	ordererMapping["sslTargetOverrideUrlSubstitutionExp"] = "localhost"
+	ordererMapping["sslTargetOverrideUrlSubstitutionExp"] = mappedHost
 	ordererMapping["mappedHost"] = mappedHost
 	ordererMappings = append(ordererMappings, ordererMapping)
 
