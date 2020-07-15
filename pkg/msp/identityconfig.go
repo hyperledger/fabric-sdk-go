@@ -402,6 +402,12 @@ func (c *IdentityConfig) getServerCerts(caConfig *CAConfig) ([][]byte, error) {
 
 	var serverCerts [][]byte
 
+	if c.backend.GetBool("client.tlsCerts.systemCertPool") &&
+		len(caConfig.TLSCACerts.Pem) == 0 && len(caConfig.TLSCACerts.Path) == 0 {
+		logger.Debugf("switching to system certpool")
+		return [][]byte{}, nil
+	}
+
 	// check for pems first
 	pems := caConfig.TLSCACerts.Pem
 	if len(pems) > 0 {

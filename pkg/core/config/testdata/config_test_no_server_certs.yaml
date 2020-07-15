@@ -1,0 +1,380 @@
+#
+# Copyright SecureKey Technologies Inc. All Rights Reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+#
+# The network connection profile provides client applications the information about the target
+# blockchain network that are necessary for the applications to interact with it. These are all
+# knowledge that must be acquired from out-of-band sources. This file provides such a source.
+#
+
+name: "global-trade-network"
+
+description: "The network that has all the configuration parameters"
+
+x-type: "h1fv1"
+
+#
+# Schema version of the content. Used by the SDK to apply the corresponding parsing rules.
+#
+version: 1.0.0
+
+#
+# The client section used by GO SDK.
+#
+client:
+
+  # Which organization does this application instance belong to? The value must be the name of an org
+  # defined under "organizations"
+  organization: org1
+
+  logging:
+    level: info
+
+  # Root of the MSP directories with keys and certs.
+  cryptoconfig:
+    path: ${FABRIC_SDK_GO_PROJECT_PATH}/${CRYPTOCONFIG_FIXTURES_PATH}
+
+  # Some SDKs support pluggable KV stores, the properties under "credentialStore"
+  # are implementation specific
+  credentialStore:
+    # [Optional]. Used by user store. Not needed if all credentials are embedded in configuration
+    # and enrollments are performed elswhere.
+    path: "/tmp/state-store"
+
+    # [Optional]. Specific to the CryptoSuite implementation used by GO SDK. Software-based implementations
+    # requiring a key store. PKCS#11 based implementations does not.
+    cryptoStore:
+      # Specific to the underlying KeyValueStore that backs the crypto key store.
+      path: /tmp/msp
+
+    # BCCSP config for the client. Used by GO SDK.
+  BCCSP:
+    security:
+      enabled: true
+      default:
+        provider: "SW"
+      hashAlgorithm: "SHA2"
+      softVerify: true
+      level: 256
+
+  tlsCerts:
+    # [Optional]. Use system certificate pool when connecting to peers, orderers (for negotiating TLS) Default: false
+    systemCertPool: true
+
+    # [Optional]. Client key and cert for TLS handshake with peers and orderers
+    client:
+      key:
+        path: ${FABRIC_SDK_GO_PROJECT_PATH}/pkg/core/config/testdata/certs/client_sdk_go-key.pem
+      cert:
+        path: ${FABRIC_SDK_GO_PROJECT_PATH}/pkg/core/config/testdata/certs/client_sdk_go.pem
+
+#
+# [Optional]. But most apps would have this section so that channel objects can be constructed
+# based on the content below. If an app is creating channels, then it likely will not need this
+# section.
+#
+channels:
+  # name of the channel
+  mychannel:
+    # Required. list of orderers designated by the application to use for transactions on this
+    # channel. This list can be a result of access control ("org1" can only access "ordererA"), or
+    # operational decisions to share loads from applications among the orderers.  The values must
+    # be "names" of orgs defined under "organizations/peers"
+    orderers:
+      - orderer.example.com
+
+    # Required. list of peers from participating orgs
+    peers:
+      peer0.org1.example.com:
+        # [Optional]. will this peer be sent transaction proposals for endorsement? The peer must
+        # have the chaincode installed. The app can also use this property to decide which peers
+        # to send the chaincode install request. Default: true
+        endorsingPeer: true
+
+        # [Optional]. will this peer be sent query proposals? The peer must have the chaincode
+        # installed. The app can also use this property to decide which peers to send the
+        # chaincode install request. Default: true
+        chaincodeQuery: true
+
+        # [Optional]. will this peer be sent query proposals that do not require chaincodes, like
+        # queryBlock(), queryTransaction(), etc. Default: true
+        ledgerQuery: true
+
+        # [Optional]. will this peer be the target of the SDK's listener registration? All peers can
+        # produce events but the app typically only needs to connect to one to listen to events.
+        # Default: true
+        eventSource: true
+
+    # [Optional]. The application can use these options to perform channel operations like retrieving channel
+    # config etc.
+    policies:
+      #[Optional] options for retrieving channel configuration blocks
+      queryChannelConfig:
+        #[Optional] min number of success responses (from targets/peers)
+        minResponses: 1
+        #[Optional] channel config will be retrieved for these number of random targets
+        maxTargets: 1
+        retryOpts:
+          #[Optional] number of retry attempts
+          attempts: 5
+          #[Optional] the back off interval for the first retry attempt
+          initialBackoff: 500ms
+          #[Optional] the maximum back off interval for any retry attempt
+          maxBackoff: 5s
+          #[Optional] he factor by which the initial back off period is exponentially incremented
+          backoffFactor: 2.0
+      #[Optional] options for selection service
+      selection:
+        #[Optional] endorser selection sorting strategy. Possible values: [BlockHeightPriority,Balanced]
+        SortingStrategy: BlockHeightPriority
+        #[Optional] load-balancer type. Possible values: [RoundRobin,Random]
+        Balancer: RoundRobin
+        #[Optional] the number of blocks from the highest block number of a group of peers that a peer
+        #can lag behind and still be considered to be up-to-date. These peers will be sorted using the
+        #given Balancer. If a peer's block height falls behind this threshold then it will be demoted
+        #to a lower priority list of peers which will be sorted according to block height.
+        #Note: This property only applies to BlockHeightPriority sorter.
+        BlockHeightLagThreshold: 5
+
+      #[Optional] options for event service
+      eventService:
+        # [Optional] resolverStrategy specifies the peer resolver strategy to use when connecting to a peer
+        # Possible values: [PreferOrg (default), MinBlockHeight, Balanced]
+        #
+        # PreferOrg:
+        #   Determines which peers are suitable based on block height lag threshold, although will prefer the peers in the
+        #   current org (as long as their block height is above a configured threshold). If none of the peers from the current org
+        #   are suitable then a peer from another org is chosen.
+        # MinBlockHeight:
+        #   Chooses the best peer according to a block height lag threshold. The maximum block height of all peers is
+        #   determined and the peers whose block heights are under the maximum height but above a provided "lag" threshold are load
+        #   balanced. The other peers are not considered.
+        # Balanced:
+        #   Chooses peers using the configured balancer.
+        resolverStrategy: MinBlockHeight
+
+        # [Optional] balancer is the balancer to use when choosing a peer to connect to
+        # Possible values: [Random (default), RoundRobin]
+
+        balancer: RoundRobin
+
+        # [Optional] blockHeightLagThreshold sets the block height lag threshold. This value is used for choosing a peer
+        # to connect to. If a peer is lagging behind the most up-to-date peer by more than the given number of
+        # blocks then it will be excluded from selection.
+        # Note that this parameter is applicable only when minBlockHeightResolverMode is set to ResolveByThreshold.
+        # Default: 5
+        blockHeightLagThreshold: 4
+
+        # [Optional] reconnectBlockHeightLagThreshold - the event client will disconnect from the peer if the peer's
+        # block height falls behind the specified number of blocks and will reconnect to a better performing peer.
+        # Note that this parameter is only applicable if peerMonitor is set to Enabled (default).
+        # Default: 10
+        # NOTES:
+        #   - Setting this value too low may cause the event client to disconnect/reconnect too frequently, thereby
+        #     affecting performance.
+        reconnectBlockHeightLagThreshold: 8
+
+        # [Optional] peerMonitorPeriod is the period in which the connected peer is monitored to see if
+        # the event client should disconnect from it and reconnect to another peer.
+        # Default: 5s
+        peerMonitorPeriod: 6s
+
+  # multi-org test channel
+  orgchannel:
+
+    orderers:
+      - orderer.example.com
+
+    peers:
+      peer0.org1.example.com:
+        endorsingPeer: true
+        chaincodeQuery: true
+        ledgerQuery: true
+        eventSource: true
+
+      peer0.org2.example.com:
+        endorsingPeer: true
+        chaincodeQuery: true
+        ledgerQuery: true
+        eventSource: true
+
+  # sample channel with channel matcher (sample*channel will return ch1 config where * can be any word or '')
+  ch1:
+
+    orderers:
+      - orderer.example.com
+
+    peers:
+      peer0.org2.example.com:
+        endorsingPeer: true
+        chaincodeQuery: true
+        ledgerQuery: true
+        eventSource: true
+
+#
+# list of participating organizations in this network
+#
+organizations:
+  org1:
+    mspid: Org1MSP
+
+    # This org's MSP store (absolute path or relative to client.cryptoconfig)
+    cryptoPath:  peerOrganizations/org1.example.com/users/{username}@org1.example.com/msp
+
+    peers:
+      - peer0.org1.example.com
+
+    # [Optional]. Certificate Authorities issue certificates for identification purposes in a Fabric based
+    # network. Typically certificates provisioning is done in a separate process outside of the
+    # runtime network. Fabric-CA is a special certificate authority that provides a REST APIs for
+    # dynamic certificate management (enroll, revoke, re-enroll). The following section is only for
+    # Fabric-CA servers.
+    certificateAuthorities:
+      - ca.org1.example.com
+
+  # the profile will contain public information about organizations other than the one it belongs to.
+  # These are necessary information to make transaction lifecycles work, including MSP IDs and
+  # peers with a public URL to send transaction proposals. The file will not contain private
+  # information reserved for members of the organization, such as admin key and certificate,
+  # fabric-ca registrar enroll ID and secret, etc.
+  org2:
+    mspid: Org2MSP
+
+    # This org's MSP store (absolute path or relative to client.cryptoconfig)
+    cryptoPath:  peerOrganizations/org2.example.com/users/{username}@org2.example.com/msp
+
+    peers:
+      - peer0.org2.example.com
+
+    certificateAuthorities:
+      - ca.org2.example.com
+
+  # Orderer Org name
+  ordererorg:
+    # Membership Service Provider ID for this organization
+    mspID: OrdererMSP
+
+    # Needed to load users crypto keys and certs for this org (absolute path or relative to global crypto path, DEV mode)
+    cryptoPath: ordererOrganizations/example.com/users/{username}@example.com/msp
+
+
+#
+# List of orderers to send transaction and channel create/update requests to. For the time
+# being only one orderer is needed. If more than one is defined, which one get used by the
+# SDK is implementation specific. Consult each SDK's documentation for its handling of orderers.
+#
+orderers:
+  orderer.example.com:
+    # [Optional] Default: Infer from hostname
+    #url: orderer.example.com:7050
+
+    # these are standard properties defined by the gRPC library
+    # they will be passed in as-is to gRPC client constructor
+    #TODO to be moved to high level, common for all grpc connections
+    grpcOptions:
+      ssl-target-name-override: orderer.example.com
+      #     These parameters should be set in coordination with the keepalive policy on the server,
+      #     as incompatible settings can result in closing of connection.
+      #     When duration of the 'keep-alive-time' is set to 0 or less the keep alive client parameters are disabled
+      keep-alive-time: 0s
+      keep-alive-timeout: 20s
+      keep-alive-permit: false
+      fail-fast: false
+      #will be taken into consideration if address has no protocol defined, if true then grpc or else grpcs
+      allow-insecure: false
+
+    tlsCACerts:
+
+#
+# List of peers to send various requests to, including endorsement, query
+# and event listener registration.
+#
+peers:
+  peer0.org1.example.com:
+    # this URL is used to send endorsement and query requests
+    # [Optional] Default: Infer from hostname
+    #url: peer0.org1.example.com:7051
+
+    #TODO to be moved to high level, common for all grpc connections
+    grpcOptions:
+      ssl-target-name-override: peer0.org1.example.com
+      #     These parameters should be set in coordination with the keepalive policy on the server,
+      #     as incompatible settings can result in closing of connection.
+      #     When duration of the 'keep-alive-time' is set to 0 or less the keep alive client parameters are disabled
+      keep-alive-time: 0s
+      keep-alive-timeout: 20s
+      keep-alive-permit: false
+      fail-fast: false
+      #will be taken into consideration if address has no protocol defined, if true then grpc or else grpcs
+      allow-insecure: false
+
+    tlsCACerts:
+
+  peer0.org2.example.com:
+    url: peer0.org2.example.com:8051
+    #TODO to be moved to high level, common for all grpc connections
+    grpcOptions:
+      ssl-target-name-override: peer0.org2.example.com
+      #     These parameters should be set in coordination with the keepalive policy on the server,
+      #     as incompatible settings can result in closing of connection.
+      #     When duration of the 'keep-alive-time' is set to 0 or less the keep alive client parameters are disabled
+      keep-alive-time: 0s
+      keep-alive-timeout: 20s
+      keep-alive-permit: false
+      fail-fast: false
+      #will be taken into consideration if address has no protocol defined, if true then grpc or else grpcs
+      allow-insecure: false
+
+    tlsCACerts:
+
+#
+# Fabric-CA is a special kind of Certificate Authority provided by Hyperledger Fabric which allows
+# certificate management to be done via REST APIs. Application may choose to use a standard
+# Certificate Authority instead of Fabric-CA, in which case this section would not be specified.
+#
+certificateAuthorities:
+  ca.org1.example.com:
+    # [Optional] Default: Infer from hostname
+    #url: https://ca.org1.example.com:7054
+    # [Optional] The optional server name for target override
+    grpcOptions:
+      ssl-target-name-override: ca.org1.example.com
+    tlsCACerts:
+      # Client key and cert for SSL handshake with Fabric CA
+      client:
+        key:
+          path: ${FABRIC_SDK_GO_PROJECT_PATH}/pkg/core/config/testdata/certs/client_sdk_go-key.pem
+        cert:
+          path: ${FABRIC_SDK_GO_PROJECT_PATH}/pkg/core/config/testdata/certs/client_sdk_go.pem
+
+    # Fabric-CA supports dynamic user enrollment via REST APIs. A "root" user, a.k.a registrar, is
+    # needed to enroll and invoke new users.
+    registrar:
+      enrollId: admin
+      enrollSecret: adminpw
+    # [Optional] The optional name of the CA.
+    caName: ca.org1.example.com
+  ca.org2.example.com:
+    # [Optional] Default: Infer from hostname
+    url: https://ca.org2.example.com:8054
+    # [Optional] The optional server name for target override
+    grpcOptions:
+      ssl-target-name-override: ca.org2.example.com
+    tlsCACerts:
+      # Client key and cert for SSL handshake with Fabric CA
+      client:
+        key:
+          path: ${FABRIC_SDK_GO_PROJECT_PATH}/pkg/core/config/testdata/certs/client_sdk_go-key.pem
+        cert:
+          path: ${FABRIC_SDK_GO_PROJECT_PATH}/pkg/core/config/testdata/certs/client_sdk_go.pem
+
+      # Fabric-CA supports dynamic user enrollment via REST APIs. A "root" user, a.k.a registrar, is
+      # needed to enroll and invoke new users.
+    registrar:
+      enrollId: admin
+      enrollSecret: adminpw
+    # [Optional] The optional name of the CA.
+    caName: ca.org2.example.com
+    #first one

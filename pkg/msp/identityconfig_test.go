@@ -32,6 +32,7 @@ const (
 	configMSPOnly                = "config_test_msp_only.yaml"
 	configPemTestFile            = "config_test_pem.yaml"
 	configTestEntityMatchersFile = "config_test_entity_matchers.yaml"
+	configTestNoServerCerts      = "config_test_no_server_certs.yaml"
 	configType                   = "yaml"
 )
 
@@ -557,4 +558,34 @@ func TestEntityMatchers(t *testing.T) {
 	configImpl := identityConfig.(*IdentityConfig)
 	assert.Equal(t, 3, len(configImpl.caMatchers), "preloading matchers isn't working as expected")
 
+}
+
+func TestCAConfigNoServerCerts(t *testing.T) {
+	//Test config
+	configPath := filepath.Join(getConfigPath(), configTestNoServerCerts)
+	backend, err := config.FromFile(configPath)()
+	if err != nil {
+		t.Fatal("Failed to get config backend")
+	}
+
+	config, err := ConfigFromBackend(backend...)
+	if err != nil {
+		t.Fatal("Failed to get identity config")
+	}
+	identityConfig := config.(*IdentityConfig)
+
+	//Testing CA Client File Location
+	certfile, ok := identityConfig.CAClientCert(org1CA)
+	assert.True(t, ok, "CA Cert file location read failed ")
+	assert.NotEmpty(t, certfile)
+
+	//Testing CA Key File Location
+	keyFile, ok := identityConfig.CAClientKey(org1CA)
+	assert.True(t, ok, "CA Key file location read failed ")
+	assert.NotEmpty(t, keyFile)
+
+	//Testing CA Server Cert Files
+	sCertFiles, ok := identityConfig.CAServerCerts(org1CA)
+	assert.True(t, ok, "Getting CA server cert files failed")
+	assert.Empty(t, sCertFiles)
 }
