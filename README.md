@@ -48,7 +48,7 @@ If you wish to use the Fabric 'Gateway' programming model, then the API is in th
 ### Current Compatibility
 The SDK's integration tests run against three tagged Fabric versions:
 - prev (currently v1.4.7)
-- stable (currently v2.1.1)
+- stable (currently v2.2.0)
 - prerelease (currently disabled)
 
 Additionally for development purposes integration tests also run against the devstable Fabric version as needed.
