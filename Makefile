@@ -25,8 +25,8 @@ DOCKER_CMD         ?= docker
 DOCKER_COMPOSE_CMD ?= docker-compose
 
 # Fabric versions used in the Makefile
-FABRIC_STABLE_VERSION           := 2.1.1
-FABRIC_STABLE_VERSION_MINOR     := 2.1
+FABRIC_STABLE_VERSION           := 2.2.0
+FABRIC_STABLE_VERSION_MINOR     := 2.2
 FABRIC_STABLE_VERSION_MAJOR     := 2
 
 FABRIC_PRERELEASE_VERSION       :=
