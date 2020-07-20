@@ -29,7 +29,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric-protos-go/common"
 	pb "github.com/hyperledger/fabric-protos-go/peer"
-	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/cauthdsl"
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/policydsl"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
@@ -815,7 +815,7 @@ func TestInstantiateCCWithDifferentMSP(t *testing.T) {
 	rc := setupResMgmtClient(t, ctx)
 
 	// Valid request
-	ccPolicy := cauthdsl.SignedByMspMember("otherMSP")
+	ccPolicy := policydsl.SignedByMspMember("otherMSP")
 	req := InstantiateCCRequest{Name: "name", Version: "version", Path: "path", Policy: ccPolicy}
 
 	// Test filter only provided (filter rejects discovery service peer msp)
@@ -836,7 +836,7 @@ func TestInstantiateCCWithOpts(t *testing.T) {
 	rc := setupDefaultResMgmtClient(t)
 
 	// Valid request
-	ccPolicy := cauthdsl.SignedByMspMember("Org1MSP")
+	ccPolicy := policydsl.SignedByMspMember("Org1MSP")
 	req := InstantiateCCRequest{Name: "name", Version: "version", Path: "path", Policy: ccPolicy}
 
 	// Setup targets
@@ -908,7 +908,7 @@ func TestUpgradeCCWithDifferentMSP(t *testing.T) {
 	rc := setupResMgmtClient(t, ctx)
 
 	// Valid request
-	ccPolicy := cauthdsl.SignedByMspMember("otherMSP")
+	ccPolicy := policydsl.SignedByMspMember("otherMSP")
 	req := UpgradeCCRequest{Name: "name", Version: "version", Path: "path", Policy: ccPolicy}
 
 	// Test filter only provided (filter rejects discovery service peer msp)
@@ -929,7 +929,7 @@ func TestUpgradeCCWithOpts(t *testing.T) {
 	rc := setupDefaultResMgmtClient(t)
 
 	// Valid request
-	ccPolicy := cauthdsl.SignedByMspMember("Org1MSP")
+	ccPolicy := policydsl.SignedByMspMember("Org1MSP")
 	req := UpgradeCCRequest{Name: "name", Version: "version", Path: "path", Policy: ccPolicy}
 
 	// Setup targets
@@ -966,7 +966,7 @@ func TestCCProposal(t *testing.T) {
 
 	rc := setupResMgmtClient(t, ctx)
 
-	ccPolicy := cauthdsl.SignedByMspMember("Org1MSP")
+	ccPolicy := policydsl.SignedByMspMember("Org1MSP")
 	instantiateReq := InstantiateCCRequest{Name: "name", Version: "version", Path: "path", Policy: ccPolicy}
 
 	// Test invalid function (only 'instatiate' and 'upgrade' are supported)
@@ -1614,7 +1614,7 @@ func TestGetConfigSignaturesFromIdentities(t *testing.T) {
 
 func TestCheckRequiredCCProposalParams(t *testing.T) {
 	// Valid request
-	ccPolicy := cauthdsl.SignedByMspMember("Org1MSP")
+	ccPolicy := policydsl.SignedByMspMember("Org1MSP")
 	req := InstantiateCCRequest{Name: "name", Version: "version", Path: "path", Policy: ccPolicy}
 
 	// Test empty channel lang

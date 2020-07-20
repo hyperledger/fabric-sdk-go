@@ -42,7 +42,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
-	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
+	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/policydsl"
 )
 
 const (
@@ -489,7 +489,7 @@ func createCC(t *testing.T, sdk1 *fabsdk.FabricSDK, name, path, version string, 
 		t.Fatal(err)
 	}
 	// Set up chaincode policy to 'two-of-two msps'
-	ccPolicy, err := cauthdsl.FromString("AND ('Org1MSP.member','Org2MSP.member')")
+	ccPolicy, err := policydsl.FromString("AND ('Org1MSP.member','Org2MSP.member')")
 	require.NoErrorf(t, err, "Error creating cc policy with both orgs to approve")
 	// Org1 resource manager will instantiate 'example_cc' on 'orgchannel'
 	resp, err := org1ResMgmt.InstantiateCC(

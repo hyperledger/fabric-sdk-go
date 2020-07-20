@@ -17,8 +17,9 @@ cp -R ${TMP_PROJECT_PATH} ${PATCH_PROJECT_PATH}
 declare TMP_PROJECT_PATH=${PATCH_PROJECT_PATH}
 
 declare -a FILES=(
-        "common/cauthdsl/cauthdsl_builder.go"
-        "common/cauthdsl/policyparser.go"
+        #renamed in Fabric v2 stream
+        #"common/policydsl/policydsl_builder.go"
+        #"common/policydsl/policyparser.go"
         "core/common/ccprovider/ccprovider.go"
         "core/common/ccprovider/cdspackage.go"
         "core/ledger/kvledger/txmgmt/rwsetutil/rwset_proto_util.go"

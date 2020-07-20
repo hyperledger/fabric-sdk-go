@@ -14,7 +14,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
-	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
+	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/policydsl"
 	"github.com/stretchr/testify/require"
 )
 
@@ -84,7 +84,7 @@ func checkStaticCollectionConfig(t *testing.T, collConf *pb.StaticCollectionConf
 }
 
 func newCollectionConfig(colName, policy string, reqPeerCount, maxPeerCount int32, blockToLive uint64) (*pb.CollectionConfig, error) {
-	p, err := cauthdsl.FromString(policy)
+	p, err := policydsl.FromString(policy)
 	if err != nil {
 		return nil, err
 	}

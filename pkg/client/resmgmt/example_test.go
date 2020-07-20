@@ -15,7 +15,7 @@ import (
 	"github.com/golang/protobuf/proto"
 
 	"github.com/hyperledger/fabric-protos-go/common"
-	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/cauthdsl"
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/policydsl"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	sdkCtx "github.com/hyperledger/fabric-sdk-go/pkg/context"
@@ -63,7 +63,7 @@ func Example() {
 	}
 
 	// Instantiate example chaincode on channel 'mychannel'
-	ccPolicy := cauthdsl.SignedByMspMember("Org1MSP")
+	ccPolicy := policydsl.SignedByMspMember("Org1MSP")
 	instantiateReq := InstantiateCCRequest{Name: "ExampleCC", Version: "v0", Path: "path", Policy: ccPolicy}
 	_, err = c.InstantiateCC("mychannel", instantiateReq, WithTargets(peer))
 	if err != nil {
@@ -172,7 +172,7 @@ func ExampleWithTargetFilter() {
 		fmt.Println("failed to create client")
 	}
 
-	ccPolicy := cauthdsl.SignedByMspMember("Org1MSP")
+	ccPolicy := policydsl.SignedByMspMember("Org1MSP")
 	req := InstantiateCCRequest{Name: "ExampleCC", Version: "v0", Path: "path", Policy: ccPolicy}
 
 	resp, err := c.InstantiateCC("mychannel", req, WithTargetFilter(&urlTargetFilter{url: "http://peer1.com"}))
@@ -291,7 +291,7 @@ func ExampleClient_InstantiateCC() {
 		fmt.Println("failed to create client")
 	}
 
-	ccPolicy := cauthdsl.SignedByMspMember("Org1MSP")
+	ccPolicy := policydsl.SignedByMspMember("Org1MSP")
 	req := InstantiateCCRequest{Name: "ExampleCC", Version: "v0", Path: "path", Policy: ccPolicy}
 
 	resp, err := c.InstantiateCC("mychannel", req)
@@ -315,7 +315,7 @@ func ExampleClient_UpgradeCC() {
 		fmt.Println("failed to create client")
 	}
 
-	ccPolicy := cauthdsl.SignedByMspMember("Org1MSP")
+	ccPolicy := policydsl.SignedByMspMember("Org1MSP")
 	req := UpgradeCCRequest{Name: "ExampleCC", Version: "v1", Path: "path", Policy: ccPolicy}
 
 	resp, err := c.UpgradeCC("mychannel", req, WithTargets(mockPeer()))
