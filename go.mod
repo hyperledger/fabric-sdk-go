@@ -15,17 +15,17 @@ require (
 	github.com/go-stack/stack v1.8.0 // indirect
 	github.com/gogo/protobuf v1.1.1
 	github.com/golang/mock v1.2.0
-	github.com/golang/protobuf v1.3.2
+	github.com/golang/protobuf v1.3.3
 	github.com/google/certificate-transparency-go v0.0.0-20180222191210-5ab67e519c93 // indirect
 	github.com/hashicorp/hcl v0.0.0-20180404174102-ef8a98b0bbce // indirect
+	github.com/hyperledger/fabric-config v0.0.6
 	github.com/hyperledger/fabric-lib-go v1.0.0
-	github.com/hyperledger/fabric-protos-go v0.0.0-20191121202242-f5500d5e3e85
+	github.com/hyperledger/fabric-protos-go v0.0.0-20200424173316-dd554ba3746e
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/magiconair/properties v1.7.6 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
 	github.com/miekg/pkcs11 v0.0.0-20190329070431-55f3fac3af27
 	github.com/mitchellh/mapstructure v0.0.0-20180220230111-00c29f56e238
-	github.com/onsi/gomega v1.4.2 // indirect
 	github.com/pelletier/go-toml v1.1.0 // indirect
 	github.com/pkg/errors v0.8.1
 	github.com/prometheus/client_golang v0.8.0
@@ -43,7 +43,7 @@ require (
 	google.golang.org/genproto v0.0.0-20190327125643-d831d65fe17d // indirect
 	google.golang.org/grpc v1.23.0
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
-	gopkg.in/yaml.v2 v2.2.1
+	gopkg.in/yaml.v2 v2.2.4
 )
 
 go 1.13
