@@ -16,8 +16,8 @@ import (
 	"github.com/golang/protobuf/proto"
 	cb "github.com/hyperledger/fabric-protos-go/common"
 	pb "github.com/hyperledger/fabric-protos-go/peer"
-	ledgerutil "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/core/ledger/util"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/protoutil"
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/sdkinternal/pkg/txflags"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
@@ -663,7 +663,7 @@ func getCCKey(ccID, eventFilter string) string {
 func toFilteredBlock(block *cb.Block) *pb.FilteredBlock {
 	var channelID string
 	var filteredTxs []*pb.FilteredTransaction
-	txFilter := ledgerutil.TxValidationFlags(block.Metadata.Metadata[cb.BlockMetadataIndex_TRANSACTIONS_FILTER])
+	txFilter := txflags.ValidationFlags(block.Metadata.Metadata[cb.BlockMetadataIndex_TRANSACTIONS_FILTER])
 
 	for i, data := range block.Data.Data {
 		filteredTx, chID, err := getFilteredTx(data, txFilter.Flag(i))

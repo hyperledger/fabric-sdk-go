@@ -17,7 +17,6 @@ cp -R ${TMP_PROJECT_PATH} ${PATCH_PROJECT_PATH}
 declare TMP_PROJECT_PATH=${PATCH_PROJECT_PATH}
 
 declare -a FILES=(
-        "internal/protoutil/commonutils.go"
 )
 
 # Copy patched project into internal paths and insert modification notice

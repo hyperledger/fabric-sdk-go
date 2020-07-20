@@ -74,7 +74,7 @@ func ImplicitMetaMajorityPolicy(policyName string) *StandardConfigPolicy {
 	}
 }
 
-// ImplicitMetaMajorityPolicy defines a policy with key policyName and the given signature policy.
+// SignaturePolicy defines a policy with key policyName and the given signature policy.
 func SignaturePolicy(policyName string, sigPolicy *cb.SignaturePolicyEnvelope) *StandardConfigPolicy {
 	return &StandardConfigPolicy{
 		key: policyName,

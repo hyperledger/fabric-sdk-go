@@ -12,13 +12,12 @@ package signer
 
 import (
 	"crypto"
-
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
-
+	"crypto/x509"
 	"io"
 
-	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/utils"
 	"github.com/pkg/errors"
+
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 )
 
 // bccspCryptoSigner is the BCCSP-based implementation of a crypto.Signer
@@ -53,7 +52,7 @@ func New(csp core.CryptoSuite, key core.Key) (crypto.Signer, error) {
 		return nil, errors.Wrap(err, "failed marshalling public key")
 	}
 
-	pk, err := utils.DERToPublicKey(raw)
+	pk, err := x509.ParsePKIXPublicKey(raw)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed marshalling der to public key")
 	}

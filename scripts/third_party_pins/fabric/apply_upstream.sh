@@ -44,10 +44,6 @@ echo 'Removing current upstream project from working directory ...'
 rm -Rf "${THIRDPARTY_FABRIC_PATH}" "${THIRDPARTY_INTERNAL_FABRIC_PATH}"
 mkdir -p "${THIRDPARTY_FABRIC_PATH}" "${THIRDPARTY_INTERNAL_FABRIC_PATH}"
 
-# Create internal utility structure
-mkdir -p ${TMP_PROJECT_PATH}/internal/protoutil
-cp -R ${TMP_PROJECT_PATH}/protoutil ${TMP_PROJECT_PATH}/internal/
-
 # copy required files that are under internal into non-internal structure.
 mkdir -p ${TMP_PROJECT_PATH}/sdkinternal
 cp -R ${TMP_PROJECT_PATH}/internal/* ${TMP_PROJECT_PATH}/sdkinternal/
