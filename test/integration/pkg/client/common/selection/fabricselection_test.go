@@ -27,7 +27,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defsvc"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/chpvdr"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
-	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
+	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/policydsl"
 	grpcCodes "google.golang.org/grpc/codes"
 )
 
@@ -346,7 +346,7 @@ func expecting(groups ...[]string) [][]string {
 }
 
 func newCollectionConfig(colName, policy string, reqPeerCount, maxPeerCount int32, blockToLive uint64) (*pb.CollectionConfig, error) {
-	p, err := cauthdsl.FromString(policy)
+	p, err := policydsl.FromString(policy)
 	if err != nil {
 		return nil, err
 	}

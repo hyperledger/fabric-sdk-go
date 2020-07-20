@@ -34,7 +34,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
 	mspclient "github.com/hyperledger/fabric-sdk-go/pkg/client/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource"
-	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
+	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/policydsl"
 )
 
 const (
@@ -387,7 +387,7 @@ func upgradeCC(t *testing.T, mc *multiorgContext, ccPkg *resource.CCPackage, ccN
 	require.Truef(t, installed, "Expecting chaincode [%s:%s] to be installed on all peers in Org2")
 
 	// New chaincode policy (both orgs have to approve)
-	org1Andorg2Policy, err := cauthdsl.FromString("AND ('Org1MSP.member','Org2MSP.member')")
+	org1Andorg2Policy, err := policydsl.FromString("AND ('Org1MSP.member','Org2MSP.member')")
 	require.Nil(t, err, "error should be nil for getting cc policy with both orgs to approve")
 
 	// Org1 resource manager will instantiate 'example_cc' version 1 on 'orgchannel'

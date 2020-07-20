@@ -27,7 +27,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/pkg/util/test"
 	"github.com/hyperledger/fabric-sdk-go/test/metadata"
-	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/cauthdsl"
+	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/policydsl"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 )
@@ -307,7 +307,7 @@ func InstallChaincode(resMgmt *resmgmt.Client, ccPkg *resource.CCPackage, ccPath
 
 // InstantiateChaincode instantiates the given chaincode to the given channel
 func InstantiateChaincode(resMgmt *resmgmt.Client, channelID, ccName, ccPath, ccVersion string, ccPolicyStr string, args [][]byte, collConfigs ...*pb.CollectionConfig) (resmgmt.InstantiateCCResponse, error) {
-	ccPolicy, err := cauthdsl.FromString(ccPolicyStr)
+	ccPolicy, err := policydsl.FromString(ccPolicyStr)
 	if err != nil {
 		return resmgmt.InstantiateCCResponse{}, errors.Wrapf(err, "error creating CC policy [%s]", ccPolicyStr)
 	}
@@ -328,7 +328,7 @@ func InstantiateChaincode(resMgmt *resmgmt.Client, channelID, ccName, ccPath, cc
 
 // InstantiateJavaChaincode instantiates the given java chaincode to the given channel
 func InstantiateJavaChaincode(resMgmt *resmgmt.Client, channelID, ccName, ccPath, ccVersion string, ccPolicyStr string, args [][]byte, collConfigs ...*pb.CollectionConfig) (resmgmt.InstantiateCCResponse, error) {
-	ccPolicy, err := cauthdsl.FromString(ccPolicyStr)
+	ccPolicy, err := policydsl.FromString(ccPolicyStr)
 	if err != nil {
 		return resmgmt.InstantiateCCResponse{}, errors.Wrapf(err, "error creating CC policy [%s]", ccPolicyStr)
 	}
@@ -350,7 +350,7 @@ func InstantiateJavaChaincode(resMgmt *resmgmt.Client, channelID, ccName, ccPath
 
 // InstantiateNodeChaincode instantiates the given node chaincode to the given channel
 func InstantiateNodeChaincode(resMgmt *resmgmt.Client, channelID, ccName, ccPath, ccVersion string, ccPolicyStr string, args [][]byte, collConfigs ...*pb.CollectionConfig) (resmgmt.InstantiateCCResponse, error) {
-	ccPolicy, err := cauthdsl.FromString(ccPolicyStr)
+	ccPolicy, err := policydsl.FromString(ccPolicyStr)
 	if err != nil {
 		return resmgmt.InstantiateCCResponse{}, errors.Wrapf(err, "error creating CC policy [%s]", ccPolicyStr)
 	}
@@ -372,7 +372,7 @@ func InstantiateNodeChaincode(resMgmt *resmgmt.Client, channelID, ccName, ccPath
 
 // UpgradeChaincode upgrades the given chaincode on the given channel
 func UpgradeChaincode(resMgmt *resmgmt.Client, channelID, ccName, ccPath, ccVersion string, ccPolicyStr string, args [][]byte, collConfigs ...*pb.CollectionConfig) (resmgmt.UpgradeCCResponse, error) {
-	ccPolicy, err := cauthdsl.FromString(ccPolicyStr)
+	ccPolicy, err := policydsl.FromString(ccPolicyStr)
 	if err != nil {
 		return resmgmt.UpgradeCCResponse{}, errors.Wrapf(err, "error creating CC policy [%s]", ccPolicyStr)
 	}
@@ -393,7 +393,7 @@ func UpgradeChaincode(resMgmt *resmgmt.Client, channelID, ccName, ccPath, ccVers
 
 // UpgradeJavaChaincode upgrades the given java chaincode on the given channel
 func UpgradeJavaChaincode(resMgmt *resmgmt.Client, channelID, ccName, ccPath, ccVersion string, ccPolicyStr string, args [][]byte, collConfigs ...*pb.CollectionConfig) (resmgmt.UpgradeCCResponse, error) {
-	ccPolicy, err := cauthdsl.FromString(ccPolicyStr)
+	ccPolicy, err := policydsl.FromString(ccPolicyStr)
 	if err != nil {
 		return resmgmt.UpgradeCCResponse{}, errors.Wrapf(err, "error creating CC policy [%s]", ccPolicyStr)
 	}
@@ -415,7 +415,7 @@ func UpgradeJavaChaincode(resMgmt *resmgmt.Client, channelID, ccName, ccPath, cc
 
 // UpgradeNodeChaincode upgrades the given node chaincode on the given channel
 func UpgradeNodeChaincode(resMgmt *resmgmt.Client, channelID, ccName, ccPath, ccVersion string, ccPolicyStr string, args [][]byte, collConfigs ...*pb.CollectionConfig) (resmgmt.UpgradeCCResponse, error) {
-	ccPolicy, err := cauthdsl.FromString(ccPolicyStr)
+	ccPolicy, err := policydsl.FromString(ccPolicyStr)
 	if err != nil {
 		return resmgmt.UpgradeCCResponse{}, errors.Wrapf(err, "error creating CC policy [%s]", ccPolicyStr)
 	}
