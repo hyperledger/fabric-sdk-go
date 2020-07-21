@@ -42,7 +42,7 @@ import (
 
 // getBCCSPKeyOpts generates a key as specified in the request.
 // This supports ECDSA.
-func getBCCSPKeyOpts(kr csr.KeyRequest, ephemeral bool) (opts core.KeyGenOpts, err error) {
+func getBCCSPKeyOpts(kr *csr.KeyRequest, ephemeral bool) (opts core.KeyGenOpts, err error) {
 	if kr == nil {
 		return factory.GetECDSAKeyGenOpts(ephemeral), nil
 	}

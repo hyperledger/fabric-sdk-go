@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"github.com/cloudflare/cfssl/csr"
-	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/util"
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/sdkinternal/pkg/util"
 )
 
 // RegistrationRequest for a new identity
@@ -275,12 +275,12 @@ type AffiliationInfo struct {
 
 // CSRInfo is Certificate Signing Request (CSR) Information
 type CSRInfo struct {
-	CN           string           `json:"CN"`
-	Names        []csr.Name       `json:"names,omitempty"`
-	Hosts        []string         `json:"hosts,omitempty"`
-	KeyRequest   *BasicKeyRequest `json:"key,omitempty"`
-	CA           *csr.CAConfig    `json:"ca,omitempty" hide:"true"`
-	SerialNumber string           `json:"serial_number,omitempty"`
+	CN           string        `json:"CN"`
+	Names        []csr.Name    `json:"names,omitempty"`
+	Hosts        []string      `json:"hosts,omitempty"`
+	KeyRequest   *KeyRequest   `json:"key,omitempty"`
+	CA           *csr.CAConfig `json:"ca,omitempty" hide:"true"`
+	SerialNumber string        `json:"serial_number,omitempty"`
 }
 
 // GetCertificatesRequest represents the request to get certificates from the server
@@ -310,8 +310,8 @@ type TimeRange struct {
 	EndTime   string
 }
 
-// BasicKeyRequest encapsulates size and algorithm for the key to be generated
-type BasicKeyRequest struct {
+// KeyRequest encapsulates size and algorithm for the key to be generated
+type KeyRequest struct {
 	Algo string `json:"algo" yaml:"algo" help:"Specify key algorithm"`
 	Size int    `json:"size" yaml:"size" help:"Specify key size"`
 }
@@ -350,9 +350,9 @@ func (ar *AttributeRequest) IsRequired() bool {
 	return !ar.Optional
 }
 
-// NewBasicKeyRequest returns the BasicKeyRequest object that is constructed
-// from the object returned by the csr.NewBasicKeyRequest() function
-func NewBasicKeyRequest() *BasicKeyRequest {
-	bkr := csr.NewBasicKeyRequest()
-	return &BasicKeyRequest{Algo: bkr.A, Size: bkr.S}
+// NewKeyRequest returns the KeyRequest object that is constructed
+// from the object returned by the csr.NewKeyRequest() function
+func NewKeyRequest() *KeyRequest {
+	bkr := csr.NewKeyRequest()
+	return &KeyRequest{Algo: bkr.A, Size: bkr.S}
 }
