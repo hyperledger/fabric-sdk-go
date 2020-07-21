@@ -8,6 +8,7 @@ package msp
 
 import (
 	"encoding/hex"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -17,7 +18,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-// NewFileKeyStore ...
+// NewFileKeyStore loads keys stored in the cryptoconfig directory layout.
+// This function will detect if private keys are stored in v1 or v2 format.
 func NewFileKeyStore(cryptoConfigMSPPath string) (core.KVStore, error) {
 	opts := &keyvaluestore.FileKeyValueStoreOptions{
 		Path: cryptoConfigMSPPath,
@@ -30,12 +32,22 @@ func NewFileKeyStore(cryptoConfigMSPPath string) (core.KVStore, error) {
 				return "", errors.New("invalid key")
 			}
 
-			// TODO: refactor to case insensitive or remove eventually.
-			r := strings.NewReplacer("{userName}", pkk.ID, "{username}", pkk.ID)
-			keyDir := filepath.Join(r.Replace(cryptoConfigMSPPath), "keystore")
-
-			return filepath.Join(keyDir, hex.EncodeToString(pkk.SKI)+"_sk"), nil
+			return cryptoConfigPrivateKeyPath(cryptoConfigMSPPath, pkk.ID, pkk.SKI), nil
 		},
 	}
 	return keyvaluestore.New(opts)
+}
+
+func cryptoConfigPrivateKeyPath(cryptoConfigMSPPath, id string, ski []byte) string {
+	// TODO: refactor to case insensitive or remove eventually.
+	r := strings.NewReplacer("{userName}", id, "{username}", id)
+	keyDir := filepath.Join(r.Replace(cryptoConfigMSPPath), "keystore")
+
+	keyPathPriv := filepath.Join(keyDir, "priv_sk")
+	_, err := os.Stat(keyPathPriv)
+	if err == nil {
+		return keyPathPriv
+	}
+
+	return filepath.Join(keyDir, hex.EncodeToString(ski)+"_sk")
 }

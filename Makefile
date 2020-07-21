@@ -58,9 +58,6 @@ FABRIC_TOOLS_VERSION ?= $(FABRIC_STABLE_VERSION)
 FABRIC_TOOLS_IMAGE ?= hyperledger/fabric-tools
 FABRIC_TOOLS_TAG   ?= $(FABRIC_ARCH)-$(FABRIC_TOOLS_VERSION)
 
-# TODO: Make SDK compatible with latest cryptogen (https://jira.hyperledger.org/browse/FABG-977).
-FABRIC_TOOLS_CRYPTOGEN_TAG   ?= $(FABRIC_ARCH)-$(FABRIC_PREV_VERSION)
-
 # Fabric docker registries (overridable)
 FABRIC_RELEASE_REGISTRY     ?=
 FABRIC_DEV_REGISTRY         ?= nexus3.hyperledger.org:10001
@@ -522,7 +519,7 @@ crypto-gen:
 	@echo "Generating crypto directory ..."
 	@$(DOCKER_CMD) run -i \
 		-v /$(abspath .):/opt/workspace/$(PROJECT_NAME) -u $(shell id -u):$(shell id -g) \
-		$(FABRIC_TOOLS_IMAGE):$(FABRIC_TOOLS_CRYPTOGEN_TAG) \
+		$(FABRIC_TOOLS_IMAGE):$(FABRIC_TOOLS_TAG) \
 		//bin/bash -c "FABRIC_VERSION_DIR=fabric/$(FABRIC_CRYPTOCONFIG_VER) /opt/workspace/${PROJECT_NAME}/test/scripts/generate_crypto.sh"
 
 .PHONY: channel-config-gen
