@@ -122,7 +122,7 @@ TEST_SCRIPTS_PATH      := test/scripts
 SOCAT_DOCKER_IMG       := $(shell docker images -q fabsdkgo-socat 2> /dev/null)
 
 # Tool commands
-MOCKGEN_CMD := gobin -run github.com/golang/mock/mockgen
+MOCKGEN_CMD := gobin -run github.com/golang/mock/mockgen@v1.4.3
 
 # Test fixture paths
 FIXTURE_SCRIPTS_PATH      := $(THIS_PATH)/test/scripts
