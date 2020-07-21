@@ -17,13 +17,11 @@ cp -R ${TMP_PROJECT_PATH} ${PATCH_PROJECT_PATH}
 declare TMP_PROJECT_PATH=${PATCH_PROJECT_PATH}
 
 declare -a FILES=(
-        #renamed in Fabric v2 stream
-        #"common/policydsl/policydsl_builder.go"
-        #"common/policydsl/policyparser.go"
+        "common/policydsl/policydsl_builder.go"
+        "common/policydsl/policyparser.go"
         "core/common/ccprovider/ccprovider.go"
         "core/common/ccprovider/cdspackage.go"
         "core/ledger/kvledger/txmgmt/rwsetutil/rwset_proto_util.go"
-        "core/ledger/util/txvalidationflags.go"
 )
 
 # Copy patched project into internal paths and insert modification notice

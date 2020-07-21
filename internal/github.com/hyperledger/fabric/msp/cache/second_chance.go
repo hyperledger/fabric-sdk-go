@@ -86,7 +86,6 @@ func (cache *secondChanceCache) add(key string, value interface{}) {
 	var item cacheItem
 	item.key = key
 	item.value = value
-	atomic.StoreInt32(&item.referenced, 1)
 
 	size := len(cache.items)
 	num := len(cache.table)
@@ -99,7 +98,7 @@ func (cache *secondChanceCache) add(key string, value interface{}) {
 
 	// starts victim scan since cache is full
 	for {
-		// checks whether this item is recently accsessed or not
+		// checks whether this item is recently accessed or not
 		victim := cache.items[cache.position]
 		if atomic.LoadInt32(&victim.referenced) == 0 {
 			// a victim is found. delete it, and store the new item here.

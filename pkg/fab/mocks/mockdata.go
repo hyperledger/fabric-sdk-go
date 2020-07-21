@@ -22,7 +22,7 @@ import (
 	"time"
 
 	channelConfig "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/channelconfig"
-	ledger_util "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/core/ledger/util"
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/sdkinternal/pkg/txflags"
 	"github.com/pkg/errors"
 )
 
@@ -120,7 +120,7 @@ func (b *MockConfigBlockBuilder) buildLastConfigMetaData() *common.Metadata {
 }
 
 func (b *MockConfigBlockBuilder) buildTransactionsFilterMetaDataBytes() []byte {
-	return []byte(ledger_util.TxValidationFlags{uint8(pp.TxValidationCode_VALID)})
+	return []byte(txflags.ValidationFlags{uint8(pp.TxValidationCode_VALID)})
 }
 
 func (b *MockConfigBlockBuilder) buildOrdererMetaDataBytes() []byte {
@@ -547,7 +547,7 @@ func CreateBlockWithCCEventAndTxStatus(events *pp.ChaincodeEvent, txID string,
 	blockbytes := cutil.ConcatenateBytes(block.Data.Data...)
 	block.Header.DataHash = computeSHA256(blockbytes)
 
-	txsfltr := ledger_util.NewTxValidationFlags(len(block.Data.Data))
+	txsfltr := txflags.New(len(block.Data.Data))
 	for i := 0; i < len(block.Data.Data); i++ {
 		txsfltr[i] = uint8(txValidationCode)
 	}

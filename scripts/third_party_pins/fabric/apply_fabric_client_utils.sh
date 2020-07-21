@@ -54,19 +54,13 @@ declare -a FILES=(
     "bccsp/sw/impl.go"
     "bccsp/sw/inmemoryks.go"
     "bccsp/sw/internals.go"
+    "bccsp/sw/keys.go"
     "bccsp/sw/keyderiv.go"
     "bccsp/sw/keygen.go"
     "bccsp/sw/keyimport.go"
     "bccsp/sw/new.go"
 
-    "bccsp/utils/errs.go"
-    "bccsp/utils/io.go"
-    "bccsp/utils/keys.go"
-    "bccsp/utils/slice.go"
-    "bccsp/utils/x509.go"
     "bccsp/utils/ecdsa.go"
-
-    "core/comm/config.go"
 
     "common/configtx/configtx.go"
 
@@ -157,6 +151,8 @@ declare -a FILES=(
 
     "sdkinternal/pkg/identity/identity.go"
 
+    "sdkinternal/pkg/comm/config.go"
+    "sdkinternal/pkg/txflags/validation_flags.go"
 )
 
 # Copy patched project into internal paths and insert modification notice

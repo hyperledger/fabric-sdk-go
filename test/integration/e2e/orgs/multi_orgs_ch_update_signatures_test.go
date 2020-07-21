@@ -23,6 +23,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric-config/protolator"
 	"github.com/hyperledger/fabric-protos-go/common"
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/sdkpatch/keyutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -761,7 +762,7 @@ func loadPrivateKey(t *testing.T, path string) interface{} {
 	raw, err := ioutil.ReadFile(path)
 	require.NoError(t, err, "Failed to read PK @ '%s'", path)
 
-	key, err := utils.PEMtoPrivateKey(raw, []byte(""))
+	key, err := keyutil.PEMToPrivateKey(raw, []byte(""))
 	require.NoError(t, err, "Failed to convert PEM data to PK")
 
 	return key

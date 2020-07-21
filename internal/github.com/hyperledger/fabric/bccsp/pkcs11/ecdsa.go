@@ -24,7 +24,7 @@ func (csp *impl) signECDSA(k ecdsaPrivateKey, digest []byte, opts bccsp.SignerOp
 		return nil, err
 	}
 
-	s, _, err = utils.ToLowS(k.pub.pub, s)
+	s, err = utils.ToLowS(k.pub.pub, s)
 	if err != nil {
 		return nil, err
 	}

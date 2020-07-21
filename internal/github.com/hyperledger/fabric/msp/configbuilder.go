@@ -303,10 +303,16 @@ func getMspConfig(dir string, ID string, sigid *msp.SigningIdentityInfo) (*msp.M
 }
 
 func loadCertificateAt(dir, certificatePath string, ouType string) []byte {
+
+	if certificatePath == "" {
+		mspLogger.Debugf("Specific certificate for %s is not configured", ouType)
+		return nil
+	}
+
 	f := filepath.Join(dir, certificatePath)
 	raw, err := readFile(f)
 	if err != nil {
-		mspLogger.Infof("Failed loading %s certificate at [%s]: [%s]", ouType, f, err)
+		mspLogger.Warnf("Failed loading %s certificate at [%s]: [%s]", ouType, f, err)
 	} else {
 		return raw
 	}

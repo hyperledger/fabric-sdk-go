@@ -72,7 +72,6 @@ type TopLevel struct {
 	Application   *Application               `yaml:"Application"`
 	Orderer       *Orderer                   `yaml:"Orderer"`
 	Capabilities  map[string]map[string]bool `yaml:"Capabilities"`
-	Resources     *Resources                 `yaml:"Resources"`
 }
 
 // Profile encodes orderer/application configuration combinations for the
@@ -103,15 +102,8 @@ type Consortium struct {
 type Application struct {
 	Organizations []*Organization    `yaml:"Organizations"`
 	Capabilities  map[string]bool    `yaml:"Capabilities"`
-	Resources     *Resources         `yaml:"Resources"`
 	Policies      map[string]*Policy `yaml:"Policies"`
 	ACLs          map[string]string  `yaml:"ACLs"`
-}
-
-// Resources encodes the application-level resources configuration needed to
-// seed the resource tree
-type Resources struct {
-	DefaultModPolicy string
 }
 
 // Organization encodes the organization-level configuration needed in
