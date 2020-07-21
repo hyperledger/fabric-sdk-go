@@ -43,6 +43,10 @@ echo 'Removing current upstream project from working directory ...'
 rm -Rf "${THIRDPARTY_INTERNAL_FABRIC_CA_PATH}"
 mkdir -p "${THIRDPARTY_INTERNAL_FABRIC_CA_PATH}"
 
+# copy required files that are under internal into non-internal structure.
+mkdir -p ${TMP_PROJECT_PATH}/sdkinternal
+cp -R ${TMP_PROJECT_PATH}/internal/* ${TMP_PROJECT_PATH}/sdkinternal/
+
 # fabric-ca client utils
 echo "Pinning and patching fabric-ca client utils..."
 INTERNAL_PATH=$THIRDPARTY_INTERNAL_FABRIC_CA_PATH TMP_PROJECT_PATH=$TMP_PROJECT_PATH $SCRIPTS_PATH/apply_fabric_ca_client_utils.sh

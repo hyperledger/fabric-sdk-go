@@ -18,8 +18,8 @@ cp -R ${TMP_PROJECT_PATH} ${PATCH_PROJECT_PATH}
 declare TMP_PROJECT_PATH=${PATCH_PROJECT_PATH}
 
 declare -a FILES=(
-    "api/client.go"
-    "api/net.go"
+    "sdkinternal/pkg/api/client.go"
+    "sdkinternal/pkg/api/net.go"
 
     "lib/attrmgr/attrmgr.go"
     "lib/client.go"
@@ -36,10 +36,10 @@ declare -a FILES=(
     "lib/client/credential/x509/credential.go"
     "lib/client/credential/x509/signer.go"
 
-    "lib/common/serverresponses.go"
+    "sdkinternal/pkg/api/serverresponses.go"
 
-    "util/util.go"
-    "util/csp.go"
+    "sdkinternal/pkg/util/util.go"
+    "sdkinternal/pkg/util/csp.go"
 )
 
 # Copy patched project into internal paths and insert modification notice
