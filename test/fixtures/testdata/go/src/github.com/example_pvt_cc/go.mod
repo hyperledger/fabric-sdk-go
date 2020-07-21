@@ -9,4 +9,4 @@ require (
 	github.com/hyperledger/fabric-protos-go v0.0.0-20200506201313-25f6564b9ac4
 )
 
-go 1.13
+go 1.14
