@@ -37,7 +37,7 @@ func NewSigner(key core.Key, cert []byte) (*Signer, error) {
 }
 
 // Signer represents a signer
-// Each identity may have multiple signers and currently one ecert
+// Each identity may have multiple signers, currently one ecert and multiple tcerts
 type Signer struct {
 	// Private key
 	key core.Key

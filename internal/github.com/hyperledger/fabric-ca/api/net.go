@@ -65,6 +65,20 @@ type RevocationRequestNet struct {
 	RevocationRequest
 }
 
+// GetTCertBatchRequestNet is a network request for a batch of transaction certificates
+type GetTCertBatchRequestNet struct {
+	GetTCertBatchRequest
+	// KeySigs is an optional array of public keys and corresponding signatures.
+	// If not set, the server generates it's own keys based on a key derivation function
+	// which cryptographically relates the TCerts to an ECert.
+	KeySigs []KeySig `json:"key_sigs,omitempty"`
+}
+
+// GetTCertBatchResponseNet is the network response for a batch of transaction certificates
+type GetTCertBatchResponseNet struct {
+	GetTCertBatchResponse
+}
+
 // AddIdentityRequestNet is a network request for adding a new identity
 type AddIdentityRequestNet struct {
 	AddIdentityRequest
