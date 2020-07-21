@@ -9,7 +9,7 @@ services:
 
   integration-tests:
     # TODO: parameterize golang version
-    image: golang:1.13
+    image: golang:1.14
     environment:
       - GO_TAGS
       - GO_TESTFLAGS
