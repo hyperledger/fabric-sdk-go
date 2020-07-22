@@ -153,6 +153,11 @@ func TestGetTarGzBytesError(t *testing.T) {
 	})
 }
 
+func TestComputePackageID(t *testing.T) {
+	packageID := ComputePackageID("label1", []byte("package"))
+	require.NotEmpty(t, packageID)
+}
+
 func readMetadataFromBytes(pkgTarGzBytes []byte) ([]byte, error) {
 	buffer := bytes.NewBuffer(pkgTarGzBytes)
 	gzr, err := gzip.NewReader(buffer)

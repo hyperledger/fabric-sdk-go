@@ -9,6 +9,8 @@ package resource
 import (
 	common "github.com/hyperledger/fabric-protos-go/common"
 	pb "github.com/hyperledger/fabric-protos-go/peer"
+	lb "github.com/hyperledger/fabric-protos-go/peer/lifecycle"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 )
 
@@ -55,4 +57,10 @@ type JoinChannelRequest struct {
 type CCPackage struct {
 	Type pb.ChaincodeSpec_Type
 	Code []byte
+}
+
+// LifecycleInstallProposalResponse is the response from an install proposal request
+type LifecycleInstallProposalResponse struct {
+	*fab.TransactionProposalResponse
+	*lb.InstallChaincodeResult
 }
