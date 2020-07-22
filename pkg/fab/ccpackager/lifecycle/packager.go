@@ -17,9 +17,11 @@ import (
 	"bytes"
 	"compress/gzip"
 	"encoding/json"
+	"fmt"
 	"strings"
 
 	pb "github.com/hyperledger/fabric-protos-go/peer"
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/util"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/core/chaincode/persistence"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/sdkinternal/peer/packaging"
 	"github.com/pkg/errors"
@@ -50,6 +52,11 @@ type Descriptor struct {
 	Path  string
 	Type  pb.ChaincodeSpec_Type
 	Label string
+}
+
+// ComputePackageID returns the package ID from the given label and install package
+func ComputePackageID(label string, pkgBytes []byte) string {
+	return fmt.Sprintf("%s:%x", label, util.ComputeSHA256(pkgBytes))
 }
 
 // Validate validates the package descriptor

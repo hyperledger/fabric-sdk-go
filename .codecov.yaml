@@ -16,3 +16,4 @@ coverage:
 
 ignore:
   - "test/integration/**/*"
+  - ./**/*.gen.go

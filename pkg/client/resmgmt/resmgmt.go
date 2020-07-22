@@ -27,27 +27,26 @@ import (
 	"os"
 	"time"
 
-	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/sdkinternal/configtxlator/update"
-
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric-protos-go/common"
-	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/verifier"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fab/channel"
-	"github.com/hyperledger/fabric-sdk-go/pkg/fab/chconfig"
-
 	pb "github.com/hyperledger/fabric-protos-go/peer"
+	"github.com/pkg/errors"
+
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/sdkinternal/configtxlator/update"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/verifier"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/multi"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	contextImpl "github.com/hyperledger/fabric-sdk-go/pkg/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/channel"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/chconfig"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/txn"
-	"github.com/pkg/errors"
 )
 
 const bufferSize = 1024
@@ -133,9 +132,10 @@ var logger = logging.NewLogger("fabsdk/client")
 
 // Client enables managing resources in Fabric network.
 type Client struct {
-	ctx              context.Client
-	filter           fab.TargetFilter
-	localCtxProvider context.LocalProvider
+	ctx                context.Client
+	filter             fab.TargetFilter
+	localCtxProvider   context.LocalProvider
+	lifecycleProcessor *lifecycleProcessor
 }
 
 // mspFilter filters peers by MSP ID
@@ -161,7 +161,6 @@ func WithDefaultTargetFilter(filter fab.TargetFilter) ClientOption {
 
 // New returns a resource management client instance.
 func New(ctxProvider context.ClientProvider, opts ...ClientOption) (*Client, error) {
-
 	ctx, err := ctxProvider()
 	if err != nil {
 		return nil, errors.WithMessage(err, "failed to create resmgmt client due to context error")
@@ -191,6 +190,8 @@ func New(ctxProvider context.ClientProvider, opts ...ClientOption) (*Client, err
 			)
 		}
 	}
+
+	resourceClient.lifecycleProcessor = newLifecycleProcessor(ctx)
 
 	return resourceClient, nil
 }
