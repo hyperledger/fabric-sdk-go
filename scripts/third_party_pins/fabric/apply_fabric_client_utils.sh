@@ -153,6 +153,17 @@ declare -a FILES=(
 
     "sdkinternal/pkg/comm/config.go"
     "sdkinternal/pkg/txflags/validation_flags.go"
+
+    "core/chaincode/platforms/golang/list.go"
+    "core/chaincode/platforms/golang/platform.go"
+    "core/chaincode/platforms/java/platform.go"
+    "core/chaincode/platforms/node/platform.go"
+    "core/chaincode/platforms/util/writer.go"
+    "core/chaincode/persistence/persistence.go"
+    "core/chaincode/platforms/platforms.go"
+    "core/chaincode/persistence/chaincode_package.go"
+    "sdkinternal/ccmetadata/validators.go"
+    "sdkinternal/peer/packaging/platforms.go"
 )
 
 # Copy patched project into internal paths and insert modification notice
