@@ -81,8 +81,28 @@ type LifecycleInstalledCC struct {
 	References map[string][]CCReference
 }
 
-// LifecycleQueryInstalledCCResponse contains the response for a QueryInstalledCC request.
+// LifecycleQueryInstalledCCResponse contains the response for a LifecycleQueryInstalledCC request.
 type LifecycleQueryInstalledCCResponse struct {
 	*fab.TransactionProposalResponse
 	InstalledChaincodes []LifecycleInstalledCC
+}
+
+// LifecycleQueryApprovedCCResponse contains the response for a LifecycleQueryApprovedCC request
+type LifecycleQueryApprovedCCResponse struct {
+	*fab.TransactionProposalResponse
+	ApprovedChaincode *LifecycleApprovedCC
+}
+
+// LifecycleApprovedCC contains information about an approved chaincode
+type LifecycleApprovedCC struct {
+	Name                string
+	Version             string
+	Sequence            int64
+	EndorsementPlugin   string
+	ValidationPlugin    string
+	SignaturePolicy     *common.SignaturePolicyEnvelope
+	ChannelConfigPolicy string
+	CollectionConfig    []*pb.CollectionConfig
+	InitRequired        bool
+	PackageID           string
 }
