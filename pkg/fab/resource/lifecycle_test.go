@@ -410,3 +410,175 @@ func TestLifecycle_CreateApproveProposal(t *testing.T) {
 		require.Nil(t, p)
 	})
 }
+
+func TestLifecycle_QueryApproved(t *testing.T) {
+	lc := NewLifecycle()
+	require.NotNil(t, lc)
+
+	ctx := setupContext()
+
+	reqCtx, cancel := contextImpl.NewRequest(ctx)
+	defer cancel()
+
+	const packageID = "pkg1"
+	const cc1 = "cc1"
+	const v1 = "v1"
+	const channel1 = "channel1"
+
+	applicationPolicy := &pb.ApplicationPolicy{
+		Type: &pb.ApplicationPolicy_SignaturePolicy{
+			SignaturePolicy: policydsl.AcceptAllPolicy,
+		},
+	}
+
+	policyBytes, err := proto.Marshal(applicationPolicy)
+	require.NoError(t, err)
+
+	result := &lb.QueryApprovedChaincodeDefinitionResult{
+		Sequence:            1,
+		Version:             v1,
+		ValidationParameter: policyBytes,
+		Source: &lb.ChaincodeSource{
+			Type: &lb.ChaincodeSource_LocalPackage{
+				LocalPackage: &lb.ChaincodeSource_Local{
+					PackageId: packageID,
+				},
+			},
+		},
+		Collections: &pb.CollectionConfigPackage{},
+	}
+
+	payload, err := proto.Marshal(result)
+	require.NoError(t, err)
+
+	req := &QueryApprovedChaincodeRequest{
+		Name:     cc1,
+		Sequence: 1,
+	}
+
+	t.Run("With signature policy -> Success", func(t *testing.T) {
+		resp, err := lc.QueryApproved(reqCtx, channel1, req, &mocks.MockPeer{Payload: payload})
+		require.NoError(t, err)
+		require.NotNil(t, resp)
+		require.NotNil(t, resp.ApprovedChaincode)
+		require.Equal(t, cc1, resp.ApprovedChaincode.Name)
+		require.Equal(t, v1, resp.ApprovedChaincode.Version)
+	})
+
+	t.Run("With channel config policy -> Success", func(t *testing.T) {
+		applicationPolicy := &pb.ApplicationPolicy{
+			Type: &pb.ApplicationPolicy_ChannelConfigPolicyReference{
+				ChannelConfigPolicyReference: "channel policy",
+			},
+		}
+
+		policyBytes, err := proto.Marshal(applicationPolicy)
+		require.NoError(t, err)
+
+		result := &lb.QueryApprovedChaincodeDefinitionResult{
+			Sequence:            1,
+			Version:             v1,
+			ValidationParameter: policyBytes,
+			Source: &lb.ChaincodeSource{
+				Type: &lb.ChaincodeSource_LocalPackage{
+					LocalPackage: &lb.ChaincodeSource_Local{
+						PackageId: packageID,
+					},
+				},
+			},
+			Collections: &pb.CollectionConfigPackage{},
+		}
+
+		payload, err := proto.Marshal(result)
+		require.NoError(t, err)
+
+		resp, err := lc.QueryApproved(reqCtx, channel1, req, &mocks.MockPeer{Payload: payload})
+		require.NoError(t, err)
+		require.NotNil(t, resp)
+		require.NotNil(t, resp.ApprovedChaincode)
+		require.Equal(t, cc1, resp.ApprovedChaincode.Name)
+		require.Equal(t, v1, resp.ApprovedChaincode.Version)
+	})
+
+	t.Run("With unsupported policy -> Error", func(t *testing.T) {
+		policyBytes, err := proto.Marshal(&pb.ApplicationPolicy{})
+		require.NoError(t, err)
+
+		result := &lb.QueryApprovedChaincodeDefinitionResult{
+			Sequence:            1,
+			Version:             v1,
+			ValidationParameter: policyBytes,
+			Source: &lb.ChaincodeSource{
+				Type: &lb.ChaincodeSource_LocalPackage{
+					LocalPackage: &lb.ChaincodeSource_Local{
+						PackageId: packageID,
+					},
+				},
+			},
+			Collections: &pb.CollectionConfigPackage{},
+		}
+
+		payload, err := proto.Marshal(result)
+		require.NoError(t, err)
+
+		resp, err := lc.QueryApproved(reqCtx, channel1, req, &mocks.MockPeer{Payload: payload})
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "unsupported policy")
+		require.Nil(t, resp)
+	})
+
+	t.Run("Marshal error", func(t *testing.T) {
+		errExpected := fmt.Errorf("injected marshal error")
+
+		lc := NewLifecycle()
+		require.NotNil(t, lc)
+
+		lc.protoMarshal = func(pb proto.Message) ([]byte, error) { return nil, errExpected }
+
+		resp, err := lc.QueryApproved(reqCtx, channel1, req, &mocks.MockPeer{Payload: payload})
+		require.Error(t, err)
+		require.Contains(t, err.Error(), errExpected.Error())
+		require.Empty(t, resp)
+	})
+
+	t.Run("Unmarshal error", func(t *testing.T) {
+		errExpected := fmt.Errorf("injected unmarshal error")
+
+		lc := NewLifecycle()
+		require.NotNil(t, lc)
+
+		lc.protoUnmarshal = func(buf []byte, pb proto.Message) error { return errExpected }
+
+		resp, err := lc.QueryApproved(reqCtx, channel1, req, &mocks.MockPeer{Payload: payload})
+		require.Error(t, err)
+		require.Contains(t, err.Error(), errExpected.Error())
+		require.Empty(t, resp)
+	})
+
+	t.Run("Context error", func(t *testing.T) {
+		lc := NewLifecycle()
+		require.NotNil(t, lc)
+
+		lc.newContext = func(ctx reqContext.Context) (context.Client, bool) { return nil, false }
+
+		resp, err := lc.QueryApproved(reqCtx, channel1, req, &mocks.MockPeer{Payload: payload})
+		require.EqualError(t, err, "failed get client context from reqContext for txn header")
+		require.Empty(t, resp)
+	})
+
+	t.Run("Txn Header error", func(t *testing.T) {
+		errExpected := fmt.Errorf("injected Txn Header error")
+
+		lc := NewLifecycle()
+		require.NotNil(t, lc)
+
+		lc.newTxnHeader = func(ctx context.Client, channelID string, opts ...fab.TxnHeaderOpt) (*txn.TransactionHeader, error) {
+			return nil, errExpected
+		}
+
+		resp, err := lc.QueryApproved(reqCtx, channel1, req, &mocks.MockPeer{Payload: payload})
+		require.Error(t, err)
+		require.Contains(t, err.Error(), errExpected.Error())
+		require.Empty(t, resp)
+	})
+}

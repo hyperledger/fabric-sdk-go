@@ -32,6 +32,7 @@ type lifecycleResource interface {
 	Install(reqCtx reqContext.Context, installPkg []byte, targets []fab.ProposalProcessor, opts ...resource.Opt) ([]*resource.LifecycleInstallProposalResponse, error)
 	GetInstalledPackage(reqCtx reqContext.Context, packageID string, target fab.ProposalProcessor, opts ...resource.Opt) ([]byte, error)
 	QueryInstalled(reqCtx reqContext.Context, target fab.ProposalProcessor, opts ...resource.Opt) (*resource.LifecycleQueryInstalledCCResponse, error)
+	QueryApproved(reqCtx reqContext.Context, channelID string, req *resource.QueryApprovedChaincodeRequest, target fab.ProposalProcessor, opts ...resource.Opt) (*resource.LifecycleQueryApprovedCCResponse, error)
 	CreateApproveProposal(txh fab.TransactionHeader, req *resource.ApproveChaincodeRequest) (*fab.TransactionProposal, error)
 }
 
@@ -143,6 +144,26 @@ func (p *lifecycleProcessor) approve(reqCtx reqContext.Context, channelID string
 	return p.commitTransaction(eventService, tp, txProposalResponse, transactor, reqCtx)
 }
 
+func (p *lifecycleProcessor) queryApproved(reqCtx reqContext.Context, channelID string, req LifecycleQueryApprovedCCRequest, target fab.Peer) (LifecycleApprovedChaincodeDefinition, error) {
+	if err := p.verifyQueryApprovedParams(channelID, req); err != nil {
+		return LifecycleApprovedChaincodeDefinition{}, err
+	}
+
+	r := &resource.QueryApprovedChaincodeRequest{
+		Name:     req.Name,
+		Sequence: req.Sequence,
+	}
+
+	tpr, err := p.QueryApproved(reqCtx, channelID, r, target)
+	if err != nil {
+		return LifecycleApprovedChaincodeDefinition{}, errors.WithMessage(err, "querying for installed chaincode failed")
+	}
+
+	logger.Debugf("Query approved chaincodes endorser '%s' returned ProposalResponse status:%v", tpr.Endorser, tpr.Status)
+
+	return LifecycleApprovedChaincodeDefinition(*tpr.ApprovedChaincode), nil
+}
+
 func (p *lifecycleProcessor) adjustTargetsForInstall(targets []fab.Peer, req LifecycleInstallCCRequest, retry retry.Opts, parentReqCtx reqContext.Context) ([]fab.Peer, multi.Errors) {
 	errs := multi.Errors{}
 
@@ -191,6 +212,18 @@ func (p *lifecycleProcessor) verifyApproveParams(channelID string, req Lifecycle
 
 	if req.Version == "" {
 		return errors.New("version is required")
+	}
+
+	return nil
+}
+
+func (p *lifecycleProcessor) verifyQueryApprovedParams(channelID string, req LifecycleQueryApprovedCCRequest) error {
+	if channelID == "" {
+		return errors.New("channel ID is required")
+	}
+
+	if req.Name == "" {
+		return errors.New("name is required")
 	}
 
 	return nil

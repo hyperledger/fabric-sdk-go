@@ -62,6 +62,26 @@ type LifecycleApproveCCRequest struct {
 	InitRequired        bool
 }
 
+// LifecycleQueryApprovedCCRequest contains the parameters for querying approved chaincodes
+type LifecycleQueryApprovedCCRequest struct {
+	Name     string
+	Sequence int64
+}
+
+// LifecycleApprovedChaincodeDefinition contains information about the approved chaincode
+type LifecycleApprovedChaincodeDefinition struct {
+	Name                string
+	Version             string
+	Sequence            int64
+	EndorsementPlugin   string
+	ValidationPlugin    string
+	SignaturePolicy     *common.SignaturePolicyEnvelope
+	ChannelConfigPolicy string
+	CollectionConfig    []*pb.CollectionConfig
+	InitRequired        bool
+	PackageID           string
+}
+
 // LifecycleInstallCC installs a chaincode package using Fabric 2.0 chaincode lifecycle.
 func (rc *Client) LifecycleInstallCC(req LifecycleInstallCCRequest, options ...RequestOption) ([]LifecycleInstallCCResponse, error) {
 	err := rc.lifecycleProcessor.verifyInstallParams(req)
@@ -203,4 +223,27 @@ func (rc *Client) LifecycleApproveCC(channelID string, req LifecycleApproveCCReq
 	defer cancel()
 
 	return rc.lifecycleProcessor.approve(reqCtx, channelID, req, opts)
+}
+
+// LifecycleQueryApprovedCC returns information about the approved chaincode definition
+func (rc *Client) LifecycleQueryApprovedCC(channelID string, req LifecycleQueryApprovedCCRequest, options ...RequestOption) (LifecycleApprovedChaincodeDefinition, error) {
+	opts, err := rc.prepareRequestOpts(options...)
+	if err != nil {
+		return LifecycleApprovedChaincodeDefinition{}, errors.WithMessage(err, "failed to get opts for QueryApprovedCCDefinition")
+	}
+
+	if len(opts.Targets) != 1 {
+		return LifecycleApprovedChaincodeDefinition{}, errors.New("only one target is supported")
+	}
+
+	rc.resolveTimeouts(&opts)
+
+	parentReqCtx, parentReqCancel := contextImpl.NewRequest(rc.ctx, contextImpl.WithTimeout(opts.Timeouts[fab.ResMgmt]), contextImpl.WithParent(opts.ParentContext))
+	parentReqCtx = reqContext.WithValue(parentReqCtx, contextImpl.ReqContextTimeoutOverrides, opts.Timeouts)
+	defer parentReqCancel()
+
+	reqCtx, cancel := contextImpl.NewRequest(rc.ctx, contextImpl.WithTimeoutType(fab.ResMgmt), contextImpl.WithParent(parentReqCtx))
+	defer cancel()
+
+	return rc.lifecycleProcessor.queryApproved(reqCtx, channelID, req, opts.Targets[0])
 }
