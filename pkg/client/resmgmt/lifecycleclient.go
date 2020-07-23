@@ -9,6 +9,8 @@ package resmgmt
 import (
 	reqContext "context"
 
+	"github.com/hyperledger/fabric-protos-go/common"
+	pb "github.com/hyperledger/fabric-protos-go/peer"
 	"github.com/pkg/errors"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/multi"
@@ -44,6 +46,20 @@ type LifecycleInstalledCC struct {
 	PackageID  string
 	Label      string
 	References map[string][]CCReference
+}
+
+// LifecycleApproveCCRequest contains the parameters for approving a chaincode for an org.
+type LifecycleApproveCCRequest struct {
+	Name                string
+	Version             string
+	PackageID           string
+	Sequence            int64
+	EndorsementPlugin   string
+	ValidationPlugin    string
+	SignaturePolicy     *common.SignaturePolicyEnvelope
+	ChannelConfigPolicy string
+	CollectionConfig    []*pb.CollectionConfig
+	InitRequired        bool
 }
 
 // LifecycleInstallCC installs a chaincode package using Fabric 2.0 chaincode lifecycle.
@@ -174,4 +190,17 @@ func (rc *Client) LifecycleGetInstalledCCPackage(packageID string, options ...Re
 	}
 
 	return response, errs.ToError()
+}
+
+// LifecycleApproveCC approves a chaincode for an organization.
+func (rc *Client) LifecycleApproveCC(channelID string, req LifecycleApproveCCRequest, options ...RequestOption) (fab.TransactionID, error) {
+	opts, err := rc.prepareRequestOpts(options...)
+	if err != nil {
+		return "", errors.WithMessage(err, "failed to get opts for ApproveCC")
+	}
+
+	reqCtx, cancel := rc.createRequestContext(opts, fab.ResMgmt)
+	defer cancel()
+
+	return rc.lifecycleProcessor.approve(reqCtx, channelID, req, opts)
 }

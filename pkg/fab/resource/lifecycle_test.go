@@ -12,7 +12,9 @@ import (
 	"testing"
 
 	"github.com/golang/protobuf/proto"
+	pb "github.com/hyperledger/fabric-protos-go/peer"
 	lb "github.com/hyperledger/fabric-protos-go/peer/lifecycle"
+	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/common/policydsl"
 	"github.com/stretchr/testify/require"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
@@ -282,5 +284,129 @@ func TestLifecycle_QueryInstalled(t *testing.T) {
 		require.Error(t, err)
 		require.Contains(t, err.Error(), errExpected.Error())
 		require.Empty(t, resp)
+	})
+}
+
+func TestLifecycle_CreateApproveProposal(t *testing.T) {
+	lc := NewLifecycle()
+	require.NotNil(t, lc)
+
+	t.Run("With package ID -> success", func(t *testing.T) {
+		req := &ApproveChaincodeRequest{
+			Name:              "cc1",
+			Version:           "v1",
+			PackageID:         "pkg1",
+			Sequence:          1,
+			EndorsementPlugin: "eplugin",
+			ValidationPlugin:  "vplugin",
+			SignaturePolicy:   policydsl.AcceptAllPolicy,
+			CollectionConfig:  []*pb.CollectionConfig{},
+			InitRequired:      true,
+		}
+
+		p, err := lc.CreateApproveProposal(&mocks.MockTransactionHeader{}, req)
+		require.NoError(t, err)
+		require.NotNil(t, p)
+		require.NotNil(t, p.Proposal)
+	})
+
+	t.Run("No package ID -> success", func(t *testing.T) {
+		req := &ApproveChaincodeRequest{
+			Name:              "cc1",
+			Version:           "v1",
+			PackageID:         "",
+			Sequence:          1,
+			EndorsementPlugin: "eplugin",
+			ValidationPlugin:  "vplugin",
+			SignaturePolicy:   policydsl.AcceptAllPolicy,
+			CollectionConfig:  []*pb.CollectionConfig{},
+			InitRequired:      true,
+		}
+
+		p, err := lc.CreateApproveProposal(&mocks.MockTransactionHeader{}, req)
+		require.NoError(t, err)
+		require.NotNil(t, p)
+		require.NotNil(t, p.Proposal)
+	})
+
+	t.Run("No policy -> success", func(t *testing.T) {
+		req := &ApproveChaincodeRequest{
+			Name:              "cc1",
+			Version:           "v1",
+			Sequence:          1,
+			EndorsementPlugin: "eplugin",
+			ValidationPlugin:  "vplugin",
+			CollectionConfig:  []*pb.CollectionConfig{},
+			InitRequired:      true,
+		}
+
+		p, err := lc.CreateApproveProposal(&mocks.MockTransactionHeader{}, req)
+		require.NoError(t, err)
+		require.NotNil(t, p)
+		require.NotNil(t, p.Proposal)
+	})
+
+	t.Run("Channel config policy -> success", func(t *testing.T) {
+		req := &ApproveChaincodeRequest{
+			Name:                "cc1",
+			Version:             "v1",
+			Sequence:            1,
+			EndorsementPlugin:   "eplugin",
+			ValidationPlugin:    "vplugin",
+			ChannelConfigPolicy: "policy",
+			CollectionConfig:    []*pb.CollectionConfig{},
+			InitRequired:        true,
+		}
+
+		p, err := lc.CreateApproveProposal(&mocks.MockTransactionHeader{}, req)
+		require.NoError(t, err)
+		require.NotNil(t, p)
+		require.NotNil(t, p.Proposal)
+	})
+
+	t.Run("Both signature policy and channel config policy specified -> error", func(t *testing.T) {
+		req := &ApproveChaincodeRequest{
+			Name:                "cc1",
+			Version:             "v1",
+			PackageID:           "",
+			Sequence:            1,
+			EndorsementPlugin:   "eplugin",
+			ValidationPlugin:    "vplugin",
+			SignaturePolicy:     policydsl.AcceptAllPolicy,
+			ChannelConfigPolicy: "policy",
+			CollectionConfig:    []*pb.CollectionConfig{},
+			InitRequired:        true,
+		}
+
+		p, err := lc.CreateApproveProposal(&mocks.MockTransactionHeader{}, req)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "cannot specify both signature policy and channel config policy")
+		require.Nil(t, p)
+	})
+
+	t.Run("Marshal -> error", func(t *testing.T) {
+		errExpected := fmt.Errorf("injected marshal error")
+
+		lc := NewLifecycle()
+		require.NotNil(t, lc)
+
+		lc.protoMarshal = func(pb proto.Message) ([]byte, error) { return nil, errExpected }
+
+		req := &ApproveChaincodeRequest{
+			Name:              "cc1",
+			Version:           "v1",
+			PackageID:         "",
+			Sequence:          1,
+			EndorsementPlugin: "eplugin",
+			ValidationPlugin:  "vplugin",
+			SignaturePolicy:   policydsl.AcceptAllPolicy,
+			CollectionConfig:  []*pb.CollectionConfig{},
+			InitRequired:      true,
+		}
+
+		p, err := lc.CreateApproveProposal(&mocks.MockTransactionHeader{}, req)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), errExpected.Error())
+		require.Nil(t, p)
 	})
 }
