@@ -24,6 +24,7 @@ const (
 	lifecycleCC = "_lifecycle"
 
 	lifecycleInstallFuncName                  = "InstallChaincode"
+	lifecycleQueryInstalledChaincodesFunc     = "QueryInstalledChaincodes"
 	lifecycleGetInstalledChaincodePackageFunc = "GetInstalledChaincodePackage"
 )
 
@@ -100,6 +101,51 @@ func (lc *Lifecycle) Install(reqCtx reqContext.Context, installPkg []byte, targe
 	return installResponse, nil
 }
 
+// QueryInstalled returns information about the installed chaincodes on a given peer.
+func (lc *Lifecycle) QueryInstalled(reqCtx reqContext.Context, target fab.ProposalProcessor, opts ...Opt) (*LifecycleQueryInstalledCCResponse, error) {
+	ctx, ok := lc.newContext(reqCtx)
+	if !ok {
+		return nil, errors.New("failed get client context from reqContext for txn header")
+	}
+
+	txh, err := lc.newTxnHeader(ctx, fab.SystemChannel)
+	if err != nil {
+		return nil, errors.WithMessage(err, "create transaction ID failed")
+	}
+
+	prop, err := lc.createQueryInstalledProposal(txh)
+	if err != nil {
+		return nil, errors.WithMessage(err, "creation of query installed chaincodes proposal failed")
+	}
+
+	optionsValue := getOpts(opts...)
+
+	resp, err := retry.NewInvoker(retry.New(optionsValue.retry)).Invoke(
+		func() (interface{}, error) {
+			return txn.SendProposal(reqCtx, prop, []fab.ProposalProcessor{target})
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	tpResponses := resp.([]*fab.TransactionProposalResponse)
+
+	r := tpResponses[0]
+	logger.Infof("Query installed chaincodes endorser '%s' returned ProposalResponse status:%v, Response: %+v", r.Endorser, r.Status, r.Response)
+
+	qicr := &lb.QueryInstalledChaincodesResult{}
+	err = lc.protoUnmarshal(r.Response.Payload, qicr)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to unmarshal proposal response's response payload")
+	}
+
+	return &LifecycleQueryInstalledCCResponse{
+		TransactionProposalResponse: r,
+		InstalledChaincodes:         toInstalledChaincodes(qicr.InstalledChaincodes),
+	}, nil
+}
+
 // GetInstalledPackage returns the installed chaincode package for the given package ID
 func (lc *Lifecycle) GetInstalledPackage(reqCtx reqContext.Context, packageID string, target fab.ProposalProcessor, opts ...Opt) ([]byte, error) {
 	ctx, ok := lc.newContext(reqCtx)
@@ -169,6 +215,23 @@ func (lc *Lifecycle) createInstallRequest(installPkg []byte) (fab.ChaincodeInvok
 	}, nil
 }
 
+func (lc *Lifecycle) createQueryInstalledProposal(txh fab.TransactionHeader) (*fab.TransactionProposal, error) {
+	args := &lb.QueryInstalledChaincodesArgs{}
+
+	argsBytes, err := lc.protoMarshal(args)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to marshal InstallChaincodeArgs")
+	}
+
+	return txn.CreateChaincodeInvokeProposal(txh,
+		fab.ChaincodeInvokeRequest{
+			ChaincodeID: lifecycleCC,
+			Fcn:         lifecycleQueryInstalledChaincodesFunc,
+			Args:        [][]byte{argsBytes},
+		},
+	)
+}
+
 func (lc *Lifecycle) createGetInstalledPackageProposal(txh fab.TransactionHeader, packageID string) (*fab.TransactionProposal, error) {
 	args := &lb.GetInstalledChaincodePackageArgs{
 		PackageId: packageID,
@@ -186,4 +249,29 @@ func (lc *Lifecycle) createGetInstalledPackageProposal(txh fab.TransactionHeader
 			Args:        [][]byte{argsBytes},
 		},
 	)
+}
+
+func toInstalledChaincodes(installedChaincodes []*lb.QueryInstalledChaincodesResult_InstalledChaincode) []LifecycleInstalledCC {
+	result := make([]LifecycleInstalledCC, len(installedChaincodes))
+	for i, ic := range installedChaincodes {
+		refsByChannelID := make(map[string][]CCReference)
+		for channelID, chaincodes := range ic.References {
+			refs := make([]CCReference, len(chaincodes.Chaincodes))
+			for j, cc := range chaincodes.Chaincodes {
+				refs[j] = CCReference{
+					Name:    cc.Name,
+					Version: cc.Version,
+				}
+			}
+
+			refsByChannelID[channelID] = refs
+		}
+		result[i] = LifecycleInstalledCC{
+			PackageID:  ic.PackageId,
+			Label:      ic.Label,
+			References: refsByChannelID,
+		}
+	}
+
+	return result
 }

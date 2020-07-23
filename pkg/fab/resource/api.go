@@ -64,3 +64,25 @@ type LifecycleInstallProposalResponse struct {
 	*fab.TransactionProposalResponse
 	*lb.InstallChaincodeResult
 }
+
+// CCReference contains the name and version of an instantiated chaincode that
+// references the installed chaincode package.
+type CCReference struct {
+	Name    string
+	Version string
+}
+
+// LifecycleInstalledCC contains the package ID and label of the installed chaincode,
+// including a map of channel name to chaincode name and version
+// pairs of chaincode definitions that reference this chaincode package.
+type LifecycleInstalledCC struct {
+	PackageID  string
+	Label      string
+	References map[string][]CCReference
+}
+
+// LifecycleQueryInstalledCCResponse contains the response for a QueryInstalledCC request.
+type LifecycleQueryInstalledCCResponse struct {
+	*fab.TransactionProposalResponse
+	InstalledChaincodes []LifecycleInstalledCC
+}

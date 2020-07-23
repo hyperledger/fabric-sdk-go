@@ -12,12 +12,14 @@ import (
 	"testing"
 
 	"github.com/golang/protobuf/proto"
+	lb "github.com/hyperledger/fabric-protos-go/peer/lifecycle"
+	"github.com/stretchr/testify/require"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	contextImpl "github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/txn"
-	"github.com/stretchr/testify/require"
 )
 
 func TestLifecycle_Install(t *testing.T) {
@@ -168,6 +170,115 @@ func TestLifecycle_GetInstalledPackage(t *testing.T) {
 		}
 
 		resp, err := lc.GetInstalledPackage(reqCtx, "packageid", &mocks.MockPeer{})
+		require.Error(t, err)
+		require.Contains(t, err.Error(), errExpected.Error())
+		require.Empty(t, resp)
+	})
+}
+
+func TestLifecycle_QueryInstalled(t *testing.T) {
+	lc := NewLifecycle()
+	require.NotNil(t, lc)
+
+	ctx := setupContext()
+
+	reqCtx, cancel := contextImpl.NewRequest(ctx)
+	defer cancel()
+
+	const packageID = "pkg1"
+	const label = "label1"
+	const cc1 = "cc1"
+	const v1 = "v1"
+	const channel1 = "channel1"
+
+	result := &lb.QueryInstalledChaincodesResult{
+		InstalledChaincodes: []*lb.QueryInstalledChaincodesResult_InstalledChaincode{
+			{
+				PackageId: packageID,
+				Label:     label,
+				References: map[string]*lb.QueryInstalledChaincodesResult_References{
+					channel1: {
+						Chaincodes: []*lb.QueryInstalledChaincodesResult_Chaincode{
+							{
+								Name:    cc1,
+								Version: v1,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	payload, err := proto.Marshal(result)
+	require.NoError(t, err)
+
+	t.Run("Success", func(t *testing.T) {
+		resp, err := lc.QueryInstalled(reqCtx, &mocks.MockPeer{Payload: payload})
+		require.NoError(t, err)
+		require.NotNil(t, resp)
+		require.Len(t, resp.InstalledChaincodes, 1)
+		require.Equal(t, packageID, resp.InstalledChaincodes[0].PackageID)
+		require.Equal(t, label, resp.InstalledChaincodes[0].Label)
+		require.Len(t, resp.InstalledChaincodes[0].References, 1)
+
+		references, ok := resp.InstalledChaincodes[0].References[channel1]
+		require.True(t, ok)
+		require.Len(t, references, 1)
+		require.Equal(t, cc1, references[0].Name)
+		require.Equal(t, v1, references[0].Version)
+	})
+
+	t.Run("Marshal error", func(t *testing.T) {
+		errExpected := fmt.Errorf("injected marshal error")
+
+		lc := NewLifecycle()
+		require.NotNil(t, lc)
+
+		lc.protoMarshal = func(pb proto.Message) ([]byte, error) { return nil, errExpected }
+
+		resp, err := lc.QueryInstalled(reqCtx, &mocks.MockPeer{Payload: payload})
+		require.Error(t, err)
+		require.Contains(t, err.Error(), errExpected.Error())
+		require.Empty(t, resp)
+	})
+
+	t.Run("Unmarshal error", func(t *testing.T) {
+		errExpected := fmt.Errorf("injected unmarshal error")
+
+		lc := NewLifecycle()
+		require.NotNil(t, lc)
+
+		lc.protoUnmarshal = func(buf []byte, pb proto.Message) error { return errExpected }
+
+		resp, err := lc.QueryInstalled(reqCtx, &mocks.MockPeer{Payload: payload})
+		require.Error(t, err)
+		require.Contains(t, err.Error(), errExpected.Error())
+		require.Empty(t, resp)
+	})
+
+	t.Run("Context error", func(t *testing.T) {
+		lc := NewLifecycle()
+		require.NotNil(t, lc)
+
+		lc.newContext = func(ctx reqContext.Context) (context.Client, bool) { return nil, false }
+
+		resp, err := lc.QueryInstalled(reqCtx, &mocks.MockPeer{Payload: payload})
+		require.EqualError(t, err, "failed get client context from reqContext for txn header")
+		require.Empty(t, resp)
+	})
+
+	t.Run("Txn Header error", func(t *testing.T) {
+		errExpected := fmt.Errorf("injected Txn Header error")
+
+		lc := NewLifecycle()
+		require.NotNil(t, lc)
+
+		lc.newTxnHeader = func(ctx context.Client, channelID string, opts ...fab.TxnHeaderOpt) (*txn.TransactionHeader, error) {
+			return nil, errExpected
+		}
+
+		resp, err := lc.QueryInstalled(reqCtx, &mocks.MockPeer{Payload: payload})
 		require.Error(t, err)
 		require.Contains(t, err.Error(), errExpected.Error())
 		require.Empty(t, resp)
