@@ -435,3 +435,234 @@ func TestClient_LifecycleQueryApprovedCC(t *testing.T) {
 		require.Empty(t, resp)
 	})
 }
+
+func TestClient_LifecycleCheckCCCommitReadiness(t *testing.T) {
+	const packageID = "pkg1"
+	const cc1 = "cc1"
+	const v1 = "v1"
+	const channel1 = "channel1"
+
+	response := &lb.CheckCommitReadinessResult{
+		Approvals: map[string]bool{"org1": true, "org2": false},
+	}
+
+	responseBytes, err := proto.Marshal(response)
+	require.NoError(t, err)
+
+	peer1 := &fcmocks.MockPeer{Payload: responseBytes}
+
+	req := LifecycleCheckCCCommitReadinessRequest{
+		Name:      cc1,
+		Version:   v1,
+		PackageID: packageID,
+		Sequence:  1,
+	}
+
+	ctx := setupTestContext("test", "Org1MSP")
+	ctx.SetEndpointConfig(getNetworkConfig(t))
+
+	cs := &MockChannelService{}
+	transactor := &MockTransactor{}
+
+	result := []*fab.TransactionProposalResponse{
+		{
+			ProposalResponse: &pb.ProposalResponse{
+				Response: &pb.Response{
+					Payload: responseBytes,
+				},
+			},
+		},
+	}
+
+	transactor.SendTransactionProposalReturns(result, nil)
+	cs.TransactorReturns(transactor, nil)
+
+	cp := &MockChannelProvider{}
+	cp.ChannelServiceReturns(cs, nil)
+
+	rc := setupResMgmtClient(t, ctx, getDefaultTargetFilterOption())
+	rc.lifecycleProcessor.verifyTPSignature = func(fab.ChannelService, []*fab.TransactionProposalResponse) error { return nil }
+	rc.lifecycleProcessor.getCCProposalTargets = func(string, requestOptions) ([]fab.Peer, error) { return []fab.Peer{peer1}, nil }
+
+	t.Run("Success", func(t *testing.T) {
+		ctx.SetCustomChannelProvider(cp)
+
+		resp, err := rc.LifecycleCheckCCCommitReadiness(channel1, req, WithTargets(peer1))
+		require.NoError(t, err)
+		require.NotNil(t, resp)
+		require.Len(t, resp.Approvals, 2)
+	})
+
+	t.Run("No channel ID -> error", func(t *testing.T) {
+		ctx.SetCustomChannelProvider(cp)
+
+		resp, err := rc.LifecycleCheckCCCommitReadiness("", req, WithTargets(peer1))
+		require.EqualError(t, err, "channel ID is required")
+		require.Empty(t, resp)
+	})
+
+	t.Run("No name -> error", func(t *testing.T) {
+		ctx.SetCustomChannelProvider(cp)
+
+		req := LifecycleCheckCCCommitReadinessRequest{
+			Version:   v1,
+			PackageID: packageID,
+			Sequence:  1,
+		}
+
+		resp, err := rc.LifecycleCheckCCCommitReadiness(channel1, req, WithTargets(peer1))
+		require.EqualError(t, err, "name is required")
+		require.Empty(t, resp)
+	})
+
+	t.Run("No version -> error", func(t *testing.T) {
+		ctx.SetCustomChannelProvider(cp)
+
+		req := LifecycleCheckCCCommitReadinessRequest{
+			Name:      cc1,
+			PackageID: packageID,
+			Sequence:  1,
+		}
+
+		resp, err := rc.LifecycleCheckCCCommitReadiness(channel1, req, WithTargets(peer1))
+		require.EqualError(t, err, "version is required")
+		require.Empty(t, resp)
+	})
+
+	t.Run("Get targets -> error", func(t *testing.T) {
+		ctx.SetCustomChannelProvider(cp)
+
+		errExpected := fmt.Errorf("injected targets error")
+
+		rc := setupResMgmtClient(t, ctx, getDefaultTargetFilterOption())
+		rc.lifecycleProcessor.getCCProposalTargets = func(channelID string, opts requestOptions) ([]fab.Peer, error) { return nil, errExpected }
+
+		resp, err := rc.LifecycleCheckCCCommitReadiness(channel1, req, WithTargets(peer1))
+		require.EqualError(t, err, errExpected.Error())
+		require.Empty(t, resp)
+	})
+
+	t.Run("ChannelService -> error", func(t *testing.T) {
+		errExpected := fmt.Errorf("injected provider error")
+
+		cp := &MockChannelProvider{}
+		cp.ChannelServiceReturns(nil, errExpected)
+		ctx.SetCustomChannelProvider(cp)
+
+		resp, err := rc.LifecycleCheckCCCommitReadiness(channel1, req, WithTargets(peer1))
+		require.Error(t, err)
+		require.Contains(t, err.Error(), errExpected.Error())
+		require.Empty(t, resp)
+	})
+
+	t.Run("Transactor -> error", func(t *testing.T) {
+		errExpected := fmt.Errorf("injected transactor error")
+		cs := &MockChannelService{}
+		cs.TransactorReturns(nil, errExpected)
+
+		cp := &MockChannelProvider{}
+		cp.ChannelServiceReturns(cs, nil)
+
+		ctx.SetCustomChannelProvider(cp)
+
+		resp, err := rc.LifecycleCheckCCCommitReadiness(channel1, req, WithTargets(peer1))
+		require.Error(t, err)
+		require.Contains(t, err.Error(), errExpected.Error())
+		require.Empty(t, resp)
+	})
+
+	t.Run("Signature -> error", func(t *testing.T) {
+		errExpected := fmt.Errorf("injected signature error")
+
+		ctx.SetCustomChannelProvider(cp)
+
+		rc := setupResMgmtClient(t, ctx, getDefaultTargetFilterOption())
+		rc.lifecycleProcessor.getCCProposalTargets = func(string, requestOptions) ([]fab.Peer, error) { return []fab.Peer{peer1}, nil }
+		rc.lifecycleProcessor.verifyTPSignature = func(fab.ChannelService, []*fab.TransactionProposalResponse) error { return errExpected }
+
+		resp, err := rc.LifecycleCheckCCCommitReadiness(channel1, req, WithTargets(peer1))
+		require.Error(t, err)
+		require.Contains(t, err.Error(), errExpected.Error())
+		require.Empty(t, resp)
+	})
+
+	t.Run("CreateProposal -> error", func(t *testing.T) {
+		errExpected := fmt.Errorf("injected create proposal error")
+
+		ctx.SetCustomChannelProvider(cp)
+
+		rc := setupResMgmtClient(t, ctx, getDefaultTargetFilterOption())
+		rc.lifecycleProcessor.getCCProposalTargets = func(string, requestOptions) ([]fab.Peer, error) { return []fab.Peer{peer1}, nil }
+
+		lr := &MockLifecycleResource{}
+		lr.CreateCheckCommitReadinessProposalReturns(nil, errExpected)
+
+		rc.lifecycleProcessor.lifecycleResource = lr
+
+		resp, err := rc.LifecycleCheckCCCommitReadiness(channel1, req, WithTargets(peer1))
+		require.Error(t, err)
+		require.Contains(t, err.Error(), errExpected.Error())
+		require.Empty(t, resp)
+	})
+
+	t.Run("No responses -> error", func(t *testing.T) {
+		cs := &MockChannelService{}
+		transactor := &MockTransactor{}
+
+		transactor.SendTransactionProposalReturns(nil, nil)
+		cs.TransactorReturns(transactor, nil)
+
+		cp := &MockChannelProvider{}
+		cp.ChannelServiceReturns(cs, nil)
+
+		ctx.SetCustomChannelProvider(cp)
+
+		resp, err := rc.LifecycleCheckCCCommitReadiness(channel1, req, WithTargets(peer1))
+		require.EqualError(t, err, "no responses")
+		require.Empty(t, resp)
+	})
+
+	t.Run("Endorsements not matching -> error", func(t *testing.T) {
+		responseBytes1, err := proto.Marshal(&lb.CheckCommitReadinessResult{
+			Approvals: map[string]bool{"org1": true, "org2": false},
+		})
+		require.NoError(t, err)
+
+		responseBytes2, err := proto.Marshal(&lb.CheckCommitReadinessResult{
+			Approvals: map[string]bool{"org3": true},
+		})
+		require.NoError(t, err)
+
+		cs := &MockChannelService{}
+		transactor := &MockTransactor{}
+
+		result := []*fab.TransactionProposalResponse{
+			{
+				ProposalResponse: &pb.ProposalResponse{
+					Response: &pb.Response{
+						Payload: responseBytes1,
+					},
+				},
+			},
+			{
+				ProposalResponse: &pb.ProposalResponse{
+					Response: &pb.Response{
+						Payload: responseBytes2,
+					},
+				},
+			},
+		}
+
+		transactor.SendTransactionProposalReturns(result, nil)
+		cs.TransactorReturns(transactor, nil)
+
+		cp := &MockChannelProvider{}
+		cp.ChannelServiceReturns(cs, nil)
+
+		ctx.SetCustomChannelProvider(cp)
+
+		resp, err := rc.LifecycleCheckCCCommitReadiness(channel1, req, WithTargets(peer1))
+		require.EqualError(t, err, "responses from endorsers do not match")
+		require.Empty(t, resp)
+	})
+}
