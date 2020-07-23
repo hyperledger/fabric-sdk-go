@@ -149,3 +149,107 @@ func TestClient_LifecycleGetInstalledCCPackage(t *testing.T) {
 		require.Empty(t, resp)
 	})
 }
+
+func TestClient_LifecycleQueryCommitted_WithName(t *testing.T) {
+	result := &resource.LifecycleQueryCommittedResponse{
+		Name:                "basic",
+		Sequence:            1,
+		Version:             "1",
+		EndorsementPlugin:   "escc",
+		ValidationPlugin:    "vscc",
+		ValidationParameter: []byte("validation parameter"),
+		Collections:         nil,
+		InitRequired:        true,
+	}
+
+	queryresults := make([]*resource.LifecycleQueryCommittedResponse, 0)
+	queryresults = append(queryresults, result)
+
+	response := &lb.QueryChaincodeDefinitionResult{
+		Sequence:            result.Sequence,
+		Version:             result.Version,
+		EndorsementPlugin:   result.EndorsementPlugin,
+		ValidationPlugin:    result.ValidationPlugin,
+		ValidationParameter: result.ValidationParameter,
+		Collections:         result.Collections,
+		InitRequired:        result.InitRequired,
+	}
+
+	responseBytes, err := proto.Marshal(response)
+	require.NoError(t, err)
+
+	peer1 := &fcmocks.MockPeer{MockName: "Peer1", MockURL: "grpc://peer1.com", MockRoles: []string{}, MockCert: nil, MockMSP: "Org1MSP", Status: http.StatusOK, Payload: responseBytes}
+
+	t.Run("Success", func(t *testing.T) {
+		rc := setupDefaultResMgmtClient(t)
+
+		resp, err := rc.LifecycleQueryCommitted(result.Name, "mychannel", WithTargets(peer1))
+		require.NoError(t, err)
+		require.Equal(t, queryresults, resp)
+	})
+
+	t.Run("No targets", func(t *testing.T) {
+		rc := setupDefaultResMgmtClient(t)
+
+		resp, err := rc.LifecycleQueryCommitted(result.Name, "mychannel")
+		require.EqualError(t, err, "only one target is supported")
+		require.Empty(t, resp)
+	})
+
+}
+
+func TestClient_LifecycleQueryCommitted_WithoutName(t *testing.T) {
+	result := &resource.LifecycleQueryCommittedResponse{
+		Name:                "basic",
+		Sequence:            1,
+		Version:             "1",
+		EndorsementPlugin:   "escc",
+		ValidationPlugin:    "vscc",
+		ValidationParameter: []byte("validation parameter"),
+		Collections:         nil,
+		InitRequired:        true,
+	}
+
+	queryresults := make([]*resource.LifecycleQueryCommittedResponse, 0)
+	queryresults = append(queryresults, result)
+
+	chaincodeDefinitions := make([]*lb.QueryChaincodeDefinitionsResult_ChaincodeDefinition, 0)
+
+	chaincodeDefinition := &lb.QueryChaincodeDefinitionsResult_ChaincodeDefinition{
+		Name:                result.Name,
+		Sequence:            result.Sequence,
+		Version:             result.Version,
+		EndorsementPlugin:   result.EndorsementPlugin,
+		ValidationPlugin:    result.ValidationPlugin,
+		ValidationParameter: result.ValidationParameter,
+		Collections:         result.Collections,
+		InitRequired:        result.InitRequired,
+	}
+
+	chaincodeDefinitions = append(chaincodeDefinitions, chaincodeDefinition)
+	response := &lb.QueryChaincodeDefinitionsResult{
+		ChaincodeDefinitions: chaincodeDefinitions,
+	}
+
+	responseBytes, err := proto.Marshal(response)
+	require.NoError(t, err)
+
+	peer1 := &fcmocks.MockPeer{MockName: "Peer1", MockURL: "grpc://peer1.com", MockRoles: []string{}, MockCert: nil, MockMSP: "Org1MSP", Status: http.StatusOK, Payload: responseBytes}
+
+	t.Run("Success", func(t *testing.T) {
+		rc := setupDefaultResMgmtClient(t)
+
+		resp, err := rc.LifecycleQueryCommitted("", "mychannel", WithTargets(peer1))
+		require.NoError(t, err)
+		require.Equal(t, queryresults, resp)
+	})
+
+	t.Run("No targets", func(t *testing.T) {
+		rc := setupDefaultResMgmtClient(t)
+
+		resp, err := rc.LifecycleQueryCommitted(result.Name, "mychannel")
+		require.EqualError(t, err, "only one target is supported")
+		require.Empty(t, resp)
+	})
+
+}

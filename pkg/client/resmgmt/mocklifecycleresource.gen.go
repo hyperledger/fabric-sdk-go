@@ -2,7 +2,7 @@
 package resmgmt
 
 import (
-	reqContext "context"
+	"context"
 	"sync"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
@@ -10,29 +10,13 @@ import (
 )
 
 type MockLifecycleResource struct {
-	InstallStub        func(reqCtx reqContext.Context, installPkg []byte, targets []fab.ProposalProcessor, opts ...resource.Opt) ([]*resource.LifecycleInstallProposalResponse, error)
-	installMutex       sync.RWMutex
-	installArgsForCall []struct {
-		reqCtx     reqContext.Context
-		installPkg []byte
-		targets    []fab.ProposalProcessor
-		opts       []resource.Opt
-	}
-	installReturns struct {
-		result1 []*resource.LifecycleInstallProposalResponse
-		result2 error
-	}
-	installReturnsOnCall map[int]struct {
-		result1 []*resource.LifecycleInstallProposalResponse
-		result2 error
-	}
-	GetInstalledPackageStub        func(reqCtx reqContext.Context, packageID string, target fab.ProposalProcessor, opts ...resource.Opt) ([]byte, error)
+	GetInstalledPackageStub        func(context.Context, string, fab.ProposalProcessor, ...resource.Opt) ([]byte, error)
 	getInstalledPackageMutex       sync.RWMutex
 	getInstalledPackageArgsForCall []struct {
-		reqCtx    reqContext.Context
-		packageID string
-		target    fab.ProposalProcessor
-		opts      []resource.Opt
+		arg1 context.Context
+		arg2 string
+		arg3 fab.ProposalProcessor
+		arg4 []resource.Opt
 	}
 	getInstalledPackageReturns struct {
 		result1 []byte
@@ -42,92 +26,62 @@ type MockLifecycleResource struct {
 		result1 []byte
 		result2 error
 	}
+	InstallStub        func(context.Context, []byte, []fab.ProposalProcessor, ...resource.Opt) ([]*resource.LifecycleInstallProposalResponse, error)
+	installMutex       sync.RWMutex
+	installArgsForCall []struct {
+		arg1 context.Context
+		arg2 []byte
+		arg3 []fab.ProposalProcessor
+		arg4 []resource.Opt
+	}
+	installReturns struct {
+		result1 []*resource.LifecycleInstallProposalResponse
+		result2 error
+	}
+	installReturnsOnCall map[int]struct {
+		result1 []*resource.LifecycleInstallProposalResponse
+		result2 error
+	}
+	QueryCommittedStub        func(context.Context, string, string, fab.ProposalProcessor, ...resource.Opt) ([]*resource.LifecycleQueryCommittedResponse, error)
+	queryCommittedMutex       sync.RWMutex
+	queryCommittedArgsForCall []struct {
+		arg1 context.Context
+		arg2 string
+		arg3 string
+		arg4 fab.ProposalProcessor
+		arg5 []resource.Opt
+	}
+	queryCommittedReturns struct {
+		result1 []*resource.LifecycleQueryCommittedResponse
+		result2 error
+	}
+	queryCommittedReturnsOnCall map[int]struct {
+		result1 []*resource.LifecycleQueryCommittedResponse
+		result2 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *MockLifecycleResource) Install(reqCtx reqContext.Context, installPkg []byte, targets []fab.ProposalProcessor, opts ...resource.Opt) ([]*resource.LifecycleInstallProposalResponse, error) {
-	var installPkgCopy []byte
-	if installPkg != nil {
-		installPkgCopy = make([]byte, len(installPkg))
-		copy(installPkgCopy, installPkg)
-	}
-	var targetsCopy []fab.ProposalProcessor
-	if targets != nil {
-		targetsCopy = make([]fab.ProposalProcessor, len(targets))
-		copy(targetsCopy, targets)
-	}
-	fake.installMutex.Lock()
-	ret, specificReturn := fake.installReturnsOnCall[len(fake.installArgsForCall)]
-	fake.installArgsForCall = append(fake.installArgsForCall, struct {
-		reqCtx     reqContext.Context
-		installPkg []byte
-		targets    []fab.ProposalProcessor
-		opts       []resource.Opt
-	}{reqCtx, installPkgCopy, targetsCopy, opts})
-	fake.recordInvocation("Install", []interface{}{reqCtx, installPkgCopy, targetsCopy, opts})
-	fake.installMutex.Unlock()
-	if fake.InstallStub != nil {
-		return fake.InstallStub(reqCtx, installPkg, targets, opts...)
-	}
-	if specificReturn {
-		return ret.result1, ret.result2
-	}
-	return fake.installReturns.result1, fake.installReturns.result2
-}
-
-func (fake *MockLifecycleResource) InstallCallCount() int {
-	fake.installMutex.RLock()
-	defer fake.installMutex.RUnlock()
-	return len(fake.installArgsForCall)
-}
-
-func (fake *MockLifecycleResource) InstallArgsForCall(i int) (reqContext.Context, []byte, []fab.ProposalProcessor, []resource.Opt) {
-	fake.installMutex.RLock()
-	defer fake.installMutex.RUnlock()
-	return fake.installArgsForCall[i].reqCtx, fake.installArgsForCall[i].installPkg, fake.installArgsForCall[i].targets, fake.installArgsForCall[i].opts
-}
-
-func (fake *MockLifecycleResource) InstallReturns(result1 []*resource.LifecycleInstallProposalResponse, result2 error) {
-	fake.InstallStub = nil
-	fake.installReturns = struct {
-		result1 []*resource.LifecycleInstallProposalResponse
-		result2 error
-	}{result1, result2}
-}
-
-func (fake *MockLifecycleResource) InstallReturnsOnCall(i int, result1 []*resource.LifecycleInstallProposalResponse, result2 error) {
-	fake.InstallStub = nil
-	if fake.installReturnsOnCall == nil {
-		fake.installReturnsOnCall = make(map[int]struct {
-			result1 []*resource.LifecycleInstallProposalResponse
-			result2 error
-		})
-	}
-	fake.installReturnsOnCall[i] = struct {
-		result1 []*resource.LifecycleInstallProposalResponse
-		result2 error
-	}{result1, result2}
-}
-
-func (fake *MockLifecycleResource) GetInstalledPackage(reqCtx reqContext.Context, packageID string, target fab.ProposalProcessor, opts ...resource.Opt) ([]byte, error) {
+func (fake *MockLifecycleResource) GetInstalledPackage(arg1 context.Context, arg2 string, arg3 fab.ProposalProcessor, arg4 ...resource.Opt) ([]byte, error) {
 	fake.getInstalledPackageMutex.Lock()
 	ret, specificReturn := fake.getInstalledPackageReturnsOnCall[len(fake.getInstalledPackageArgsForCall)]
 	fake.getInstalledPackageArgsForCall = append(fake.getInstalledPackageArgsForCall, struct {
-		reqCtx    reqContext.Context
-		packageID string
-		target    fab.ProposalProcessor
-		opts      []resource.Opt
-	}{reqCtx, packageID, target, opts})
-	fake.recordInvocation("GetInstalledPackage", []interface{}{reqCtx, packageID, target, opts})
+		arg1 context.Context
+		arg2 string
+		arg3 fab.ProposalProcessor
+		arg4 []resource.Opt
+	}{arg1, arg2, arg3, arg4})
+	fake.recordInvocation("GetInstalledPackage", []interface{}{arg1, arg2, arg3, arg4})
 	fake.getInstalledPackageMutex.Unlock()
 	if fake.GetInstalledPackageStub != nil {
-		return fake.GetInstalledPackageStub(reqCtx, packageID, target, opts...)
+		return fake.GetInstalledPackageStub(arg1, arg2, arg3, arg4...)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	return fake.getInstalledPackageReturns.result1, fake.getInstalledPackageReturns.result2
+	fakeReturns := fake.getInstalledPackageReturns
+	return fakeReturns.result1, fakeReturns.result2
 }
 
 func (fake *MockLifecycleResource) GetInstalledPackageCallCount() int {
@@ -136,13 +90,22 @@ func (fake *MockLifecycleResource) GetInstalledPackageCallCount() int {
 	return len(fake.getInstalledPackageArgsForCall)
 }
 
-func (fake *MockLifecycleResource) GetInstalledPackageArgsForCall(i int) (reqContext.Context, string, fab.ProposalProcessor, []resource.Opt) {
+func (fake *MockLifecycleResource) GetInstalledPackageCalls(stub func(context.Context, string, fab.ProposalProcessor, ...resource.Opt) ([]byte, error)) {
+	fake.getInstalledPackageMutex.Lock()
+	defer fake.getInstalledPackageMutex.Unlock()
+	fake.GetInstalledPackageStub = stub
+}
+
+func (fake *MockLifecycleResource) GetInstalledPackageArgsForCall(i int) (context.Context, string, fab.ProposalProcessor, []resource.Opt) {
 	fake.getInstalledPackageMutex.RLock()
 	defer fake.getInstalledPackageMutex.RUnlock()
-	return fake.getInstalledPackageArgsForCall[i].reqCtx, fake.getInstalledPackageArgsForCall[i].packageID, fake.getInstalledPackageArgsForCall[i].target, fake.getInstalledPackageArgsForCall[i].opts
+	argsForCall := fake.getInstalledPackageArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3, argsForCall.arg4
 }
 
 func (fake *MockLifecycleResource) GetInstalledPackageReturns(result1 []byte, result2 error) {
+	fake.getInstalledPackageMutex.Lock()
+	defer fake.getInstalledPackageMutex.Unlock()
 	fake.GetInstalledPackageStub = nil
 	fake.getInstalledPackageReturns = struct {
 		result1 []byte
@@ -151,6 +114,8 @@ func (fake *MockLifecycleResource) GetInstalledPackageReturns(result1 []byte, re
 }
 
 func (fake *MockLifecycleResource) GetInstalledPackageReturnsOnCall(i int, result1 []byte, result2 error) {
+	fake.getInstalledPackageMutex.Lock()
+	defer fake.getInstalledPackageMutex.Unlock()
 	fake.GetInstalledPackageStub = nil
 	if fake.getInstalledPackageReturnsOnCall == nil {
 		fake.getInstalledPackageReturnsOnCall = make(map[int]struct {
@@ -164,13 +129,158 @@ func (fake *MockLifecycleResource) GetInstalledPackageReturnsOnCall(i int, resul
 	}{result1, result2}
 }
 
+func (fake *MockLifecycleResource) Install(arg1 context.Context, arg2 []byte, arg3 []fab.ProposalProcessor, arg4 ...resource.Opt) ([]*resource.LifecycleInstallProposalResponse, error) {
+	var arg2Copy []byte
+	if arg2 != nil {
+		arg2Copy = make([]byte, len(arg2))
+		copy(arg2Copy, arg2)
+	}
+	var arg3Copy []fab.ProposalProcessor
+	if arg3 != nil {
+		arg3Copy = make([]fab.ProposalProcessor, len(arg3))
+		copy(arg3Copy, arg3)
+	}
+	fake.installMutex.Lock()
+	ret, specificReturn := fake.installReturnsOnCall[len(fake.installArgsForCall)]
+	fake.installArgsForCall = append(fake.installArgsForCall, struct {
+		arg1 context.Context
+		arg2 []byte
+		arg3 []fab.ProposalProcessor
+		arg4 []resource.Opt
+	}{arg1, arg2Copy, arg3Copy, arg4})
+	fake.recordInvocation("Install", []interface{}{arg1, arg2Copy, arg3Copy, arg4})
+	fake.installMutex.Unlock()
+	if fake.InstallStub != nil {
+		return fake.InstallStub(arg1, arg2, arg3, arg4...)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	fakeReturns := fake.installReturns
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *MockLifecycleResource) InstallCallCount() int {
+	fake.installMutex.RLock()
+	defer fake.installMutex.RUnlock()
+	return len(fake.installArgsForCall)
+}
+
+func (fake *MockLifecycleResource) InstallCalls(stub func(context.Context, []byte, []fab.ProposalProcessor, ...resource.Opt) ([]*resource.LifecycleInstallProposalResponse, error)) {
+	fake.installMutex.Lock()
+	defer fake.installMutex.Unlock()
+	fake.InstallStub = stub
+}
+
+func (fake *MockLifecycleResource) InstallArgsForCall(i int) (context.Context, []byte, []fab.ProposalProcessor, []resource.Opt) {
+	fake.installMutex.RLock()
+	defer fake.installMutex.RUnlock()
+	argsForCall := fake.installArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3, argsForCall.arg4
+}
+
+func (fake *MockLifecycleResource) InstallReturns(result1 []*resource.LifecycleInstallProposalResponse, result2 error) {
+	fake.installMutex.Lock()
+	defer fake.installMutex.Unlock()
+	fake.InstallStub = nil
+	fake.installReturns = struct {
+		result1 []*resource.LifecycleInstallProposalResponse
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *MockLifecycleResource) InstallReturnsOnCall(i int, result1 []*resource.LifecycleInstallProposalResponse, result2 error) {
+	fake.installMutex.Lock()
+	defer fake.installMutex.Unlock()
+	fake.InstallStub = nil
+	if fake.installReturnsOnCall == nil {
+		fake.installReturnsOnCall = make(map[int]struct {
+			result1 []*resource.LifecycleInstallProposalResponse
+			result2 error
+		})
+	}
+	fake.installReturnsOnCall[i] = struct {
+		result1 []*resource.LifecycleInstallProposalResponse
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *MockLifecycleResource) QueryCommitted(arg1 context.Context, arg2 string, arg3 string, arg4 fab.ProposalProcessor, arg5 ...resource.Opt) ([]*resource.LifecycleQueryCommittedResponse, error) {
+	fake.queryCommittedMutex.Lock()
+	ret, specificReturn := fake.queryCommittedReturnsOnCall[len(fake.queryCommittedArgsForCall)]
+	fake.queryCommittedArgsForCall = append(fake.queryCommittedArgsForCall, struct {
+		arg1 context.Context
+		arg2 string
+		arg3 string
+		arg4 fab.ProposalProcessor
+		arg5 []resource.Opt
+	}{arg1, arg2, arg3, arg4, arg5})
+	fake.recordInvocation("QueryCommitted", []interface{}{arg1, arg2, arg3, arg4, arg5})
+	fake.queryCommittedMutex.Unlock()
+	if fake.QueryCommittedStub != nil {
+		return fake.QueryCommittedStub(arg1, arg2, arg3, arg4, arg5...)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	fakeReturns := fake.queryCommittedReturns
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *MockLifecycleResource) QueryCommittedCallCount() int {
+	fake.queryCommittedMutex.RLock()
+	defer fake.queryCommittedMutex.RUnlock()
+	return len(fake.queryCommittedArgsForCall)
+}
+
+func (fake *MockLifecycleResource) QueryCommittedCalls(stub func(context.Context, string, string, fab.ProposalProcessor, ...resource.Opt) ([]*resource.LifecycleQueryCommittedResponse, error)) {
+	fake.queryCommittedMutex.Lock()
+	defer fake.queryCommittedMutex.Unlock()
+	fake.QueryCommittedStub = stub
+}
+
+func (fake *MockLifecycleResource) QueryCommittedArgsForCall(i int) (context.Context, string, string, fab.ProposalProcessor, []resource.Opt) {
+	fake.queryCommittedMutex.RLock()
+	defer fake.queryCommittedMutex.RUnlock()
+	argsForCall := fake.queryCommittedArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3, argsForCall.arg4, argsForCall.arg5
+}
+
+func (fake *MockLifecycleResource) QueryCommittedReturns(result1 []*resource.LifecycleQueryCommittedResponse, result2 error) {
+	fake.queryCommittedMutex.Lock()
+	defer fake.queryCommittedMutex.Unlock()
+	fake.QueryCommittedStub = nil
+	fake.queryCommittedReturns = struct {
+		result1 []*resource.LifecycleQueryCommittedResponse
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *MockLifecycleResource) QueryCommittedReturnsOnCall(i int, result1 []*resource.LifecycleQueryCommittedResponse, result2 error) {
+	fake.queryCommittedMutex.Lock()
+	defer fake.queryCommittedMutex.Unlock()
+	fake.QueryCommittedStub = nil
+	if fake.queryCommittedReturnsOnCall == nil {
+		fake.queryCommittedReturnsOnCall = make(map[int]struct {
+			result1 []*resource.LifecycleQueryCommittedResponse
+			result2 error
+		})
+	}
+	fake.queryCommittedReturnsOnCall[i] = struct {
+		result1 []*resource.LifecycleQueryCommittedResponse
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *MockLifecycleResource) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.installMutex.RLock()
-	defer fake.installMutex.RUnlock()
 	fake.getInstalledPackageMutex.RLock()
 	defer fake.getInstalledPackageMutex.RUnlock()
+	fake.installMutex.RLock()
+	defer fake.installMutex.RUnlock()
+	fake.queryCommittedMutex.RLock()
+	defer fake.queryCommittedMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

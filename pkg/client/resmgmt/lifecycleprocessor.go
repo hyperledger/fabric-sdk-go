@@ -28,6 +28,7 @@ import (
 type lifecycleResource interface {
 	Install(reqCtx reqContext.Context, installPkg []byte, targets []fab.ProposalProcessor, opts ...resource.Opt) ([]*resource.LifecycleInstallProposalResponse, error)
 	GetInstalledPackage(reqCtx reqContext.Context, packageID string, target fab.ProposalProcessor, opts ...resource.Opt) ([]byte, error)
+	QueryCommitted(reqCtx reqContext.Context, ccName string, channelName string, target fab.ProposalProcessor, opts ...resource.Opt) ([]*resource.LifecycleQueryCommittedResponse, error)
 }
 
 type lifecycleProcessor struct {

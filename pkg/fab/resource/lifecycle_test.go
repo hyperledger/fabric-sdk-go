@@ -173,3 +173,74 @@ func TestLifecycle_GetInstalledPackage(t *testing.T) {
 		require.Empty(t, resp)
 	})
 }
+
+func TestLifecycle_QueryCommitted(t *testing.T) {
+	lc := NewLifecycle()
+	require.NotNil(t, lc)
+
+	ctx := setupContext()
+
+	reqCtx, cancel := contextImpl.NewRequest(ctx)
+	defer cancel()
+
+	t.Run("Success", func(t *testing.T) {
+		resp, err := lc.QueryCommitted(reqCtx, "", "", &mocks.MockPeer{})
+		require.NoError(t, err)
+		require.Empty(t, resp)
+	})
+
+	t.Run("Marshal error", func(t *testing.T) {
+		errExpected := fmt.Errorf("injected marshal error")
+
+		lc := NewLifecycle()
+		require.NotNil(t, lc)
+
+		lc.protoMarshal = func(pb proto.Message) ([]byte, error) { return nil, errExpected }
+
+		resp, err := lc.QueryCommitted(reqCtx, "", "", &mocks.MockPeer{})
+		require.Error(t, err)
+		require.Contains(t, err.Error(), errExpected.Error())
+		require.Empty(t, resp)
+	})
+
+	t.Run("Unmarshal error", func(t *testing.T) {
+		errExpected := fmt.Errorf("injected unmarshal error")
+
+		lc := NewLifecycle()
+		require.NotNil(t, lc)
+
+		lc.protoUnmarshal = func(buf []byte, pb proto.Message) error { return errExpected }
+
+		resp, err := lc.QueryCommitted(reqCtx, "", "", &mocks.MockPeer{})
+		require.Error(t, err)
+		require.Contains(t, err.Error(), errExpected.Error())
+		require.Empty(t, resp)
+	})
+
+	t.Run("Context error", func(t *testing.T) {
+		lc := NewLifecycle()
+		require.NotNil(t, lc)
+
+		lc.newContext = func(ctx reqContext.Context) (context.Client, bool) { return nil, false }
+
+		resp, err := lc.QueryCommitted(reqCtx, "", "", &mocks.MockPeer{})
+		require.EqualError(t, err, "failed get client context from reqContext for txn header")
+		require.Empty(t, resp)
+	})
+
+	t.Run("Txn Header error", func(t *testing.T) {
+		errExpected := fmt.Errorf("injected Txn Header error")
+
+		lc := NewLifecycle()
+		require.NotNil(t, lc)
+
+		lc.newTxnHeader = func(ctx context.Client, channelID string, opts ...fab.TxnHeaderOpt) (*txn.TransactionHeader, error) {
+			return nil, errExpected
+		}
+
+		resp, err := lc.QueryCommitted(reqCtx, "", "", &mocks.MockPeer{})
+		require.Error(t, err)
+		require.Contains(t, err.Error(), errExpected.Error())
+		require.Empty(t, resp)
+	})
+}

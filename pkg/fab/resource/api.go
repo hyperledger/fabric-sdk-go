@@ -64,3 +64,15 @@ type LifecycleInstallProposalResponse struct {
 	*fab.TransactionProposalResponse
 	*lb.InstallChaincodeResult
 }
+
+// LifecycleQueryCommittedResponse is the response from an querycommitted proposal request
+type LifecycleQueryCommittedResponse struct {
+	Name                string
+	Sequence            int64
+	Version             string
+	EndorsementPlugin   string
+	ValidationPlugin    string
+	ValidationParameter []byte
+	Collections         *pb.CollectionConfigPackage
+	InitRequired        bool
+}

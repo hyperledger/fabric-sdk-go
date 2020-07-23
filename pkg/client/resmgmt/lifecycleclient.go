@@ -15,6 +15,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	contextImpl "github.com/hyperledger/fabric-sdk-go/pkg/context"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource"
 )
 
 // LifecycleInstallCCRequest contains the parameters for installing chaincode
@@ -117,6 +118,40 @@ func (rc *Client) LifecycleGetInstalledCCPackage(packageID string, options ...Re
 		installErrs, ok := err.(multi.Errors)
 		if ok {
 			errs = append(errs, installErrs)
+		} else {
+			errs = append(errs, err)
+		}
+	}
+
+	return response, errs.ToError()
+}
+
+func (rc *Client) LifecycleQueryCommitted(ccName string, channelName string, options ...RequestOption) ([]*resource.LifecycleQueryCommittedResponse, error) {
+	opts, err := rc.prepareRequestOpts(options...)
+	if err != nil {
+		return nil, errors.WithMessage(err, "failed to get opts for GetInstalledCCPackage")
+	}
+
+	if len(opts.Targets) != 1 {
+		return nil, errors.New("only one target is supported")
+	}
+
+	rc.resolveTimeouts(&opts)
+
+	parentReqCtx, parentReqCancel := contextImpl.NewRequest(rc.ctx, contextImpl.WithTimeout(opts.Timeouts[fab.ResMgmt]), contextImpl.WithParent(opts.ParentContext))
+	parentReqCtx = reqContext.WithValue(parentReqCtx, contextImpl.ReqContextTimeoutOverrides, opts.Timeouts)
+	defer parentReqCancel()
+
+	reqCtx, cancel := contextImpl.NewRequest(rc.ctx, contextImpl.WithTimeoutType(fab.ResMgmt), contextImpl.WithParent(parentReqCtx))
+	defer cancel()
+
+	response, err := rc.lifecycleProcessor.QueryCommitted(reqCtx, ccName, channelName, opts.Targets[0])
+
+	var errs multi.Errors
+	if err != nil {
+		queryErrs, ok := err.(multi.Errors)
+		if ok {
+			errs = append(errs, queryErrs)
 		} else {
 			errs = append(errs, err)
 		}
