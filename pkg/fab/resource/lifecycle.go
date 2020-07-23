@@ -29,6 +29,7 @@ const (
 	lifecycleQueryInstalledChaincodesFunc     = "QueryInstalledChaincodes"
 	lifecycleGetInstalledChaincodePackageFunc = "GetInstalledChaincodePackage"
 	lifecycleApproveChaincodeFuncName         = "ApproveChaincodeDefinitionForMyOrg"
+	lifecycleQueryApprovedCCDefinitionFunc    = "QueryApprovedChaincodeDefinition"
 )
 
 // ApproveChaincodeRequest contains the parameters required to approve a chaincode
@@ -43,6 +44,12 @@ type ApproveChaincodeRequest struct {
 	ChannelConfigPolicy string
 	CollectionConfig    []*pb.CollectionConfig
 	InitRequired        bool
+}
+
+// QueryApprovedChaincodeRequest contains the parameters for an approved chaincode query
+type QueryApprovedChaincodeRequest struct {
+	Name     string
+	Sequence int64
 }
 
 type protoMarshaller func(pb proto.Message) ([]byte, error)
@@ -206,6 +213,57 @@ func (lc *Lifecycle) GetInstalledPackage(reqCtx reqContext.Context, packageID st
 	return qicr.ChaincodeInstallPackage, nil
 }
 
+// QueryApproved returns information about the approved chaincode
+func (lc *Lifecycle) QueryApproved(reqCtx reqContext.Context, channelID string, req *QueryApprovedChaincodeRequest, target fab.ProposalProcessor, opts ...Opt) (*LifecycleQueryApprovedCCResponse, error) {
+	ctx, ok := lc.newContext(reqCtx)
+	if !ok {
+		return nil, errors.New("failed get client context from reqContext for txn header")
+	}
+
+	txh, err := lc.newTxnHeader(ctx, channelID)
+	if err != nil {
+		return nil, errors.WithMessage(err, "create transaction ID failed")
+	}
+
+	prop, err := lc.createQueryApprovedDefinitionProposal(txh, req)
+	if err != nil {
+		return nil, errors.WithMessage(err, "creation of query approved chaincodes proposal failed")
+	}
+
+	optionsValue := getOpts(opts...)
+
+	resp, err := retry.NewInvoker(retry.New(optionsValue.retry)).Invoke(
+		func() (interface{}, error) {
+			return txn.SendProposal(reqCtx, prop, []fab.ProposalProcessor{target})
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	tpResponses := resp.([]*fab.TransactionProposalResponse)
+
+	tpr := tpResponses[0]
+
+	logger.Debugf("Query approved chaincodes endorser '%s' returned ProposalResponse status:%v", tpr.Endorser, tpr.Status)
+
+	result := &lb.QueryApprovedChaincodeDefinitionResult{}
+	err = lc.protoUnmarshal(tpr.Response.Payload, result)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to unmarshal proposal response's response payload")
+	}
+
+	approvedCC, err := lc.toApprovedChaincodes(req.Name, result)
+	if err != nil {
+		return nil, err
+	}
+
+	return &LifecycleQueryApprovedCCResponse{
+		TransactionProposalResponse: tpr,
+		ApprovedChaincode:           approvedCC,
+	}, nil
+}
+
 func (lc *Lifecycle) createInstallProposal(txh fab.TransactionHeader, installPkg []byte) (*fab.TransactionProposal, error) {
 	cir, err := lc.createInstallRequest(installPkg)
 	if err != nil {
@@ -287,7 +345,7 @@ func (lc *Lifecycle) CreateApproveProposal(txh fab.TransactionHeader, req *Appro
 		}
 	}
 
-	policyBytes, err := lc.createApplicationPolicyBytes(req.SignaturePolicy, req.ChannelConfigPolicy)
+	policyBytes, err := lc.marshalApplicationPolicy(req.SignaturePolicy, req.ChannelConfigPolicy)
 	if err != nil {
 		return nil, errors.WithMessage(err, "create application policy failed")
 	}
@@ -318,7 +376,27 @@ func (lc *Lifecycle) CreateApproveProposal(txh fab.TransactionHeader, req *Appro
 	return txn.CreateChaincodeInvokeProposal(txh, cir)
 }
 
-func (lc *Lifecycle) createApplicationPolicyBytes(signaturePolicy *common.SignaturePolicyEnvelope, channelConfigPolicy string) ([]byte, error) {
+func (lc *Lifecycle) createQueryApprovedDefinitionProposal(txh fab.TransactionHeader, req *QueryApprovedChaincodeRequest) (*fab.TransactionProposal, error) {
+	args := &lb.QueryApprovedChaincodeDefinitionArgs{
+		Name:     req.Name,
+		Sequence: req.Sequence,
+	}
+
+	argsBytes, err := lc.protoMarshal(args)
+	if err != nil {
+		return nil, err
+	}
+
+	cir := fab.ChaincodeInvokeRequest{
+		ChaincodeID: lifecycleCC,
+		Fcn:         lifecycleQueryApprovedCCDefinitionFunc,
+		Args:        [][]byte{argsBytes},
+	}
+
+	return txn.CreateChaincodeInvokeProposal(txh, cir)
+}
+
+func (lc *Lifecycle) marshalApplicationPolicy(signaturePolicy *common.SignaturePolicyEnvelope, channelConfigPolicy string) ([]byte, error) {
 	if signaturePolicy == nil && channelConfigPolicy == "" {
 		return nil, nil
 	}
@@ -350,6 +428,57 @@ func (lc *Lifecycle) createApplicationPolicyBytes(signaturePolicy *common.Signat
 	}
 
 	return policyBytes, nil
+}
+
+func (lc *Lifecycle) unmarshalApplicationPolicy(policyBytes []byte) (*common.SignaturePolicyEnvelope, string, error) {
+	applicationPolicy := &pb.ApplicationPolicy{}
+	err := lc.protoUnmarshal(policyBytes, applicationPolicy)
+	if err != nil {
+		return nil, "", err
+	}
+
+	switch policy := applicationPolicy.Type.(type) {
+	case *pb.ApplicationPolicy_SignaturePolicy:
+		return policy.SignaturePolicy, "", nil
+	case *pb.ApplicationPolicy_ChannelConfigPolicyReference:
+		return nil, policy.ChannelConfigPolicyReference, nil
+	default:
+		return nil, "", errors.Errorf("unsupported policy type %T", policy)
+	}
+}
+
+func (lc *Lifecycle) toApprovedChaincodes(ccName string, result *lb.QueryApprovedChaincodeDefinitionResult) (*LifecycleApprovedCC, error) {
+	var collConfig []*pb.CollectionConfig
+	if result.Collections != nil {
+		collConfig = result.Collections.Config
+	}
+
+	var packageID string
+	if result.Source != nil {
+		switch source := result.Source.Type.(type) {
+		case *lb.ChaincodeSource_LocalPackage:
+			packageID = source.LocalPackage.PackageId
+		case *lb.ChaincodeSource_Unavailable_:
+		}
+	}
+
+	signaturePolicy, channelConfigPolicy, err := lc.unmarshalApplicationPolicy(result.ValidationParameter)
+	if err != nil {
+		return nil, err
+	}
+
+	return &LifecycleApprovedCC{
+		Name:                ccName,
+		Version:             result.Version,
+		Sequence:            result.Sequence,
+		EndorsementPlugin:   result.EndorsementPlugin,
+		ValidationPlugin:    result.ValidationPlugin,
+		SignaturePolicy:     signaturePolicy,
+		ChannelConfigPolicy: channelConfigPolicy,
+		CollectionConfig:    collConfig,
+		InitRequired:        result.InitRequired,
+		PackageID:           packageID,
+	}, nil
 }
 
 func toInstalledChaincodes(installedChaincodes []*lb.QueryInstalledChaincodesResult_InstalledChaincode) []LifecycleInstalledCC {

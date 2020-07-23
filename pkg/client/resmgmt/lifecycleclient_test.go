@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/golang/protobuf/proto"
+	pb "github.com/hyperledger/fabric-protos-go/peer"
 	lb "github.com/hyperledger/fabric-protos-go/peer/lifecycle"
 	"github.com/stretchr/testify/require"
 
@@ -19,6 +20,7 @@ import (
 	lifecyclepkg "github.com/hyperledger/fabric-sdk-go/pkg/fab/ccpackager/lifecycle"
 	fcmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource"
+	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/policydsl"
 )
 
 func TestClient_LifecycleInstallCC(t *testing.T) {
@@ -350,5 +352,86 @@ func TestClient_LifecycleApproveCC(t *testing.T) {
 			require.Contains(t, err.Error(), errExpected.Error())
 			require.Empty(t, txnID)
 		})
+	})
+}
+
+func TestClient_LifecycleQueryApprovedCC(t *testing.T) {
+	const packageID = "pkg1"
+	const cc1 = "cc1"
+	const v1 = "v1"
+	const channel1 = "channel1"
+
+	applicationPolicy := &pb.ApplicationPolicy{
+		Type: &pb.ApplicationPolicy_SignaturePolicy{
+			SignaturePolicy: policydsl.AcceptAllPolicy,
+		},
+	}
+
+	policyBytes, err := proto.Marshal(applicationPolicy)
+	require.NoError(t, err)
+
+	response := &lb.QueryApprovedChaincodeDefinitionResult{
+		Sequence:            1,
+		Version:             v1,
+		ValidationParameter: policyBytes,
+		Source: &lb.ChaincodeSource{
+			Type: &lb.ChaincodeSource_LocalPackage{
+				LocalPackage: &lb.ChaincodeSource_Local{
+					PackageId: packageID,
+				},
+			},
+		},
+		Collections: &pb.CollectionConfigPackage{},
+	}
+
+	responseBytes, err := proto.Marshal(response)
+	require.NoError(t, err)
+
+	peer1 := &fcmocks.MockPeer{Payload: responseBytes}
+
+	req := LifecycleQueryApprovedCCRequest{
+		Name:     cc1,
+		Sequence: 1,
+	}
+
+	t.Run("Success", func(t *testing.T) {
+		rc := setupDefaultResMgmtClient(t)
+
+		resp, err := rc.LifecycleQueryApprovedCC(channel1, req, WithTargets(peer1))
+		require.NoError(t, err)
+		require.NotNil(t, resp)
+	})
+
+	t.Run("No targets", func(t *testing.T) {
+		rc := setupDefaultResMgmtClient(t)
+
+		resp, err := rc.LifecycleQueryApprovedCC(channel1, req)
+		require.EqualError(t, err, "only one target is supported")
+		require.Empty(t, resp)
+	})
+
+	t.Run("Marshal error", func(t *testing.T) {
+		rc := setupDefaultResMgmtClient(t)
+
+		resp, err := rc.LifecycleQueryApprovedCC(channel1, req, WithTargets(&fcmocks.MockPeer{Payload: []byte("invalid payload")}))
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "failed to unmarshal proposal response's response payload")
+		require.Empty(t, resp)
+	})
+
+	t.Run("No channel ID -> error", func(t *testing.T) {
+		rc := setupDefaultResMgmtClient(t)
+
+		resp, err := rc.LifecycleQueryApprovedCC("", req, WithTargets(peer1))
+		require.EqualError(t, err, "channel ID is required")
+		require.Empty(t, resp)
+	})
+
+	t.Run("No name -> error", func(t *testing.T) {
+		rc := setupDefaultResMgmtClient(t)
+
+		resp, err := rc.LifecycleQueryApprovedCC(channel1, LifecycleQueryApprovedCCRequest{}, WithTargets(peer1))
+		require.EqualError(t, err, "name is required")
+		require.Empty(t, resp)
 	})
 }
