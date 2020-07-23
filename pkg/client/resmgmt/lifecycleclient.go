@@ -30,6 +30,22 @@ type LifecycleInstallCCResponse struct {
 	PackageID string
 }
 
+// CCReference contains the name and version of an instantiated chaincode that
+// references the installed chaincode package.
+type CCReference struct {
+	Name    string
+	Version string
+}
+
+// LifecycleInstalledCC contains the package ID and label of the installed chaincode,
+// including a map of channel name to chaincode name and version
+// pairs of chaincode definitions that reference this chaincode package.
+type LifecycleInstalledCC struct {
+	PackageID  string
+	Label      string
+	References map[string][]CCReference
+}
+
 // LifecycleInstallCC installs a chaincode package using Fabric 2.0 chaincode lifecycle.
 func (rc *Client) LifecycleInstallCC(req LifecycleInstallCCRequest, options ...RequestOption) ([]LifecycleInstallCCResponse, error) {
 	err := rc.lifecycleProcessor.verifyInstallParams(req)
@@ -77,6 +93,41 @@ func (rc *Client) LifecycleInstallCC(req LifecycleInstallCCRequest, options ...R
 
 	responses, err := rc.lifecycleProcessor.install(reqCtx, req.Package, newTargets)
 
+	if err != nil {
+		installErrs, ok := err.(multi.Errors)
+		if ok {
+			errs = append(errs, installErrs)
+		} else {
+			errs = append(errs, err)
+		}
+	}
+
+	return responses, errs.ToError()
+}
+
+// LifecycleQueryInstalledCC returns the chaincodes that were installed on a given peer with Fabric 2.0 chaincode lifecycle.
+func (rc *Client) LifecycleQueryInstalledCC(options ...RequestOption) ([]LifecycleInstalledCC, error) {
+	opts, err := rc.prepareRequestOpts(options...)
+	if err != nil {
+		return nil, errors.WithMessage(err, "failed to get opts for QueryInstalledCC")
+	}
+
+	if len(opts.Targets) != 1 {
+		return nil, errors.New("only one target is supported")
+	}
+
+	rc.resolveTimeouts(&opts)
+
+	parentReqCtx, parentReqCancel := contextImpl.NewRequest(rc.ctx, contextImpl.WithTimeout(opts.Timeouts[fab.ResMgmt]), contextImpl.WithParent(opts.ParentContext))
+	parentReqCtx = reqContext.WithValue(parentReqCtx, contextImpl.ReqContextTimeoutOverrides, opts.Timeouts)
+	defer parentReqCancel()
+
+	reqCtx, cancel := contextImpl.NewRequest(rc.ctx, contextImpl.WithTimeoutType(fab.ResMgmt), contextImpl.WithParent(parentReqCtx))
+	defer cancel()
+
+	responses, err := rc.lifecycleProcessor.queryInstalled(reqCtx, opts.Targets[0])
+
+	var errs multi.Errors
 	if err != nil {
 		installErrs, ok := err.(multi.Errors)
 		if ok {

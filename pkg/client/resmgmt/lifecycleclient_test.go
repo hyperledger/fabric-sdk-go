@@ -149,3 +149,69 @@ func TestClient_LifecycleGetInstalledCCPackage(t *testing.T) {
 		require.Empty(t, resp)
 	})
 }
+
+func TestClient_LifecycleQueryInstalled(t *testing.T) {
+	const packageID = "pkg1"
+	const label = "label1"
+	const cc1 = "cc1"
+	const v1 = "v1"
+	const channel1 = "channel1"
+
+	response := &lb.QueryInstalledChaincodesResult{
+		InstalledChaincodes: []*lb.QueryInstalledChaincodesResult_InstalledChaincode{
+			{
+				PackageId: packageID,
+				Label:     label,
+				References: map[string]*lb.QueryInstalledChaincodesResult_References{
+					channel1: {
+						Chaincodes: []*lb.QueryInstalledChaincodesResult_Chaincode{
+							{
+								Name:    cc1,
+								Version: v1,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	responseBytes, err := proto.Marshal(response)
+	require.NoError(t, err)
+
+	peer1 := &fcmocks.MockPeer{Payload: responseBytes}
+
+	t.Run("Success", func(t *testing.T) {
+		rc := setupDefaultResMgmtClient(t)
+
+		resp, err := rc.LifecycleQueryInstalledCC(WithTargets(peer1))
+		require.NoError(t, err)
+		require.Len(t, resp, 1)
+		require.Equal(t, packageID, resp[0].PackageID)
+		require.Equal(t, label, resp[0].Label)
+		require.Len(t, resp[0].References, 1)
+
+		references, ok := resp[0].References[channel1]
+		require.True(t, ok)
+		require.Len(t, references, 1)
+		require.Equal(t, cc1, references[0].Name)
+		require.Equal(t, v1, references[0].Version)
+	})
+
+	t.Run("No targets", func(t *testing.T) {
+		rc := setupDefaultResMgmtClient(t)
+
+		resp, err := rc.LifecycleQueryInstalledCC()
+		require.EqualError(t, err, "only one target is supported")
+		require.Empty(t, resp)
+	})
+
+	t.Run("Marshal error", func(t *testing.T) {
+		rc := setupDefaultResMgmtClient(t)
+
+		resp, err := rc.LifecycleQueryInstalledCC(WithTargets(&fcmocks.MockPeer{Payload: []byte("invalid payload")}))
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "failed to unmarshal proposal response's response payload")
+		require.Empty(t, resp)
+	})
+}

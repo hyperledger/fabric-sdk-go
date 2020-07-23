@@ -28,6 +28,7 @@ import (
 type lifecycleResource interface {
 	Install(reqCtx reqContext.Context, installPkg []byte, targets []fab.ProposalProcessor, opts ...resource.Opt) ([]*resource.LifecycleInstallProposalResponse, error)
 	GetInstalledPackage(reqCtx reqContext.Context, packageID string, target fab.ProposalProcessor, opts ...resource.Opt) ([]byte, error)
+	QueryInstalled(reqCtx reqContext.Context, target fab.ProposalProcessor, opts ...resource.Opt) (*resource.LifecycleQueryInstalledCCResponse, error)
 }
 
 type lifecycleProcessor struct {
@@ -61,6 +62,17 @@ func (p *lifecycleProcessor) install(reqCtx reqContext.Context, installPkg []byt
 	}
 
 	return responses, nil
+}
+
+func (p *lifecycleProcessor) queryInstalled(reqCtx reqContext.Context, target fab.Peer) ([]LifecycleInstalledCC, error) {
+	r, err := p.QueryInstalled(reqCtx, target)
+	if err != nil {
+		return nil, errors.WithMessage(err, "querying for installed chaincodes failed")
+	}
+
+	logger.Debugf("Query installed chaincodes endorser '%s' returned ProposalResponse status:%v", r.Endorser, r.Status)
+
+	return p.toInstalledChaincodes(r.InstalledChaincodes), nil
 }
 
 func (p *lifecycleProcessor) adjustTargetsForInstall(targets []fab.Peer, req LifecycleInstallCCRequest, retry retry.Opts, parentReqCtx reqContext.Context) ([]fab.Peer, multi.Errors) {
@@ -117,4 +129,29 @@ func (p *lifecycleProcessor) isInstalled(reqCtx reqContext.Context, req Lifecycl
 	logger.Debugf("Chaincode package [%s] has already been installed", packageID)
 
 	return true, nil
+}
+
+func (p *lifecycleProcessor) toInstalledChaincodes(installedChaincodes []resource.LifecycleInstalledCC) []LifecycleInstalledCC {
+	ccs := make([]LifecycleInstalledCC, len(installedChaincodes))
+	for i, ic := range installedChaincodes {
+		refsByChannelID := make(map[string][]CCReference)
+		for channelID, chaincodes := range ic.References {
+			refs := make([]CCReference, len(chaincodes))
+			for j, cc := range chaincodes {
+				refs[j] = CCReference{
+					Name:    cc.Name,
+					Version: cc.Version,
+				}
+			}
+
+			refsByChannelID[channelID] = refs
+		}
+		ccs[i] = LifecycleInstalledCC{
+			PackageID:  ic.PackageID,
+			Label:      ic.Label,
+			References: refsByChannelID,
+		}
+	}
+
+	return ccs
 }
