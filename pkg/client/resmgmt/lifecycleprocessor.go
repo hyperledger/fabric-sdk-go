@@ -7,10 +7,13 @@ SPDX-License-Identifier: Apache-2.0
 package resmgmt
 
 import (
+	"bytes"
 	reqContext "context"
 	"fmt"
 	"strings"
 
+	"github.com/golang/protobuf/proto"
+	lb "github.com/hyperledger/fabric-protos-go/peer/lifecycle"
 	"github.com/pkg/errors"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/multi"
@@ -27,6 +30,7 @@ import (
 //go:generate counterfeiter -o mocklifecycleresource.gen.go -fake-name MockLifecycleResource . lifecycleResource
 //go:generate counterfeiter -o mockchannelprovider.gen.go -fake-name MockChannelProvider ../../common/providers/fab ChannelProvider
 //go:generate counterfeiter -o mockchannelservice.gen.go -fake-name MockChannelService ../../common/providers/fab ChannelService
+//go:generate counterfeiter -o mocktransactor.gen.go -fake-name MockTransactor ../../common/providers/fab Transactor
 
 type lifecycleResource interface {
 	Install(reqCtx reqContext.Context, installPkg []byte, targets []fab.ProposalProcessor, opts ...resource.Opt) ([]*resource.LifecycleInstallProposalResponse, error)
@@ -34,6 +38,7 @@ type lifecycleResource interface {
 	QueryInstalled(reqCtx reqContext.Context, target fab.ProposalProcessor, opts ...resource.Opt) (*resource.LifecycleQueryInstalledCCResponse, error)
 	QueryApproved(reqCtx reqContext.Context, channelID string, req *resource.QueryApprovedChaincodeRequest, target fab.ProposalProcessor, opts ...resource.Opt) (*resource.LifecycleQueryApprovedCCResponse, error)
 	CreateApproveProposal(txh fab.TransactionHeader, req *resource.ApproveChaincodeRequest) (*fab.TransactionProposal, error)
+	CreateCheckCommitReadinessProposal(txh fab.TransactionHeader, req *resource.CheckChaincodeCommitReadinessRequest) (*fab.TransactionProposal, error)
 }
 
 type targetProvider func(channelID string, opts requestOptions) ([]fab.Peer, error)
@@ -95,30 +100,14 @@ func (p *lifecycleProcessor) approve(reqCtx reqContext.Context, channelID string
 		return fab.EmptyTransactionID, err
 	}
 
-	targets, err := p.getCCProposalTargets(channelID, opts)
+	targets, channelService, transactor, txh, err := p.prepare(reqCtx, channelID, opts)
 	if err != nil {
 		return fab.EmptyTransactionID, err
-	}
-
-	// Get transactor on the channel to create and send the deploy proposal
-	channelService, err := p.ctx.ChannelProvider().ChannelService(p.ctx, channelID)
-	if err != nil {
-		return fab.EmptyTransactionID, errors.WithMessage(err, "Unable to get channel service")
-	}
-
-	transactor, err := channelService.Transactor(reqCtx)
-	if err != nil {
-		return fab.EmptyTransactionID, errors.WithMessage(err, "get channel transactor failed")
 	}
 
 	eventService, err := channelService.EventService()
 	if err != nil {
 		return fab.EmptyTransactionID, errors.WithMessage(err, "unable to get event service")
-	}
-
-	txh, err := txn.NewHeader(p.ctx, channelID)
-	if err != nil {
-		return fab.EmptyTransactionID, errors.WithMessage(err, "create transaction ID failed")
 	}
 
 	var acr = resource.ApproveChaincodeRequest(req)
@@ -162,6 +151,77 @@ func (p *lifecycleProcessor) queryApproved(reqCtx reqContext.Context, channelID 
 	logger.Debugf("Query approved chaincodes endorser '%s' returned ProposalResponse status:%v", tpr.Endorser, tpr.Status)
 
 	return LifecycleApprovedChaincodeDefinition(*tpr.ApprovedChaincode), nil
+}
+
+func (p *lifecycleProcessor) checkCommitReadiness(reqCtx reqContext.Context, channelID string, req LifecycleCheckCCCommitReadinessRequest, opts requestOptions) (LifecycleCheckCCCommitReadinessResponse, error) {
+	if err := p.verifyCheckCommitReadinessParams(channelID, req); err != nil {
+		return LifecycleCheckCCCommitReadinessResponse{}, err
+	}
+
+	targets, channelService, transactor, txh, err := p.prepare(reqCtx, channelID, opts)
+	if err != nil {
+		return LifecycleCheckCCCommitReadinessResponse{}, err
+	}
+
+	var ccr = resource.CheckChaincodeCommitReadinessRequest(req)
+
+	tp, err := p.CreateCheckCommitReadinessProposal(txh, &ccr)
+	if err != nil {
+		return LifecycleCheckCCCommitReadinessResponse{}, errors.WithMessage(err, "creation of check chaincode commit readiness proposal failed")
+	}
+
+	txProposalResponse, err := transactor.SendTransactionProposal(tp, peersToTxnProcessors(targets))
+	if err != nil {
+		return LifecycleCheckCCCommitReadinessResponse{}, errors.WithMessage(err, "sending approve transaction proposal failed")
+	}
+
+	err = p.verifyTPSignature(channelService, txProposalResponse)
+	if err != nil {
+		return LifecycleCheckCCCommitReadinessResponse{}, errors.WithMessage(err, "sending approve transaction proposal failed to verify signature")
+	}
+
+	if len(txProposalResponse) == 0 {
+		return LifecycleCheckCCCommitReadinessResponse{}, errors.New("no responses")
+	}
+
+	err = p.verifyResponsesMatch(txProposalResponse)
+	if err != nil {
+		return LifecycleCheckCCCommitReadinessResponse{}, err
+	}
+
+	result := &lb.CheckCommitReadinessResult{}
+	err = proto.Unmarshal(txProposalResponse[0].Response.Payload, result)
+	if err != nil {
+		return LifecycleCheckCCCommitReadinessResponse{}, errors.Wrap(err, "failed to unmarshal proposal response's response payload")
+	}
+
+	return LifecycleCheckCCCommitReadinessResponse{
+		Approvals: result.Approvals,
+	}, nil
+}
+
+func (p *lifecycleProcessor) prepare(reqCtx reqContext.Context, channelID string, opts requestOptions) ([]fab.Peer, fab.ChannelService, fab.Transactor, *txn.TransactionHeader, error) {
+	targets, err := p.getCCProposalTargets(channelID, opts)
+	if err != nil {
+		return nil, nil, nil, nil, err
+	}
+
+	channelService, err := p.ctx.ChannelProvider().ChannelService(p.ctx, channelID)
+	if err != nil {
+		return nil, nil, nil, nil, errors.WithMessage(err, "Unable to get channel service")
+	}
+
+	transactor, err := channelService.Transactor(reqCtx)
+	if err != nil {
+		return nil, nil, nil, nil, errors.WithMessage(err, "get channel transactor failed")
+	}
+
+	txh, err := txn.NewHeader(p.ctx, channelID)
+	if err != nil {
+		return nil, nil, nil, nil, errors.WithMessage(err, "create transaction ID failed")
+	}
+
+	return targets, channelService, transactor, txh, nil
 }
 
 func (p *lifecycleProcessor) adjustTargetsForInstall(targets []fab.Peer, req LifecycleInstallCCRequest, retry retry.Opts, parentReqCtx reqContext.Context) ([]fab.Peer, multi.Errors) {
@@ -229,6 +289,22 @@ func (p *lifecycleProcessor) verifyQueryApprovedParams(channelID string, req Lif
 	return nil
 }
 
+func (p *lifecycleProcessor) verifyCheckCommitReadinessParams(channelID string, req LifecycleCheckCCCommitReadinessRequest) error {
+	if channelID == "" {
+		return errors.New("channel ID is required")
+	}
+
+	if req.Name == "" {
+		return errors.New("name is required")
+	}
+
+	if req.Version == "" {
+		return errors.New("version is required")
+	}
+
+	return nil
+}
+
 func (p *lifecycleProcessor) isInstalled(reqCtx reqContext.Context, req LifecycleInstallCCRequest, peer fab.ProposalProcessor, retryOpts retry.Opts) (bool, error) {
 	packageID := lifecyclepkg.ComputePackageID(req.Label, req.Package)
 
@@ -271,4 +347,24 @@ func (p *lifecycleProcessor) toInstalledChaincodes(installedChaincodes []resourc
 	}
 
 	return ccs
+}
+
+// verifyResponsesMatch ensures that the payload in all of the responses are the same
+func (p *lifecycleProcessor) verifyResponsesMatch(responses []*fab.TransactionProposalResponse) error {
+	var lastResponse *fab.TransactionProposalResponse
+	for _, r := range responses {
+		if lastResponse != nil {
+			if lastResponse.Response.Status != r.Response.Status {
+				return errors.New("status in responses from endorsers do not match")
+			}
+
+			if !bytes.Equal(lastResponse.Response.Payload, r.Response.Payload) {
+				return errors.New("responses from endorsers do not match")
+			}
+		}
+
+		lastResponse = r
+	}
+
+	return nil
 }

@@ -88,6 +88,20 @@ type MockLifecycleResource struct {
 		result1 *fab.TransactionProposal
 		result2 error
 	}
+	CreateCheckCommitReadinessProposalStub        func(txh fab.TransactionHeader, req *resource.CheckChaincodeCommitReadinessRequest) (*fab.TransactionProposal, error)
+	createCheckCommitReadinessProposalMutex       sync.RWMutex
+	createCheckCommitReadinessProposalArgsForCall []struct {
+		txh fab.TransactionHeader
+		req *resource.CheckChaincodeCommitReadinessRequest
+	}
+	createCheckCommitReadinessProposalReturns struct {
+		result1 *fab.TransactionProposal
+		result2 error
+	}
+	createCheckCommitReadinessProposalReturnsOnCall map[int]struct {
+		result1 *fab.TransactionProposal
+		result2 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
@@ -370,6 +384,58 @@ func (fake *MockLifecycleResource) CreateApproveProposalReturnsOnCall(i int, res
 	}{result1, result2}
 }
 
+func (fake *MockLifecycleResource) CreateCheckCommitReadinessProposal(txh fab.TransactionHeader, req *resource.CheckChaincodeCommitReadinessRequest) (*fab.TransactionProposal, error) {
+	fake.createCheckCommitReadinessProposalMutex.Lock()
+	ret, specificReturn := fake.createCheckCommitReadinessProposalReturnsOnCall[len(fake.createCheckCommitReadinessProposalArgsForCall)]
+	fake.createCheckCommitReadinessProposalArgsForCall = append(fake.createCheckCommitReadinessProposalArgsForCall, struct {
+		txh fab.TransactionHeader
+		req *resource.CheckChaincodeCommitReadinessRequest
+	}{txh, req})
+	fake.recordInvocation("CreateCheckCommitReadinessProposal", []interface{}{txh, req})
+	fake.createCheckCommitReadinessProposalMutex.Unlock()
+	if fake.CreateCheckCommitReadinessProposalStub != nil {
+		return fake.CreateCheckCommitReadinessProposalStub(txh, req)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fake.createCheckCommitReadinessProposalReturns.result1, fake.createCheckCommitReadinessProposalReturns.result2
+}
+
+func (fake *MockLifecycleResource) CreateCheckCommitReadinessProposalCallCount() int {
+	fake.createCheckCommitReadinessProposalMutex.RLock()
+	defer fake.createCheckCommitReadinessProposalMutex.RUnlock()
+	return len(fake.createCheckCommitReadinessProposalArgsForCall)
+}
+
+func (fake *MockLifecycleResource) CreateCheckCommitReadinessProposalArgsForCall(i int) (fab.TransactionHeader, *resource.CheckChaincodeCommitReadinessRequest) {
+	fake.createCheckCommitReadinessProposalMutex.RLock()
+	defer fake.createCheckCommitReadinessProposalMutex.RUnlock()
+	return fake.createCheckCommitReadinessProposalArgsForCall[i].txh, fake.createCheckCommitReadinessProposalArgsForCall[i].req
+}
+
+func (fake *MockLifecycleResource) CreateCheckCommitReadinessProposalReturns(result1 *fab.TransactionProposal, result2 error) {
+	fake.CreateCheckCommitReadinessProposalStub = nil
+	fake.createCheckCommitReadinessProposalReturns = struct {
+		result1 *fab.TransactionProposal
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *MockLifecycleResource) CreateCheckCommitReadinessProposalReturnsOnCall(i int, result1 *fab.TransactionProposal, result2 error) {
+	fake.CreateCheckCommitReadinessProposalStub = nil
+	if fake.createCheckCommitReadinessProposalReturnsOnCall == nil {
+		fake.createCheckCommitReadinessProposalReturnsOnCall = make(map[int]struct {
+			result1 *fab.TransactionProposal
+			result2 error
+		})
+	}
+	fake.createCheckCommitReadinessProposalReturnsOnCall[i] = struct {
+		result1 *fab.TransactionProposal
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *MockLifecycleResource) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
@@ -383,6 +449,8 @@ func (fake *MockLifecycleResource) Invocations() map[string][][]interface{} {
 	defer fake.queryApprovedMutex.RUnlock()
 	fake.createApproveProposalMutex.RLock()
 	defer fake.createApproveProposalMutex.RUnlock()
+	fake.createCheckCommitReadinessProposalMutex.RLock()
+	defer fake.createCheckCommitReadinessProposalMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

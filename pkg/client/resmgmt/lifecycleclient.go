@@ -82,6 +82,25 @@ type LifecycleApprovedChaincodeDefinition struct {
 	PackageID           string
 }
 
+// LifecycleCheckCCCommitReadinessRequest contains the parameters for checking the 'commit readiness' of a chaincode
+type LifecycleCheckCCCommitReadinessRequest struct {
+	Name                string
+	Version             string
+	PackageID           string
+	Sequence            int64
+	EndorsementPlugin   string
+	ValidationPlugin    string
+	SignaturePolicy     *common.SignaturePolicyEnvelope
+	ChannelConfigPolicy string
+	CollectionConfig    []*pb.CollectionConfig
+	InitRequired        bool
+}
+
+// LifecycleCheckCCCommitReadinessResponse contains the org approvals for the chaincode
+type LifecycleCheckCCCommitReadinessResponse struct {
+	Approvals map[string]bool
+}
+
 // LifecycleInstallCC installs a chaincode package using Fabric 2.0 chaincode lifecycle.
 func (rc *Client) LifecycleInstallCC(req LifecycleInstallCCRequest, options ...RequestOption) ([]LifecycleInstallCCResponse, error) {
 	err := rc.lifecycleProcessor.verifyInstallParams(req)
@@ -246,4 +265,17 @@ func (rc *Client) LifecycleQueryApprovedCC(channelID string, req LifecycleQueryA
 	defer cancel()
 
 	return rc.lifecycleProcessor.queryApproved(reqCtx, channelID, req, opts.Targets[0])
+}
+
+// LifecycleCheckCCCommitReadiness checks the 'commit readiness' of a chaincode. Returned are the org approvals.
+func (rc *Client) LifecycleCheckCCCommitReadiness(channelID string, req LifecycleCheckCCCommitReadinessRequest, options ...RequestOption) (LifecycleCheckCCCommitReadinessResponse, error) {
+	opts, err := rc.prepareRequestOpts(options...)
+	if err != nil {
+		return LifecycleCheckCCCommitReadinessResponse{}, errors.WithMessage(err, "failed to get opts for CheckCCCommitReadiness")
+	}
+
+	reqCtx, cancel := rc.createRequestContext(opts, fab.ResMgmt)
+	defer cancel()
+
+	return rc.lifecycleProcessor.checkCommitReadiness(reqCtx, channelID, req, opts)
 }
