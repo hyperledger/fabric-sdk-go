@@ -191,7 +191,7 @@ func New(ctxProvider context.ClientProvider, opts ...ClientOption) (*Client, err
 		}
 	}
 
-	resourceClient.lifecycleProcessor = newLifecycleProcessor(ctx)
+	resourceClient.lifecycleProcessor = newLifecycleProcessor(ctx, resourceClient.getCCProposalTargets, resourceClient.verifyTPSignature, resourceClient.sendTransactionAndCheckEvent)
 
 	return resourceClient, nil
 }

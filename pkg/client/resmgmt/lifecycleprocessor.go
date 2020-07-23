@@ -21,25 +21,39 @@ import (
 	lifecyclepkg "github.com/hyperledger/fabric-sdk-go/pkg/fab/ccpackager/lifecycle"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/txn"
 )
 
 //go:generate counterfeiter -o mocklifecycleresource.gen.go -fake-name MockLifecycleResource . lifecycleResource
+//go:generate counterfeiter -o mockchannelprovider.gen.go -fake-name MockChannelProvider ../../common/providers/fab ChannelProvider
+//go:generate counterfeiter -o mockchannelservice.gen.go -fake-name MockChannelService ../../common/providers/fab ChannelService
 
 type lifecycleResource interface {
 	Install(reqCtx reqContext.Context, installPkg []byte, targets []fab.ProposalProcessor, opts ...resource.Opt) ([]*resource.LifecycleInstallProposalResponse, error)
 	GetInstalledPackage(reqCtx reqContext.Context, packageID string, target fab.ProposalProcessor, opts ...resource.Opt) ([]byte, error)
 	QueryInstalled(reqCtx reqContext.Context, target fab.ProposalProcessor, opts ...resource.Opt) (*resource.LifecycleQueryInstalledCCResponse, error)
+	CreateApproveProposal(txh fab.TransactionHeader, req *resource.ApproveChaincodeRequest) (*fab.TransactionProposal, error)
 }
+
+type targetProvider func(channelID string, opts requestOptions) ([]fab.Peer, error)
+type signatureVerifier func(channelService fab.ChannelService, txProposalResponse []*fab.TransactionProposalResponse) error
+type committer func(eventService fab.EventService, tp *fab.TransactionProposal, txProposalResponse []*fab.TransactionProposalResponse, transac fab.Transactor, reqCtx reqContext.Context) (fab.TransactionID, error)
 
 type lifecycleProcessor struct {
 	lifecycleResource
-	ctx context.Client
+	ctx                  context.Client
+	getCCProposalTargets targetProvider
+	verifyTPSignature    signatureVerifier
+	commitTransaction    committer
 }
 
-func newLifecycleProcessor(ctx context.Client) *lifecycleProcessor {
+func newLifecycleProcessor(ctx context.Client, targetProvider targetProvider, signatureVerifier signatureVerifier, committer committer) *lifecycleProcessor {
 	return &lifecycleProcessor{
-		lifecycleResource: resource.NewLifecycle(),
-		ctx:               ctx,
+		lifecycleResource:    resource.NewLifecycle(),
+		ctx:                  ctx,
+		getCCProposalTargets: targetProvider,
+		verifyTPSignature:    signatureVerifier,
+		commitTransaction:    committer,
 	}
 }
 
@@ -75,6 +89,60 @@ func (p *lifecycleProcessor) queryInstalled(reqCtx reqContext.Context, target fa
 	return p.toInstalledChaincodes(r.InstalledChaincodes), nil
 }
 
+func (p *lifecycleProcessor) approve(reqCtx reqContext.Context, channelID string, req LifecycleApproveCCRequest, opts requestOptions) (fab.TransactionID, error) {
+	if err := p.verifyApproveParams(channelID, req); err != nil {
+		return fab.EmptyTransactionID, err
+	}
+
+	targets, err := p.getCCProposalTargets(channelID, opts)
+	if err != nil {
+		return fab.EmptyTransactionID, err
+	}
+
+	// Get transactor on the channel to create and send the deploy proposal
+	channelService, err := p.ctx.ChannelProvider().ChannelService(p.ctx, channelID)
+	if err != nil {
+		return fab.EmptyTransactionID, errors.WithMessage(err, "Unable to get channel service")
+	}
+
+	transactor, err := channelService.Transactor(reqCtx)
+	if err != nil {
+		return fab.EmptyTransactionID, errors.WithMessage(err, "get channel transactor failed")
+	}
+
+	eventService, err := channelService.EventService()
+	if err != nil {
+		return fab.EmptyTransactionID, errors.WithMessage(err, "unable to get event service")
+	}
+
+	txh, err := txn.NewHeader(p.ctx, channelID)
+	if err != nil {
+		return fab.EmptyTransactionID, errors.WithMessage(err, "create transaction ID failed")
+	}
+
+	var acr = resource.ApproveChaincodeRequest(req)
+
+	tp, err := p.lifecycleResource.CreateApproveProposal(txh, &acr)
+	if err != nil {
+		return fab.EmptyTransactionID, errors.WithMessage(err, "creation of approve chaincode proposal failed")
+	}
+
+	// Process and send transaction proposal
+	txProposalResponse, err := transactor.SendTransactionProposal(tp, peersToTxnProcessors(targets))
+	if err != nil {
+		return tp.TxnID, errors.WithMessage(err, "sending approve transaction proposal failed")
+	}
+
+	// Verify signature(s)
+	err = p.verifyTPSignature(channelService, txProposalResponse)
+	if err != nil {
+		return tp.TxnID, errors.WithMessage(err, "sending approve transaction proposal failed to verify signature")
+	}
+
+	// send transaction and check event
+	return p.commitTransaction(eventService, tp, txProposalResponse, transactor, reqCtx)
+}
+
 func (p *lifecycleProcessor) adjustTargetsForInstall(targets []fab.Peer, req LifecycleInstallCCRequest, retry retry.Opts, parentReqCtx reqContext.Context) ([]fab.Peer, multi.Errors) {
 	errs := multi.Errors{}
 
@@ -107,6 +175,22 @@ func (p *lifecycleProcessor) verifyInstallParams(req LifecycleInstallCCRequest) 
 
 	if len(req.Package) == 0 {
 		return errors.New("package is required")
+	}
+
+	return nil
+}
+
+func (p *lifecycleProcessor) verifyApproveParams(channelID string, req LifecycleApproveCCRequest) error {
+	if channelID == "" {
+		return errors.New("channel ID is required")
+	}
+
+	if req.Name == "" {
+		return errors.New("name is required")
+	}
+
+	if req.Version == "" {
+		return errors.New("version is required")
 	}
 
 	return nil

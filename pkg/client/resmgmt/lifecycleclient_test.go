@@ -215,3 +215,140 @@ func TestClient_LifecycleQueryInstalled(t *testing.T) {
 		require.Empty(t, resp)
 	})
 }
+
+func TestClient_LifecycleApproveCC(t *testing.T) {
+	const channelID = "channel1"
+
+	respBytes, err := proto.Marshal(&lb.ApproveChaincodeDefinitionForMyOrgResult{})
+	require.NoError(t, err)
+
+	peer1 := &fcmocks.MockPeer{Payload: respBytes}
+	rc := setupDefaultResMgmtClient(t)
+
+	req := LifecycleApproveCCRequest{
+		Name:      "cc1",
+		Version:   "v1",
+		PackageID: "pkg1",
+		Sequence:  1,
+	}
+
+	t.Run("Success", func(t *testing.T) {
+		txnID, err := rc.LifecycleApproveCC(channelID, req, WithTargets(peer1))
+		require.NoError(t, err)
+		require.NotEmpty(t, txnID)
+	})
+
+	t.Run("No channel ID -> error", func(t *testing.T) {
+		txnID, err := rc.LifecycleApproveCC("", req, WithTargets(peer1))
+		require.EqualError(t, err, "channel ID is required")
+		require.Empty(t, txnID)
+	})
+
+	t.Run("No name -> error", func(t *testing.T) {
+		req := LifecycleApproveCCRequest{
+			Version:   "v1",
+			PackageID: "pkg1",
+			Sequence:  1,
+		}
+
+		txnID, err := rc.LifecycleApproveCC(channelID, req, WithTargets(peer1))
+		require.EqualError(t, err, "name is required")
+		require.Empty(t, txnID)
+	})
+
+	t.Run("No version -> error", func(t *testing.T) {
+		req := LifecycleApproveCCRequest{
+			Name:      "cc1",
+			PackageID: "pkg1",
+			Sequence:  1,
+		}
+
+		txnID, err := rc.LifecycleApproveCC(channelID, req, WithTargets(peer1))
+		require.EqualError(t, err, "version is required")
+		require.Empty(t, txnID)
+	})
+
+	t.Run("Get targets -> error", func(t *testing.T) {
+		errExpected := fmt.Errorf("injected targets error")
+
+		rc := setupDefaultResMgmtClient(t)
+		rc.lifecycleProcessor.getCCProposalTargets = func(string, requestOptions) ([]fab.Peer, error) { return nil, errExpected }
+
+		txnID, err := rc.LifecycleApproveCC(channelID, req, WithTargets(peer1))
+		require.EqualError(t, err, errExpected.Error())
+		require.Empty(t, txnID)
+	})
+
+	t.Run("CreateProposal -> error", func(t *testing.T) {
+		errExpected := fmt.Errorf("injected proposal error")
+
+		rc := setupDefaultResMgmtClient(t)
+
+		lifecycleResource := &MockLifecycleResource{}
+		lifecycleResource.CreateApproveProposalReturns(nil, errExpected)
+		rc.lifecycleProcessor.lifecycleResource = lifecycleResource
+
+		txnID, err := rc.LifecycleApproveCC(channelID, req, WithTargets(peer1))
+		require.Error(t, err, errExpected.Error())
+		require.Contains(t, err.Error(), errExpected.Error())
+		require.Empty(t, txnID)
+	})
+
+	t.Run("VerifySignature -> error", func(t *testing.T) {
+		errExpected := fmt.Errorf("injected signature error")
+
+		rc := setupDefaultResMgmtClient(t)
+
+		rc.lifecycleProcessor.verifyTPSignature = func(fab.ChannelService, []*fab.TransactionProposalResponse) error { return errExpected }
+
+		txnID, err := rc.LifecycleApproveCC(channelID, req, WithTargets(peer1))
+		require.Error(t, err, errExpected.Error())
+		require.Contains(t, err.Error(), errExpected.Error())
+		require.NotEmpty(t, txnID)
+	})
+
+	t.Run("Channel provider -> error", func(t *testing.T) {
+		ctx := setupTestContext("test", "Org1MSP")
+		ctx.SetEndpointConfig(getNetworkConfig(t))
+		cp := &MockChannelProvider{}
+
+		ctx.SetCustomChannelProvider(cp)
+
+		rc := setupResMgmtClient(t, ctx, getDefaultTargetFilterOption())
+		rc.lifecycleProcessor.getCCProposalTargets = func(string, requestOptions) ([]fab.Peer, error) { return []fab.Peer{peer1}, nil }
+
+		t.Run("ChannelService error", func(t *testing.T) {
+			errExpected := fmt.Errorf("injected provider error")
+			cp.ChannelServiceReturns(nil, errExpected)
+
+			txnID, err := rc.LifecycleApproveCC(channelID, req, WithTargets(peer1))
+			require.Error(t, err)
+			require.Contains(t, err.Error(), errExpected.Error())
+			require.Empty(t, txnID)
+		})
+
+		t.Run("Transactor error", func(t *testing.T) {
+			errExpected := fmt.Errorf("injected transactor error")
+			cs := &MockChannelService{}
+			cs.TransactorReturns(nil, errExpected)
+			cp.ChannelServiceReturns(cs, nil)
+
+			txnID, err := rc.LifecycleApproveCC(channelID, req, WithTargets(peer1))
+			require.Error(t, err)
+			require.Contains(t, err.Error(), errExpected.Error())
+			require.Empty(t, txnID)
+		})
+
+		t.Run("EventService error", func(t *testing.T) {
+			errExpected := fmt.Errorf("injected event service error")
+			cs := &MockChannelService{}
+			cs.EventServiceReturns(nil, errExpected)
+			cp.ChannelServiceReturns(cs, nil)
+
+			txnID, err := rc.LifecycleApproveCC(channelID, req, WithTargets(peer1))
+			require.Error(t, err)
+			require.Contains(t, err.Error(), errExpected.Error())
+			require.Empty(t, txnID)
+		})
+	})
+}

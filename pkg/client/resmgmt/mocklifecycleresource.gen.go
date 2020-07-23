@@ -57,6 +57,20 @@ type MockLifecycleResource struct {
 		result1 *resource.LifecycleQueryInstalledCCResponse
 		result2 error
 	}
+	CreateApproveProposalStub        func(txh fab.TransactionHeader, req *resource.ApproveChaincodeRequest) (*fab.TransactionProposal, error)
+	createApproveProposalMutex       sync.RWMutex
+	createApproveProposalArgsForCall []struct {
+		txh fab.TransactionHeader
+		req *resource.ApproveChaincodeRequest
+	}
+	createApproveProposalReturns struct {
+		result1 *fab.TransactionProposal
+		result2 error
+	}
+	createApproveProposalReturnsOnCall map[int]struct {
+		result1 *fab.TransactionProposal
+		result2 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
@@ -232,6 +246,58 @@ func (fake *MockLifecycleResource) QueryInstalledReturnsOnCall(i int, result1 *r
 	}{result1, result2}
 }
 
+func (fake *MockLifecycleResource) CreateApproveProposal(txh fab.TransactionHeader, req *resource.ApproveChaincodeRequest) (*fab.TransactionProposal, error) {
+	fake.createApproveProposalMutex.Lock()
+	ret, specificReturn := fake.createApproveProposalReturnsOnCall[len(fake.createApproveProposalArgsForCall)]
+	fake.createApproveProposalArgsForCall = append(fake.createApproveProposalArgsForCall, struct {
+		txh fab.TransactionHeader
+		req *resource.ApproveChaincodeRequest
+	}{txh, req})
+	fake.recordInvocation("CreateApproveProposal", []interface{}{txh, req})
+	fake.createApproveProposalMutex.Unlock()
+	if fake.CreateApproveProposalStub != nil {
+		return fake.CreateApproveProposalStub(txh, req)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fake.createApproveProposalReturns.result1, fake.createApproveProposalReturns.result2
+}
+
+func (fake *MockLifecycleResource) CreateApproveProposalCallCount() int {
+	fake.createApproveProposalMutex.RLock()
+	defer fake.createApproveProposalMutex.RUnlock()
+	return len(fake.createApproveProposalArgsForCall)
+}
+
+func (fake *MockLifecycleResource) CreateApproveProposalArgsForCall(i int) (fab.TransactionHeader, *resource.ApproveChaincodeRequest) {
+	fake.createApproveProposalMutex.RLock()
+	defer fake.createApproveProposalMutex.RUnlock()
+	return fake.createApproveProposalArgsForCall[i].txh, fake.createApproveProposalArgsForCall[i].req
+}
+
+func (fake *MockLifecycleResource) CreateApproveProposalReturns(result1 *fab.TransactionProposal, result2 error) {
+	fake.CreateApproveProposalStub = nil
+	fake.createApproveProposalReturns = struct {
+		result1 *fab.TransactionProposal
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *MockLifecycleResource) CreateApproveProposalReturnsOnCall(i int, result1 *fab.TransactionProposal, result2 error) {
+	fake.CreateApproveProposalStub = nil
+	if fake.createApproveProposalReturnsOnCall == nil {
+		fake.createApproveProposalReturnsOnCall = make(map[int]struct {
+			result1 *fab.TransactionProposal
+			result2 error
+		})
+	}
+	fake.createApproveProposalReturnsOnCall[i] = struct {
+		result1 *fab.TransactionProposal
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *MockLifecycleResource) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
@@ -241,6 +307,8 @@ func (fake *MockLifecycleResource) Invocations() map[string][][]interface{} {
 	defer fake.getInstalledPackageMutex.RUnlock()
 	fake.queryInstalledMutex.RLock()
 	defer fake.queryInstalledMutex.RUnlock()
+	fake.createApproveProposalMutex.RLock()
+	defer fake.createApproveProposalMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value
