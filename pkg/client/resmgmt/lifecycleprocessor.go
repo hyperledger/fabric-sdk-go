@@ -13,6 +13,8 @@ import (
 	"strings"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/hyperledger/fabric-protos-go/common"
+	pb "github.com/hyperledger/fabric-protos-go/peer"
 	lb "github.com/hyperledger/fabric-protos-go/peer/lifecycle"
 	"github.com/pkg/errors"
 
@@ -40,11 +42,14 @@ type lifecycleResource interface {
 	CreateApproveProposal(txh fab.TransactionHeader, req *resource.ApproveChaincodeRequest) (*fab.TransactionProposal, error)
 	CreateCheckCommitReadinessProposal(txh fab.TransactionHeader, req *resource.CheckChaincodeCommitReadinessRequest) (*fab.TransactionProposal, error)
 	CreateCommitProposal(txh fab.TransactionHeader, req *resource.CommitChaincodeRequest) (*fab.TransactionProposal, error)
+	CreateQueryCommittedProposal(txh fab.TransactionHeader, req *resource.QueryCommittedChaincodesRequest) (*fab.TransactionProposal, error)
+	UnmarshalApplicationPolicy(policyBytes []byte) (*common.SignaturePolicyEnvelope, string, error)
 }
 
 type targetProvider func(channelID string, opts requestOptions) ([]fab.Peer, error)
 type signatureVerifier func(channelService fab.ChannelService, txProposalResponse []*fab.TransactionProposalResponse) error
 type committer func(eventService fab.EventService, tp *fab.TransactionProposal, txProposalResponse []*fab.TransactionProposalResponse, transac fab.Transactor, reqCtx reqContext.Context) (fab.TransactionID, error)
+type protoUnmarshaller func(buf []byte, pb proto.Message) error
 
 type lifecycleProcessor struct {
 	lifecycleResource
@@ -52,6 +57,7 @@ type lifecycleProcessor struct {
 	getCCProposalTargets targetProvider
 	verifyTPSignature    signatureVerifier
 	commitTransaction    committer
+	protoUnmarshal       protoUnmarshaller
 }
 
 func newLifecycleProcessor(ctx context.Client, targetProvider targetProvider, signatureVerifier signatureVerifier, committer committer) *lifecycleProcessor {
@@ -61,6 +67,7 @@ func newLifecycleProcessor(ctx context.Client, targetProvider targetProvider, si
 		getCCProposalTargets: targetProvider,
 		verifyTPSignature:    signatureVerifier,
 		commitTransaction:    committer,
+		protoUnmarshal:       proto.Unmarshal,
 	}
 }
 
@@ -176,13 +183,13 @@ func (p *lifecycleProcessor) checkCommitReadiness(reqCtx reqContext.Context, cha
 		return LifecycleCheckCCCommitReadinessResponse{}, errors.WithMessage(err, "sending approve transaction proposal failed")
 	}
 
+	if len(txProposalResponse) == 0 {
+		return LifecycleCheckCCCommitReadinessResponse{}, errors.New("no responses")
+	}
+
 	err = p.verifyTPSignature(channelService, txProposalResponse)
 	if err != nil {
 		return LifecycleCheckCCCommitReadinessResponse{}, errors.WithMessage(err, "sending approve transaction proposal failed to verify signature")
-	}
-
-	if len(txProposalResponse) == 0 {
-		return LifecycleCheckCCCommitReadinessResponse{}, errors.New("no responses")
 	}
 
 	err = p.verifyResponsesMatch(txProposalResponse)
@@ -191,7 +198,7 @@ func (p *lifecycleProcessor) checkCommitReadiness(reqCtx reqContext.Context, cha
 	}
 
 	result := &lb.CheckCommitReadinessResult{}
-	err = proto.Unmarshal(txProposalResponse[0].Response.Payload, result)
+	err = p.protoUnmarshal(txProposalResponse[0].Response.Payload, result)
 	if err != nil {
 		return LifecycleCheckCCCommitReadinessResponse{}, errors.Wrap(err, "failed to unmarshal proposal response's response payload")
 	}
@@ -237,6 +244,54 @@ func (p *lifecycleProcessor) commit(reqCtx reqContext.Context, channelID string,
 
 	// send transaction and check event
 	return p.commitTransaction(eventService, tp, txProposalResponse, transactor, reqCtx)
+}
+
+func (p *lifecycleProcessor) queryCommitted(reqCtx reqContext.Context, channelID string, req LifecycleQueryCommittedCCRequest, opts requestOptions) ([]LifecycleChaincodeDefinition, error) {
+	if channelID == "" {
+		return nil, errors.New("channel ID is required")
+	}
+
+	targets, channelService, transactor, txh, err := p.prepare(reqCtx, channelID, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	tp, err := p.CreateQueryCommittedProposal(txh, &resource.QueryCommittedChaincodesRequest{Name: req.Name})
+	if err != nil {
+		return nil, errors.WithMessage(err, "creation of query chaincode definitions proposal failed")
+	}
+
+	txProposalResponse, err := transactor.SendTransactionProposal(tp, peersToTxnProcessors(targets))
+	if err != nil {
+		return nil, errors.WithMessage(err, "sending commit transaction proposal failed")
+	}
+
+	if len(txProposalResponse) == 0 {
+		return nil, errors.New("no responses")
+	}
+
+	err = p.verifyTPSignature(channelService, txProposalResponse)
+	if err != nil {
+		return nil, errors.WithMessage(err, "sending query committed transaction proposal failed to verify signature")
+	}
+
+	err = p.verifyResponsesMatch(txProposalResponse)
+	if err != nil {
+		return nil, err
+	}
+
+	payload := txProposalResponse[0].Response.Payload
+
+	if req.Name != "" {
+		def, err := p.unmarshalChaincodeDefinition(req.Name, payload)
+		if err != nil {
+			return nil, err
+		}
+
+		return []LifecycleChaincodeDefinition{def}, nil
+	}
+
+	return p.unmarshalChaincodeDefinitions(payload)
 }
 
 func (p *lifecycleProcessor) prepare(reqCtx reqContext.Context, channelID string, opts requestOptions) ([]fab.Peer, fab.ChannelService, fab.Transactor, *txn.TransactionHeader, error) {
@@ -402,6 +457,73 @@ func (p *lifecycleProcessor) toInstalledChaincodes(installedChaincodes []resourc
 	}
 
 	return ccs
+}
+
+func (p *lifecycleProcessor) unmarshalChaincodeDefinition(name string, payload []byte) (LifecycleChaincodeDefinition, error) {
+	result := &lb.QueryChaincodeDefinitionResult{}
+	err := p.protoUnmarshal(payload, result)
+	if err != nil {
+		return LifecycleChaincodeDefinition{}, errors.Wrap(err, "failed to unmarshal proposal response's response payload")
+	}
+
+	var collConfig []*pb.CollectionConfig
+	if result.Collections != nil {
+		collConfig = result.Collections.Config
+	}
+
+	signaturePolicy, channelConfigPolicy, err := p.lifecycleResource.UnmarshalApplicationPolicy(result.ValidationParameter)
+	if err != nil {
+		return LifecycleChaincodeDefinition{}, err
+	}
+
+	return LifecycleChaincodeDefinition{
+		Name:                name,
+		Version:             result.Version,
+		Sequence:            result.Sequence,
+		EndorsementPlugin:   result.EndorsementPlugin,
+		ValidationPlugin:    result.ValidationPlugin,
+		SignaturePolicy:     signaturePolicy,
+		ChannelConfigPolicy: channelConfigPolicy,
+		CollectionConfig:    collConfig,
+		InitRequired:        result.InitRequired,
+		Approvals:           result.Approvals,
+	}, nil
+}
+
+func (p *lifecycleProcessor) unmarshalChaincodeDefinitions(payload []byte) ([]LifecycleChaincodeDefinition, error) {
+	result := &lb.QueryChaincodeDefinitionsResult{}
+	err := p.protoUnmarshal(payload, result)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to unmarshal proposal response's response payload")
+	}
+
+	results := make([]LifecycleChaincodeDefinition, len(result.ChaincodeDefinitions))
+
+	for i, def := range result.ChaincodeDefinitions {
+		var collConfig []*pb.CollectionConfig
+		if def.Collections != nil {
+			collConfig = def.Collections.Config
+		}
+
+		signaturePolicy, channelConfigPolicy, err := p.lifecycleResource.UnmarshalApplicationPolicy(def.ValidationParameter)
+		if err != nil {
+			return nil, err
+		}
+
+		results[i] = LifecycleChaincodeDefinition{
+			Name:                def.Name,
+			Version:             def.Version,
+			Sequence:            def.Sequence,
+			EndorsementPlugin:   def.EndorsementPlugin,
+			ValidationPlugin:    def.ValidationPlugin,
+			SignaturePolicy:     signaturePolicy,
+			ChannelConfigPolicy: channelConfigPolicy,
+			CollectionConfig:    collConfig,
+			InitRequired:        def.InitRequired,
+		}
+	}
+
+	return results, nil
 }
 
 // verifyResponsesMatch ensures that the payload in all of the responses are the same

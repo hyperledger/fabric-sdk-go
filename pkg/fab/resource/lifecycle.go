@@ -32,6 +32,8 @@ const (
 	lifecycleQueryApprovedCCDefinitionFunc    = "QueryApprovedChaincodeDefinition"
 	lifecycleCheckCommitReadinessFuncName     = "CheckCommitReadiness"
 	lifecycleCommitFuncName                   = "CommitChaincodeDefinition"
+	lifecycleQueryChaincodeDefinitionFunc     = "QueryChaincodeDefinition"
+	lifecycleQueryChaincodeDefinitionsFunc    = "QueryChaincodeDefinitions"
 )
 
 // ApproveChaincodeRequest contains the parameters required to approve a chaincode
@@ -79,6 +81,13 @@ type CheckChaincodeCommitReadinessRequest struct {
 	ChannelConfigPolicy string
 	CollectionConfig    []*pb.CollectionConfig
 	InitRequired        bool
+}
+
+// QueryCommittedChaincodesRequest contains the parameters to query committed chaincodes.
+// If name is not provided then all committed chaincodes on the given channel are returned,
+// otherwise only the chaincode with the given name is returned.
+type QueryCommittedChaincodesRequest struct {
+	Name string
 }
 
 type protoMarshaller func(pb proto.Message) ([]byte, error)
@@ -374,7 +383,7 @@ func (lc *Lifecycle) CreateApproveProposal(txh fab.TransactionHeader, req *Appro
 		}
 	}
 
-	policyBytes, err := lc.marshalApplicationPolicy(req.SignaturePolicy, req.ChannelConfigPolicy)
+	policyBytes, err := lc.MarshalApplicationPolicy(req.SignaturePolicy, req.ChannelConfigPolicy)
 	if err != nil {
 		return nil, errors.WithMessage(err, "create application policy failed")
 	}
@@ -407,7 +416,7 @@ func (lc *Lifecycle) CreateApproveProposal(txh fab.TransactionHeader, req *Appro
 
 // CreateCommitProposal creates a proposal to commit a chaincode
 func (lc *Lifecycle) CreateCommitProposal(txh fab.TransactionHeader, req *CommitChaincodeRequest) (*fab.TransactionProposal, error) {
-	policyBytes, err := lc.marshalApplicationPolicy(req.SignaturePolicy, req.ChannelConfigPolicy)
+	policyBytes, err := lc.MarshalApplicationPolicy(req.SignaturePolicy, req.ChannelConfigPolicy)
 	if err != nil {
 		return nil, errors.WithMessage(err, "create application policy failed")
 	}
@@ -439,7 +448,7 @@ func (lc *Lifecycle) CreateCommitProposal(txh fab.TransactionHeader, req *Commit
 
 // CreateCheckCommitReadinessProposal creates a propoposal to check 'commit readiness' of a chaincode
 func (lc *Lifecycle) CreateCheckCommitReadinessProposal(txh fab.TransactionHeader, req *CheckChaincodeCommitReadinessRequest) (*fab.TransactionProposal, error) {
-	policyBytes, err := lc.marshalApplicationPolicy(req.SignaturePolicy, req.ChannelConfigPolicy)
+	policyBytes, err := lc.MarshalApplicationPolicy(req.SignaturePolicy, req.ChannelConfigPolicy)
 	if err != nil {
 		return nil, errors.WithMessage(err, "create application policy failed")
 	}
@@ -469,6 +478,37 @@ func (lc *Lifecycle) CreateCheckCommitReadinessProposal(txh fab.TransactionHeade
 	return txn.CreateChaincodeInvokeProposal(txh, cir)
 }
 
+// CreateQueryCommittedProposal creates a propoposal to query for committed chaincodes. If the chaincode name is provided
+// in the request then the proposal will contain a query for a single chaincode, otherwise all committed chaincodes on the
+// chainnel will be queried.
+func (lc *Lifecycle) CreateQueryCommittedProposal(txh fab.TransactionHeader, req *QueryCommittedChaincodesRequest) (*fab.TransactionProposal, error) {
+	var function string
+	var args proto.Message
+
+	if req.Name != "" {
+		function = lifecycleQueryChaincodeDefinitionFunc
+		args = &lb.QueryChaincodeDefinitionArgs{
+			Name: req.Name,
+		}
+	} else {
+		function = lifecycleQueryChaincodeDefinitionsFunc
+		args = &lb.QueryChaincodeDefinitionsArgs{}
+	}
+
+	argsBytes, err := lc.protoMarshal(args)
+	if err != nil {
+		return nil, err
+	}
+
+	cir := fab.ChaincodeInvokeRequest{
+		ChaincodeID: lifecycleCC,
+		Fcn:         function,
+		Args:        [][]byte{argsBytes},
+	}
+
+	return txn.CreateChaincodeInvokeProposal(txh, cir)
+}
+
 func (lc *Lifecycle) createQueryApprovedDefinitionProposal(txh fab.TransactionHeader, req *QueryApprovedChaincodeRequest) (*fab.TransactionProposal, error) {
 	args := &lb.QueryApprovedChaincodeDefinitionArgs{
 		Name:     req.Name,
@@ -489,7 +529,8 @@ func (lc *Lifecycle) createQueryApprovedDefinitionProposal(txh fab.TransactionHe
 	return txn.CreateChaincodeInvokeProposal(txh, cir)
 }
 
-func (lc *Lifecycle) marshalApplicationPolicy(signaturePolicy *common.SignaturePolicyEnvelope, channelConfigPolicy string) ([]byte, error) {
+// MarshalApplicationPolicy marshals the given signature or channel config policy into an ApplicationPolicy payload
+func (lc *Lifecycle) MarshalApplicationPolicy(signaturePolicy *common.SignaturePolicyEnvelope, channelConfigPolicy string) ([]byte, error) {
 	if signaturePolicy == nil && channelConfigPolicy == "" {
 		return nil, nil
 	}
@@ -517,17 +558,18 @@ func (lc *Lifecycle) marshalApplicationPolicy(signaturePolicy *common.SignatureP
 
 	policyBytes, err := lc.protoMarshal(applicationPolicy)
 	if err != nil {
-		return nil, err
+		return nil, errors.WithMessage(err, "failed to marshal application policy")
 	}
 
 	return policyBytes, nil
 }
 
-func (lc *Lifecycle) unmarshalApplicationPolicy(policyBytes []byte) (*common.SignaturePolicyEnvelope, string, error) {
+// UnmarshalApplicationPolicy unmarshals the policy baytes and returns either a signature policy or a channel config policy.
+func (lc *Lifecycle) UnmarshalApplicationPolicy(policyBytes []byte) (*common.SignaturePolicyEnvelope, string, error) {
 	applicationPolicy := &pb.ApplicationPolicy{}
 	err := lc.protoUnmarshal(policyBytes, applicationPolicy)
 	if err != nil {
-		return nil, "", err
+		return nil, "", errors.WithMessage(err, "failed to unmarshal application policy")
 	}
 
 	switch policy := applicationPolicy.Type.(type) {
@@ -555,7 +597,7 @@ func (lc *Lifecycle) toApprovedChaincodes(ccName string, result *lb.QueryApprove
 		}
 	}
 
-	signaturePolicy, channelConfigPolicy, err := lc.unmarshalApplicationPolicy(result.ValidationParameter)
+	signaturePolicy, channelConfigPolicy, err := lc.UnmarshalApplicationPolicy(result.ValidationParameter)
 	if err != nil {
 		return nil, err
 	}
