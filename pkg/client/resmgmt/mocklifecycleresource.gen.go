@@ -5,6 +5,7 @@ import (
 	reqContext "context"
 	"sync"
 
+	"github.com/hyperledger/fabric-protos-go/common"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource"
 )
@@ -115,6 +116,35 @@ type MockLifecycleResource struct {
 	createCommitProposalReturnsOnCall map[int]struct {
 		result1 *fab.TransactionProposal
 		result2 error
+	}
+	CreateQueryCommittedProposalStub        func(txh fab.TransactionHeader, req *resource.QueryCommittedChaincodesRequest) (*fab.TransactionProposal, error)
+	createQueryCommittedProposalMutex       sync.RWMutex
+	createQueryCommittedProposalArgsForCall []struct {
+		txh fab.TransactionHeader
+		req *resource.QueryCommittedChaincodesRequest
+	}
+	createQueryCommittedProposalReturns struct {
+		result1 *fab.TransactionProposal
+		result2 error
+	}
+	createQueryCommittedProposalReturnsOnCall map[int]struct {
+		result1 *fab.TransactionProposal
+		result2 error
+	}
+	UnmarshalApplicationPolicyStub        func(policyBytes []byte) (*common.SignaturePolicyEnvelope, string, error)
+	unmarshalApplicationPolicyMutex       sync.RWMutex
+	unmarshalApplicationPolicyArgsForCall []struct {
+		policyBytes []byte
+	}
+	unmarshalApplicationPolicyReturns struct {
+		result1 *common.SignaturePolicyEnvelope
+		result2 string
+		result3 error
+	}
+	unmarshalApplicationPolicyReturnsOnCall map[int]struct {
+		result1 *common.SignaturePolicyEnvelope
+		result2 string
+		result3 error
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
@@ -502,6 +532,117 @@ func (fake *MockLifecycleResource) CreateCommitProposalReturnsOnCall(i int, resu
 	}{result1, result2}
 }
 
+func (fake *MockLifecycleResource) CreateQueryCommittedProposal(txh fab.TransactionHeader, req *resource.QueryCommittedChaincodesRequest) (*fab.TransactionProposal, error) {
+	fake.createQueryCommittedProposalMutex.Lock()
+	ret, specificReturn := fake.createQueryCommittedProposalReturnsOnCall[len(fake.createQueryCommittedProposalArgsForCall)]
+	fake.createQueryCommittedProposalArgsForCall = append(fake.createQueryCommittedProposalArgsForCall, struct {
+		txh fab.TransactionHeader
+		req *resource.QueryCommittedChaincodesRequest
+	}{txh, req})
+	fake.recordInvocation("CreateQueryCommittedProposal", []interface{}{txh, req})
+	fake.createQueryCommittedProposalMutex.Unlock()
+	if fake.CreateQueryCommittedProposalStub != nil {
+		return fake.CreateQueryCommittedProposalStub(txh, req)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fake.createQueryCommittedProposalReturns.result1, fake.createQueryCommittedProposalReturns.result2
+}
+
+func (fake *MockLifecycleResource) CreateQueryCommittedProposalCallCount() int {
+	fake.createQueryCommittedProposalMutex.RLock()
+	defer fake.createQueryCommittedProposalMutex.RUnlock()
+	return len(fake.createQueryCommittedProposalArgsForCall)
+}
+
+func (fake *MockLifecycleResource) CreateQueryCommittedProposalArgsForCall(i int) (fab.TransactionHeader, *resource.QueryCommittedChaincodesRequest) {
+	fake.createQueryCommittedProposalMutex.RLock()
+	defer fake.createQueryCommittedProposalMutex.RUnlock()
+	return fake.createQueryCommittedProposalArgsForCall[i].txh, fake.createQueryCommittedProposalArgsForCall[i].req
+}
+
+func (fake *MockLifecycleResource) CreateQueryCommittedProposalReturns(result1 *fab.TransactionProposal, result2 error) {
+	fake.CreateQueryCommittedProposalStub = nil
+	fake.createQueryCommittedProposalReturns = struct {
+		result1 *fab.TransactionProposal
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *MockLifecycleResource) CreateQueryCommittedProposalReturnsOnCall(i int, result1 *fab.TransactionProposal, result2 error) {
+	fake.CreateQueryCommittedProposalStub = nil
+	if fake.createQueryCommittedProposalReturnsOnCall == nil {
+		fake.createQueryCommittedProposalReturnsOnCall = make(map[int]struct {
+			result1 *fab.TransactionProposal
+			result2 error
+		})
+	}
+	fake.createQueryCommittedProposalReturnsOnCall[i] = struct {
+		result1 *fab.TransactionProposal
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *MockLifecycleResource) UnmarshalApplicationPolicy(policyBytes []byte) (*common.SignaturePolicyEnvelope, string, error) {
+	var policyBytesCopy []byte
+	if policyBytes != nil {
+		policyBytesCopy = make([]byte, len(policyBytes))
+		copy(policyBytesCopy, policyBytes)
+	}
+	fake.unmarshalApplicationPolicyMutex.Lock()
+	ret, specificReturn := fake.unmarshalApplicationPolicyReturnsOnCall[len(fake.unmarshalApplicationPolicyArgsForCall)]
+	fake.unmarshalApplicationPolicyArgsForCall = append(fake.unmarshalApplicationPolicyArgsForCall, struct {
+		policyBytes []byte
+	}{policyBytesCopy})
+	fake.recordInvocation("UnmarshalApplicationPolicy", []interface{}{policyBytesCopy})
+	fake.unmarshalApplicationPolicyMutex.Unlock()
+	if fake.UnmarshalApplicationPolicyStub != nil {
+		return fake.UnmarshalApplicationPolicyStub(policyBytes)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2, ret.result3
+	}
+	return fake.unmarshalApplicationPolicyReturns.result1, fake.unmarshalApplicationPolicyReturns.result2, fake.unmarshalApplicationPolicyReturns.result3
+}
+
+func (fake *MockLifecycleResource) UnmarshalApplicationPolicyCallCount() int {
+	fake.unmarshalApplicationPolicyMutex.RLock()
+	defer fake.unmarshalApplicationPolicyMutex.RUnlock()
+	return len(fake.unmarshalApplicationPolicyArgsForCall)
+}
+
+func (fake *MockLifecycleResource) UnmarshalApplicationPolicyArgsForCall(i int) []byte {
+	fake.unmarshalApplicationPolicyMutex.RLock()
+	defer fake.unmarshalApplicationPolicyMutex.RUnlock()
+	return fake.unmarshalApplicationPolicyArgsForCall[i].policyBytes
+}
+
+func (fake *MockLifecycleResource) UnmarshalApplicationPolicyReturns(result1 *common.SignaturePolicyEnvelope, result2 string, result3 error) {
+	fake.UnmarshalApplicationPolicyStub = nil
+	fake.unmarshalApplicationPolicyReturns = struct {
+		result1 *common.SignaturePolicyEnvelope
+		result2 string
+		result3 error
+	}{result1, result2, result3}
+}
+
+func (fake *MockLifecycleResource) UnmarshalApplicationPolicyReturnsOnCall(i int, result1 *common.SignaturePolicyEnvelope, result2 string, result3 error) {
+	fake.UnmarshalApplicationPolicyStub = nil
+	if fake.unmarshalApplicationPolicyReturnsOnCall == nil {
+		fake.unmarshalApplicationPolicyReturnsOnCall = make(map[int]struct {
+			result1 *common.SignaturePolicyEnvelope
+			result2 string
+			result3 error
+		})
+	}
+	fake.unmarshalApplicationPolicyReturnsOnCall[i] = struct {
+		result1 *common.SignaturePolicyEnvelope
+		result2 string
+		result3 error
+	}{result1, result2, result3}
+}
+
 func (fake *MockLifecycleResource) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
@@ -519,6 +660,10 @@ func (fake *MockLifecycleResource) Invocations() map[string][][]interface{} {
 	defer fake.createCheckCommitReadinessProposalMutex.RUnlock()
 	fake.createCommitProposalMutex.RLock()
 	defer fake.createCommitProposalMutex.RUnlock()
+	fake.createQueryCommittedProposalMutex.RLock()
+	defer fake.createQueryCommittedProposalMutex.RUnlock()
+	fake.unmarshalApplicationPolicyMutex.RLock()
+	defer fake.unmarshalApplicationPolicyMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

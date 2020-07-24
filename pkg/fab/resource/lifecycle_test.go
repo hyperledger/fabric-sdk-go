@@ -826,3 +826,44 @@ func TestLifecycle_CreateCommitProposal(t *testing.T) {
 		require.Nil(t, p)
 	})
 }
+
+func TestLifecycle_CreateQueryCommittedProposal(t *testing.T) {
+	lc := NewLifecycle()
+	require.NotNil(t, lc)
+
+	t.Run("With name -> success", func(t *testing.T) {
+		req := &QueryCommittedChaincodesRequest{
+			Name: "cc1",
+		}
+
+		p, err := lc.CreateQueryCommittedProposal(&mocks.MockTransactionHeader{}, req)
+		require.NoError(t, err)
+		require.NotNil(t, p)
+		require.NotNil(t, p.Proposal)
+	})
+
+	t.Run("No name -> success", func(t *testing.T) {
+		req := &QueryCommittedChaincodesRequest{}
+
+		p, err := lc.CreateQueryCommittedProposal(&mocks.MockTransactionHeader{}, req)
+		require.NoError(t, err)
+		require.NotNil(t, p)
+		require.NotNil(t, p.Proposal)
+	})
+
+	t.Run("Marshal -> error", func(t *testing.T) {
+		errExpected := fmt.Errorf("injected marshal error")
+
+		lc := NewLifecycle()
+		require.NotNil(t, lc)
+
+		lc.protoMarshal = func(pb proto.Message) ([]byte, error) { return nil, errExpected }
+
+		req := &QueryCommittedChaincodesRequest{}
+
+		p, err := lc.CreateQueryCommittedProposal(&mocks.MockTransactionHeader{}, req)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), errExpected.Error())
+		require.Nil(t, p)
+	})
+}
