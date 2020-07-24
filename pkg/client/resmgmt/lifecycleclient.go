@@ -101,6 +101,19 @@ type LifecycleCheckCCCommitReadinessResponse struct {
 	Approvals map[string]bool
 }
 
+// LifecycleCommitCCRequest contains the parameters for committing a chaincode
+type LifecycleCommitCCRequest struct {
+	Name                string
+	Version             string
+	Sequence            int64
+	EndorsementPlugin   string
+	ValidationPlugin    string
+	SignaturePolicy     *common.SignaturePolicyEnvelope
+	ChannelConfigPolicy string
+	CollectionConfig    []*pb.CollectionConfig
+	InitRequired        bool
+}
+
 // LifecycleInstallCC installs a chaincode package using Fabric 2.0 chaincode lifecycle.
 func (rc *Client) LifecycleInstallCC(req LifecycleInstallCCRequest, options ...RequestOption) ([]LifecycleInstallCCResponse, error) {
 	err := rc.lifecycleProcessor.verifyInstallParams(req)
@@ -278,4 +291,17 @@ func (rc *Client) LifecycleCheckCCCommitReadiness(channelID string, req Lifecycl
 	defer cancel()
 
 	return rc.lifecycleProcessor.checkCommitReadiness(reqCtx, channelID, req, opts)
+}
+
+// LifecycleCommitCC commits the chaincode to the given channel
+func (rc *Client) LifecycleCommitCC(channelID string, req LifecycleCommitCCRequest, options ...RequestOption) (fab.TransactionID, error) {
+	opts, err := rc.prepareRequestOpts(options...)
+	if err != nil {
+		return fab.EmptyTransactionID, errors.WithMessage(err, "failed to get opts for CommitCC")
+	}
+
+	reqCtx, cancel := rc.createRequestContext(opts, fab.ResMgmt)
+	defer cancel()
+
+	return rc.lifecycleProcessor.commit(reqCtx, channelID, req, opts)
 }

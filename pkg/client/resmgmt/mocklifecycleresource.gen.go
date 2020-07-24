@@ -102,6 +102,20 @@ type MockLifecycleResource struct {
 		result1 *fab.TransactionProposal
 		result2 error
 	}
+	CreateCommitProposalStub        func(txh fab.TransactionHeader, req *resource.CommitChaincodeRequest) (*fab.TransactionProposal, error)
+	createCommitProposalMutex       sync.RWMutex
+	createCommitProposalArgsForCall []struct {
+		txh fab.TransactionHeader
+		req *resource.CommitChaincodeRequest
+	}
+	createCommitProposalReturns struct {
+		result1 *fab.TransactionProposal
+		result2 error
+	}
+	createCommitProposalReturnsOnCall map[int]struct {
+		result1 *fab.TransactionProposal
+		result2 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
@@ -436,6 +450,58 @@ func (fake *MockLifecycleResource) CreateCheckCommitReadinessProposalReturnsOnCa
 	}{result1, result2}
 }
 
+func (fake *MockLifecycleResource) CreateCommitProposal(txh fab.TransactionHeader, req *resource.CommitChaincodeRequest) (*fab.TransactionProposal, error) {
+	fake.createCommitProposalMutex.Lock()
+	ret, specificReturn := fake.createCommitProposalReturnsOnCall[len(fake.createCommitProposalArgsForCall)]
+	fake.createCommitProposalArgsForCall = append(fake.createCommitProposalArgsForCall, struct {
+		txh fab.TransactionHeader
+		req *resource.CommitChaincodeRequest
+	}{txh, req})
+	fake.recordInvocation("CreateCommitProposal", []interface{}{txh, req})
+	fake.createCommitProposalMutex.Unlock()
+	if fake.CreateCommitProposalStub != nil {
+		return fake.CreateCommitProposalStub(txh, req)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fake.createCommitProposalReturns.result1, fake.createCommitProposalReturns.result2
+}
+
+func (fake *MockLifecycleResource) CreateCommitProposalCallCount() int {
+	fake.createCommitProposalMutex.RLock()
+	defer fake.createCommitProposalMutex.RUnlock()
+	return len(fake.createCommitProposalArgsForCall)
+}
+
+func (fake *MockLifecycleResource) CreateCommitProposalArgsForCall(i int) (fab.TransactionHeader, *resource.CommitChaincodeRequest) {
+	fake.createCommitProposalMutex.RLock()
+	defer fake.createCommitProposalMutex.RUnlock()
+	return fake.createCommitProposalArgsForCall[i].txh, fake.createCommitProposalArgsForCall[i].req
+}
+
+func (fake *MockLifecycleResource) CreateCommitProposalReturns(result1 *fab.TransactionProposal, result2 error) {
+	fake.CreateCommitProposalStub = nil
+	fake.createCommitProposalReturns = struct {
+		result1 *fab.TransactionProposal
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *MockLifecycleResource) CreateCommitProposalReturnsOnCall(i int, result1 *fab.TransactionProposal, result2 error) {
+	fake.CreateCommitProposalStub = nil
+	if fake.createCommitProposalReturnsOnCall == nil {
+		fake.createCommitProposalReturnsOnCall = make(map[int]struct {
+			result1 *fab.TransactionProposal
+			result2 error
+		})
+	}
+	fake.createCommitProposalReturnsOnCall[i] = struct {
+		result1 *fab.TransactionProposal
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *MockLifecycleResource) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
@@ -451,6 +517,8 @@ func (fake *MockLifecycleResource) Invocations() map[string][][]interface{} {
 	defer fake.createApproveProposalMutex.RUnlock()
 	fake.createCheckCommitReadinessProposalMutex.RLock()
 	defer fake.createCheckCommitReadinessProposalMutex.RUnlock()
+	fake.createCommitProposalMutex.RLock()
+	defer fake.createCommitProposalMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value
