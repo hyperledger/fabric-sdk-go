@@ -114,6 +114,28 @@ type LifecycleCommitCCRequest struct {
 	InitRequired        bool
 }
 
+// LifecycleQueryCommittedCCRequest contains the parameters to query committed chaincodes.
+// If name is not provided then all committed chaincodes on the given channel are returned,
+// otherwise only the chaincode with the given name is returned.
+type LifecycleQueryCommittedCCRequest struct {
+	Name string
+}
+
+// LifecycleChaincodeDefinition contains information about a committed chaincode.
+// Note that approvals are only returned if a chaincode name is provided in the request.
+type LifecycleChaincodeDefinition struct {
+	Name                string
+	Version             string
+	Sequence            int64
+	EndorsementPlugin   string
+	ValidationPlugin    string
+	SignaturePolicy     *common.SignaturePolicyEnvelope
+	ChannelConfigPolicy string
+	CollectionConfig    []*pb.CollectionConfig
+	InitRequired        bool
+	Approvals           map[string]bool
+}
+
 // LifecycleInstallCC installs a chaincode package using Fabric 2.0 chaincode lifecycle.
 func (rc *Client) LifecycleInstallCC(req LifecycleInstallCCRequest, options ...RequestOption) ([]LifecycleInstallCCResponse, error) {
 	err := rc.lifecycleProcessor.verifyInstallParams(req)
@@ -304,4 +326,17 @@ func (rc *Client) LifecycleCommitCC(channelID string, req LifecycleCommitCCReque
 	defer cancel()
 
 	return rc.lifecycleProcessor.commit(reqCtx, channelID, req, opts)
+}
+
+// LifecycleQueryCommittedCC queries for committed chaincodes on a given channel
+func (rc *Client) LifecycleQueryCommittedCC(channelID string, req LifecycleQueryCommittedCCRequest, options ...RequestOption) ([]LifecycleChaincodeDefinition, error) {
+	opts, err := rc.prepareRequestOpts(options...)
+	if err != nil {
+		return nil, errors.WithMessage(err, "failed to get opts for QueryCommittedCC")
+	}
+
+	reqCtx, cancel := rc.createRequestContext(opts, fab.ResMgmt)
+	defer cancel()
+
+	return rc.lifecycleProcessor.queryCommitted(reqCtx, channelID, req, opts)
 }
