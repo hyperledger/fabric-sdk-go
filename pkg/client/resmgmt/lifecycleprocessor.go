@@ -39,6 +39,7 @@ type lifecycleResource interface {
 	QueryApproved(reqCtx reqContext.Context, channelID string, req *resource.QueryApprovedChaincodeRequest, target fab.ProposalProcessor, opts ...resource.Opt) (*resource.LifecycleQueryApprovedCCResponse, error)
 	CreateApproveProposal(txh fab.TransactionHeader, req *resource.ApproveChaincodeRequest) (*fab.TransactionProposal, error)
 	CreateCheckCommitReadinessProposal(txh fab.TransactionHeader, req *resource.CheckChaincodeCommitReadinessRequest) (*fab.TransactionProposal, error)
+	CreateCommitProposal(txh fab.TransactionHeader, req *resource.CommitChaincodeRequest) (*fab.TransactionProposal, error)
 }
 
 type targetProvider func(channelID string, opts requestOptions) ([]fab.Peer, error)
@@ -200,6 +201,44 @@ func (p *lifecycleProcessor) checkCommitReadiness(reqCtx reqContext.Context, cha
 	}, nil
 }
 
+func (p *lifecycleProcessor) commit(reqCtx reqContext.Context, channelID string, req LifecycleCommitCCRequest, opts requestOptions) (fab.TransactionID, error) {
+	if err := p.verifyCommitParams(channelID, req); err != nil {
+		return fab.EmptyTransactionID, err
+	}
+
+	targets, channelService, transactor, txh, err := p.prepare(reqCtx, channelID, opts)
+	if err != nil {
+		return fab.EmptyTransactionID, err
+	}
+
+	eventService, err := channelService.EventService()
+	if err != nil {
+		return fab.EmptyTransactionID, errors.WithMessage(err, "unable to get event service")
+	}
+
+	var cr = resource.CommitChaincodeRequest(req)
+
+	tp, err := p.CreateCommitProposal(txh, &cr)
+	if err != nil {
+		return fab.EmptyTransactionID, errors.WithMessage(err, "creation of commit chaincode proposal failed")
+	}
+
+	// Process and send transaction proposal
+	txProposalResponse, err := transactor.SendTransactionProposal(tp, peersToTxnProcessors(targets))
+	if err != nil {
+		return tp.TxnID, errors.WithMessage(err, "sending commit transaction proposal failed")
+	}
+
+	// Verify signature(s)
+	err = p.verifyTPSignature(channelService, txProposalResponse)
+	if err != nil {
+		return tp.TxnID, errors.WithMessage(err, "sending commit transaction proposal failed to verify signature")
+	}
+
+	// send transaction and check event
+	return p.commitTransaction(eventService, tp, txProposalResponse, transactor, reqCtx)
+}
+
 func (p *lifecycleProcessor) prepare(reqCtx reqContext.Context, channelID string, opts requestOptions) ([]fab.Peer, fab.ChannelService, fab.Transactor, *txn.TransactionHeader, error) {
 	targets, err := p.getCCProposalTargets(channelID, opts)
 	if err != nil {
@@ -290,6 +329,22 @@ func (p *lifecycleProcessor) verifyQueryApprovedParams(channelID string, req Lif
 }
 
 func (p *lifecycleProcessor) verifyCheckCommitReadinessParams(channelID string, req LifecycleCheckCCCommitReadinessRequest) error {
+	if channelID == "" {
+		return errors.New("channel ID is required")
+	}
+
+	if req.Name == "" {
+		return errors.New("name is required")
+	}
+
+	if req.Version == "" {
+		return errors.New("version is required")
+	}
+
+	return nil
+}
+
+func (p *lifecycleProcessor) verifyCommitParams(channelID string, req LifecycleCommitCCRequest) error {
 	if channelID == "" {
 		return errors.New("channel ID is required")
 	}
