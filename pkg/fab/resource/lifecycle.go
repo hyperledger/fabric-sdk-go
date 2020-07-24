@@ -31,6 +31,7 @@ const (
 	lifecycleApproveChaincodeFuncName         = "ApproveChaincodeDefinitionForMyOrg"
 	lifecycleQueryApprovedCCDefinitionFunc    = "QueryApprovedChaincodeDefinition"
 	lifecycleCheckCommitReadinessFuncName     = "CheckCommitReadiness"
+	lifecycleCommitFuncName                   = "CommitChaincodeDefinition"
 )
 
 // ApproveChaincodeRequest contains the parameters required to approve a chaincode
@@ -51,6 +52,19 @@ type ApproveChaincodeRequest struct {
 type QueryApprovedChaincodeRequest struct {
 	Name     string
 	Sequence int64
+}
+
+// CommitChaincodeRequest contains the parameters for a commit chaincode request
+type CommitChaincodeRequest struct {
+	Name                string
+	Version             string
+	Sequence            int64
+	EndorsementPlugin   string
+	ValidationPlugin    string
+	SignaturePolicy     *common.SignaturePolicyEnvelope
+	ChannelConfigPolicy string
+	CollectionConfig    []*pb.CollectionConfig
+	InitRequired        bool
 }
 
 // CheckChaincodeCommitReadinessRequest contains the parameters for checking the 'commit readiness' of a chaincode
@@ -385,6 +399,38 @@ func (lc *Lifecycle) CreateApproveProposal(txh fab.TransactionHeader, req *Appro
 	cir := fab.ChaincodeInvokeRequest{
 		ChaincodeID: lifecycleCC,
 		Fcn:         lifecycleApproveChaincodeFuncName,
+		Args:        [][]byte{argsBytes},
+	}
+
+	return txn.CreateChaincodeInvokeProposal(txh, cir)
+}
+
+// CreateCommitProposal creates a proposal to commit a chaincode
+func (lc *Lifecycle) CreateCommitProposal(txh fab.TransactionHeader, req *CommitChaincodeRequest) (*fab.TransactionProposal, error) {
+	policyBytes, err := lc.marshalApplicationPolicy(req.SignaturePolicy, req.ChannelConfigPolicy)
+	if err != nil {
+		return nil, errors.WithMessage(err, "create application policy failed")
+	}
+
+	args := &lb.CommitChaincodeDefinitionArgs{
+		Name:                req.Name,
+		Version:             req.Version,
+		Sequence:            req.Sequence,
+		EndorsementPlugin:   req.EndorsementPlugin,
+		ValidationPlugin:    req.ValidationPlugin,
+		ValidationParameter: policyBytes,
+		InitRequired:        req.InitRequired,
+		Collections:         &pb.CollectionConfigPackage{Config: req.CollectionConfig},
+	}
+
+	argsBytes, err := lc.protoMarshal(args)
+	if err != nil {
+		return nil, err
+	}
+
+	cir := fab.ChaincodeInvokeRequest{
+		ChaincodeID: lifecycleCC,
+		Fcn:         lifecycleCommitFuncName,
 		Args:        [][]byte{argsBytes},
 	}
 
