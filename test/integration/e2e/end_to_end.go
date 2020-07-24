@@ -259,6 +259,12 @@ func createCCLifecycle(t *testing.T, orgResMgmt *resmgmt.Client) {
 
 	// Check commit readiness
 	checkCCCommitReadiness(t, packageID, orgResMgmt)
+
+	// Commit cc
+	commitCC(t, orgResMgmt)
+
+	// Query committed cc
+	queryCommittedCC(t, orgResMgmt)
 	return
 }
 
@@ -315,7 +321,7 @@ func approveCC(t *testing.T, packageID string, orgResMgmt *resmgmt.Client) {
 		Sequence:     1,
 		InitRequired: false,
 	}
-	txnID, err := orgResMgmt.LifecycleApproveCC(channelID, approveCCReq, resmgmt.WithTargetEndpoints(peer1))
+	txnID, err := orgResMgmt.LifecycleApproveCC(channelID, approveCCReq, resmgmt.WithTargetEndpoints(peer1), resmgmt.WithOrdererEndpoint("orderer.example.com"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -346,4 +352,29 @@ func checkCCCommitReadiness(t *testing.T, packageID string, orgResMgmt *resmgmt.
 		t.Fatal(err)
 	}
 	require.NotNil(t, resp)
+}
+
+func commitCC(t *testing.T, orgResMgmt *resmgmt.Client) {
+	req := resmgmt.LifecycleCommitCCRequest{
+		Name:         ccID,
+		Version:      "0",
+		Sequence:     1,
+		InitRequired: false,
+	}
+	txnID, err := orgResMgmt.LifecycleCommitCC(channelID, req, resmgmt.WithTargetEndpoints(peer1), resmgmt.WithOrdererEndpoint("orderer.example.com"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	require.NotEmpty(t, txnID)
+}
+
+func queryCommittedCC(t *testing.T, orgResMgmt *resmgmt.Client) {
+	req := resmgmt.LifecycleQueryCommittedCCRequest{
+		Name: ccID,
+	}
+	resp, err := orgResMgmt.LifecycleQueryCommittedCC(channelID, req, resmgmt.WithTargetEndpoints(peer1))
+	if err != nil {
+		t.Fatal(err)
+	}
+	require.Equal(t, ccID, resp[0].Name)
 }
