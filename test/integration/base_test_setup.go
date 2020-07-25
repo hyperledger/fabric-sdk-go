@@ -168,6 +168,12 @@ func GetDeployPath() string {
 	return filepath.Join(metadata.GetProjectPath(), ccPath)
 }
 
+// GetLcDeployPath returns the path to the chaincode fixtures
+func GetLcDeployPath() string {
+	const ccPath = "test/fixtures/testdata/go/src/github.com/example_cc"
+	return filepath.Join(metadata.GetProjectPath(), ccPath)
+}
+
 // GetJavaDeployPath returns the path to the java chaincode fixtrues
 func GetJavaDeployPath() string {
 	const ccPath = "test/fixtures/testdata/java"
