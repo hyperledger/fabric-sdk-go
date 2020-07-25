@@ -17,6 +17,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 	"github.com/stretchr/testify/require"
 
+	pb "github.com/hyperledger/fabric-protos-go/peer"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/policydsl"
 
@@ -27,6 +28,7 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	packager "github.com/hyperledger/fabric-sdk-go/pkg/fab/ccpackager/gopackager"
+	lcpackager "github.com/hyperledger/fabric-sdk-go/pkg/fab/ccpackager/lifecycle"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 )
 
@@ -35,6 +37,7 @@ const (
 	orgName        = "Org1"
 	orgAdmin       = "Admin"
 	ordererOrgName = "OrdererOrg"
+	peer1          = "peer0.org1.example.com"
 )
 
 var (
@@ -125,7 +128,11 @@ func createChannelAndCC(t *testing.T, sdk *fabsdk.FabricSDK) {
 	}
 
 	// Create chaincode package for example cc
-	createCC(t, orgResMgmt)
+	if metadata.Ccmode == "Lscc" {
+		createCC(t, orgResMgmt)
+	} else {
+		createCCLifecycle(t, orgResMgmt, sdk)
+	}
 }
 
 func moveFunds(t *testing.T, client *channel.Client) *fab.CCEvent {
@@ -226,4 +233,181 @@ func createChannel(t *testing.T, sdk *fabsdk.FabricSDK, resMgmtClient *resmgmt.C
 	txID, err := resMgmtClient.SaveChannel(req, resmgmt.WithRetry(retry.DefaultResMgmtOpts), resmgmt.WithOrdererEndpoint("orderer.example.com"))
 	require.Nil(t, err, "error should be nil")
 	require.NotEmpty(t, txID, "transaction ID should be populated")
+}
+
+// createCCLifecycle package cc, install cc, get installed cc package, query installed cc
+// approve cc, query approve cc, check commit readiness, commit cc, query committed cc
+func createCCLifecycle(t *testing.T, orgResMgmt *resmgmt.Client, sdk *fabsdk.FabricSDK) {
+	// Package cc
+	label, ccPkg := packageCC(t)
+	packageID := lcpackager.ComputePackageID(label, ccPkg)
+
+	// Install cc
+	installCC(t, label, ccPkg, orgResMgmt)
+
+	// Get installed cc package
+	getInstalledCCPackage(t, packageID, ccPkg, orgResMgmt)
+
+	// Query installed cc
+	queryInstalled(t, label, packageID, orgResMgmt)
+
+	// Approve cc
+	approveCC(t, packageID, orgResMgmt)
+
+	// Query approve cc
+	queryApprovedCC(t, orgResMgmt)
+
+	// Check commit readiness
+	checkCCCommitReadiness(t, packageID, orgResMgmt)
+
+	// Commit cc
+	commitCC(t, orgResMgmt)
+
+	// Query committed cc
+	queryCommittedCC(t, orgResMgmt)
+
+	// Init cc
+	initCC(t, sdk)
+}
+
+func packageCC(t *testing.T) (string, []byte) {
+	desc := &lcpackager.Descriptor{
+		Path:  integration.GetLcDeployPath(),
+		Type:  pb.ChaincodeSpec_GOLANG,
+		Label: "example_cc_0",
+	}
+	ccPkg, err := lcpackager.NewCCPackage(desc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return desc.Label, ccPkg
+}
+
+func installCC(t *testing.T, label string, ccPkg []byte, orgResMgmt *resmgmt.Client) {
+	installCCReq := resmgmt.LifecycleInstallCCRequest{
+		Label:   label,
+		Package: ccPkg,
+	}
+
+	packageID := lcpackager.ComputePackageID(installCCReq.Label, installCCReq.Package)
+
+	resp, err := orgResMgmt.LifecycleInstallCC(installCCReq, resmgmt.WithRetry(retry.DefaultResMgmtOpts))
+	if err != nil {
+		t.Fatal(err)
+	}
+	require.Equal(t, packageID, resp[0].PackageID)
+}
+
+func getInstalledCCPackage(t *testing.T, packageID string, ccPkg []byte, orgResMgmt *resmgmt.Client) {
+	resp, err := orgResMgmt.LifecycleGetInstalledCCPackage(packageID, resmgmt.WithTargetEndpoints(peer1))
+	if err != nil {
+		t.Fatal(err)
+	}
+	require.Equal(t, ccPkg, resp)
+}
+
+func queryInstalled(t *testing.T, label string, packageID string, orgResMgmt *resmgmt.Client) {
+	resp, err := orgResMgmt.LifecycleQueryInstalledCC(resmgmt.WithTargetEndpoints(peer1))
+	if err != nil {
+		t.Fatal(err)
+	}
+	require.Equal(t, packageID, resp[0].PackageID)
+	require.Equal(t, label, resp[0].Label)
+}
+
+func approveCC(t *testing.T, packageID string, orgResMgmt *resmgmt.Client) {
+	ccPolicy := policydsl.SignedByAnyMember([]string{"Org1MSP"})
+	approveCCReq := resmgmt.LifecycleApproveCCRequest{
+		Name:              ccID,
+		Version:           "0",
+		PackageID:         packageID,
+		Sequence:          1,
+		EndorsementPlugin: "escc",
+		ValidationPlugin:  "vscc",
+		SignaturePolicy:   ccPolicy,
+		InitRequired:      true,
+	}
+
+	txnID, err := orgResMgmt.LifecycleApproveCC(channelID, approveCCReq, resmgmt.WithTargetEndpoints(peer1), resmgmt.WithOrdererEndpoint("orderer.example.com"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	require.NotEmpty(t, txnID)
+}
+
+func queryApprovedCC(t *testing.T, orgResMgmt *resmgmt.Client) {
+	queryApprovedCCReq := resmgmt.LifecycleQueryApprovedCCRequest{
+		Name:     ccID,
+		Sequence: 1,
+	}
+	resp, err := orgResMgmt.LifecycleQueryApprovedCC(channelID, queryApprovedCCReq, resmgmt.WithTargetEndpoints(peer1))
+	if err != nil {
+		t.Fatal(err)
+	}
+	require.NotNil(t, resp)
+}
+
+func checkCCCommitReadiness(t *testing.T, packageID string, orgResMgmt *resmgmt.Client) {
+	ccPolicy := policydsl.SignedByAnyMember([]string{"Org1MSP"})
+	req := resmgmt.LifecycleCheckCCCommitReadinessRequest{
+		Name:              ccID,
+		Version:           "0",
+		PackageID:         packageID,
+		EndorsementPlugin: "escc",
+		ValidationPlugin:  "vscc",
+		SignaturePolicy:   ccPolicy,
+		Sequence:          1,
+	}
+	resp, err := orgResMgmt.LifecycleCheckCCCommitReadiness(channelID, req, resmgmt.WithTargetEndpoints(peer1))
+	if err != nil {
+		t.Fatal(err)
+	}
+	require.NotNil(t, resp)
+}
+
+func commitCC(t *testing.T, orgResMgmt *resmgmt.Client) {
+	ccPolicy := policydsl.SignedByAnyMember([]string{"Org1MSP"})
+	req := resmgmt.LifecycleCommitCCRequest{
+		Name:              ccID,
+		Version:           "0",
+		Sequence:          1,
+		EndorsementPlugin: "escc",
+		ValidationPlugin:  "vscc",
+		SignaturePolicy:   ccPolicy,
+		InitRequired:      true,
+	}
+	txnID, err := orgResMgmt.LifecycleCommitCC(channelID, req, resmgmt.WithTargetEndpoints(peer1), resmgmt.WithOrdererEndpoint("orderer.example.com"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	require.NotEmpty(t, txnID)
+}
+
+func queryCommittedCC(t *testing.T, orgResMgmt *resmgmt.Client) {
+	req := resmgmt.LifecycleQueryCommittedCCRequest{
+		Name: ccID,
+	}
+	resp, err := orgResMgmt.LifecycleQueryCommittedCC(channelID, req, resmgmt.WithTargetEndpoints(peer1))
+	if err != nil {
+		t.Fatal(err)
+	}
+	require.Equal(t, ccID, resp[0].Name)
+}
+
+func initCC(t *testing.T, sdk *fabsdk.FabricSDK) {
+	//prepare channel client context using client context
+	clientChannelContext := sdk.ChannelContext(channelID, fabsdk.WithUser("User1"), fabsdk.WithOrg(orgName))
+	// Channel client is used to query and execute transactions (Org1 is default org)
+	client, err := channel.New(clientChannelContext)
+	if err != nil {
+		t.Fatalf("Failed to create new channel client: %s", err)
+	}
+
+	// init
+	_, err = client.Execute(channel.Request{ChaincodeID: ccID, Fcn: "init", Args: integration.ExampleCCInitArgsLc(), IsInit: true},
+		channel.WithRetry(retry.DefaultChannelOpts))
+	if err != nil {
+		t.Fatalf("Failed to init: %s", err)
+	}
+
 }

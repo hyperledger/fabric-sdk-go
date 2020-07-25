@@ -19,10 +19,12 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab"
 	packager "github.com/hyperledger/fabric-sdk-go/pkg/fab/ccpackager/gopackager"
 	javapackager "github.com/hyperledger/fabric-sdk-go/pkg/fab/ccpackager/javapackager"
+	lcpackager "github.com/hyperledger/fabric-sdk-go/pkg/fab/ccpackager/lifecycle"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/ccpackager/nodepackager"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/comm"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/test/metadata"
+	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/policydsl"
 	"github.com/pkg/errors"
 )
 
@@ -139,6 +141,52 @@ func PrepareExampleCC(sdk *fabsdk.FabricSDK, user fabsdk.ContextOption, orgName 
 	return nil
 }
 
+// PrepareExampleCCLc install and instantiate using resource management client
+func PrepareExampleCCLc(sdk *fabsdk.FabricSDK, user fabsdk.ContextOption, orgName string, chaincodeID string) error {
+	const (
+		channelID = defaultChannelID
+	)
+
+	fmt.Printf("Installing and instantiating example chaincode..., cc = %v\n", chaincodeID)
+	start := time.Now()
+
+	ccPolicy, err := prepareOneOrgPolicy(sdk, orgName)
+	if err != nil {
+		return errors.WithMessage(err, "CC policy could not be prepared")
+	}
+
+	orgContexts, err := prepareOrgContexts(sdk, user, []string{orgName})
+	if err != nil {
+		return errors.WithMessage(err, "Org contexts could not be prepared")
+	}
+
+	packageID, err := InstallExampleChaincodeLc(orgContexts, chaincodeID, exampleCCVersion)
+	if err != nil {
+		return errors.WithMessage(err, "Installing example chaincode failed")
+	}
+
+	err = ApproveExampleChaincode(orgContexts, channelID, chaincodeID, exampleCCVersion, packageID, ccPolicy, 1)
+	if err != nil {
+		return errors.WithMessage(err, "Approve example chaincode failed")
+	}
+
+	err = CommitExampleChaincode(orgContexts, channelID, chaincodeID, exampleCCVersion, ccPolicy, 1)
+	if err != nil {
+		return errors.WithMessage(err, "Commit example chaincode failed")
+	}
+
+	err = InitExampleChaincode(sdk, channelID, chaincodeID, orgContexts[0].OrgID)
+	if err != nil {
+		return errors.WithMessage(err, "Init example chaincode failed")
+	}
+
+	t := time.Now()
+	elapsed := t.Sub(start)
+	fmt.Printf("Done [%d ms]\n", elapsed/time.Millisecond)
+
+	return nil
+}
+
 // InstallExampleChaincode installs the example chaincode to all peers in the given orgs
 func InstallExampleChaincode(orgs []*OrgContext, ccID string) error {
 	ccPkg, err := packager.NewCCPackage(exampleCCPath, GetDeployPath())
@@ -154,6 +202,112 @@ func InstallExampleChaincode(orgs []*OrgContext, ccID string) error {
 	return nil
 }
 
+// InstallExampleChaincodeLc installs the example chaincode to all peers in the given orgs
+func InstallExampleChaincodeLc(orgs []*OrgContext, ccID, ccVersion string) (string, error) {
+	label := ccID + "_" + ccVersion
+	desc := &lcpackager.Descriptor{
+		Path:  GetLcDeployPath(),
+		Type:  pb.ChaincodeSpec_GOLANG,
+		Label: label,
+	}
+
+	ccPkg, err := lcpackager.NewCCPackage(desc)
+	if err != nil {
+		return "", errors.WithMessage(err, "creating chaincode package failed")
+	}
+
+	installCCReq := resmgmt.LifecycleInstallCCRequest{
+		Label:   label,
+		Package: ccPkg,
+	}
+
+	packageID := lcpackager.ComputePackageID(installCCReq.Label, installCCReq.Package)
+
+	for _, orgCtx := range orgs {
+		_, err := orgCtx.ResMgmt.LifecycleInstallCC(installCCReq, resmgmt.WithRetry(retry.DefaultResMgmtOpts))
+		if err != nil {
+			return "", errors.WithMessage(err, "installing example chaincode failed")
+		}
+	}
+
+	return packageID, nil
+}
+
+// ApproveExampleChaincode approve the example CC on the given channel
+func ApproveExampleChaincode(orgs []*OrgContext, channelID, ccID, ccVersion, packageID, ccPolicyStr string, sequence int64, collConfigs ...*pb.CollectionConfig) error {
+	ccPolicy, err := policydsl.FromString(ccPolicyStr)
+	if err != nil {
+		return errors.Wrapf(err, "error creating CC policy [%s]", ccPolicyStr)
+	}
+	approveCCReq := resmgmt.LifecycleApproveCCRequest{
+		Name:              ccID,
+		Version:           ccVersion,
+		PackageID:         packageID,
+		Sequence:          sequence,
+		EndorsementPlugin: "escc",
+		ValidationPlugin:  "vscc",
+		SignaturePolicy:   ccPolicy,
+		InitRequired:      true,
+		CollectionConfig:  collConfigs,
+	}
+
+	for _, orgCtx := range orgs {
+		_, err := orgCtx.ResMgmt.LifecycleApproveCC(channelID, approveCCReq, resmgmt.WithTargets(orgCtx.Peers...))
+		if err != nil {
+			return errors.WithMessage(err, "approve example chaincode failed")
+		}
+	}
+
+	return nil
+}
+
+// CommitExampleChaincode approve the example CC on the given channel
+func CommitExampleChaincode(orgs []*OrgContext, channelID, ccID, ccVersion, ccPolicyStr string, sequence int64, collConfigs ...*pb.CollectionConfig) error {
+	ccPolicy, err := policydsl.FromString(ccPolicyStr)
+	if err != nil {
+		return errors.Wrapf(err, "error creating CC policy [%s]", ccPolicyStr)
+	}
+
+	req := resmgmt.LifecycleCommitCCRequest{
+		Name:              ccID,
+		Version:           ccVersion,
+		Sequence:          sequence,
+		EndorsementPlugin: "escc",
+		ValidationPlugin:  "vscc",
+		SignaturePolicy:   ccPolicy,
+		InitRequired:      true,
+		CollectionConfig:  collConfigs,
+	}
+
+	_, err = orgs[0].ResMgmt.LifecycleCommitCC(channelID, req)
+	if err != nil {
+		return errors.WithMessage(err, "commit example chaincode failed")
+	}
+
+	return nil
+
+}
+
+// InitExampleChaincode init the example CC on the given channel
+func InitExampleChaincode(sdk *fabsdk.FabricSDK, channelID, ccID string, orgName string) error {
+	//prepare channel client context using client context
+	clientChannelContext := sdk.ChannelContext(channelID, fabsdk.WithUser("User1"), fabsdk.WithOrg(orgName))
+	// Channel client is used to query and execute transactions (Org1 is default org)
+	client, err := channel.New(clientChannelContext)
+	if err != nil {
+		return errors.WithMessage(err, "init example chaincode failed")
+	}
+
+	// init
+	_, err = client.Execute(channel.Request{ChaincodeID: ccID, Fcn: "init", Args: ExampleCCInitArgsLc(), IsInit: true},
+		channel.WithRetry(retry.DefaultChannelOpts))
+	if err != nil {
+		return errors.WithMessage(err, "init example chaincode failed")
+	}
+	return nil
+
+}
+
 // InstallExamplePvtChaincode installs the example pvt chaincode to all peers in the given orgs
 func InstallExamplePvtChaincode(orgs []*OrgContext, ccID string) error {
 	ccPkg, err := packager.NewCCPackage(examplePvtCCPath, GetDeployPath())
@@ -167,6 +321,37 @@ func InstallExamplePvtChaincode(orgs []*OrgContext, ccID string) error {
 	}
 
 	return nil
+}
+
+// InstallExamplePvtChaincodeLc installs the example chaincode to all peers in the given orgs
+func InstallExamplePvtChaincodeLc(orgs []*OrgContext, ccID, ccVersion string) (string, error) {
+	label := ccID + "_" + ccVersion
+	desc := &lcpackager.Descriptor{
+		Path:  GetLcPvtDeployPath(),
+		Type:  pb.ChaincodeSpec_GOLANG,
+		Label: label,
+	}
+
+	ccPkg, err := lcpackager.NewCCPackage(desc)
+	if err != nil {
+		return "", errors.WithMessage(err, "creating chaincode package failed")
+	}
+
+	installCCReq := resmgmt.LifecycleInstallCCRequest{
+		Label:   label,
+		Package: ccPkg,
+	}
+
+	packageID := lcpackager.ComputePackageID(installCCReq.Label, installCCReq.Package)
+
+	for _, orgCtx := range orgs {
+		_, err := orgCtx.ResMgmt.LifecycleInstallCC(installCCReq, resmgmt.WithRetry(retry.DefaultResMgmtOpts))
+		if err != nil {
+			return "", errors.WithMessage(err, "installing example chaincode failed")
+		}
+	}
+
+	return packageID, nil
 }
 
 // InstallExampleJavaChaincode installs the example java chaincode to all peers in the given orgs
@@ -195,6 +380,83 @@ func InstallExampleNodeChaincode(orgs []*OrgContext, ccID string) error {
 	if err != nil {
 		return errors.WithMessage(err, "installing example chaincode failed")
 	}
+
+	return nil
+}
+
+// InstantiateExampleChaincodeLc install and instantiate using resource management client
+func InstantiateExampleChaincodeLc(sdk *fabsdk.FabricSDK, orgs []*OrgContext, channelID, ccID, ccPolicy string, collConfigs ...*pb.CollectionConfig) error {
+	start := time.Now()
+	packageID, err := InstallExampleChaincodeLc(orgs, ccID, exampleCCVersion)
+	if err != nil {
+		return errors.WithMessage(err, "Installing example chaincode failed")
+	}
+
+	err = instantiateExampleChaincodeLc(sdk, orgs, channelID, ccID, exampleCCVersion, ccPolicy, packageID, 1, collConfigs...)
+	if err != nil {
+		return errors.WithMessage(err, "init example chaincode failed")
+	}
+	t := time.Now()
+	elapsed := t.Sub(start)
+	fmt.Printf("Done [%d ms]\n", elapsed/time.Millisecond)
+
+	return nil
+}
+
+// InstantiatePvtExampleChaincodeLc install and instantiate using resource management client
+func InstantiatePvtExampleChaincodeLc(sdk *fabsdk.FabricSDK, orgs []*OrgContext, channelID, ccID, ccPolicy string, collConfigs ...*pb.CollectionConfig) error {
+	start := time.Now()
+	packageID, err := InstallExamplePvtChaincodeLc(orgs, ccID, exampleCCVersion)
+	if err != nil {
+		return errors.WithMessage(err, "Installing example chaincode failed")
+	}
+
+	err = instantiateExampleChaincodeLc(sdk, orgs, channelID, ccID, exampleCCVersion, ccPolicy, packageID, 1, collConfigs...)
+	if err != nil {
+		return errors.WithMessage(err, "init example chaincode failed")
+	}
+	t := time.Now()
+	elapsed := t.Sub(start)
+	fmt.Printf("Done [%d ms]\n", elapsed/time.Millisecond)
+
+	return nil
+}
+
+func instantiateExampleChaincodeLc(sdk *fabsdk.FabricSDK, orgs []*OrgContext, channelID, ccID, ccVersion, ccPolicy, packageID string, sequence int64, collConfigs ...*pb.CollectionConfig) error {
+
+	err := ApproveExampleChaincode(orgs, channelID, ccID, ccVersion, packageID, ccPolicy, sequence, collConfigs...)
+	if err != nil {
+		return errors.WithMessage(err, "Approve example chaincode failed")
+	}
+
+	err = CommitExampleChaincode(orgs, channelID, ccID, ccVersion, ccPolicy, sequence, collConfigs...)
+	if err != nil {
+		return errors.WithMessage(err, "Commit example chaincode failed")
+	}
+
+	err = InitExampleChaincode(sdk, channelID, ccID, orgs[0].OrgID)
+	if err != nil {
+		return errors.WithMessage(err, "Init example chaincode failed")
+	}
+
+	return nil
+}
+
+// UpgradeExamplePvtChaincodeLc upgrades the instantiated example pvt CC on the given channel
+func UpgradeExamplePvtChaincodeLc(sdk *fabsdk.FabricSDK, orgs []*OrgContext, channelID, ccID, ccPolicy string, collConfigs ...*pb.CollectionConfig) error {
+	start := time.Now()
+	packageID, err := InstallExamplePvtChaincodeLc(orgs, ccID, exampleUpgdPvtCCVer)
+	if err != nil {
+		return errors.WithMessage(err, "Installing example chaincode failed")
+	}
+
+	err = instantiateExampleChaincodeLc(sdk, orgs, channelID, ccID, exampleUpgdPvtCCVer, ccPolicy, packageID, 2, collConfigs...)
+	if err != nil {
+		return errors.WithMessage(err, "init example chaincode failed")
+	}
+	t := time.Now()
+	elapsed := t.Sub(start)
+	fmt.Printf("Done [%d ms]\n", elapsed/time.Millisecond)
 
 	return nil
 }

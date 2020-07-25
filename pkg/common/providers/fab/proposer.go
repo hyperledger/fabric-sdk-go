@@ -70,6 +70,7 @@ type ChaincodeInvokeRequest struct {
 	TransientMap map[string][]byte
 	Fcn          string
 	Args         [][]byte
+	IsInit       bool
 }
 
 // TransactionProposal contains a marashalled transaction proposal.

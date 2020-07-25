@@ -28,6 +28,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
+	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 )
 
 func TestChannelClient(t *testing.T) {
@@ -82,8 +83,13 @@ func TestChannelClient(t *testing.T) {
 
 	// transaction
 	nestedCCID := integration.GenerateExampleID(true)
-	err = integration.PrepareExampleCC(sdk, fabsdk.WithUser("Admin"), testSetup.OrgID, nestedCCID)
-	require.Nil(t, err, "InstallAndInstantiateExampleCC return error")
+	if metadata.Ccmode == "Lscc" {
+		err = integration.PrepareExampleCC(sdk, fabsdk.WithUser("Admin"), testSetup.OrgID, nestedCCID)
+		require.Nil(t, err, "InstallAndInstantiateExampleCC return error")
+	} else {
+		err = integration.PrepareExampleCCLc(sdk, fabsdk.WithUser("Admin"), testSetup.OrgID, nestedCCID)
+		require.Nil(t, err, "InstallAndInstantiateExampleCC return error")
+	}
 
 	//perform Transaction
 	testTransaction(t, chClient, chaincodeID, nestedCCID, moveOneTx)
@@ -241,16 +247,27 @@ func TestCCToCC(t *testing.T) {
 	require.NoError(t, err)
 
 	cc1ID := integration.GenerateExampleID(true)
-	err = integration.InstallExampleChaincode(orgsContext, cc1ID)
-	require.NoError(t, err)
-	err = integration.InstantiateExampleChaincode(orgsContext, orgChannelID, cc1ID, "OR('Org1MSP.member')")
-	require.NoError(t, err)
+	if metadata.Ccmode == "Lscc" {
+		err = integration.InstallExampleChaincode(orgsContext, cc1ID)
+		require.NoError(t, err)
+		err = integration.InstantiateExampleChaincode(orgsContext, orgChannelID, cc1ID, "OR('Org1MSP.member')")
+		require.NoError(t, err)
+	} else {
+		err = integration.InstantiateExampleChaincodeLc(sdk, orgsContext, orgChannelID, cc1ID, "OR('Org1MSP.member')")
+		require.NoError(t, err)
+	}
 
 	cc2ID := integration.GenerateExampleID(true)
-	err = integration.InstallExampleChaincode(orgsContext, cc2ID)
-	require.NoError(t, err)
-	err = integration.InstantiateExampleChaincode(orgsContext, orgChannelID, cc2ID, "AND('Org1MSP.member','Org2MSP.member')")
-	require.NoError(t, err)
+	if metadata.Ccmode == "Lscc" {
+		err = integration.InstallExampleChaincode(orgsContext, cc2ID)
+		require.NoError(t, err)
+		err = integration.InstantiateExampleChaincode(orgsContext, orgChannelID, cc2ID, "AND('Org1MSP.member','Org2MSP.member')")
+		require.NoError(t, err)
+	} else {
+
+		err = integration.InstantiateExampleChaincodeLc(sdk, orgsContext, orgChannelID, cc2ID, "AND('Org1MSP.member','Org2MSP.member')")
+		require.NoError(t, err)
+	}
 
 	ctxProvider := sdk.ChannelContext(orgChannelID, fabsdk.WithUser(org1User), fabsdk.WithOrg(org1Name))
 

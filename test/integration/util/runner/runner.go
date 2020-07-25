@@ -13,6 +13,7 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
+	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 )
 
 const (
@@ -115,10 +116,17 @@ func (r *Runner) Initialize() {
 	}
 
 	if r.installExampleCC {
-		r.exampleChaincodeID = integration.GenerateExampleID(false)
-		if err := integration.PrepareExampleCC(sdk, fabsdk.WithUser("Admin"), r.testSetup.OrgID, r.exampleChaincodeID); err != nil {
-			panic(fmt.Sprintf("PrepareExampleCC return error: %s", err))
+		r.exampleChaincodeID = integration.GenerateExampleID(true)
+		if metadata.Ccmode == "Lscc" {
+			if err := integration.PrepareExampleCC(sdk, fabsdk.WithUser("Admin"), r.testSetup.OrgID, r.exampleChaincodeID); err != nil {
+				panic(fmt.Sprintf("PrepareExampleCC return error: %s", err))
+			}
+		} else {
+			if err := integration.PrepareExampleCCLc(sdk, fabsdk.WithUser("Admin"), r.testSetup.OrgID, r.exampleChaincodeID); err != nil {
+				panic(fmt.Sprintf("PrepareExampleCCLc return error: %s", err))
+			}
 		}
+
 	}
 }
 

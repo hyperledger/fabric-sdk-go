@@ -17,6 +17,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/msp"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
+	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/ledger"
@@ -81,8 +82,14 @@ func TestLedgerQueries(t *testing.T) {
 	//defer client.Close()
 
 	chaincodeID := integration.GenerateExampleID(false)
-	err := integration.PrepareExampleCC(sdk, fabsdk.WithUser("Admin"), testSetup.OrgID, chaincodeID)
-	require.Nil(t, err, "InstallAndInstantiateExampleCC return error")
+
+	if metadata.Ccmode == "Lscc" {
+		err := integration.PrepareExampleCC(sdk, fabsdk.WithUser("Admin"), testSetup.OrgID, chaincodeID)
+		require.Nil(t, err, "InstallAndInstantiateExampleCC return error")
+	} else {
+		err := integration.PrepareExampleCCLc(sdk, fabsdk.WithUser("Admin"), testSetup.OrgID, chaincodeID)
+		require.Nil(t, err, "InstallAndInstantiateExampleCC return error")
+	}
 
 	//prepare required contexts
 	channelClientCtx := sdk.ChannelContext(channelID, fabsdk.WithUser("Admin"), fabsdk.WithOrg(orgName))
@@ -138,7 +145,9 @@ func TestLedgerQueries(t *testing.T) {
 
 	require.Nil(t, err, "resmgmt new return error")
 
-	testInstantiatedChaincodes(t, chaincodeID, channelID, resmgmtClient, targets)
+	if metadata.Ccmode == "Lscc" {
+		testInstantiatedChaincodes(t, chaincodeID, channelID, resmgmtClient, targets)
+	}
 
 	testQueryConfigBlock(t, ledgerClient, targets)
 }
