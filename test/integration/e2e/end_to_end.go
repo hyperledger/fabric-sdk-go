@@ -41,7 +41,7 @@ const (
 )
 
 var (
-	ccID = "example_cc_e2e" + metadata.TestRunID
+	ccID = "example_cc_fabtest_e2e" + metadata.TestRunID
 )
 
 // Run enables testing an end-to-end scenario against the supplied SDK options
@@ -274,7 +274,7 @@ func packageCC(t *testing.T) (string, []byte) {
 	desc := &lcpackager.Descriptor{
 		Path:  integration.GetLcDeployPath(),
 		Type:  pb.ChaincodeSpec_GOLANG,
-		Label: "example_cc_0",
+		Label: "example_cc_fabtest_0",
 	}
 	ccPkg, err := lcpackager.NewCCPackage(desc)
 	if err != nil {
