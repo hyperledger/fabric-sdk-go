@@ -63,7 +63,7 @@ var (
 	// Peers
 	orgTestPeer0 fab.Peer
 	orgTestPeer1 fab.Peer
-	exampleCC    = "example_cc_e2e" + metadata.TestRunID
+	exampleCC    = "example_cc_fabtest_e2e" + metadata.TestRunID
 )
 
 // used to create context for different tests in the orgs package

@@ -29,7 +29,7 @@ import (
 )
 
 const (
-	bootStrapCC    = "example_cc_btsp"
+	bootStrapCC    = "example_cc_fabtest_btsp"
 	configFilename = "config_e2e_multiorg_bootstrap.yaml"
 )
 

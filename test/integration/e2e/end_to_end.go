@@ -41,7 +41,7 @@ const (
 )
 
 var (
-	ccID = "example_cc_e2e" + metadata.TestRunID
+	ccID = "example_cc_fabtest_e2e" + metadata.TestRunID
 )
 
 // Run enables testing an end-to-end scenario against the supplied SDK options
