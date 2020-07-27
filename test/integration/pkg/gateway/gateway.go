@@ -27,7 +27,7 @@ const (
 )
 
 var (
-	ccID = "example_cc_e2e" + metadata.TestRunID
+	ccID = "example_cc_fabtest_e2e" + metadata.TestRunID
 )
 
 // RunWithConfig the basic gateway integration test

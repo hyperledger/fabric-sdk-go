@@ -29,7 +29,7 @@ import (
 )
 
 var (
-	binaryRegExp         = regexp.MustCompile("(.*)_(.*)")
+	binaryRegExp         = regexp.MustCompile("(.*)_fabtest_(.*)")
 	containerCreateRegEx = regexp.MustCompile("/containers/create")
 	containerNameRegEx   = regexp.MustCompile("(.*)-(.*)-(.*)-(.*)")
 	containerStartRegEx  = regexp.MustCompile("/containers/(.+)/start")
