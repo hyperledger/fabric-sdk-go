@@ -57,7 +57,7 @@ func GenerateExamplePvtID(randomize bool) string {
 		suffix = GenerateRandomID()
 	}
 
-	return fmt.Sprintf("%s_%s%s", examplePvtCCName, metadata.TestRunID, suffix)
+	return fmt.Sprintf("%s_fabtest_%s%s", examplePvtCCName, metadata.TestRunID, suffix)
 }
 
 // GenerateExampleID supplies a chaincode name for example_cc
@@ -67,7 +67,7 @@ func GenerateExampleID(randomize bool) string {
 		suffix = GenerateRandomID()
 	}
 
-	return fmt.Sprintf("%s_0%s%s", exampleCCName, metadata.TestRunID, suffix)
+	return fmt.Sprintf("%s_fabtest_0%s%s", exampleCCName, metadata.TestRunID, suffix)
 }
 
 // GenerateExampleJavaID supplies a java chaincode name for example_cc
@@ -77,7 +77,7 @@ func GenerateExampleJavaID(randomize bool) string {
 		suffix = GenerateRandomID()
 	}
 
-	return fmt.Sprintf("%s_0%s%s", exampleJavaCCName, metadata.TestRunID, suffix)
+	return fmt.Sprintf("%s_fabtest_0%s%s", exampleJavaCCName, metadata.TestRunID, suffix)
 }
 
 // GenerateExampleNodeID supplies a node chaincode name for example_cc
@@ -87,7 +87,7 @@ func GenerateExampleNodeID(randomize bool) string {
 		suffix = GenerateRandomID()
 	}
 
-	return fmt.Sprintf("%s_0%s%s", exampleNodeCCName, metadata.TestRunID, suffix)
+	return fmt.Sprintf("%s_fabtest_0%s%s", exampleNodeCCName, metadata.TestRunID, suffix)
 }
 
 // PrepareExampleCC install and instantiate using resource management client
