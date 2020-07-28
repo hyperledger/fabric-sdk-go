@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package orgs
 
 import (
+        "time"
 	"fmt"
 	"os"
 	"strconv"
@@ -250,6 +251,8 @@ func testWithOrg1(t *testing.T, sdk *fabsdk.FabricSDK, mc *multiorgContext) int 
 		upgradeCC(t, mc, ccPkg, mc.ccName, "1")
 	} else {
 		createCCLifecycle(t, mc, mc.ccName, "1", 2, true, mc.channelID, sdk)
+                //sleep 10s for chaincode cache
+		time.Sleep(time.Duration(10) * time.Second)
 	}
 
 	// Org2 user moves funds on org2 peer (cc policy fails since both Org1 and Org2 peers should participate)
@@ -749,17 +752,24 @@ func installCC(t *testing.T, label string, ccPkg []byte, mc *multiorgContext) {
 	}
 
 	packageID := lcpackager.ComputePackageID(installCCReq.Label, installCCReq.Package)
-
-	resp1, err := mc.org1ResMgmt.LifecycleInstallCC(installCCReq, resmgmt.WithRetry(retry.DefaultResMgmtOpts))
-	if err != nil {
-		t.Fatal(err)
+	org1Peers, err := integration.DiscoverLocalPeers(mc.org1AdminClientContext, 2)
+	require.NoError(t, err)
+	if !checkInstalled(t, packageID, org1Peers[0], mc.org1ResMgmt) {
+		resp1, err := mc.org1ResMgmt.LifecycleInstallCC(installCCReq, resmgmt.WithTargets(org1Peers...), resmgmt.WithRetry(retry.DefaultResMgmtOpts))
+		if err != nil {
+			t.Fatal(err)
+		}
+		require.Equal(t, packageID, resp1[0].PackageID)
 	}
-	require.Equal(t, packageID, resp1[0].PackageID)
-	resp2, err := mc.org2ResMgmt.LifecycleInstallCC(installCCReq, resmgmt.WithRetry(retry.DefaultResMgmtOpts))
-	if err != nil {
-		t.Fatal(err)
+	org2Peers, err := integration.DiscoverLocalPeers(mc.org2AdminClientContext, 2)
+	require.NoError(t, err)
+	if !checkInstalled(t, packageID, org2Peers[0], mc.org2ResMgmt) {
+		resp2, err := mc.org2ResMgmt.LifecycleInstallCC(installCCReq, resmgmt.WithTargets(org2Peers...), resmgmt.WithRetry(retry.DefaultResMgmtOpts))
+		if err != nil {
+			t.Fatal(err)
+		}
+		require.Equal(t, packageID, resp2[0].PackageID)
 	}
-	require.Equal(t, packageID, resp2[0].PackageID)
 }
 
 func getInstalledCCPackage(t *testing.T, packageID string, ccPkg []byte, mc *multiorgContext) {
@@ -786,16 +796,29 @@ func queryInstalled(t *testing.T, label string, packageID string, mc *multiorgCo
 		if t.PackageID == packageID {
 			packageID1 = t.PackageID
 		}
-
 	}
 	require.Equal(t, packageID, packageID1)
 
 }
 
+func checkInstalled(t *testing.T, packageID string, peer fab.Peer, client *resmgmt.Client) bool {
+	flag := false
+	resp1, err := client.LifecycleQueryInstalledCC(resmgmt.WithTargets(peer))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, t := range resp1 {
+		if t.PackageID == packageID {
+			flag = true
+		}
+	}
+	return flag
+}
+
 func approveCC(t *testing.T, packageID string, ccName, ccVersion string, sequence int64, channelID string, mc *multiorgContext) {
-	org1Peers, err := integration.DiscoverLocalPeers(mc.org1AdminClientContext, 1)
+	org1Peers, err := integration.DiscoverLocalPeers(mc.org1AdminClientContext, 2)
 	require.NoError(t, err)
-	org2Peers, err := integration.DiscoverLocalPeers(mc.org2AdminClientContext, 1)
+	org2Peers, err := integration.DiscoverLocalPeers(mc.org2AdminClientContext, 2)
 	require.NoError(t, err)
 	ccPolicy := policydsl.SignedByNOutOfGivenRole(2, mb.MSPRole_MEMBER, []string{"Org1MSP", "Org2MSP"})
 	approveCCReq := resmgmt.LifecycleApproveCCRequest{
