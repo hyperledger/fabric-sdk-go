@@ -7,12 +7,12 @@ SPDX-License-Identifier: Apache-2.0
 package orgs
 
 import (
-        "time"
 	"fmt"
 	"os"
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/multi"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
@@ -251,7 +251,7 @@ func testWithOrg1(t *testing.T, sdk *fabsdk.FabricSDK, mc *multiorgContext) int 
 		upgradeCC(t, mc, ccPkg, mc.ccName, "1")
 	} else {
 		createCCLifecycle(t, mc, mc.ccName, "1", 2, true, mc.channelID, sdk)
-                //sleep 10s for chaincode cache
+		//sleep 10s for chaincode cache
 		time.Sleep(time.Duration(10) * time.Second)
 	}
 
@@ -715,6 +715,9 @@ func createCCLifecycle(t *testing.T, mc *multiorgContext, ccName, ccVersion stri
 	// Approve cc
 	approveCC(t, packageID, ccName, ccVersion, sequence, channelID, mc)
 
+	//sleep 5s for approve cache
+	time.Sleep(time.Duration(5) * time.Second)
+
 	// Query approve cc
 	queryApprovedCC(t, ccName, sequence, channelID, mc)
 
@@ -723,6 +726,9 @@ func createCCLifecycle(t *testing.T, mc *multiorgContext, ccName, ccVersion stri
 
 	// Commit cc
 	commitCC(t, ccName, ccVersion, sequence, channelID, mc)
+
+	//sleep 5s for commit cache
+	time.Sleep(time.Duration(5) * time.Second)
 
 	// Query committed cc
 	queryCommittedCC(t, ccName, channelID, mc)

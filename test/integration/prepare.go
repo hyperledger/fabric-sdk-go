@@ -170,7 +170,7 @@ func PrepareExampleCCLc(sdk *fabsdk.FabricSDK, user fabsdk.ContextOption, orgNam
 		return errors.WithMessage(err, "Approve example chaincode failed")
 	}
 
-        //sleep 5s for approve cache
+	//sleep 5s for approve cache
 	time.Sleep(time.Duration(5) * time.Second)
 
 	err = CommitExampleChaincode(orgContexts, channelID, chaincodeID, exampleCCVersion, ccPolicy, 1)
@@ -432,14 +432,14 @@ func instantiateExampleChaincodeLc(sdk *fabsdk.FabricSDK, orgs []*OrgContext, ch
 		return errors.WithMessage(err, "Approve example chaincode failed")
 	}
 
-        //sleep 5s for approve cache
+	//sleep 5s for approve cache
 	time.Sleep(time.Duration(5) * time.Second)
 
 	err = CommitExampleChaincode(orgs, channelID, ccID, ccVersion, ccPolicy, sequence, collConfigs...)
 	if err != nil {
 		return errors.WithMessage(err, "Commit example chaincode failed")
 	}
-        //sleep 10s for chaincode cache
+	//sleep 10s for chaincode cache
 	time.Sleep(time.Duration(10) * time.Second)
 
 	err = InitExampleChaincode(sdk, channelID, ccID, orgs[0].OrgID)

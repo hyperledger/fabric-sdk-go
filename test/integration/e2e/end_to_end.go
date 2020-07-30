@@ -254,6 +254,9 @@ func createCCLifecycle(t *testing.T, orgResMgmt *resmgmt.Client, sdk *fabsdk.Fab
 	// Approve cc
 	approveCC(t, packageID, orgResMgmt)
 
+	//sleep 5s for approve cache
+	time.Sleep(time.Duration(5) * time.Second)
+
 	// Query approve cc
 	queryApprovedCC(t, orgResMgmt)
 
@@ -262,6 +265,9 @@ func createCCLifecycle(t *testing.T, orgResMgmt *resmgmt.Client, sdk *fabsdk.Fab
 
 	// Commit cc
 	commitCC(t, orgResMgmt)
+
+	//sleep 5s for commit cache
+	time.Sleep(time.Duration(5) * time.Second)
 
 	// Query committed cc
 	queryCommittedCC(t, orgResMgmt)
