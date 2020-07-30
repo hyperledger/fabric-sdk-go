@@ -735,6 +735,9 @@ func createCCLifecycle(t *testing.T, mc *multiorgContext, ccName, ccVersion stri
 
 	// Init cc
 	initCC(t, ccName, upgrade, channelID, sdk)
+
+	//sleep 5s for approve cache
+	time.Sleep(time.Duration(5) * time.Second)
 }
 
 func packageCC(t *testing.T, ccName, ccVersion string) (string, []byte) {

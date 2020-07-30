@@ -274,6 +274,9 @@ func createCCLifecycle(t *testing.T, orgResMgmt *resmgmt.Client, sdk *fabsdk.Fab
 
 	// Init cc
 	initCC(t, sdk)
+
+	//sleep 5s for init cache
+	time.Sleep(time.Duration(5) * time.Second)
 }
 
 func packageCC(t *testing.T) (string, []byte) {

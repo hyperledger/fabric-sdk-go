@@ -178,10 +178,16 @@ func PrepareExampleCCLc(sdk *fabsdk.FabricSDK, user fabsdk.ContextOption, orgNam
 		return errors.WithMessage(err, "Commit example chaincode failed")
 	}
 
+	//sleep 5s for commit cache
+	time.Sleep(time.Duration(5) * time.Second)
+
 	err = InitExampleChaincode(sdk, channelID, chaincodeID, orgContexts[0].OrgID)
 	if err != nil {
 		return errors.WithMessage(err, "Init example chaincode failed")
 	}
+
+	//sleep 5s for init cache
+	time.Sleep(time.Duration(5) * time.Second)
 
 	t := time.Now()
 	elapsed := t.Sub(start)
@@ -439,13 +445,15 @@ func instantiateExampleChaincodeLc(sdk *fabsdk.FabricSDK, orgs []*OrgContext, ch
 	if err != nil {
 		return errors.WithMessage(err, "Commit example chaincode failed")
 	}
-	//sleep 10s for chaincode cache
-	time.Sleep(time.Duration(10) * time.Second)
+	//sleep 5s for commit cache
+	time.Sleep(time.Duration(5) * time.Second)
 
 	err = InitExampleChaincode(sdk, channelID, ccID, orgs[0].OrgID)
 	if err != nil {
 		return errors.WithMessage(err, "Init example chaincode failed")
 	}
+	//sleep 5s for init cache
+	time.Sleep(time.Duration(5) * time.Second)
 
 	return nil
 }
