@@ -109,7 +109,7 @@ func TestPeerAndUserRevoke(t *testing.T) {
 	updateRevocationList(t, nil)
 }
 
-//joinChannelAndInstallCC joins channel and install/instantiate/query 'exampleCC2_fabtest_e2e'
+//joinChannelAndInstallCC joins channel and install/instantiate/query 'example_cc_fabtest_e2e_2'
 func joinChannelAndInstallCC(t *testing.T) {
 	sdk, err := fabsdk.New(config.FromFile(integration.GetConfigPath(configFilename)))
 	require.NoError(t, err)
@@ -124,11 +124,11 @@ func joinChannelAndInstallCC(t *testing.T) {
 	joinChannel(t, sdk)
 
 	//install & instantiate a chaincode before updating revocation list for later test
-	createCC(t, sdk, "exampleCC2_fabtest_e2e", "github.com/example_cc", "0", true)
+	createCC(t, sdk, "example_cc_fabtest_e2e_2", "github.com/example_cc", "0", true)
 
 	//query that chaincode to make sure everything is fine
 	org2UserChannelClientContext := sdk.ChannelContext(channelID, fabsdk.WithUser(org2User), fabsdk.WithOrg(org2))
-	queryCC(t, org2UserChannelClientContext, "exampleCC2_fabtest_e2e", true, "")
+	queryCC(t, org2UserChannelClientContext, "example_cc_fabtest_e2e_2", true, "")
 
 }
 
@@ -195,20 +195,20 @@ func testRevokedPeer(t *testing.T) {
 	org2UserChannelClientContext := sdk1.ChannelContext(channelID, fabsdk.WithUser(org2User), fabsdk.WithOrg(org2))
 
 	// Create chaincode package for example cc
-	createCC(t, sdk1, "exampleCC_fabtest_e2e", "github.com/example_cc", "1", false)
+	createCC(t, sdk1, "example_cc_fabtest_e2e", "github.com/example_cc", "1", false)
 
 	//query with revoked user
 	t.Log("query with revoked user - should fail with 'access denied'")
-	queryCC(t, org1UserChannelClientContext, "exampleCC_fabtest_e2e", false, "access denied")
+	queryCC(t, org1UserChannelClientContext, "example_cc_fabtest_e2e", false, "access denied")
 	//query with valid user
-	t.Log("query with valid user - should fail with 'chaincode exampleCC_fabtest_e2e not found'")
-	queryCC(t, org2UserChannelClientContext, "exampleCC_fabtest_e2e", false, "chaincode exampleCC_fabtest_e2e not found")
+	t.Log("query with valid user - should fail with 'chaincode example_cc_fabtest_e2e not found'")
+	queryCC(t, org2UserChannelClientContext, "example_cc_fabtest_e2e", false, "chaincode example_cc_fabtest_e2e not found")
 	//query already instantiated chaincode with revoked user
 	t.Log("query already instantiated chaincode with revoked user - should fail with 'access denied'")
-	queryCC(t, org1UserChannelClientContext, "exampleCC2_fabtest_e2e", false, "access denied")
+	queryCC(t, org1UserChannelClientContext, "example_cc_fabtest_e2e_2", false, "access denied")
 	//query already instantiated chaincode with valid user
 	t.Log("query already instantiated chaincode with valid user - should fail with 'signature validation failed'")
-	queryCC(t, org2UserChannelClientContext, "exampleCC2_fabtest_e2e", false, "signature validation failed")
+	queryCC(t, org2UserChannelClientContext, "example_cc_fabtest_e2e_2", false, "signature validation failed")
 }
 
 //testRevokedUser performs revoke peer test

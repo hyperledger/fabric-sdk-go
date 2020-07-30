@@ -12,7 +12,6 @@ import (
 	"strconv"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/multi"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
@@ -210,7 +209,7 @@ func testWithOrg1(t *testing.T, sdk *fabsdk.FabricSDK, mc *multiorgContext) int 
 	var err error
 
 	// Create chaincode package for example cc
-	if metadata.Ccmode == "Lscc" {
+	if metadata.CCMode == "lscc" {
 		ccPkg, err = packager.NewCCPackage(ccPath, integration.GetDeployPath())
 		if err != nil {
 			t.Fatal(err)
@@ -247,12 +246,12 @@ func testWithOrg1(t *testing.T, sdk *fabsdk.FabricSDK, mc *multiorgContext) int 
 	checkLedgerInfo(ledgerClient, t, ledgerInfoBefore, transactionID)
 
 	// Start chaincode upgrade process (install and instantiate new version of exampleCC)
-	if metadata.Ccmode == "Lscc" {
+	if metadata.CCMode == "lscc" {
 		upgradeCC(t, mc, ccPkg, mc.ccName, "1")
 	} else {
 		createCCLifecycle(t, mc, mc.ccName, "1", 2, true, mc.channelID, sdk)
 		//sleep 10s for chaincode cache
-		time.Sleep(time.Duration(10) * time.Second)
+		//time.Sleep(time.Duration(10) * time.Second)
 	}
 
 	// Org2 user moves funds on org2 peer (cc policy fails since both Org1 and Org2 peers should participate)
@@ -715,9 +714,6 @@ func createCCLifecycle(t *testing.T, mc *multiorgContext, ccName, ccVersion stri
 	// Approve cc
 	approveCC(t, packageID, ccName, ccVersion, sequence, channelID, mc)
 
-	//sleep 5s for approve cache
-	time.Sleep(time.Duration(5) * time.Second)
-
 	// Query approve cc
 	queryApprovedCC(t, ccName, sequence, channelID, mc)
 
@@ -727,11 +723,8 @@ func createCCLifecycle(t *testing.T, mc *multiorgContext, ccName, ccVersion stri
 	// Commit cc
 	commitCC(t, ccName, ccVersion, sequence, channelID, mc)
 
-	//sleep 5s for commit cache
-	time.Sleep(time.Duration(5) * time.Second)
-
 	// Query committed cc
-	queryCommittedCC(t, ccName, channelID, mc)
+	queryCommittedCC(t, ccName, channelID, sequence, mc)
 
 	// Init cc
 	initCC(t, ccName, upgrade, channelID, sdk)
@@ -838,13 +831,13 @@ func approveCC(t *testing.T, packageID string, ccName, ccVersion string, sequenc
 		InitRequired:      true,
 	}
 
-	txnID1, err := mc.org1ResMgmt.LifecycleApproveCC(channelID, approveCCReq, resmgmt.WithTargets(org1Peers...), resmgmt.WithOrdererEndpoint("orderer.example.com"))
+	txnID1, err := mc.org1ResMgmt.LifecycleApproveCC(channelID, approveCCReq, resmgmt.WithTargets(org1Peers...), resmgmt.WithOrdererEndpoint("orderer.example.com"), resmgmt.WithRetry(retry.DefaultResMgmtOpts))
 	if err != nil {
 		t.Fatal(err)
 	}
 	require.NotEmpty(t, txnID1)
 
-	txnID2, err := mc.org2ResMgmt.LifecycleApproveCC(channelID, approveCCReq, resmgmt.WithTargets(org2Peers...), resmgmt.WithOrdererEndpoint("orderer.example.com"))
+	txnID2, err := mc.org2ResMgmt.LifecycleApproveCC(channelID, approveCCReq, resmgmt.WithTargets(org2Peers...), resmgmt.WithOrdererEndpoint("orderer.example.com"), resmgmt.WithRetry(retry.DefaultResMgmtOpts))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -852,22 +845,37 @@ func approveCC(t *testing.T, packageID string, ccName, ccVersion string, sequenc
 }
 
 func queryApprovedCC(t *testing.T, ccName string, sequence int64, channelID string, mc *multiorgContext) {
-	org1Peers, err := integration.DiscoverLocalPeers(mc.org1AdminClientContext, 1)
+	org1Peers, err := integration.DiscoverLocalPeers(mc.org1AdminClientContext, 2)
 	require.NoError(t, err)
+	org2Peers, err := integration.DiscoverLocalPeers(mc.org2AdminClientContext, 2)
+	require.NoError(t, err)
+	// Query approve cc
 	queryApprovedCCReq := resmgmt.LifecycleQueryApprovedCCRequest{
 		Name:     ccName,
 		Sequence: sequence,
 	}
-	resp1, err := mc.org1ResMgmt.LifecycleQueryApprovedCC(channelID, queryApprovedCCReq, resmgmt.WithTargets([]fab.Peer{org1Peers[0]}...))
-	if err != nil {
-		t.Fatal(err)
+	for _, p := range org1Peers {
+		resp, err := mc.org1ResMgmt.LifecycleQueryApprovedCC(channelID, queryApprovedCCReq, resmgmt.WithTargets(p), resmgmt.WithRetry(retry.DefaultResMgmtOpts))
+		if err != nil {
+			t.Fatal(err)
+		}
+		require.NotNil(t, resp)
 	}
-	require.NotNil(t, resp1)
+	for _, p := range org2Peers {
+		resp, err := mc.org2ResMgmt.LifecycleQueryApprovedCC(channelID, queryApprovedCCReq, resmgmt.WithTargets(p), resmgmt.WithRetry(retry.DefaultResMgmtOpts))
+		if err != nil {
+			t.Fatal(err)
+		}
+		require.NotNil(t, resp)
+	}
 
 }
 
 func checkCCCommitReadiness(t *testing.T, packageID string, ccName, ccVersion string, sequence int64, channelID string, mc *multiorgContext) {
-	org1Peers, err := integration.DiscoverLocalPeers(mc.org1AdminClientContext, 1)
+
+	org1Peers, err := integration.DiscoverLocalPeers(mc.org1AdminClientContext, 2)
+	require.NoError(t, err)
+	org2Peers, err := integration.DiscoverLocalPeers(mc.org2AdminClientContext, 2)
 	require.NoError(t, err)
 
 	ccPolicy := policydsl.SignedByNOutOfGivenRole(2, mb.MSPRole_MEMBER, []string{"Org1MSP", "Org2MSP"})
@@ -879,12 +887,59 @@ func checkCCCommitReadiness(t *testing.T, packageID string, ccName, ccVersion st
 		ValidationPlugin:  "vscc",
 		SignaturePolicy:   ccPolicy,
 		Sequence:          sequence,
+		InitRequired:      true,
 	}
-	resp1, err := mc.org1ResMgmt.LifecycleCheckCCCommitReadiness(channelID, req, resmgmt.WithTargets([]fab.Peer{org1Peers[0]}...))
+	/*resp1, err := mc.org1ResMgmt.LifecycleCheckCCCommitReadiness(channelID, req, resmgmt.WithTargets([]fab.Peer{org1Peers[0]}...), resmgmt.WithRetry(retry.DefaultResMgmtOpts))
 	if err != nil {
 		t.Fatal(err)
 	}
-	require.NotNil(t, resp1)
+	require.NotNil(t, resp1)*/
+	for _, p := range org1Peers {
+		resp, err := retry.NewInvoker(retry.New(retry.TestRetryOpts)).Invoke(
+			func() (interface{}, error) {
+				resp1, err := mc.org1ResMgmt.LifecycleCheckCCCommitReadiness(channelID, req, resmgmt.WithTargets(p), resmgmt.WithRetry(retry.DefaultResMgmtOpts))
+				fmt.Printf("LifecycleCheckCCCommitReadiness = %v\n", resp1)
+				if err != nil {
+					return nil, status.New(status.TestStatus, status.GenericTransient.ToInt32(), fmt.Sprintf("LifecycleCheckCCCommitReadiness returned error: %v", err), nil)
+				}
+				flag := true
+				for _, r := range resp1.Approvals {
+					flag = flag && r
+				}
+				if !flag {
+					return nil, status.New(status.TestStatus, status.GenericTransient.ToInt32(), fmt.Sprintf("LifecycleCheckCCCommitReadiness returned : %v", resp1), nil)
+				}
+				return resp1, err
+			},
+		)
+		if err != nil {
+			t.Fatal(err)
+		}
+		require.NotNil(t, resp)
+	}
+	for _, p := range org2Peers {
+		resp, err := retry.NewInvoker(retry.New(retry.TestRetryOpts)).Invoke(
+			func() (interface{}, error) {
+				resp1, err := mc.org2ResMgmt.LifecycleCheckCCCommitReadiness(channelID, req, resmgmt.WithTargets(p), resmgmt.WithRetry(retry.DefaultResMgmtOpts))
+				fmt.Printf("LifecycleCheckCCCommitReadiness = %v\n", resp1)
+				if err != nil {
+					return nil, status.New(status.TestStatus, status.GenericTransient.ToInt32(), fmt.Sprintf("LifecycleCheckCCCommitReadiness returned error: %v", err), nil)
+				}
+				flag := true
+				for _, r := range resp1.Approvals {
+					flag = flag && r
+				}
+				if !flag {
+					return nil, status.New(status.TestStatus, status.GenericTransient.ToInt32(), fmt.Sprintf("LifecycleCheckCCCommitReadiness returned : %v", resp1), nil)
+				}
+				return resp1, err
+			},
+		)
+		if err != nil {
+			t.Fatal(err)
+		}
+		require.NotNil(t, resp)
+	}
 
 }
 
@@ -899,31 +954,76 @@ func commitCC(t *testing.T, ccName, ccVersion string, sequence int64, channelID 
 		SignaturePolicy:   ccPolicy,
 		InitRequired:      true,
 	}
-	txnID, err := mc.org1ResMgmt.LifecycleCommitCC(channelID, req, resmgmt.WithOrdererEndpoint("orderer.example.com"))
+	txnID, err := mc.org1ResMgmt.LifecycleCommitCC(channelID, req, resmgmt.WithOrdererEndpoint("orderer.example.com"), resmgmt.WithRetry(retry.DefaultResMgmtOpts))
 	if err != nil {
 		t.Fatal(err)
 	}
 	require.NotEmpty(t, txnID)
 }
 
-func queryCommittedCC(t *testing.T, ccName string, channelID string, mc *multiorgContext) {
-	org1Peers, err := integration.DiscoverLocalPeers(mc.org1AdminClientContext, 1)
+func queryCommittedCC(t *testing.T, ccName string, channelID string, sequence int64, mc *multiorgContext) {
+	org1Peers, err := integration.DiscoverLocalPeers(mc.org1AdminClientContext, 2)
+	require.NoError(t, err)
+	org2Peers, err := integration.DiscoverLocalPeers(mc.org2AdminClientContext, 2)
 	require.NoError(t, err)
 
 	req := resmgmt.LifecycleQueryCommittedCCRequest{
 		Name: ccName,
 	}
-	resp1, err := mc.org1ResMgmt.LifecycleQueryCommittedCC(channelID, req, resmgmt.WithTargets([]fab.Peer{org1Peers[0]}...))
+	/*resp1, err := mc.org1ResMgmt.LifecycleQueryCommittedCC(channelID, req, resmgmt.WithTargets(org1Peers[0]), resmgmt.WithRetry(retry.DefaultResMgmtOpts))
 	if err != nil {
 		t.Fatal(err)
-	}
-	ccName1 := ""
-	for _, t := range resp1 {
-		if t.Name == ccName {
-			ccName1 = t.Name
+	}*/
+	for _, p := range org1Peers {
+		resp, err := retry.NewInvoker(retry.New(retry.TestRetryOpts)).Invoke(
+			func() (interface{}, error) {
+				resp1, err := mc.org1ResMgmt.LifecycleQueryCommittedCC(channelID, req, resmgmt.WithTargets(p), resmgmt.WithRetry(retry.DefaultResMgmtOpts))
+				if err != nil {
+					return nil, status.New(status.TestStatus, status.GenericTransient.ToInt32(), fmt.Sprintf("LifecycleQueryCommittedCC returned error: %v", err), nil)
+				}
+				flag := false
+				for _, r := range resp1 {
+					if r.Name == ccName && r.Sequence == sequence {
+						flag = true
+						break
+					}
+				}
+				if !flag {
+					return nil, status.New(status.TestStatus, status.GenericTransient.ToInt32(), fmt.Sprintf("LifecycleQueryCommittedCC returned : %v", resp1), nil)
+				}
+				return resp1, err
+			},
+		)
+		if err != nil {
+			t.Fatal(err)
 		}
+		require.NotNil(t, resp)
 	}
-	require.Equal(t, ccName, ccName1)
+	for _, p := range org2Peers {
+		resp, err := retry.NewInvoker(retry.New(retry.TestRetryOpts)).Invoke(
+			func() (interface{}, error) {
+				resp1, err := mc.org2ResMgmt.LifecycleQueryCommittedCC(channelID, req, resmgmt.WithTargets(p), resmgmt.WithRetry(retry.DefaultResMgmtOpts))
+				if err != nil {
+					return nil, status.New(status.TestStatus, status.GenericTransient.ToInt32(), fmt.Sprintf("LifecycleQueryCommittedCC returned error: %v", err), nil)
+				}
+				flag := false
+				for _, r := range resp1 {
+					if r.Name == ccName && r.Sequence == sequence {
+						flag = true
+						break
+					}
+				}
+				if !flag {
+					return nil, status.New(status.TestStatus, status.GenericTransient.ToInt32(), fmt.Sprintf("LifecycleQueryCommittedCC returned : %v", resp1), nil)
+				}
+				return resp1, err
+			},
+		)
+		if err != nil {
+			t.Fatal(err)
+		}
+		require.NotNil(t, resp)
+	}
 
 }
 
