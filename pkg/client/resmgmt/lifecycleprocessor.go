@@ -7,7 +7,6 @@ SPDX-License-Identifier: Apache-2.0
 package resmgmt
 
 import (
-	"bytes"
 	reqContext "context"
 	"fmt"
 	"strings"
@@ -192,7 +191,12 @@ func (p *lifecycleProcessor) checkCommitReadiness(reqCtx reqContext.Context, cha
 		return LifecycleCheckCCCommitReadinessResponse{}, errors.WithMessage(err, "sending approve transaction proposal failed to verify signature")
 	}
 
-	err = p.verifyResponsesMatch(txProposalResponse)
+	err = p.verifyResponsesMatch(txProposalResponse,
+		func(payload []byte) (proto.Message, error) {
+			result := &lb.CheckCommitReadinessResult{}
+			return result, proto.Unmarshal(payload, result)
+		},
+	)
 	if err != nil {
 		return LifecycleCheckCCCommitReadinessResponse{}, err
 	}
@@ -275,7 +279,11 @@ func (p *lifecycleProcessor) queryCommitted(reqCtx reqContext.Context, channelID
 		return nil, errors.WithMessage(err, "sending query committed transaction proposal failed to verify signature")
 	}
 
-	err = p.verifyResponsesMatch(txProposalResponse)
+	err = p.verifyResponsesMatch(txProposalResponse,
+		func(payload []byte) (proto.Message, error) {
+			return unmarshalCCDefResults(req.Name, payload)
+		},
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -526,22 +534,42 @@ func (p *lifecycleProcessor) unmarshalChaincodeDefinitions(payload []byte) ([]Li
 	return results, nil
 }
 
+type unmarshaller func(payload []byte) (proto.Message, error)
+
 // verifyResponsesMatch ensures that the payload in all of the responses are the same
-func (p *lifecycleProcessor) verifyResponsesMatch(responses []*fab.TransactionProposalResponse) error {
-	var lastResponse *fab.TransactionProposalResponse
+func (p *lifecycleProcessor) verifyResponsesMatch(responses []*fab.TransactionProposalResponse, unmarshal unmarshaller) error {
+	var lastStatus int32
+	var lastResponse proto.Message
+
 	for _, r := range responses {
+		m, err := unmarshal(r.Response.Payload)
+		if err != nil {
+			return err
+		}
+
 		if lastResponse != nil {
-			if lastResponse.Response.Status != r.Response.Status {
-				return errors.New("status in responses from endorsers do not match")
+			if lastStatus != r.Response.Status {
+				return errors.Errorf("status in responses from endorsers do not match: [%d] and [%d]", lastStatus, r.Response.Status)
 			}
 
-			if !bytes.Equal(lastResponse.Response.Payload, r.Response.Payload) {
-				return errors.New("responses from endorsers do not match")
+			if !proto.Equal(lastResponse, m) {
+				return errors.Errorf("responses from endorsers do not match: [%+v] and [%+v]", lastResponse, m)
 			}
 		}
 
-		lastResponse = r
+		lastResponse = m
+		lastStatus = r.Response.Status
 	}
 
 	return nil
+}
+
+func unmarshalCCDefResults(name string, payload []byte) (proto.Message, error) {
+	if name != "" {
+		result := &lb.QueryChaincodeDefinitionResult{}
+		return result, proto.Unmarshal(payload, result)
+	}
+
+	result := &lb.QueryChaincodeDefinitionsResult{}
+	return result, proto.Unmarshal(payload, result)
 }
