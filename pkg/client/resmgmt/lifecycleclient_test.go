@@ -662,7 +662,8 @@ func TestClient_LifecycleCheckCCCommitReadiness(t *testing.T) {
 		ctx.SetCustomChannelProvider(cp)
 
 		resp, err := rc.LifecycleCheckCCCommitReadiness(channel1, req, WithTargets(peer1))
-		require.EqualError(t, err, "responses from endorsers do not match")
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "responses from endorsers do not match")
 		require.Empty(t, resp)
 	})
 }
@@ -1109,7 +1110,8 @@ func TestClient_LifecycleQueryCommittedCC(t *testing.T) {
 		ctx.SetCustomChannelProvider(cp)
 
 		resp, err := rc.LifecycleQueryCommittedCC(channel1, LifecycleQueryCommittedCCRequest{}, WithTargets(&fcmocks.MockPeer{}))
-		require.EqualError(t, err, "responses from endorsers do not match")
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "responses from endorsers do not match")
 		require.Empty(t, resp)
 	})
 }
