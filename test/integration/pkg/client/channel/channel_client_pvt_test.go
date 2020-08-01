@@ -47,7 +47,7 @@ func TestPrivateDataPutAndGet(t *testing.T) {
 	collConfig, err := newCollectionConfig(coll1, "OR('Org1MSP.member','Org2MSP.member')", 0, 2, 1000)
 	require.NoError(t, err)
 
-	if metadata.Ccmode == "Lscc" {
+	if metadata.CCMode == "lscc" {
 		err = integration.InstallExamplePvtChaincode(orgsContext, ccID)
 		require.NoError(t, err)
 		err = integration.InstantiateExamplePvtChaincode(orgsContext, orgChannelID, ccID, "OR('Org1MSP.member','Org2MSP.member')", collConfig)
@@ -166,7 +166,7 @@ func TestPrivateData(t *testing.T) {
 	collConfig, err := newCollectionConfig(coll1, "OR('Org2MSP.member')", 0, 2, 1000)
 	require.NoError(t, err)
 
-	if metadata.Ccmode == "Lscc" {
+	if metadata.CCMode == "lscc" {
 		err = integration.InstallExamplePvtChaincode(orgsContext, ccID)
 		require.NoError(t, err)
 		err = integration.InstantiateExamplePvtChaincode(orgsContext, orgChannelID, ccID, "OR('Org1MSP.member','Org2MSP.member')", collConfig)
@@ -218,7 +218,7 @@ func TestPrivateData(t *testing.T) {
 // and the collection policy is defined as (Org2MSP).
 func TestPrivateDataWithOrgDown(t *testing.T) {
 	// 'ApproveChaincodeDefinitionForMyOrg' failed: error validating chaincode definition: collection-name: collection1 -- collection member 'Org3MSP' is not part of the channel
-	if metadata.Ccmode == "Lscc" {
+	if metadata.CCMode == "lscc" {
 		sdk := mainSDK
 
 		orgsContext := setupMultiOrgContext(t, sdk)
@@ -278,7 +278,7 @@ func TestPrivateDataWithOrgDown(t *testing.T) {
 // is reproduced, then asserting that only one of the changes was applied.
 func TestChannelClientRollsBackPvtDataIfMvccReadConflict(t *testing.T) {
 	// 'ApproveChaincodeDefinitionForMyOrg' failed: error validating chaincode definition: collection-name: collection1 -- collection member 'Org3MSP' is not part of the channel
-	if metadata.Ccmode == "Lscc" {
+	if metadata.CCMode == "lscc" {
 		orgsContext := setupMultiOrgContext(t, mainSDK)
 		require.NoError(t, integration.EnsureChannelCreatedAndPeersJoined(t, mainSDK, orgChannelID, "orgchannel.tx", orgsContext))
 		// private data collection used for test
@@ -413,7 +413,7 @@ func runPvtDataPreReconcilePutAndGet(t *testing.T, sdk *fabsdk.FabricSDK, orgsCo
 	collConfig, err := newCollectionConfig(coll1, policy, 0, 2, 1000)
 	require.NoError(t, err)
 
-	if metadata.Ccmode == "Lscc" {
+	if metadata.CCMode == "lscc" {
 		err = integration.InstallExamplePvtChaincode(orgsContext, ccID)
 		require.NoError(t, err)
 		err = integration.InstantiateExamplePvtChaincode(orgsContext, orgChannelID, ccID, policy, collConfig)
@@ -566,7 +566,7 @@ func runPvtDataPostReconcileGet(t *testing.T, sdk *fabsdk.FabricSDK, orgsContext
 
 	// org2 peers are the only targets to test post reconciliation as they should have the pvt data after cc upgrade as per the new collection policy (multiOrgsPolicy)
 	org2TargetOpts := channel.WithTargetEndpoints("peer0.org2.example.com", "peer1.org2.example.com")
-	if metadata.Ccmode == "Lscc" {
+	if metadata.CCMode == "lscc" {
 		err = integration.UpgradeExamplePvtChaincode(orgsContext, orgChannelID, ccID, policy, collConfig)
 		require.NoError(t, err)
 	} else {

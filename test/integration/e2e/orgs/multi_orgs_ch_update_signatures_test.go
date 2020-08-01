@@ -303,7 +303,7 @@ func e2eCreateAndQueryChannel(t *testing.T, ordererClCtx, org1ClCtx, org2ClCtx *
 	require.NoError(t, err)
 
 	ccVersion := "1" // ccVersion= 1 because previous test increased the ccVersion # on the peers.
-	if metadata.Ccmode == "Lscc" {
+	if metadata.CCMode == "lscc" {
 		// instantiate example_CC on dschannel
 		instantiateCC(t, org1ClCtx.rsCl, examplecc, ccVersion, channelID)
 

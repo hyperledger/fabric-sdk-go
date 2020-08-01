@@ -38,7 +38,7 @@ func TestChannelQueries(t *testing.T) {
 
 	testQueryChannels(t, reqCtx, peers[0])
 
-	if metadata.Ccmode == "Lscc" {
+	if metadata.CCMode == "lscc" {
 		testInstalledChaincodes(t, reqCtx, chaincodeID, peers[0])
 	} else {
 		testInstalledChaincodesLc(t, reqCtx, peers[0])

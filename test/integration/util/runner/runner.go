@@ -117,7 +117,7 @@ func (r *Runner) Initialize() {
 
 	if r.installExampleCC {
 		r.exampleChaincodeID = integration.GenerateExampleID(true)
-		if metadata.Ccmode == "Lscc" {
+		if metadata.CCMode == "lscc" {
 			if err := integration.PrepareExampleCC(sdk, fabsdk.WithUser("Admin"), r.testSetup.OrgID, r.exampleChaincodeID); err != nil {
 				panic(fmt.Sprintf("PrepareExampleCC return error: %s", err))
 			}

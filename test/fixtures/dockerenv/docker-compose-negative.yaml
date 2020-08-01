@@ -20,6 +20,7 @@ services:
       - FABRIC_SDK_CLIENT_EVENTSERVICE_TYPE
       - TEST_CHANGED_ONLY
       - CORE_VM_ENDPOINT
+      - CC_MODE
     volumes:
       - ${GOPATH}/pkg/mod:/opt/gopath/pkg/mod
       - ../../../:/opt/workspace/fabric-sdk-go

@@ -173,7 +173,7 @@ func TestDiscoveryClientEndorsers(t *testing.T) {
 	t.Run("Policy: Org1 Only", func(t *testing.T) {
 		ccID := integration.GenerateExampleID(true)
 
-		if metadata.Ccmode == "Lscc" {
+		if metadata.CCMode == "lscc" {
 			err = integration.InstallExampleChaincode(orgsContext, ccID)
 			require.NoError(t, err)
 			err = integration.InstantiateExampleChaincode(orgsContext, orgChannelID, ccID, "OR('Org1MSP.member')")
@@ -196,7 +196,7 @@ func TestDiscoveryClientEndorsers(t *testing.T) {
 	t.Run("Policy: Org2 Only", func(t *testing.T) {
 		ccID := integration.GenerateExampleID(true)
 
-		if metadata.Ccmode == "Lscc" {
+		if metadata.CCMode == "lscc" {
 			err = integration.InstallExampleChaincode(orgsContext, ccID)
 			require.NoError(t, err)
 			err = integration.InstantiateExampleChaincode(orgsContext, orgChannelID, ccID, "OR('Org2MSP.member')")
@@ -218,7 +218,7 @@ func TestDiscoveryClientEndorsers(t *testing.T) {
 	t.Run("Policy: Org1 or Org2", func(t *testing.T) {
 		ccID := integration.GenerateExampleID(true)
 
-		if metadata.Ccmode == "Lscc" {
+		if metadata.CCMode == "lscc" {
 			err = integration.InstallExampleChaincode(orgsContext, ccID)
 			require.NoError(t, err)
 			err = integration.InstantiateExampleChaincode(orgsContext, orgChannelID, ccID, "OR('Org1MSP.member','Org2MSP.member')")
@@ -242,7 +242,7 @@ func TestDiscoveryClientEndorsers(t *testing.T) {
 
 	t.Run("Policy: Org1 and Org2", func(t *testing.T) {
 		ccID := integration.GenerateExampleID(true)
-		if metadata.Ccmode == "Lscc" {
+		if metadata.CCMode == "lscc" {
 			err = integration.InstallExampleChaincode(orgsContext, ccID)
 			require.NoError(t, err)
 			err = integration.InstantiateExampleChaincode(orgsContext, orgChannelID, ccID, "AND('Org1MSP.member','Org2MSP.member')")
@@ -267,7 +267,7 @@ func TestDiscoveryClientEndorsers(t *testing.T) {
 	t.Run("Policy: CC1(Org1 Only) to CC2(Org2 Only)", func(t *testing.T) {
 
 		ccID1 := integration.GenerateExampleID(true)
-		if metadata.Ccmode == "Lscc" {
+		if metadata.CCMode == "lscc" {
 			err = integration.InstallExampleChaincode(orgsContext, ccID1)
 			require.NoError(t, err)
 			err = integration.InstantiateExampleChaincode(orgsContext, orgChannelID, ccID1, "OR('Org1MSP.member')")
@@ -278,7 +278,7 @@ func TestDiscoveryClientEndorsers(t *testing.T) {
 		}
 
 		ccID2 := integration.GenerateExampleID(true)
-		if metadata.Ccmode == "Lscc" {
+		if metadata.CCMode == "lscc" {
 			err = integration.InstallExampleChaincode(orgsContext, ccID2)
 			require.NoError(t, err)
 			err = integration.InstantiateExampleChaincode(orgsContext, orgChannelID, ccID2, "OR('Org2MSP.member')")

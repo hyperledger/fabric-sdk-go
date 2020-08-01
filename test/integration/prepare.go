@@ -170,24 +170,15 @@ func PrepareExampleCCLc(sdk *fabsdk.FabricSDK, user fabsdk.ContextOption, orgNam
 		return errors.WithMessage(err, "Approve example chaincode failed")
 	}
 
-	//sleep 5s for approve cache
-	time.Sleep(time.Duration(5) * time.Second)
-
 	err = CommitExampleChaincode(orgContexts, channelID, chaincodeID, exampleCCVersion, ccPolicy, 1)
 	if err != nil {
 		return errors.WithMessage(err, "Commit example chaincode failed")
 	}
 
-	//sleep 5s for commit cache
-	time.Sleep(time.Duration(5) * time.Second)
-
 	err = InitExampleChaincode(sdk, channelID, chaincodeID, orgContexts[0].OrgID)
 	if err != nil {
 		return errors.WithMessage(err, "Init example chaincode failed")
 	}
-
-	//sleep 5s for init cache
-	time.Sleep(time.Duration(5) * time.Second)
 
 	t := time.Now()
 	elapsed := t.Sub(start)
@@ -261,7 +252,7 @@ func ApproveExampleChaincode(orgs []*OrgContext, channelID, ccID, ccVersion, pac
 	}
 
 	for _, orgCtx := range orgs {
-		_, err := orgCtx.ResMgmt.LifecycleApproveCC(channelID, approveCCReq, resmgmt.WithTargets(orgCtx.Peers...))
+		_, err := orgCtx.ResMgmt.LifecycleApproveCC(channelID, approveCCReq, resmgmt.WithTargets(orgCtx.Peers...), resmgmt.WithRetry(retry.DefaultResMgmtOpts))
 		if err != nil {
 			return errors.WithMessage(err, "approve example chaincode failed")
 		}
@@ -288,7 +279,7 @@ func CommitExampleChaincode(orgs []*OrgContext, channelID, ccID, ccVersion, ccPo
 		CollectionConfig:  collConfigs,
 	}
 
-	_, err = orgs[0].ResMgmt.LifecycleCommitCC(channelID, req)
+	_, err = orgs[0].ResMgmt.LifecycleCommitCC(channelID, req, resmgmt.WithRetry(retry.DefaultResMgmtOpts))
 	if err != nil {
 		return errors.WithMessage(err, "commit example chaincode failed")
 	}
@@ -438,22 +429,15 @@ func instantiateExampleChaincodeLc(sdk *fabsdk.FabricSDK, orgs []*OrgContext, ch
 		return errors.WithMessage(err, "Approve example chaincode failed")
 	}
 
-	//sleep 5s for approve cache
-	time.Sleep(time.Duration(5) * time.Second)
-
 	err = CommitExampleChaincode(orgs, channelID, ccID, ccVersion, ccPolicy, sequence, collConfigs...)
 	if err != nil {
 		return errors.WithMessage(err, "Commit example chaincode failed")
 	}
-	//sleep 5s for commit cache
-	time.Sleep(time.Duration(5) * time.Second)
 
 	err = InitExampleChaincode(sdk, channelID, ccID, orgs[0].OrgID)
 	if err != nil {
 		return errors.WithMessage(err, "Init example chaincode failed")
 	}
-	//sleep 5s for init cache
-	time.Sleep(time.Duration(5) * time.Second)
 
 	return nil
 }

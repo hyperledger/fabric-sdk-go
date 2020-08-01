@@ -62,7 +62,7 @@ func TestResMgmtClientQueries(t *testing.T) {
 }
 
 func testInstantiatedChaincodes(t *testing.T, channelID string, ccID string, target string, client *resmgmt.Client) {
-	if metadata.Ccmode == "Lscc" {
+	if metadata.CCMode == "lscc" {
 		chaincodeQueryResponse, err := client.QueryInstantiatedChaincodes(channelID, resmgmt.WithTargetEndpoints(target), resmgmt.WithRetry(retry.DefaultResMgmtOpts))
 		if err != nil {
 			t.Fatalf("QueryInstantiatedChaincodes return error: %s", err)
@@ -84,7 +84,7 @@ func testInstantiatedChaincodes(t *testing.T, channelID string, ccID string, tar
 
 func testInstalledChaincodes(t *testing.T, ccID string, target string, client *resmgmt.Client) {
 	found := false
-	if metadata.Ccmode == "Lscc" {
+	if metadata.CCMode == "lscc" {
 		chaincodeQueryResponse, err := client.QueryInstalledChaincodes(resmgmt.WithTargetEndpoints(target), resmgmt.WithRetry(retry.DefaultResMgmtOpts))
 		if err != nil {
 			t.Fatalf("QueryInstalledChaincodes return error: %s", err)

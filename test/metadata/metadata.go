@@ -25,5 +25,5 @@ var ProjectPath = ""
 // TestRunID is an identifier for the current run of tests
 var TestRunID = ""
 
-// Ccmode is an identifier for the cc mode
-var Ccmode = "Lifecycle"
+// CCMode is an identifier for the cc mode: lifecycle or lscc
+var CCMode = "lifecycle"

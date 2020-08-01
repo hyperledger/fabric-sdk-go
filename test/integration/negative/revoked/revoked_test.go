@@ -481,7 +481,7 @@ func createCC(t *testing.T, sdk1 *fabsdk.FabricSDK, name, path, version string, 
 	org2ResMgmt, err := resmgmt.New(org2AdminClientContext)
 	require.NoError(t, err)
 
-	if metadata.Ccmode == "Lscc" {
+	if metadata.CCMode == "lscc" {
 
 		ccPkg, err := packager.NewCCPackage(path, integration.GetDeployPath())
 		if err != nil {

@@ -128,7 +128,7 @@ func createChannelAndCC(t *testing.T, sdk *fabsdk.FabricSDK) {
 	}
 
 	// Create chaincode package for example cc
-	if metadata.Ccmode == "Lscc" {
+	if metadata.CCMode == "lscc" {
 		createCC(t, orgResMgmt)
 	} else {
 		createCCLifecycle(t, orgResMgmt, sdk)
@@ -254,9 +254,6 @@ func createCCLifecycle(t *testing.T, orgResMgmt *resmgmt.Client, sdk *fabsdk.Fab
 	// Approve cc
 	approveCC(t, packageID, orgResMgmt)
 
-	//sleep 5s for approve cache
-	time.Sleep(time.Duration(5) * time.Second)
-
 	// Query approve cc
 	queryApprovedCC(t, orgResMgmt)
 
@@ -266,17 +263,12 @@ func createCCLifecycle(t *testing.T, orgResMgmt *resmgmt.Client, sdk *fabsdk.Fab
 	// Commit cc
 	commitCC(t, orgResMgmt)
 
-	//sleep 5s for commit cache
-	time.Sleep(time.Duration(5) * time.Second)
-
 	// Query committed cc
 	queryCommittedCC(t, orgResMgmt)
 
 	// Init cc
 	initCC(t, sdk)
 
-	//sleep 5s for init cache
-	time.Sleep(time.Duration(5) * time.Second)
 }
 
 func packageCC(t *testing.T) (string, []byte) {
@@ -308,7 +300,7 @@ func installCC(t *testing.T, label string, ccPkg []byte, orgResMgmt *resmgmt.Cli
 }
 
 func getInstalledCCPackage(t *testing.T, packageID string, ccPkg []byte, orgResMgmt *resmgmt.Client) {
-	resp, err := orgResMgmt.LifecycleGetInstalledCCPackage(packageID, resmgmt.WithTargetEndpoints(peer1))
+	resp, err := orgResMgmt.LifecycleGetInstalledCCPackage(packageID, resmgmt.WithTargetEndpoints(peer1), resmgmt.WithRetry(retry.DefaultResMgmtOpts))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -316,7 +308,7 @@ func getInstalledCCPackage(t *testing.T, packageID string, ccPkg []byte, orgResM
 }
 
 func queryInstalled(t *testing.T, label string, packageID string, orgResMgmt *resmgmt.Client) {
-	resp, err := orgResMgmt.LifecycleQueryInstalledCC(resmgmt.WithTargetEndpoints(peer1))
+	resp, err := orgResMgmt.LifecycleQueryInstalledCC(resmgmt.WithTargetEndpoints(peer1), resmgmt.WithRetry(retry.DefaultResMgmtOpts))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -337,7 +329,7 @@ func approveCC(t *testing.T, packageID string, orgResMgmt *resmgmt.Client) {
 		InitRequired:      true,
 	}
 
-	txnID, err := orgResMgmt.LifecycleApproveCC(channelID, approveCCReq, resmgmt.WithTargetEndpoints(peer1), resmgmt.WithOrdererEndpoint("orderer.example.com"))
+	txnID, err := orgResMgmt.LifecycleApproveCC(channelID, approveCCReq, resmgmt.WithTargetEndpoints(peer1), resmgmt.WithOrdererEndpoint("orderer.example.com"), resmgmt.WithRetry(retry.DefaultResMgmtOpts))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -349,7 +341,7 @@ func queryApprovedCC(t *testing.T, orgResMgmt *resmgmt.Client) {
 		Name:     ccID,
 		Sequence: 1,
 	}
-	resp, err := orgResMgmt.LifecycleQueryApprovedCC(channelID, queryApprovedCCReq, resmgmt.WithTargetEndpoints(peer1))
+	resp, err := orgResMgmt.LifecycleQueryApprovedCC(channelID, queryApprovedCCReq, resmgmt.WithTargetEndpoints(peer1), resmgmt.WithRetry(retry.DefaultResMgmtOpts))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -367,7 +359,7 @@ func checkCCCommitReadiness(t *testing.T, packageID string, orgResMgmt *resmgmt.
 		SignaturePolicy:   ccPolicy,
 		Sequence:          1,
 	}
-	resp, err := orgResMgmt.LifecycleCheckCCCommitReadiness(channelID, req, resmgmt.WithTargetEndpoints(peer1))
+	resp, err := orgResMgmt.LifecycleCheckCCCommitReadiness(channelID, req, resmgmt.WithTargetEndpoints(peer1), resmgmt.WithRetry(retry.DefaultResMgmtOpts))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -385,7 +377,7 @@ func commitCC(t *testing.T, orgResMgmt *resmgmt.Client) {
 		SignaturePolicy:   ccPolicy,
 		InitRequired:      true,
 	}
-	txnID, err := orgResMgmt.LifecycleCommitCC(channelID, req, resmgmt.WithTargetEndpoints(peer1), resmgmt.WithOrdererEndpoint("orderer.example.com"))
+	txnID, err := orgResMgmt.LifecycleCommitCC(channelID, req, resmgmt.WithRetry(retry.DefaultResMgmtOpts), resmgmt.WithTargetEndpoints(peer1), resmgmt.WithOrdererEndpoint("orderer.example.com"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -396,7 +388,7 @@ func queryCommittedCC(t *testing.T, orgResMgmt *resmgmt.Client) {
 	req := resmgmt.LifecycleQueryCommittedCCRequest{
 		Name: ccID,
 	}
-	resp, err := orgResMgmt.LifecycleQueryCommittedCC(channelID, req, resmgmt.WithTargetEndpoints(peer1))
+	resp, err := orgResMgmt.LifecycleQueryCommittedCC(channelID, req, resmgmt.WithTargetEndpoints(peer1), resmgmt.WithRetry(retry.DefaultResMgmtOpts))
 	if err != nil {
 		t.Fatal(err)
 	}

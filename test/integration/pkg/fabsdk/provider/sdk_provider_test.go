@@ -28,69 +28,74 @@ import (
 )
 
 func TestDynamicSelection(t *testing.T) {
-	//TODO: DynamicSelection for lifecycle
-	if metadata.Ccmode == "Lscc" {
-		// Using shared SDK instance to increase test speed.
-		testSetup := mainTestSetup
-		aKey := integration.GetKeyName(t)
-		bKey := integration.GetKeyName(t)
-		moveTxArg := integration.ExampleCCTxArgs(aKey, bKey, "1")
-		queryArg := integration.ExampleCCQueryArgs(bKey)
+	if metadata.CCMode != "lscc" {
+		t.Skip("this test is only valid for legacy chaincode")
+	}
+	// Using shared SDK instance to increase test speed.
+	testSetup := mainTestSetup
+	aKey := integration.GetKeyName(t)
+	bKey := integration.GetKeyName(t)
+	moveTxArg := integration.ExampleCCTxArgs(aKey, bKey, "1")
+	queryArg := integration.ExampleCCQueryArgs(bKey)
 
-		// Create SDK setup for channel client with dynamic selection
-		sdk, err := fabsdk.New(integration.ConfigBackend,
-			fabsdk.WithServicePkg(&DynamicSelectionProviderFactory{}))
+	// Create SDK setup for channel client with dynamic selection
+	sdk, err := fabsdk.New(integration.ConfigBackend,
+		fabsdk.WithServicePkg(&DynamicSelectionProviderFactory{}))
 
-		if err != nil {
-			t.Fatalf("Failed to create new SDK: %s", err)
-		}
-		defer sdk.Close()
+	if err != nil {
+		t.Fatalf("Failed to create new SDK: %s", err)
+	}
+	defer sdk.Close()
 
-		if err = testSetup.Initialize(sdk); err != nil {
-			t.Fatal(err)
-		}
+	if err = testSetup.Initialize(sdk); err != nil {
+		t.Fatal(err)
+	}
 
-		chaincodeID := integration.GenerateExampleID(true)
-		fmt.Printf("TestDynamicSelection cc = %v\n", chaincodeID)
-
+	chaincodeID := integration.GenerateExampleID(true)
+	fmt.Printf("TestDynamicSelection cc = %v\n", chaincodeID)
+	if metadata.CCMode == "lscc" {
 		err = integration.PrepareExampleCC(sdk, fabsdk.WithUser("Admin"), testSetup.OrgID, chaincodeID)
 		require.NoError(t, err, "InstallAndInstantiateExampleCC returned error")
-
-		//prepare contexts
-		org1ChannelClientContext := sdk.ChannelContext(testSetup.ChannelID, fabsdk.WithUser(org1User), fabsdk.WithOrg(org1Name))
-
-		//Reset example cc keys
-		integration.ResetKeys(t, org1ChannelClientContext, chaincodeID, "200", aKey, bKey)
-
-		chClient, err := channel.New(org1ChannelClientContext)
-		require.NoError(t, err, "Failed to create new channel client")
-
-		//response, err := chClient.Query(channel.Request{ChaincodeID: chaincodeID, Fcn: "invoke", Args: queryArg},
-		//	channel.WithRetry(retry.TestRetryOpts))
-		response, err := retry.NewInvoker(retry.New(retry.TestRetryOpts)).Invoke(
-			func() (interface{}, error) {
-				b, e := chClient.Query(channel.Request{ChaincodeID: chaincodeID, Fcn: "invoke", Args: queryArg},
-					channel.WithRetry(retry.TestRetryOpts))
-				if e != nil {
-					// return a retryable code if key/value query is nil (ie not propagated to all peers yet)
-					if strings.Contains(e.Error(), "Nil amount for") {
-						return nil, status.New(status.TestStatus, status.GenericTransient.ToInt32(), fmt.Sprintf("QueryBlock returned error: %v", e), nil)
-					}
-				}
-				return b, e
-			},
-		)
-		require.NoError(t, err, "Failed to query funds, ccID: %s, queryArgs: [%+v]", chaincodeID, queryArg)
-		value := response.(channel.Response).Payload
-
-		// Move funds
-		_, err = chClient.Execute(channel.Request{ChaincodeID: chaincodeID, Fcn: "invoke", Args: moveTxArg},
-			channel.WithRetry(retry.DefaultChannelOpts))
-		require.NoError(t, err, "Failed to move funds, ccID: %s, queryArgs:[%+v]", chaincodeID, moveTxArg)
-
-		valueInt, _ := strconv.Atoi(string(value))
-		verifyValue(t, chClient, queryArg, valueInt+1, chaincodeID)
+	} else {
+		err = integration.PrepareExampleCCLc(sdk, fabsdk.WithUser("Admin"), testSetup.OrgID, chaincodeID)
+		require.NoError(t, err, "InstallAndInstantiateExampleCC returned error")
 	}
+
+	//prepare contexts
+	org1ChannelClientContext := sdk.ChannelContext(testSetup.ChannelID, fabsdk.WithUser(org1User), fabsdk.WithOrg(org1Name))
+
+	//Reset example cc keys
+	integration.ResetKeys(t, org1ChannelClientContext, chaincodeID, "200", aKey, bKey)
+
+	chClient, err := channel.New(org1ChannelClientContext)
+	require.NoError(t, err, "Failed to create new channel client")
+
+	//response, err := chClient.Query(channel.Request{ChaincodeID: chaincodeID, Fcn: "invoke", Args: queryArg},
+	//	channel.WithRetry(retry.TestRetryOpts))
+	response, err := retry.NewInvoker(retry.New(retry.TestRetryOpts)).Invoke(
+		func() (interface{}, error) {
+			b, e := chClient.Query(channel.Request{ChaincodeID: chaincodeID, Fcn: "invoke", Args: queryArg},
+				channel.WithRetry(retry.TestRetryOpts))
+			if e != nil {
+				// return a retryable code if key/value query is nil (ie not propagated to all peers yet)
+				if strings.Contains(e.Error(), "Nil amount for") {
+					return nil, status.New(status.TestStatus, status.GenericTransient.ToInt32(), fmt.Sprintf("QueryBlock returned error: %v", e), nil)
+				}
+			}
+			return b, e
+		},
+	)
+	require.NoError(t, err, "Failed to query funds, ccID: %s, queryArgs: [%+v]", chaincodeID, queryArg)
+	value := response.(channel.Response).Payload
+
+	// Move funds
+	_, err = chClient.Execute(channel.Request{ChaincodeID: chaincodeID, Fcn: "invoke", Args: moveTxArg},
+		channel.WithRetry(retry.DefaultChannelOpts))
+	require.NoError(t, err, "Failed to move funds, ccID: %s, queryArgs:[%+v]", chaincodeID, moveTxArg)
+
+	valueInt, _ := strconv.Atoi(string(value))
+	verifyValue(t, chClient, queryArg, valueInt+1, chaincodeID)
+
 }
 
 func verifyValue(t *testing.T, chClient *channel.Client, queryArg [][]byte, expectedValue int, ccID string) {

@@ -12,6 +12,7 @@ import (
 
 	pb "github.com/hyperledger/fabric-protos-go/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 	"github.com/hyperledger/fabric-sdk-go/test/metadata"
@@ -28,45 +29,46 @@ const (
 )
 
 func TestQueryCollectionsConfig(t *testing.T) {
-	//TODO: QueryCollectionsConfig for lifycycle
-	if metadata.Ccmode == "Lscc" {
-		sdk := mainSDK
 
-		orgsContext := setupMultiOrgContext(t, sdk)
-		err := integration.EnsureChannelCreatedAndPeersJoined(t, sdk, orgChannelID, "orgchannel.tx", orgsContext)
-		require.NoError(t, err)
-
-		ccID := integration.GenerateExamplePvtID(true)
-		collConfig, err := newCollectionConfig(collCfgName, collCfgPolicy, collCfgRequiredPeerCount, collCfgMaximumPeerCount, collCfgBlockToLive)
-		require.NoError(t, err)
-
-		err = integration.InstallExamplePvtChaincode(orgsContext, ccID)
-		require.NoError(t, err)
-		err = integration.InstantiateExamplePvtChaincode(orgsContext, orgChannelID, ccID, "OR('Org1MSP.member','Org2MSP.member')", collConfig)
-		require.NoError(t, err)
-
-		org1AdminClientContext := sdk.Context(fabsdk.WithUser(org1AdminUser), fabsdk.WithOrg(org1Name))
-		client, err := resmgmt.New(org1AdminClientContext)
-		if err != nil {
-			t.Fatalf("Failed to create new resource management client: %s", err)
-		}
-
-		resp, err := client.QueryCollectionsConfig(orgChannelID, ccID)
-		if err != nil {
-			t.Fatalf("QueryCollectionsConfig return error: %s", err)
-		}
-		if len(resp.Config) != 1 {
-			t.Fatalf("The number of collection config is incorrect, expected 1, got %d", len(resp.Config))
-		}
-
-		conf := resp.Config[0]
-		switch cconf := conf.Payload.(type) {
-		case *pb.CollectionConfig_StaticCollectionConfig:
-			checkStaticCollectionConfig(t, cconf.StaticCollectionConfig)
-		default:
-			t.Fatalf("The CollectionConfig.Payload's type is incorrect, expected `CollectionConfig_StaticCollectionConfig`, got %+v", reflect.TypeOf(conf.Payload))
-		}
+	if metadata.CCMode != "lscc" {
+		t.Skip("this test is only valid for legacy chaincode")
 	}
+	sdk := mainSDK
+
+	orgsContext := setupMultiOrgContext(t, sdk)
+	err := integration.EnsureChannelCreatedAndPeersJoined(t, sdk, orgChannelID, "orgchannel.tx", orgsContext)
+	require.NoError(t, err)
+
+	ccID := integration.GenerateExamplePvtID(true)
+	collConfig, err := newCollectionConfig(collCfgName, collCfgPolicy, collCfgRequiredPeerCount, collCfgMaximumPeerCount, collCfgBlockToLive)
+	require.NoError(t, err)
+	err = integration.InstallExamplePvtChaincode(orgsContext, ccID)
+	require.NoError(t, err)
+	err = integration.InstantiateExamplePvtChaincode(orgsContext, orgChannelID, ccID, "OR('Org1MSP.member','Org2MSP.member')", collConfig)
+	require.NoError(t, err)
+
+	org1AdminClientContext := sdk.Context(fabsdk.WithUser(org1AdminUser), fabsdk.WithOrg(org1Name))
+	client, err := resmgmt.New(org1AdminClientContext)
+	if err != nil {
+		t.Fatalf("Failed to create new resource management client: %s", err)
+	}
+
+	resp, err := client.QueryCollectionsConfig(orgChannelID, ccID, resmgmt.WithRetry(retry.DefaultResMgmtOpts))
+	if err != nil {
+		t.Fatalf("QueryCollectionsConfig return error: %s", err)
+	}
+	if len(resp.Config) != 1 {
+		t.Fatalf("The number of collection config is incorrect, expected 1, got %d", len(resp.Config))
+	}
+
+	conf := resp.Config[0]
+	switch cconf := conf.Payload.(type) {
+	case *pb.CollectionConfig_StaticCollectionConfig:
+		checkStaticCollectionConfig(t, cconf.StaticCollectionConfig)
+	default:
+		t.Fatalf("The CollectionConfig.Payload's type is incorrect, expected `CollectionConfig_StaticCollectionConfig`, got %+v", reflect.TypeOf(conf.Payload))
+	}
+
 }
 
 func checkStaticCollectionConfig(t *testing.T, collConf *pb.StaticCollectionConfig) {

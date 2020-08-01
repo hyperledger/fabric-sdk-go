@@ -83,7 +83,7 @@ func TestLedgerQueries(t *testing.T) {
 
 	chaincodeID := integration.GenerateExampleID(false)
 
-	if metadata.Ccmode == "Lscc" {
+	if metadata.CCMode == "lscc" {
 		err := integration.PrepareExampleCC(sdk, fabsdk.WithUser("Admin"), testSetup.OrgID, chaincodeID)
 		require.Nil(t, err, "InstallAndInstantiateExampleCC return error")
 	} else {
@@ -145,7 +145,7 @@ func TestLedgerQueries(t *testing.T) {
 
 	require.Nil(t, err, "resmgmt new return error")
 
-	if metadata.Ccmode == "Lscc" {
+	if metadata.CCMode == "lscc" {
 		testInstantiatedChaincodes(t, chaincodeID, channelID, resmgmtClient, targets)
 	}
 

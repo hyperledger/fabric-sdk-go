@@ -83,7 +83,7 @@ func TestChannelClient(t *testing.T) {
 
 	// transaction
 	nestedCCID := integration.GenerateExampleID(true)
-	if metadata.Ccmode == "Lscc" {
+	if metadata.CCMode == "lscc" {
 		err = integration.PrepareExampleCC(sdk, fabsdk.WithUser("Admin"), testSetup.OrgID, nestedCCID)
 		require.Nil(t, err, "InstallAndInstantiateExampleCC return error")
 	} else {
@@ -247,7 +247,7 @@ func TestCCToCC(t *testing.T) {
 	require.NoError(t, err)
 
 	cc1ID := integration.GenerateExampleID(true)
-	if metadata.Ccmode == "Lscc" {
+	if metadata.CCMode == "lscc" {
 		err = integration.InstallExampleChaincode(orgsContext, cc1ID)
 		require.NoError(t, err)
 		err = integration.InstantiateExampleChaincode(orgsContext, orgChannelID, cc1ID, "OR('Org1MSP.member')")
@@ -258,7 +258,7 @@ func TestCCToCC(t *testing.T) {
 	}
 
 	cc2ID := integration.GenerateExampleID(true)
-	if metadata.Ccmode == "Lscc" {
+	if metadata.CCMode == "lscc" {
 		err = integration.InstallExampleChaincode(orgsContext, cc2ID)
 		require.NoError(t, err)
 		err = integration.InstantiateExampleChaincode(orgsContext, orgChannelID, cc2ID, "AND('Org1MSP.member','Org2MSP.member')")
