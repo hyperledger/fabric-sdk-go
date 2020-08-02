@@ -218,59 +218,61 @@ func TestPrivateData(t *testing.T) {
 // and the collection policy is defined as (Org2MSP).
 func TestPrivateDataWithOrgDown(t *testing.T) {
 	// 'ApproveChaincodeDefinitionForMyOrg' failed: error validating chaincode definition: collection-name: collection1 -- collection member 'Org3MSP' is not part of the channel
-	if metadata.CCMode == "lscc" {
-		sdk := mainSDK
-
-		orgsContext := setupMultiOrgContext(t, sdk)
-
-		// Just join peers in org1 for now
-		err := integration.EnsureChannelCreatedAndPeersJoined(t, sdk, orgChannelID, "orgchannel.tx", orgsContext)
-		require.NoError(t, err)
-
-		coll1 := "collection1"
-		ccID := integration.GenerateExamplePvtID(true)
-		collConfig, err := newCollectionConfig(coll1, "OR('Org3MSP.member')", 0, 2, 1000)
-		require.NoError(t, err)
-
-		err = integration.InstallExamplePvtChaincode(orgsContext, ccID)
-		require.NoError(t, err)
-		err = integration.InstantiateExamplePvtChaincode(orgsContext, orgChannelID, ccID, "OR('Org1MSP.member','Org2MSP.member','Org3MSP.member')", collConfig)
-		require.NoError(t, err)
-
-		ctxProvider := sdk.ChannelContext(orgChannelID, fabsdk.WithUser(org1User), fabsdk.WithOrg(org1Name))
-
-		chClient, err := channel.New(ctxProvider)
-		require.NoError(t, err)
-
-		t.Run("Specified Invocation Chain", func(t *testing.T) {
-			_, err := chClient.Execute(
-				channel.Request{
-					ChaincodeID: ccID,
-					Fcn:         "putprivate",
-					Args:        [][]byte{[]byte(coll1), []byte("key"), []byte("value")},
-					InvocationChain: []*fab.ChaincodeCall{
-						{ID: ccID, Collections: []string{coll1}},
-					},
-				},
-				channel.WithRetry(retry.TestRetryOpts),
-			)
-			require.Errorf(t, err, "expecting error due to all Org2MSP peers down")
-		})
-
-		t.Run("Automatic Invocation Chain", func(t *testing.T) {
-			response, err := chClient.Execute(
-				channel.Request{
-					ChaincodeID: ccID,
-					Fcn:         "putprivate",
-					Args:        [][]byte{[]byte(coll1), []byte("key"), []byte("value")},
-				},
-				channel.WithRetry(retry.TestRetryOpts),
-			)
-			require.NoError(t, err)
-			t.Logf("Got %d response(s)", len(response.Responses))
-			require.NotEmptyf(t, response.Responses, "expecting at least one response")
-		})
+	if metadata.CCMode != "lscc" {
+		t.Skip("this test is only valid for legacy chaincode")
 	}
+	sdk := mainSDK
+
+	orgsContext := setupMultiOrgContext(t, sdk)
+
+	// Just join peers in org1 for now
+	err := integration.EnsureChannelCreatedAndPeersJoined(t, sdk, orgChannelID, "orgchannel.tx", orgsContext)
+	require.NoError(t, err)
+
+	coll1 := "collection1"
+	ccID := integration.GenerateExamplePvtID(true)
+	collConfig, err := newCollectionConfig(coll1, "OR('Org3MSP.member')", 0, 2, 1000)
+	require.NoError(t, err)
+
+	err = integration.InstallExamplePvtChaincode(orgsContext, ccID)
+	require.NoError(t, err)
+	err = integration.InstantiateExamplePvtChaincode(orgsContext, orgChannelID, ccID, "OR('Org1MSP.member','Org2MSP.member','Org3MSP.member')", collConfig)
+	require.NoError(t, err)
+
+	ctxProvider := sdk.ChannelContext(orgChannelID, fabsdk.WithUser(org1User), fabsdk.WithOrg(org1Name))
+
+	chClient, err := channel.New(ctxProvider)
+	require.NoError(t, err)
+
+	t.Run("Specified Invocation Chain", func(t *testing.T) {
+		_, err := chClient.Execute(
+			channel.Request{
+				ChaincodeID: ccID,
+				Fcn:         "putprivate",
+				Args:        [][]byte{[]byte(coll1), []byte("key"), []byte("value")},
+				InvocationChain: []*fab.ChaincodeCall{
+					{ID: ccID, Collections: []string{coll1}},
+				},
+			},
+			channel.WithRetry(retry.TestRetryOpts),
+		)
+		require.Errorf(t, err, "expecting error due to all Org2MSP peers down")
+	})
+
+	t.Run("Automatic Invocation Chain", func(t *testing.T) {
+		response, err := chClient.Execute(
+			channel.Request{
+				ChaincodeID: ccID,
+				Fcn:         "putprivate",
+				Args:        [][]byte{[]byte(coll1), []byte("key"), []byte("value")},
+			},
+			channel.WithRetry(retry.TestRetryOpts),
+		)
+		require.NoError(t, err)
+		t.Logf("Got %d response(s)", len(response.Responses))
+		require.NotEmptyf(t, response.Responses, "expecting at least one response")
+	})
+
 }
 
 // Data in a private data collection must be left untouched if the client receives an MVCC_READ_CONFLICT error.

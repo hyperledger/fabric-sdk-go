@@ -358,6 +358,7 @@ func checkCCCommitReadiness(t *testing.T, packageID string, orgResMgmt *resmgmt.
 		ValidationPlugin:  "vscc",
 		SignaturePolicy:   ccPolicy,
 		Sequence:          1,
+		InitRequired:      true,
 	}
 	resp, err := orgResMgmt.LifecycleCheckCCCommitReadiness(channelID, req, resmgmt.WithTargetEndpoints(peer1), resmgmt.WithRetry(retry.DefaultResMgmtOpts))
 	if err != nil {
