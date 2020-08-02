@@ -75,7 +75,7 @@ type chCfgSignatures struct {
 // DistributedSignaturesTests will create at least 2 clients, each from 2 different orgs and creates two channel where these 2 orgs are members
 // one channel created by using the conventional SDK signatures (exported into a file and loaded to simulate external signature loading)
 // the second one is created by using OpenSSL to sign the channel Config data.
-func DistributedSignaturesTests(t *testing.T) {
+func DistributedSignaturesTests(t *testing.T, exampleCC string) {
 	ordererClCtx := createDSClientCtx(t, ordererOrgName)
 	defer ordererClCtx.sdk.Close()
 
