@@ -160,7 +160,7 @@ func TestOrgsEndToEnd(t *testing.T) {
 	TestMultiOrgWithSingleOrgConfig(t, exampleCC)
 
 	//test Distributed signatures with 2 orgs (1 SDK per org, signature test done by SDK and another one done by OpenSSL)
-	DistributedSignaturesTests(t)
+	DistributedSignaturesTests(t, exampleCC)
 }
 
 func createAndJoinChannel(t *testing.T, mc *multiorgContext) {
