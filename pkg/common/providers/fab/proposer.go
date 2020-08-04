@@ -64,12 +64,14 @@ type TransactionHeader interface {
 }
 
 // ChaincodeInvokeRequest contains the parameters for sending a transaction proposal.
+// nolint: maligned
 type ChaincodeInvokeRequest struct {
 	ChaincodeID  string
 	Lang         pb.ChaincodeSpec_Type
 	TransientMap map[string][]byte
 	Fcn          string
 	Args         [][]byte
+	IsInit       bool
 }
 
 // TransactionProposal contains a marashalled transaction proposal.

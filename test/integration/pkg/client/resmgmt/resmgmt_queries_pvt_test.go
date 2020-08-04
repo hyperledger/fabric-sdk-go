@@ -12,8 +12,10 @@ import (
 
 	pb "github.com/hyperledger/fabric-protos-go/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
+	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 	"github.com/hyperledger/fabric-sdk-go/third_party/github.com/hyperledger/fabric/common/policydsl"
 	"github.com/stretchr/testify/require"
 )
@@ -27,6 +29,10 @@ const (
 )
 
 func TestQueryCollectionsConfig(t *testing.T) {
+
+	if metadata.CCMode != "lscc" {
+		t.Skip("this test is only valid for legacy chaincode")
+	}
 	sdk := mainSDK
 
 	orgsContext := setupMultiOrgContext(t, sdk)
@@ -36,7 +42,6 @@ func TestQueryCollectionsConfig(t *testing.T) {
 	ccID := integration.GenerateExamplePvtID(true)
 	collConfig, err := newCollectionConfig(collCfgName, collCfgPolicy, collCfgRequiredPeerCount, collCfgMaximumPeerCount, collCfgBlockToLive)
 	require.NoError(t, err)
-
 	err = integration.InstallExamplePvtChaincode(orgsContext, ccID)
 	require.NoError(t, err)
 	err = integration.InstantiateExamplePvtChaincode(orgsContext, orgChannelID, ccID, "OR('Org1MSP.member','Org2MSP.member')", collConfig)
@@ -48,7 +53,7 @@ func TestQueryCollectionsConfig(t *testing.T) {
 		t.Fatalf("Failed to create new resource management client: %s", err)
 	}
 
-	resp, err := client.QueryCollectionsConfig(orgChannelID, ccID)
+	resp, err := client.QueryCollectionsConfig(orgChannelID, ccID, resmgmt.WithRetry(retry.DefaultResMgmtOpts))
 	if err != nil {
 		t.Fatalf("QueryCollectionsConfig return error: %s", err)
 	}
@@ -63,6 +68,7 @@ func TestQueryCollectionsConfig(t *testing.T) {
 	default:
 		t.Fatalf("The CollectionConfig.Payload's type is incorrect, expected `CollectionConfig_StaticCollectionConfig`, got %+v", reflect.TypeOf(conf.Payload))
 	}
+
 }
 
 func checkStaticCollectionConfig(t *testing.T, collConf *pb.StaticCollectionConfig) {

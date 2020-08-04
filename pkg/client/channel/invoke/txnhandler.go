@@ -281,6 +281,7 @@ func createAndSendTransactionProposal(transactor fab.ProposalSender, chrequest *
 		Fcn:          chrequest.Fcn,
 		Args:         chrequest.Args,
 		TransientMap: chrequest.TransientMap,
+		IsInit:       chrequest.IsInit,
 	}
 
 	txh, err := transactor.CreateTransactionHeader(opts...)

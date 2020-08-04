@@ -50,6 +50,7 @@ type Request struct {
 	// The invoked chaincode (specified by ChaincodeID) may optionally be added to the invocation
 	// chain along with any collections, otherwise it may be omitted.
 	InvocationChain []*fab.ChaincodeCall
+	IsInit          bool
 }
 
 //Response contains response parameters for query and execute an invocation transaction
