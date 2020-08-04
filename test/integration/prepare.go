@@ -284,8 +284,10 @@ func QueryApprovedCC(mc []*OrgContext, ccName string, sequence int64, channelID 
 		Name:     ccName,
 		Sequence: sequence,
 	}
-	for _, orgCtx := range mc {
-		for _, p := range orgCtx.Peers {
+	for _, org := range mc {
+		orgCtx := org
+		for _, peer := range orgCtx.Peers {
+			p := peer
 			_, err := retry.NewInvoker(retry.New(retry.TestRetryOpts)).Invoke(
 				func() (interface{}, error) {
 					resp1, err := orgCtx.ResMgmt.LifecycleQueryApprovedCC(channelID, queryApprovedCCReq, resmgmt.WithTargets(p), resmgmt.WithRetry(retry.DefaultResMgmtOpts))
@@ -325,8 +327,10 @@ func CheckCCCommitReadiness(mc []*OrgContext, packageID string, ccName, ccVersio
 		t.Fatal(err)
 	}
 	require.NotNil(t, resp1)*/
-	for _, orgCtx := range mc {
-		for _, p := range orgCtx.Peers {
+	for _, org := range mc {
+		orgCtx := org
+		for _, peer := range orgCtx.Peers {
+			p := peer
 			_, err := retry.NewInvoker(retry.New(retry.TestRetryOpts)).Invoke(
 				func() (interface{}, error) {
 					resp1, err := orgCtx.ResMgmt.LifecycleCheckCCCommitReadiness(channelID, req, resmgmt.WithTargets(p), resmgmt.WithRetry(retry.DefaultResMgmtOpts))
@@ -345,7 +349,8 @@ func CheckCCCommitReadiness(mc []*OrgContext, packageID string, ccName, ccVersio
 				},
 			)
 			if err != nil {
-				errors.WithMessage(err, "LifecycleCheckCCCommitReadiness example chaincode failed")
+				//Now even CheckCCommitReadiness return false, commit is ok
+				fmt.Printf("LifecycleCheckCCCommitReadiness example chaincode faile err = %v\n", err)
 			}
 		}
 	}
@@ -409,8 +414,10 @@ func QueryCommittedCC(mc []*OrgContext, ccName string, channelID string, sequenc
 	if err != nil {
 		t.Fatal(err)
 	}*/
-	for _, orgCtx := range mc {
-		for _, p := range orgCtx.Peers {
+	for _, org := range mc {
+		orgCtx := org
+		for _, peer := range orgCtx.Peers {
+			p := peer
 			_, err := retry.NewInvoker(retry.New(retry.TestRetryOpts)).Invoke(
 				func() (interface{}, error) {
 					resp1, err := orgCtx.ResMgmt.LifecycleQueryCommittedCC(channelID, req, resmgmt.WithTargets(p), resmgmt.WithRetry(retry.DefaultResMgmtOpts))
@@ -431,7 +438,7 @@ func QueryCommittedCC(mc []*OrgContext, ccName string, channelID string, sequenc
 				},
 			)
 			if err != nil {
-				errors.WithMessage(err, "queryCommittedCC example chaincode failed")
+				return errors.WithMessage(err, "queryCommittedCC example chaincode failed")
 			}
 		}
 	}
