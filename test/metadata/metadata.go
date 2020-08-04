@@ -8,7 +8,7 @@ SPDX-License-Identifier: Apache-2.0
 package metadata
 
 // ChannelConfigPath is the relative path to the generated channel artifacts directory
-var ChannelConfigPath = "test/fixtures/fabric/v1.4/channel"
+var ChannelConfigPath = "test/fixtures/fabric/v2.2/channel"
 
 // CryptoConfigPath is the relative path to the generated crypto config directory
 var CryptoConfigPath = "test/fixtures/fabric/v1/crypto-config"
@@ -24,3 +24,6 @@ var ProjectPath = ""
 
 // TestRunID is an identifier for the current run of tests
 var TestRunID = ""
+
+// CCMode is an identifier for the cc mode: lifecycle or lscc
+var CCMode = "lifecycle"

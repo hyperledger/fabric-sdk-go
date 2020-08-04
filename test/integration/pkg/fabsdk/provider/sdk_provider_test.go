@@ -23,11 +23,14 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defsvc"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/provider/chpvdr"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
+	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 	"github.com/stretchr/testify/require"
 )
 
 func TestDynamicSelection(t *testing.T) {
-
+	if metadata.CCMode != "lscc" {
+		t.Skip("this test is only valid for legacy chaincode")
+	}
 	// Using shared SDK instance to increase test speed.
 	testSetup := mainTestSetup
 	aKey := integration.GetKeyName(t)
@@ -48,9 +51,15 @@ func TestDynamicSelection(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	chaincodeID := integration.GenerateExampleID(false)
-	err = integration.PrepareExampleCC(sdk, fabsdk.WithUser("Admin"), testSetup.OrgID, chaincodeID)
-	require.NoError(t, err, "InstallAndInstantiateExampleCC returned error")
+	chaincodeID := integration.GenerateExampleID(true)
+	fmt.Printf("TestDynamicSelection cc = %v\n", chaincodeID)
+	if metadata.CCMode == "lscc" {
+		err = integration.PrepareExampleCC(sdk, fabsdk.WithUser("Admin"), testSetup.OrgID, chaincodeID)
+		require.NoError(t, err, "InstallAndInstantiateExampleCC returned error")
+	} else {
+		err = integration.PrepareExampleCCLc(sdk, fabsdk.WithUser("Admin"), testSetup.OrgID, chaincodeID)
+		require.NoError(t, err, "InstallAndInstantiateExampleCC returned error")
+	}
 
 	//prepare contexts
 	org1ChannelClientContext := sdk.ChannelContext(testSetup.ChannelID, fabsdk.WithUser(org1User), fabsdk.WithOrg(org1Name))
@@ -86,6 +95,7 @@ func TestDynamicSelection(t *testing.T) {
 
 	valueInt, _ := strconv.Atoi(string(value))
 	verifyValue(t, chClient, queryArg, valueInt+1, chaincodeID)
+
 }
 
 func verifyValue(t *testing.T, chClient *channel.Client, queryArg [][]byte, expectedValue int, ccID string) {

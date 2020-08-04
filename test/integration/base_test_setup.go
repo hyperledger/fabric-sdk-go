@@ -95,9 +95,19 @@ func ExampleCCInitArgs() [][]byte {
 	return initArgs
 }
 
+//ExampleCCInitArgsLc returns example cc initialization args
+func ExampleCCInitArgsLc() [][]byte {
+	return initArgs[1:]
+}
+
 //ExampleCCUpgradeArgs returns example cc upgrade args
 func ExampleCCUpgradeArgs() [][]byte {
 	return upgradeArgs
+}
+
+//ExampleCCUpgradeArgsLc returns example cc upgrade args
+func ExampleCCUpgradeArgsLc() [][]byte {
+	return upgradeArgs[1:]
 }
 
 // IsJoinedChannel returns true if the given peer has joined the given channel
@@ -165,6 +175,18 @@ func (setup *BaseSetupImpl) Initialize(sdk *fabsdk.FabricSDK) error {
 // GetDeployPath returns the path to the chaincode fixtures
 func GetDeployPath() string {
 	const ccPath = "test/fixtures/testdata/go"
+	return filepath.Join(metadata.GetProjectPath(), ccPath)
+}
+
+// GetLcDeployPath returns the path to the chaincode fixtures
+func GetLcDeployPath() string {
+	const ccPath = "test/fixtures/testdata/go/src/github.com/example_cc"
+	return filepath.Join(metadata.GetProjectPath(), ccPath)
+}
+
+// GetLcPvtDeployPath returns the path to the chaincode fixtures
+func GetLcPvtDeployPath() string {
+	const ccPath = "test/fixtures/testdata/go/src/github.com/example_pvt_cc"
 	return filepath.Join(metadata.GetProjectPath(), ccPath)
 }
 

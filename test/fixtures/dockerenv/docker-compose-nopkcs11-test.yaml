@@ -22,6 +22,7 @@ services:
       - E2E_ONLY
       - TEST_CHANGED_ONLY
       - CORE_VM_ENDPOINT
+      - CC_MODE
     volumes:
       - ${GOPATH}/pkg/mod:/opt/gopath/pkg/mod
       - ../../../:/opt/workspace/fabric-sdk-go

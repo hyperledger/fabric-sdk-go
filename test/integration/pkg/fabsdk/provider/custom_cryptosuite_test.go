@@ -21,6 +21,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defcore"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
+	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 	"github.com/stretchr/testify/require"
 )
 
@@ -30,9 +31,15 @@ func customCryptoSuiteInit(t *testing.T) (*integration.BaseSetupImpl, string) {
 	sdk := mainSDK
 	testSetup := mainTestSetup
 
-	chaincodeID := integration.GenerateExampleID(false)
-	err := integration.PrepareExampleCC(sdk, fabsdk.WithUser("Admin"), testSetup.OrgID, chaincodeID)
-	require.Nil(t, err, "InstallAndInstantiateExampleCC return error")
+	chaincodeID := integration.GenerateExampleID(true)
+
+	if metadata.CCMode == "lscc" {
+		err := integration.PrepareExampleCC(sdk, fabsdk.WithUser("Admin"), testSetup.OrgID, chaincodeID)
+		require.Nil(t, err, "InstallAndInstantiateExampleCC return error")
+	} else {
+		err := integration.PrepareExampleCCLc(sdk, fabsdk.WithUser("Admin"), testSetup.OrgID, chaincodeID)
+		require.Nil(t, err, "InstallAndInstantiateExampleCC return error")
+	}
 
 	return testSetup, chaincodeID
 }

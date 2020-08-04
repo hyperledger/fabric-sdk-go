@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
+	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/resource"
@@ -37,7 +38,11 @@ func TestChannelQueries(t *testing.T) {
 
 	testQueryChannels(t, reqCtx, peers[0])
 
-	testInstalledChaincodes(t, reqCtx, chaincodeID, peers[0])
+	if metadata.CCMode == "lscc" {
+		testInstalledChaincodes(t, reqCtx, chaincodeID, peers[0])
+	} else {
+		testInstalledChaincodesLc(t, reqCtx, peers[0])
+	}
 
 }
 
@@ -77,4 +82,19 @@ func testInstalledChaincodes(t *testing.T, reqCtx reqContext.Context, ccID strin
 	if !found {
 		t.Fatalf("QueryInstalledChaincodes failed to find installed %s chaincode", ccID)
 	}
+}
+
+func testInstalledChaincodesLc(t *testing.T, reqCtx reqContext.Context, target fab.ProposalProcessor) {
+	lc := resource.NewLifecycle()
+	// Our target will be primary peer on this channel
+	t.Logf("****QueryInstalledChaincodes for %s", target)
+
+	resp, err := lc.QueryInstalled(reqCtx, target, resource.WithRetry(retry.DefaultResMgmtOpts))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, re := range resp.InstalledChaincodes {
+		t.Logf("**InstalledCC: %s", re.PackageID)
+	}
+
 }

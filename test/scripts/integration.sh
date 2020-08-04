@@ -29,6 +29,7 @@ TEST_LOCAL="${TEST_LOCAL:-false}"
 TEST_CHANGED_ONLY="${TEST_CHANGED_ONLY:-false}"
 TEST_RACE_CONDITIONS="${TEST_RACE_CONDITIONS:-true}"
 SCRIPT_DIR="$(dirname "$0")"
+CC_MODE="${CC_MODE:-lifecycle}"
 # TODO: better default handling for FABRIC_CRYPTOCONFIG_VERSION
 
 GOMOD_PATH=$(cd ${SCRIPT_DIR} && ${GO_CMD} env GOMOD)
@@ -105,7 +106,8 @@ GO_TAGS="${GO_TAGS} ${FABRIC_SDKGO_CODELEVEL_TAG}"
 GO_LDFLAGS="${GO_LDFLAGS} -X ${PROJECT_MODULE}/test/metadata.ProjectPath=${PROJECT_DIR}"
 GO_LDFLAGS="${GO_LDFLAGS} -X ${PROJECT_MODULE}/test/metadata.ChannelConfigPath=test/fixtures/fabric/${FABRIC_FIXTURE_VERSION}/channel"
 GO_LDFLAGS="${GO_LDFLAGS} -X ${PROJECT_MODULE}/test/metadata.CryptoConfigPath=test/fixtures/fabric/${FABRIC_CRYPTOCONFIG_VERSION}/crypto-config"
+GO_LDFLAGS="${GO_LDFLAGS} -X ${PROJECT_MODULE}/test/metadata.CCMode=${CC_MODE}"
 GO_LDFLAGS="${GO_LDFLAGS} -X ${PROJECT_MODULE}/fabric-sdk-go/test/metadata.TestRunID=${FABRIC_SDKGO_TESTRUN_ID}"
 
-${GO_CMD} test ${RACEFLAG} -tags "${GO_TAGS}" ${GO_TESTFLAGS} -ldflags="${GO_LDFLAGS}" ${PKGS[@]} -p 1 -timeout=40m configFile=${CONFIG_FILE} testLocal=${TEST_LOCAL}
+${GO_CMD} test ${RACEFLAG} -tags "${GO_TAGS}" ${GO_TESTFLAGS} -ldflags="${GO_LDFLAGS}" ${PKGS[@]} -p 1 -timeout=120m configFile=${CONFIG_FILE} testLocal=${TEST_LOCAL}
 cd ${PWD_ORIG}

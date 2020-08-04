@@ -42,7 +42,7 @@ func CreateChaincodeInvokeProposal(txh fab.TransactionHeader, request fab.Chainc
 	// create invocation spec to target a chaincode with arguments
 	ccis := &pb.ChaincodeInvocationSpec{ChaincodeSpec: &pb.ChaincodeSpec{
 		Type: request.Lang, ChaincodeId: &pb.ChaincodeID{Name: request.ChaincodeID},
-		Input: &pb.ChaincodeInput{Args: argsArray}}}
+		Input: &pb.ChaincodeInput{Args: argsArray, IsInit: request.IsInit}}}
 
 	proposal, _, err := protoutil.CreateChaincodeProposalWithTxIDNonceAndTransient(string(txh.TransactionID()), common.HeaderType_ENDORSER_TRANSACTION, txh.ChannelID(), ccis, txh.Nonce(), txh.Creator(), request.TransientMap)
 	if err != nil {
