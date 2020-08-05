@@ -7,12 +7,14 @@ SPDX-License-Identifier: Apache-2.0
 package resmgmt
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 
 	pb "github.com/hyperledger/fabric-protos-go/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 	"github.com/hyperledger/fabric-sdk-go/test/metadata"
@@ -52,16 +54,33 @@ func TestQueryCollectionsConfig(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create new resource management client: %s", err)
 	}
-
-	resp, err := client.QueryCollectionsConfig(orgChannelID, ccID, resmgmt.WithRetry(retry.DefaultResMgmtOpts))
+	resp, err := retry.NewInvoker(retry.New(retry.TestRetryOpts)).Invoke(
+		func() (interface{}, error) {
+			resp, err := client.QueryCollectionsConfig(orgChannelID, ccID, resmgmt.WithRetry(retry.DefaultResMgmtOpts))
+			if err != nil {
+				return nil, status.New(status.TestStatus, status.GenericTransient.ToInt32(), fmt.Sprintf("QueryCollectionsConfig returned error: %v", err), nil)
+			}
+			if len(resp.Config) != 1 {
+				t.Fatalf("The number of collection config is incorrect, expected 1, got %d", len(resp.Config))
+			}
+			conf := resp.Config[0]
+			switch cconf := conf.Payload.(type) {
+			case *pb.CollectionConfig_StaticCollectionConfig:
+				checkStaticCollectionConfig(t, cconf.StaticCollectionConfig)
+			default:
+				return nil, status.New(status.TestStatus, status.GenericTransient.ToInt32(), fmt.Sprintf("QueryCollectionsConfig returned : %v", resp), nil)
+			}
+			return resp, err
+		},
+	)
 	if err != nil {
 		t.Fatalf("QueryCollectionsConfig return error: %s", err)
 	}
-	if len(resp.Config) != 1 {
-		t.Fatalf("The number of collection config is incorrect, expected 1, got %d", len(resp.Config))
+	if len(resp.(*pb.CollectionConfigPackage).Config) != 1 {
+		t.Fatalf("The number of collection config is incorrect, expected 1, got %d", len(resp.(*pb.CollectionConfigPackage).Config))
 	}
 
-	conf := resp.Config[0]
+	conf := resp.(*pb.CollectionConfigPackage).Config[0]
 	switch cconf := conf.Payload.(type) {
 	case *pb.CollectionConfig_StaticCollectionConfig:
 		checkStaticCollectionConfig(t, cconf.StaticCollectionConfig)
