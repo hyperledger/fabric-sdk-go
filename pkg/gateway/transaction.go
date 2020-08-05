@@ -85,6 +85,9 @@ func (txn *Transaction) Evaluate(args ...string) ([]byte, error) {
 	txn.request.Args = bytes
 
 	var options []channel.RequestOption
+	if txn.endorsingPeers != nil {
+		options = append(options, channel.WithTargetEndpoints(txn.endorsingPeers...))
+	}
 	options = append(options, channel.WithTimeout(fab.Query, txn.contract.network.gateway.options.Timeout))
 
 	response, err := txn.contract.client.Query(
