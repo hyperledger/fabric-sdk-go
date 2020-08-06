@@ -592,24 +592,30 @@ func GetKeyName(t *testing.T) string {
 func ResetKeys(t *testing.T, ctx contextAPI.ChannelProvider, chaincodeID, value string, keys ...string) {
 	chClient, err := channel.New(ctx)
 	require.NoError(t, err, "Failed to create new channel client for resetting keys")
-	for _, k := range keys {
-		key := k
+	for _, key := range keys {
 		// Synchronous transaction
-		_, e := retry.NewInvoker(retry.New(retry.TestRetryOpts)).Invoke(
-			func() (interface{}, error) {
-				re, e := chClient.Execute(
-					channel.Request{
-						ChaincodeID: chaincodeID,
-						Fcn:         "invoke",
-						Args:        ExampleCCTxSetArgs(key, value),
-					},
-					channel.WithRetry(retry.DefaultChannelOpts))
-				if e != nil {
-					return nil, status.New(status.TestStatus, status.GenericTransient.ToInt32(), fmt.Sprintf("Execute returned error: %v", e), nil)
-				}
-				return re, err
-			},
-		)
+		req := channel.Request{
+			ChaincodeID: chaincodeID,
+			Fcn:         "invoke",
+			Args:        ExampleCCTxSetArgs(key, value),
+		}
+		e := invoke(chClient, req)
 		require.NoError(t, e, "Failed to reset keys")
 	}
+}
+
+func invoke(chClient *channel.Client, req channel.Request) error {
+
+	// Synchronous transaction
+	_, e := retry.NewInvoker(retry.New(retry.TestRetryOpts)).Invoke(
+		func() (interface{}, error) {
+			re, e := chClient.Execute(req)
+			if e != nil {
+				return nil, status.New(status.TestStatus, status.GenericTransient.ToInt32(), fmt.Sprintf("Execute returned error: %v", e), nil)
+			}
+			return re, e
+		},
+	)
+	return e
+
 }

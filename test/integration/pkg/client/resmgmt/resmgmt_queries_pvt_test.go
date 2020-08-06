@@ -54,33 +54,25 @@ func TestQueryCollectionsConfig(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create new resource management client: %s", err)
 	}
-	resp, err := retry.NewInvoker(retry.New(retry.TestRetryOpts)).Invoke(
+	resp1, err := retry.NewInvoker(retry.New(retry.TestRetryOpts)).Invoke(
 		func() (interface{}, error) {
-			resp, err := client.QueryCollectionsConfig(orgChannelID, ccID, resmgmt.WithRetry(retry.DefaultResMgmtOpts))
+			resp1, err := client.QueryCollectionsConfig(orgChannelID, ccID)
 			if err != nil {
-				return nil, status.New(status.TestStatus, status.GenericTransient.ToInt32(), fmt.Sprintf("QueryCollectionsConfig returned error: %v", err), nil)
+				return nil, status.New(status.TestStatus, status.GenericTransient.ToInt32(), fmt.Sprintf("QueryCollectionsConfig returned : %v", resp1), nil)
 			}
-			if len(resp.Config) != 1 {
-				t.Fatalf("The number of collection config is incorrect, expected 1, got %d", len(resp.Config))
-			}
-			conf := resp.Config[0]
-			switch cconf := conf.Payload.(type) {
-			case *pb.CollectionConfig_StaticCollectionConfig:
-				checkStaticCollectionConfig(t, cconf.StaticCollectionConfig)
-			default:
-				return nil, status.New(status.TestStatus, status.GenericTransient.ToInt32(), fmt.Sprintf("QueryCollectionsConfig returned : %v", resp), nil)
-			}
-			return resp, err
+			return resp1, err
 		},
 	)
+	resp := resp1.(*pb.CollectionConfigPackage)
+
 	if err != nil {
 		t.Fatalf("QueryCollectionsConfig return error: %s", err)
 	}
-	if len(resp.(*pb.CollectionConfigPackage).Config) != 1 {
-		t.Fatalf("The number of collection config is incorrect, expected 1, got %d", len(resp.(*pb.CollectionConfigPackage).Config))
+	if len(resp.Config) != 1 {
+		t.Fatalf("The number of collection config is incorrect, expected 1, got %d", len(resp.Config))
 	}
 
-	conf := resp.(*pb.CollectionConfigPackage).Config[0]
+	conf := resp.Config[0]
 	switch cconf := conf.Payload.(type) {
 	case *pb.CollectionConfig_StaticCollectionConfig:
 		checkStaticCollectionConfig(t, cconf.StaticCollectionConfig)

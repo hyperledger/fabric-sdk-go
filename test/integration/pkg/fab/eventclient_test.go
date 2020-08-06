@@ -8,14 +8,11 @@ package fab
 
 import (
 	"bytes"
-	"fmt"
 	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
-	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/deliverclient"
@@ -130,42 +127,22 @@ func testEventService(t *testing.T, testSetup *integration.BaseSetupImpl, sdk *f
 	}
 }
 
-type sendTxProposalResult struct {
-	tpResponses []*fab.TransactionProposalResponse
-	prop        *fab.TransactionProposal
-}
-
 func sendTxProposal(sdk *fabsdk.FabricSDK, testSetup *integration.BaseSetupImpl, t *testing.T, transactor fab.Transactor, chainCodeID string, args [][]byte) ([]*fab.TransactionProposalResponse, *fab.TransactionProposal, string) {
 	peers, err := getProposalProcessors(sdk, "Admin", testSetup.OrgID, testSetup.Targets)
 	require.Nil(t, err, "creating peers failed")
-	var re *sendTxProposalResult
-	_, err = retry.NewInvoker(retry.New(retry.TestRetryOpts)).Invoke(
-		func() (interface{}, error) {
-			tpResponses, prop, err := createAndSendTransactionProposal(
-				transactor,
-				chainCodeID,
-				"invoke",
-				args,
-				peers,
-				nil,
-			)
-			if err != nil {
-				re = &sendTxProposalResult{}
-				return re, status.New(status.TestStatus, status.GenericTransient.ToInt32(), fmt.Sprintf("createAndSendTransactionProposal returned error: %v", err), nil)
-			}
-			re = &sendTxProposalResult{
-				tpResponses: tpResponses,
-				prop:        prop,
-			}
-			return nil, err
-		},
+	tpResponses, prop, err := createAndSendTransactionProposal(
+		transactor,
+		chainCodeID,
+		"invoke",
+		args,
+		peers,
+		nil,
 	)
-
 	if err != nil {
 		t.Fatalf("CreateAndSendTransactionProposal return error: %s", err)
 	}
-	txID := string(re.prop.TxnID)
-	return re.tpResponses, re.prop, txID
+	txID := string(prop.TxnID)
+	return tpResponses, prop, txID
 }
 
 func checkTxStatusEvent(wg *sync.WaitGroup, txstatusch <-chan *fab.TxStatusEvent, t *testing.T, numReceived *uint32, txID string) {
