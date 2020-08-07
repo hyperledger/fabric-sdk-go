@@ -857,7 +857,7 @@ func queryApprovedCC(t *testing.T, ccName string, sequence int64, channelID stri
 	for _, p := range org1Peers {
 		resp, err := retry.NewInvoker(retry.New(retry.TestRetryOpts)).Invoke(
 			func() (interface{}, error) {
-				resp1, err := mc.org1ResMgmt.LifecycleQueryApprovedCC(channelID, queryApprovedCCReq, resmgmt.WithTargets(p), resmgmt.WithRetry(retry.DefaultResMgmtOpts))
+				resp1, err := mc.org1ResMgmt.LifecycleQueryApprovedCC(channelID, queryApprovedCCReq, resmgmt.WithTargets(p))
 				if err != nil {
 					return nil, status.New(status.TestStatus, status.GenericTransient.ToInt32(), fmt.Sprintf("LifecycleQueryApprovedCC returned error: %v", err), nil)
 				}
@@ -913,7 +913,7 @@ func checkCCCommitReadiness(t *testing.T, packageID string, ccName, ccVersion st
 	for _, p := range org1Peers {
 		resp, err := retry.NewInvoker(retry.New(retry.TestRetryOpts)).Invoke(
 			func() (interface{}, error) {
-				resp1, err := mc.org1ResMgmt.LifecycleCheckCCCommitReadiness(channelID, req, resmgmt.WithTargets(p), resmgmt.WithRetry(retry.DefaultResMgmtOpts))
+				resp1, err := mc.org1ResMgmt.LifecycleCheckCCCommitReadiness(channelID, req, resmgmt.WithTargets(p))
 				fmt.Printf("LifecycleCheckCCCommitReadiness cc = %v, = %v\n", ccName, resp1)
 				if err != nil {
 					return nil, status.New(status.TestStatus, status.GenericTransient.ToInt32(), fmt.Sprintf("LifecycleCheckCCCommitReadiness returned error: %v", err), nil)
@@ -936,7 +936,7 @@ func checkCCCommitReadiness(t *testing.T, packageID string, ccName, ccVersion st
 	for _, p := range org2Peers {
 		resp, err := retry.NewInvoker(retry.New(retry.TestRetryOpts)).Invoke(
 			func() (interface{}, error) {
-				resp1, err := mc.org2ResMgmt.LifecycleCheckCCCommitReadiness(channelID, req, resmgmt.WithTargets(p), resmgmt.WithRetry(retry.DefaultResMgmtOpts))
+				resp1, err := mc.org2ResMgmt.LifecycleCheckCCCommitReadiness(channelID, req, resmgmt.WithTargets(p))
 				fmt.Printf("LifecycleCheckCCCommitReadiness cc = %v, = %v\n", ccName, resp1)
 				if err != nil {
 					return nil, status.New(status.TestStatus, status.GenericTransient.ToInt32(), fmt.Sprintf("LifecycleCheckCCCommitReadiness returned error: %v", err), nil)
@@ -993,7 +993,7 @@ func queryCommittedCC(t *testing.T, ccName string, channelID string, sequence in
 	for _, p := range org1Peers {
 		resp, err := retry.NewInvoker(retry.New(retry.TestRetryOpts)).Invoke(
 			func() (interface{}, error) {
-				resp1, err := mc.org1ResMgmt.LifecycleQueryCommittedCC(channelID, req, resmgmt.WithTargets(p), resmgmt.WithRetry(retry.DefaultResMgmtOpts))
+				resp1, err := mc.org1ResMgmt.LifecycleQueryCommittedCC(channelID, req, resmgmt.WithTargets(p))
 				if err != nil {
 					return nil, status.New(status.TestStatus, status.GenericTransient.ToInt32(), fmt.Sprintf("LifecycleQueryCommittedCC returned error: %v", err), nil)
 				}
@@ -1018,7 +1018,7 @@ func queryCommittedCC(t *testing.T, ccName string, channelID string, sequence in
 	for _, p := range org2Peers {
 		resp, err := retry.NewInvoker(retry.New(retry.TestRetryOpts)).Invoke(
 			func() (interface{}, error) {
-				resp1, err := mc.org2ResMgmt.LifecycleQueryCommittedCC(channelID, req, resmgmt.WithTargets(p), resmgmt.WithRetry(retry.DefaultResMgmtOpts))
+				resp1, err := mc.org2ResMgmt.LifecycleQueryCommittedCC(channelID, req, resmgmt.WithTargets(p))
 				if err != nil {
 					return nil, status.New(status.TestStatus, status.GenericTransient.ToInt32(), fmt.Sprintf("LifecycleQueryCommittedCC returned error: %v", err), nil)
 				}

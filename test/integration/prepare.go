@@ -16,6 +16,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
+	fabAPI "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab"
 	packager "github.com/hyperledger/fabric-sdk-go/pkg/fab/ccpackager/gopackager"
 	javapackager "github.com/hyperledger/fabric-sdk-go/pkg/fab/ccpackager/javapackager"
@@ -286,15 +287,7 @@ func QueryApprovedCC(mc []*OrgContext, ccName string, sequence int64, channelID 
 	}
 	for _, orgCtx := range mc {
 		for _, p := range orgCtx.Peers {
-			_, err := retry.NewInvoker(retry.New(retry.TestRetryOpts)).Invoke(
-				func() (interface{}, error) {
-					resp1, err := orgCtx.ResMgmt.LifecycleQueryApprovedCC(channelID, queryApprovedCCReq, resmgmt.WithTargets(p), resmgmt.WithRetry(retry.DefaultResMgmtOpts))
-					if err != nil {
-						return nil, status.New(status.TestStatus, status.GenericTransient.ToInt32(), fmt.Sprintf("LifecycleQueryApprovedCC returned error: %v", err), nil)
-					}
-					return resp1, err
-				},
-			)
+			err := queryApprovedCC(orgCtx, channelID, p, queryApprovedCCReq)
 			if err != nil {
 				return errors.WithMessage(err, "QueryApprovedCC example chaincode failed")
 			}
@@ -304,8 +297,26 @@ func QueryApprovedCC(mc []*OrgContext, ccName string, sequence int64, channelID 
 
 }
 
+func queryApprovedCC(orgCtx *OrgContext, channelID string, p fabAPI.Peer, req resmgmt.LifecycleQueryApprovedCCRequest) error {
+
+	_, err := retry.NewInvoker(retry.New(retry.TestRetryOpts)).Invoke(
+		func() (interface{}, error) {
+			resp1, err := orgCtx.ResMgmt.LifecycleQueryApprovedCC(channelID, req, resmgmt.WithTargets(p), resmgmt.WithRetry(retry.DefaultResMgmtOpts))
+			if err != nil {
+				return nil, status.New(status.TestStatus, status.GenericTransient.ToInt32(), fmt.Sprintf("QueryApprovedCC returned : %v", resp1), nil)
+			}
+			return resp1, err
+		},
+	)
+	if err != nil {
+		return errors.WithMessage(err, "QueryApprovedCC example chaincode failed")
+	}
+
+	return nil
+}
+
 // CheckCCCommitReadiness checkcommit the example CC on the given channel
-func CheckCCCommitReadiness(mc []*OrgContext, packageID string, ccName, ccVersion string, sequence int64, channelID string, ccPolicyStr string) error {
+func CheckCCCommitReadiness(mc []*OrgContext, packageID string, ccName, ccVersion string, sequence int64, channelID string, ccPolicyStr string, collConfigs ...*pb.CollectionConfig) error {
 	ccPolicy, err := policydsl.FromString(ccPolicyStr)
 	if err != nil {
 		return errors.Wrapf(err, "error creating CC policy [%s]", ccPolicyStr)
@@ -319,36 +330,42 @@ func CheckCCCommitReadiness(mc []*OrgContext, packageID string, ccName, ccVersio
 		SignaturePolicy:   ccPolicy,
 		Sequence:          sequence,
 		InitRequired:      true,
+		CollectionConfig:  collConfigs,
 	}
-	/*resp1, err := mc.org1ResMgmt.LifecycleCheckCCCommitReadiness(channelID, req, resmgmt.WithTargets([]fab.Peer{org1Peers[0]}...), resmgmt.WithRetry(retry.DefaultResMgmtOpts))
-	if err != nil {
-		t.Fatal(err)
-	}
-	require.NotNil(t, resp1)*/
+
 	for _, orgCtx := range mc {
 		for _, p := range orgCtx.Peers {
-			_, err := retry.NewInvoker(retry.New(retry.TestRetryOpts)).Invoke(
-				func() (interface{}, error) {
-					resp1, err := orgCtx.ResMgmt.LifecycleCheckCCCommitReadiness(channelID, req, resmgmt.WithTargets(p), resmgmt.WithRetry(retry.DefaultResMgmtOpts))
-					fmt.Printf("LifecycleCheckCCCommitReadiness cc = %v, = %v\n", ccName, resp1)
-					if err != nil {
-						return nil, status.New(status.TestStatus, status.GenericTransient.ToInt32(), fmt.Sprintf("LifecycleCheckCCCommitReadiness returned error: %v", err), nil)
-					}
-					flag := true
-					for _, r := range resp1.Approvals {
-						flag = flag && r
-					}
-					if !flag {
-						return nil, status.New(status.TestStatus, status.GenericTransient.ToInt32(), fmt.Sprintf("LifecycleCheckCCCommitReadiness returned : %v", resp1), nil)
-					}
-					return resp1, err
-				},
-			)
+			err = checkCCCommitReadiness(orgCtx, channelID, p, req)
 			if err != nil {
-				errors.WithMessage(err, "LifecycleCheckCCCommitReadiness example chaincode failed")
+				return errors.WithMessage(err, "LifecycleCheckCCCommitReadiness example chaincode failed")
 			}
 		}
 	}
+	return nil
+}
+
+func checkCCCommitReadiness(orgCtx *OrgContext, channelID string, p fabAPI.Peer, req resmgmt.LifecycleCheckCCCommitReadinessRequest) error {
+
+	_, err := retry.NewInvoker(retry.New(retry.TestRetryOpts)).Invoke(
+		func() (interface{}, error) {
+			resp1, err := orgCtx.ResMgmt.LifecycleCheckCCCommitReadiness(channelID, req, resmgmt.WithTargets(p))
+			if err != nil {
+				return nil, status.New(status.TestStatus, status.GenericTransient.ToInt32(), fmt.Sprintf("LifecycleCheckCCCommitReadiness returned : %v", resp1), nil)
+			}
+			flag := true
+			for _, r := range resp1.Approvals {
+				flag = flag && r
+			}
+			if !flag {
+				return nil, status.New(status.TestStatus, status.GenericTransient.ToInt32(), fmt.Sprintf("LifecycleCheckCCCommitReadiness returned : %v", resp1), nil)
+			}
+			return resp1, err
+		},
+	)
+	if err != nil {
+		return errors.WithMessage(err, "LifecycleCheckCCCommitReadiness example chaincode failed")
+	}
+
 	return nil
 }
 
@@ -405,36 +422,43 @@ func QueryCommittedCC(mc []*OrgContext, ccName string, channelID string, sequenc
 	req := resmgmt.LifecycleQueryCommittedCCRequest{
 		Name: ccName,
 	}
-	/*resp1, err := mc.org1ResMgmt.LifecycleQueryCommittedCC(channelID, req, resmgmt.WithTargets(org1Peers[0]), resmgmt.WithRetry(retry.DefaultResMgmtOpts))
-	if err != nil {
-		t.Fatal(err)
-	}*/
 	for _, orgCtx := range mc {
 		for _, p := range orgCtx.Peers {
-			_, err := retry.NewInvoker(retry.New(retry.TestRetryOpts)).Invoke(
-				func() (interface{}, error) {
-					resp1, err := orgCtx.ResMgmt.LifecycleQueryCommittedCC(channelID, req, resmgmt.WithTargets(p), resmgmt.WithRetry(retry.DefaultResMgmtOpts))
-					if err != nil {
-						return nil, status.New(status.TestStatus, status.GenericTransient.ToInt32(), fmt.Sprintf("LifecycleQueryCommittedCC returned error: %v", err), nil)
-					}
-					flag := false
-					for _, r := range resp1 {
-						if r.Name == ccName && r.Sequence == sequence {
-							flag = true
-							break
-						}
-					}
-					if !flag {
-						return nil, status.New(status.TestStatus, status.GenericTransient.ToInt32(), fmt.Sprintf("LifecycleQueryCommittedCC returned : %v", resp1), nil)
-					}
-					return resp1, err
-				},
-			)
+			err := queryCommittedCC(orgCtx, ccName, channelID, sequence, p, req)
 			if err != nil {
-				errors.WithMessage(err, "queryCommittedCC example chaincode failed")
+				return errors.WithMessage(err, "queryCommittedCC example chaincode failed")
 			}
 		}
 	}
+	return nil
+
+}
+
+func queryCommittedCC(orgCtx *OrgContext, ccName string, channelID string, sequence int64, p fabAPI.Peer, req resmgmt.LifecycleQueryCommittedCCRequest) error {
+
+	_, err := retry.NewInvoker(retry.New(retry.TestRetryOpts)).Invoke(
+		func() (interface{}, error) {
+			resp1, err := orgCtx.ResMgmt.LifecycleQueryCommittedCC(channelID, req, resmgmt.WithTargets(p))
+			if err != nil {
+				return nil, status.New(status.TestStatus, status.GenericTransient.ToInt32(), fmt.Sprintf("LifecycleQueryCommittedCC returned : %v", resp1), nil)
+			}
+			flag := false
+			for _, r := range resp1 {
+				if r.Name == ccName && r.Sequence == sequence {
+					flag = true
+					break
+				}
+			}
+			if !flag {
+				return nil, status.New(status.TestStatus, status.GenericTransient.ToInt32(), fmt.Sprintf("LifecycleQueryCommittedCC returned : %v", resp1), nil)
+			}
+			return resp1, err
+		},
+	)
+	if err != nil {
+		return errors.WithMessage(err, "queryCommittedCC example chaincode failed")
+	}
+
 	return nil
 
 }
@@ -565,7 +589,7 @@ func instantiateExampleChaincodeLc(sdk *fabsdk.FabricSDK, orgs []*OrgContext, ch
 		return errors.WithMessage(err, "QueryApprovedCC example chaincode failed")
 	}
 
-	err = CheckCCCommitReadiness(orgs, packageID, ccID, ccVersion, sequence, channelID, ccPolicy)
+	err = CheckCCCommitReadiness(orgs, packageID, ccID, ccVersion, sequence, channelID, ccPolicy, collConfigs...)
 	if err != nil {
 		return errors.WithMessage(err, "CheckCCCommitReadiness example chaincode failed")
 	}

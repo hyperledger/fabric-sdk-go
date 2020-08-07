@@ -7,12 +7,14 @@ SPDX-License-Identifier: Apache-2.0
 package resmgmt
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 
 	pb "github.com/hyperledger/fabric-protos-go/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/resmgmt"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 	"github.com/hyperledger/fabric-sdk-go/test/metadata"
@@ -52,8 +54,17 @@ func TestQueryCollectionsConfig(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create new resource management client: %s", err)
 	}
+	resp1, err := retry.NewInvoker(retry.New(retry.TestRetryOpts)).Invoke(
+		func() (interface{}, error) {
+			resp1, err := client.QueryCollectionsConfig(orgChannelID, ccID)
+			if err != nil {
+				return nil, status.New(status.TestStatus, status.GenericTransient.ToInt32(), fmt.Sprintf("QueryCollectionsConfig returned : %v", resp1), nil)
+			}
+			return resp1, err
+		},
+	)
+	resp := resp1.(*pb.CollectionConfigPackage)
 
-	resp, err := client.QueryCollectionsConfig(orgChannelID, ccID, resmgmt.WithRetry(retry.DefaultResMgmtOpts))
 	if err != nil {
 		t.Fatalf("QueryCollectionsConfig return error: %s", err)
 	}
