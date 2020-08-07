@@ -436,16 +436,23 @@ func runPvtDataPreReconcilePutAndGet(t *testing.T, sdk *fabsdk.FabricSDK, orgsCo
 	value1 := "pvtValue1"
 	value2 := "pvtValue2"
 	value3 := "pvtValue3"
-
-	response, err := chClient.Query(
-		channel.Request{
-			ChaincodeID: ccID,
-			Fcn:         "getprivate",
-			Args:        [][]byte{[]byte(coll1), []byte(key1)},
+	re, err := retry.NewInvoker(retry.New(retry.TestRetryOpts)).Invoke(
+		func() (interface{}, error) {
+			re, err := chClient.Query(
+				channel.Request{
+					ChaincodeID: ccID,
+					Fcn:         "getprivate",
+					Args:        [][]byte{[]byte(coll1), []byte(key1)},
+				},
+			)
+			if err != nil {
+				return nil, status.New(status.TestStatus, status.GenericTransient.ToInt32(), fmt.Sprintf("query returned : %v", re), nil)
+			}
+			return re, nil
 		},
-		channel.WithRetry(retry.DefaultChannelOpts),
 	)
 	require.NoError(t, err)
+	response := re.(channel.Response)
 	t.Logf("Got response payload: [%s]", string(response.Payload))
 	require.Nil(t, response.Payload)
 
