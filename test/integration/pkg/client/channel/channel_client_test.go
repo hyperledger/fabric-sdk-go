@@ -550,7 +550,7 @@ func testMultipleClientChaincodeEvent(t *testing.T, channelID string, chainCodeI
 	case <-time.After(time.Second * 20):
 		t.Fatalf("Did NOT receive CC event for eventId(%s)\n", eventID)
 	}
-	assert.Equal(t, string(txID), ccEvent.TxID, "mismatched ccEvent.TxID")
+	assert.Equal(t, txID, ccEvent.TxID, "mismatched ccEvent.TxID")
 }
 
 func testChaincodeEventListener(t *testing.T, ccID string, chClient *channel.Client, listener *channel.Client, args [][]byte) {
