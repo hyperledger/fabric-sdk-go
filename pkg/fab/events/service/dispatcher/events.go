@@ -120,7 +120,7 @@ func NewRegisterChaincodeEvent(ccID, eventFilter string, eventch chan<- *fab.CCE
 }
 
 // NewRegisterTxStatusEvent creates a new RegisterTxStatusEvent
-func NewRegisterTxStatusEvent(txID string, eventch chan<- *fab.TxStatusEvent, respch chan<- fab.Registration, errCh chan<- error) *RegisterTxStatusEvent {
+func NewRegisterTxStatusEvent(txID fab.TransactionID, eventch chan<- *fab.TxStatusEvent, respch chan<- fab.Registration, errCh chan<- error) *RegisterTxStatusEvent {
 	return &RegisterTxStatusEvent{
 		Reg:           &TxStatusReg{TxID: txID, Eventch: eventch},
 		RegisterEvent: NewRegisterEvent(respch, errCh),
@@ -152,7 +152,7 @@ func NewFilteredBlockEvent(fblock *pb.FilteredBlock, sourceURL string) *fab.Filt
 }
 
 // NewChaincodeEvent creates a new ChaincodeEvent
-func NewChaincodeEvent(chaincodeID, eventName, txID string, payload []byte, blockNum uint64, sourceURL string) *fab.CCEvent {
+func NewChaincodeEvent(chaincodeID, eventName string, txID fab.TransactionID, payload []byte, blockNum uint64, sourceURL string) *fab.CCEvent {
 	return &fab.CCEvent{
 		ChaincodeID: chaincodeID,
 		EventName:   eventName,
@@ -164,7 +164,7 @@ func NewChaincodeEvent(chaincodeID, eventName, txID string, payload []byte, bloc
 }
 
 // NewTxStatusEvent creates a new TxStatusEvent
-func NewTxStatusEvent(txID string, txValidationCode pb.TxValidationCode, blockNum uint64, sourceURL string) *fab.TxStatusEvent {
+func NewTxStatusEvent(txID fab.TransactionID, txValidationCode pb.TxValidationCode, blockNum uint64, sourceURL string) *fab.TxStatusEvent {
 	return &fab.TxStatusEvent{
 		TxID:             txID,
 		TxValidationCode: txValidationCode,

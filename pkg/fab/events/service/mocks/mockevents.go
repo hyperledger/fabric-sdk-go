@@ -10,6 +10,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	cb "github.com/hyperledger/fabric-protos-go/common"
 	pb "github.com/hyperledger/fabric-protos-go/peer"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 )
 
 // NewBlock returns a new mock block initialized with the given channel
@@ -38,7 +39,7 @@ func NewBlock(channelID string, transactions ...*TxInfo) *cb.Block {
 // TxInfo contains the data necessary to
 // construct a mock transaction
 type TxInfo struct {
-	TxID             string
+	TxID             fab.TransactionID
 	TxValidationCode pb.TxValidationCode
 	HeaderType       cb.HeaderType
 	ChaincodeID      string
@@ -47,7 +48,7 @@ type TxInfo struct {
 }
 
 // NewTransaction creates a new transaction
-func NewTransaction(txID string, txValidationCode pb.TxValidationCode, headerType cb.HeaderType) *TxInfo {
+func NewTransaction(txID fab.TransactionID, txValidationCode pb.TxValidationCode, headerType cb.HeaderType) *TxInfo {
 	return &TxInfo{
 		TxID:             txID,
 		TxValidationCode: txValidationCode,
@@ -56,7 +57,7 @@ func NewTransaction(txID string, txValidationCode pb.TxValidationCode, headerTyp
 }
 
 // NewTransactionWithCCEvent creates a new transaction with the given chaincode event
-func NewTransactionWithCCEvent(txID string, txValidationCode pb.TxValidationCode, ccID string, eventName string, payload []byte) *TxInfo {
+func NewTransactionWithCCEvent(txID fab.TransactionID, txValidationCode pb.TxValidationCode, ccID string, eventName string, payload []byte) *TxInfo {
 	return &TxInfo{
 		TxID:             txID,
 		TxValidationCode: txValidationCode,
@@ -77,9 +78,9 @@ func NewFilteredBlock(channelID string, filteredTx ...*pb.FilteredTransaction) *
 }
 
 // NewFilteredTx returns a new mock filtered transaction
-func NewFilteredTx(txID string, txValidationCode pb.TxValidationCode) *pb.FilteredTransaction {
+func NewFilteredTx(txID fab.TransactionID, txValidationCode pb.TxValidationCode) *pb.FilteredTransaction {
 	return &pb.FilteredTransaction{
-		Txid:             txID,
+		Txid:             string(txID),
 		TxValidationCode: txValidationCode,
 	}
 }
@@ -116,7 +117,7 @@ func newEnvelope(channelID string, txInfo *TxInfo) *cb.Envelope {
 
 	channelHeader := &cb.ChannelHeader{
 		ChannelId: channelID,
-		TxId:      txInfo.TxID,
+		TxId:      string(txInfo.TxID),
 		Type:      int32(txInfo.HeaderType),
 	}
 	channelHeaderBytes, err := proto.Marshal(channelHeader)
@@ -140,9 +141,9 @@ func newEnvelope(channelID string, txInfo *TxInfo) *cb.Envelope {
 	}
 }
 
-func newTxAction(txID string, ccID string, eventName string, payload []byte) *pb.TransactionAction {
+func newTxAction(txID fab.TransactionID, ccID string, eventName string, payload []byte) *pb.TransactionAction {
 	ccEvent := &pb.ChaincodeEvent{
-		TxId:        txID,
+		TxId:        string(txID),
 		ChaincodeId: ccID,
 		EventName:   eventName,
 		Payload:     payload,

@@ -240,7 +240,7 @@ func (s *Service) RegisterChaincodeEvent(ccID, eventFilter string) (fab.Registra
 // RegisterTxStatusEvent registers for transaction status events. If the client is not authorized to receive
 // transaction status events then an error is returned.
 // - txID is the transaction ID for which events are to be received
-func (s *Service) RegisterTxStatusEvent(txID string) (fab.Registration, <-chan *fab.TxStatusEvent, error) {
+func (s *Service) RegisterTxStatusEvent(txID fab.TransactionID) (fab.Registration, <-chan *fab.TxStatusEvent, error) {
 	if txID == "" {
 		return nil, nil, errors.New("txID must be provided")
 	}

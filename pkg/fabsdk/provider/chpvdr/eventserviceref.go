@@ -96,7 +96,7 @@ func (ref *EventClientRef) RegisterChaincodeEvent(ccID, eventFilter string) (fab
 }
 
 // RegisterTxStatusEvent registers for transaction status events.
-func (ref *EventClientRef) RegisterTxStatusEvent(txID string) (fab.Registration, <-chan *fab.TxStatusEvent, error) {
+func (ref *EventClientRef) RegisterTxStatusEvent(txID fab.TransactionID) (fab.Registration, <-chan *fab.TxStatusEvent, error) {
 	service, err := ref.get()
 	if err != nil {
 		return nil, nil, err

@@ -127,7 +127,7 @@ func testEventService(t *testing.T, testSetup *integration.BaseSetupImpl, sdk *f
 	}
 }
 
-func sendTxProposal(sdk *fabsdk.FabricSDK, testSetup *integration.BaseSetupImpl, t *testing.T, transactor fab.Transactor, chainCodeID string, args [][]byte) ([]*fab.TransactionProposalResponse, *fab.TransactionProposal, string) {
+func sendTxProposal(sdk *fabsdk.FabricSDK, testSetup *integration.BaseSetupImpl, t *testing.T, transactor fab.Transactor, chainCodeID string, args [][]byte) ([]*fab.TransactionProposalResponse, *fab.TransactionProposal, fab.TransactionID) {
 	peers, err := getProposalProcessors(sdk, "Admin", testSetup.OrgID, testSetup.Targets)
 	require.Nil(t, err, "creating peers failed")
 	tpResponses, prop, err := createAndSendTransactionProposal(
@@ -141,11 +141,11 @@ func sendTxProposal(sdk *fabsdk.FabricSDK, testSetup *integration.BaseSetupImpl,
 	if err != nil {
 		t.Fatalf("CreateAndSendTransactionProposal return error: %s", err)
 	}
-	txID := string(prop.TxnID)
+	txID := prop.TxnID
 	return tpResponses, prop, txID
 }
 
-func checkTxStatusEvent(wg *sync.WaitGroup, txstatusch <-chan *fab.TxStatusEvent, t *testing.T, numReceived *uint32, txID string) {
+func checkTxStatusEvent(wg *sync.WaitGroup, txstatusch <-chan *fab.TxStatusEvent, t *testing.T, numReceived *uint32, txID fab.TransactionID) {
 	defer wg.Done()
 	select {
 	case txStatus, ok := <-txstatusch:
@@ -153,7 +153,7 @@ func checkTxStatusEvent(wg *sync.WaitGroup, txstatusch <-chan *fab.TxStatusEvent
 			test.Failf(t, "unexpected closed channel while waiting for Tx Status event")
 		}
 		t.Logf("Received Tx Status event: %#v", txStatus)
-		if txStatus.TxID != string(txID) {
+		if txStatus.TxID != txID {
 			test.Failf(t, "Expecting event for TxID [%s] but got event for TxID [%s]", txID, txStatus.TxID)
 		}
 		if txStatus.SourceURL == "" {
@@ -202,7 +202,7 @@ func checkCCEvent(wg *sync.WaitGroup, cceventch <-chan *fab.CCEvent, t *testing.
 	}
 }
 
-func checkFilteredBlockEvent(wg *sync.WaitGroup, fbeventch <-chan *fab.FilteredBlockEvent, t *testing.T, numReceived *uint32, txID string) {
+func checkFilteredBlockEvent(wg *sync.WaitGroup, fbeventch <-chan *fab.FilteredBlockEvent, t *testing.T, numReceived *uint32, txID fab.TransactionID) {
 	defer wg.Done()
 	for {
 		select {

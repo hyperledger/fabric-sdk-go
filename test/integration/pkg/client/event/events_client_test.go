@@ -111,7 +111,7 @@ func testCCEvent(ccID string, chClient *channel.Client, eventClient *event.Clien
 		if !expectPayload && string(ccEvent.Payload[:]) != "" {
 			t.Fatalf("Expected empty payload, got %s", ccEvent.Payload[:])
 		}
-		if ccEvent.TxID != string(response.TransactionID) {
+		if ccEvent.TxID != response.TransactionID {
 			t.Fatalf("CCEvent(%s) and Execute(%s) transaction IDs don't match", ccEvent.TxID, string(response.TransactionID))
 		}
 	case <-time.After(time.Second * 20):

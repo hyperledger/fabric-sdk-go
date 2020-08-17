@@ -58,7 +58,7 @@ func (m *MockEventService) RegisterChaincodeEvent(ccID, eventFilter string) (fab
 }
 
 // RegisterTxStatusEvent registers for transaction status events.
-func (m *MockEventService) RegisterTxStatusEvent(txID string) (fab.Registration, <-chan *fab.TxStatusEvent, error) {
+func (m *MockEventService) RegisterTxStatusEvent(txID fab.TransactionID) (fab.Registration, <-chan *fab.TxStatusEvent, error) {
 	eventCh := make(chan *fab.TxStatusEvent)
 	reg := &dispatcher.TxStatusReg{
 		Eventch: eventCh,

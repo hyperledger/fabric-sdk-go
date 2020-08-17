@@ -322,9 +322,9 @@ func TestFilteredBlockEvents(t *testing.T) {
 	}
 	defer eventClient.Unregister(registration2)
 
-	txID1 := "1234"
+	txID1 := fab.TransactionID("1234")
 	txCode1 := pb.TxValidationCode_VALID
-	txID2 := "5678"
+	txID2 := fab.TransactionID("5678")
 	txCode2 := pb.TxValidationCode_ENDORSEMENT_POLICY_FAILURE
 
 	conn.Ledger().NewFilteredBlock(
@@ -401,18 +401,18 @@ func TestBlockAndFilteredBlockEvents(t *testing.T) {
 	}
 	defer eventClient.Unregister(breg)
 
-	txID1 := "1234"
+	txID1 := fab.TransactionID("1234")
 	txCode1 := pb.TxValidationCode_VALID
-	txID2 := "5678"
+	txID2 := fab.TransactionID("5678")
 	txCode2 := pb.TxValidationCode_ENDORSEMENT_POLICY_FAILURE
 
 	tx1 := &pb.FilteredTransaction{
-		Txid:             txID1,
+		Txid:             string(txID1),
 		TxValidationCode: txCode1,
 	}
 
 	tx2 := &pb.FilteredTransaction{
-		Txid:             txID2,
+		Txid:             string(txID2),
 		TxValidationCode: txCode2,
 	}
 
@@ -470,9 +470,9 @@ func TestTxStatusEvents(t *testing.T) {
 	}
 	defer eventClient.Close()
 
-	txID1 := "1234"
+	txID1 := fab.TransactionID("1234")
 	txCode1 := pb.TxValidationCode_VALID
-	txID2 := "5678"
+	txID2 := fab.TransactionID("5678")
 	txCode2 := pb.TxValidationCode_ENDORSEMENT_POLICY_FAILURE
 
 	if _, _, err1 := eventClient.RegisterTxStatusEvent(""); err1 == nil {
@@ -508,7 +508,7 @@ func TestTxStatusEvents(t *testing.T) {
 	checkTxStatusEvents(t, eventch1, eventch2, txID1, txID2, txCode1, txCode2)
 }
 
-func checkTxStatusEvents(t *testing.T, eventch1 <-chan *fab.TxStatusEvent, eventch2 <-chan *fab.TxStatusEvent, txID1, txID2 string, txCode1, txCode2 pb.TxValidationCode) {
+func checkTxStatusEvents(t *testing.T, eventch1 <-chan *fab.TxStatusEvent, eventch2 <-chan *fab.TxStatusEvent, txID1, txID2 fab.TransactionID, txCode1, txCode2 pb.TxValidationCode) {
 	numExpected := 2
 	numReceived := 0
 	done := false
@@ -833,7 +833,7 @@ func TestConcurrentEvents(t *testing.T) {
 	// Produce some block events
 	go func() {
 		for i := 0; i < numEvents; i++ {
-			txID := fmt.Sprintf("txid_tx_%d", i)
+			txID := fab.TransactionID(fmt.Sprintf("txid_tx_%d", i))
 			conn.Ledger().NewBlock(channelID,
 				servicemocks.NewTransaction(txID, pb.TxValidationCode_VALID, cb.HeaderType_CONFIG_UPDATE),
 			)
@@ -1010,7 +1010,7 @@ func txStatusTest(eventClient *Client, ledger servicemocks.Ledger, channelID str
 	var receivedEvents int
 
 	for i := 0; i < expected; i++ {
-		txID := fmt.Sprintf("TxID_%d", i)
+		txID := fab.TransactionID(fmt.Sprintf("TxID_%d", i))
 		go func() {
 			defer wg.Done()
 
@@ -1436,7 +1436,7 @@ func checkFilteredBlock(t *testing.T, fblock *pb.FilteredBlock, expectedChannelI
 	}
 }
 
-func checkTxStatusEvent(t *testing.T, event *fab.TxStatusEvent, expectedTxID string, expectedCode pb.TxValidationCode) {
+func checkTxStatusEvent(t *testing.T, event *fab.TxStatusEvent, expectedTxID fab.TransactionID, expectedCode pb.TxValidationCode) {
 	if event.TxID != expectedTxID {
 		t.Fatalf("expecting event for TxID [%s] but received event for TxID [%s]", expectedTxID, event.TxID)
 	}

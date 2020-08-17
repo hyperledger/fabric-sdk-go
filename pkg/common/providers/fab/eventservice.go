@@ -30,7 +30,7 @@ type FilteredBlockEvent struct {
 // TxStatusEvent contains the data for a transaction status event
 type TxStatusEvent struct {
 	// TxID is the ID of the transaction in which the event was set
-	TxID string
+	TxID TransactionID
 	// TxValidationCode is the status code of the commit
 	TxValidationCode pb.TxValidationCode
 	// BlockNumber contains the block number in which the
@@ -43,7 +43,7 @@ type TxStatusEvent struct {
 // CCEvent contains the data for a chaincode event
 type CCEvent struct {
 	// TxID is the ID of the transaction in which the event was set
-	TxID string
+	TxID TransactionID
 	// ChaincodeID is the ID of the chaincode that set the event
 	ChaincodeID string
 	// EventName is the name of the chaincode event
@@ -96,7 +96,7 @@ type EventService interface {
 	// - txID is the transaction ID for which events are to be received
 	// - Returns the registration and a channel that is used to receive events. The channel
 	//   is closed when Unregister is called.
-	RegisterTxStatusEvent(txID string) (Registration, <-chan *TxStatusEvent, error)
+	RegisterTxStatusEvent(txID TransactionID) (Registration, <-chan *TxStatusEvent, error)
 
 	// Unregister removes the given registration and closes the event channel.
 	// - reg is the registration handle that was returned from one of the Register functions

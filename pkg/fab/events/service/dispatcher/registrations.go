@@ -34,7 +34,7 @@ type ChaincodeReg struct {
 
 // TxStatusReg contains the data for a transaction status registration
 type TxStatusReg struct {
-	TxID    string
+	TxID    fab.TransactionID
 	Eventch chan<- *fab.TxStatusEvent
 }
 

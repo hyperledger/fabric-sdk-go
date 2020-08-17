@@ -113,7 +113,7 @@ func (c *Client) RegisterChaincodeEvent(ccID, eventFilter string) (fab.Registrat
 //
 //  Returns:
 //  the registration and a channel that is used to receive events. The channel is closed when Unregister is called.
-func (c *Client) RegisterTxStatusEvent(txID string) (fab.Registration, <-chan *fab.TxStatusEvent, error) {
+func (c *Client) RegisterTxStatusEvent(txID fab.TransactionID) (fab.Registration, <-chan *fab.TxStatusEvent, error) {
 	return c.eventService.RegisterTxStatusEvent(txID)
 }
 

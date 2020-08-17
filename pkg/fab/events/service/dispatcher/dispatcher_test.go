@@ -124,9 +124,9 @@ func TestBlockEventsWithFilter(t *testing.T) {
 		t.Fatalf("Error registering for filtered block events: %s", err)
 	}
 
-	txID1 := "1234"
+	txID1 := fab.TransactionID("1234")
 	txCode1 := pb.TxValidationCode_VALID
-	txID2 := "5678"
+	txID2 := fab.TransactionID("5678")
 	txCode2 := pb.TxValidationCode_ENDORSEMENT_POLICY_FAILURE
 
 	eventProducer := servicemocks.NewBlockProducer()
@@ -208,9 +208,9 @@ func TestFilteredBlockEvents(t *testing.T) {
 		t.Fatalf("Error registering for filtered block events: %s", err)
 	}
 
-	txID1 := "1234"
+	txID1 := fab.TransactionID("1234")
 	txCode1 := pb.TxValidationCode_VALID
-	txID2 := "5678"
+	txID2 := fab.TransactionID("5678")
 	txCode2 := pb.TxValidationCode_ENDORSEMENT_POLICY_FAILURE
 
 	dispatcherEventch <- NewFilteredBlockEvent(servicemocks.NewBlockProducer().NewFilteredBlock(
@@ -285,9 +285,9 @@ func TestBlockAndFilteredBlockEvents(t *testing.T) {
 		t.Fatalf("Error registering for filtered block events: %s", err)
 	}
 
-	txID1 := "1234"
+	txID1 := fab.TransactionID("1234")
 	txCode1 := pb.TxValidationCode_VALID
-	txID2 := "5678"
+	txID2 := fab.TransactionID("5678")
 	txCode2 := pb.TxValidationCode_ENDORSEMENT_POLICY_FAILURE
 
 	dispatcherEventch <- NewBlockEvent(servicemocks.NewBlockProducer().NewBlock(channelID,
@@ -351,9 +351,9 @@ func TestTxStatusEvents(t *testing.T) {
 		t.Fatalf("Error getting event channel from dispatcher: %s", err)
 	}
 
-	txID1 := "1234"
+	txID1 := fab.TransactionID("1234")
 	txCode1 := pb.TxValidationCode_VALID
-	txID2 := "5678"
+	txID2 := fab.TransactionID("5678")
 	txCode2 := pb.TxValidationCode_ENDORSEMENT_POLICY_FAILURE
 
 	regch := make(chan fab.Registration)
@@ -408,7 +408,7 @@ func TestTxStatusEvents(t *testing.T) {
 	}
 }
 
-func registerEvent(dispatcherEventch chan<- interface{}, txID string, regch chan fab.Registration, errch chan error, t *testing.T) (chan *fab.TxStatusEvent, chan<- interface{}, fab.Registration) {
+func registerEvent(dispatcherEventch chan<- interface{}, txID fab.TransactionID, regch chan fab.Registration, errch chan error, t *testing.T) (chan *fab.TxStatusEvent, chan<- interface{}, fab.Registration) {
 	eventch := make(chan *fab.TxStatusEvent, 10)
 	dispatcherEventch <- NewRegisterTxStatusEvent(txID, eventch, regch, errch)
 	var reg fab.Registration
@@ -420,7 +420,7 @@ func registerEvent(dispatcherEventch chan<- interface{}, txID string, regch chan
 	return eventch, dispatcherEventch, reg
 }
 
-func checkTxStatusEvents(fblockEvent *fab.FilteredBlockEvent, eventch1 chan *fab.TxStatusEvent, t *testing.T, txID1 string, txCode1 pb.TxValidationCode, eventch2 chan *fab.TxStatusEvent, txID2 string, txCode2 pb.TxValidationCode) {
+func checkTxStatusEvents(fblockEvent *fab.FilteredBlockEvent, eventch1 chan *fab.TxStatusEvent, t *testing.T, txID1 fab.TransactionID, txCode1 pb.TxValidationCode, eventch2 chan *fab.TxStatusEvent, txID2 fab.TransactionID, txCode2 pb.TxValidationCode) {
 	expectedBlockNumber := fblockEvent.FilteredBlock.Number
 	numExpected := 2
 	numReceived := 0
@@ -451,7 +451,7 @@ func checkTxStatusEvents(fblockEvent *fab.FilteredBlockEvent, eventch1 chan *fab
 	}
 }
 
-func checkEventCh1(ok bool, t *testing.T, event *fab.TxStatusEvent, txID1 string, txCode1 pb.TxValidationCode, numReceived int, expectedBlockNumber uint64) int {
+func checkEventCh1(ok bool, t *testing.T, event *fab.TxStatusEvent, txID1 fab.TransactionID, txCode1 pb.TxValidationCode, numReceived int, expectedBlockNumber uint64) int {
 	if !ok {
 		t.Fatal("unexpected closed channel")
 	} else {
@@ -795,7 +795,7 @@ func checkEvent(eventch chan *RegistrationInfo, t *testing.T, totalRegistrations
 	}
 }
 
-func checkTxStatusEvent(t *testing.T, event *fab.TxStatusEvent, expectedTxID string, expectedCode pb.TxValidationCode) {
+func checkTxStatusEvent(t *testing.T, event *fab.TxStatusEvent, expectedTxID fab.TransactionID, expectedCode pb.TxValidationCode) {
 	if event.TxID != expectedTxID {
 		t.Fatalf("expecting event for TxID [%s] but received event for TxID [%s]", expectedTxID, event.TxID)
 	}
@@ -865,7 +865,7 @@ type transferFunc func(dispatcher *Dispatcher) (fab.EventSnapshot, error)
 
 func testTransferSnapshot(t *testing.T, transferFunc transferFunc) {
 	channelID := "testchannel"
-	txID := "tx_1234"
+	txID := fab.TransactionID("tx_1234")
 	ccID := "cc_id"
 	eventID := "event_1"
 
@@ -977,7 +977,7 @@ func ensureCCEvent(t *testing.T, eventch <-chan *fab.CCEvent, ccID, eventName st
 	}
 }
 
-func ensureTxStatusEvent(t *testing.T, eventch <-chan *fab.TxStatusEvent, txID string) {
+func ensureTxStatusEvent(t *testing.T, eventch <-chan *fab.TxStatusEvent, txID fab.TransactionID) {
 	select {
 	case txEvent, ok := <-eventch:
 		require.True(t, ok, "unexpected closed channel")

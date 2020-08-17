@@ -16,6 +16,7 @@ import (
 	"github.com/hyperledger/fabric-protos-go/common"
 	po "github.com/hyperledger/fabric-protos-go/orderer"
 	pb "github.com/hyperledger/fabric-protos-go/peer"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/service/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/util/test"
 	"google.golang.org/grpc"
@@ -106,7 +107,7 @@ func (m *MockBroadcastServer) mockBlockDelivery(payload []byte) error {
 			m.delMtx.Lock()
 			defer m.delMtx.Unlock()
 			block := mocks.NewBlock(chdr.ChannelId,
-				mocks.NewTransaction(chdr.TxId, pb.TxValidationCode_VALID, common.HeaderType_MESSAGE),
+				mocks.NewTransaction(fab.TransactionID(chdr.TxId), pb.TxValidationCode_VALID, common.HeaderType_MESSAGE),
 			)
 			// m.blkNum is used by FilteredBlock only
 
@@ -117,7 +118,7 @@ func (m *MockBroadcastServer) mockBlockDelivery(payload []byte) error {
 			m.filteredDelMtx.Lock()
 			defer m.filteredDelMtx.Unlock()
 			filteredBlock := mocks.NewFilteredBlock(chdr.ChannelId,
-				mocks.NewFilteredTx(chdr.TxId, pb.TxValidationCode_VALID),
+				mocks.NewFilteredTx(fab.TransactionID(chdr.TxId), pb.TxValidationCode_VALID),
 			)
 			// increase m.blkNum to mock adding of filtered blocks to the ledger
 			m.blkNum++

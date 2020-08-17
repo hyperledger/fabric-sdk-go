@@ -844,7 +844,7 @@ func (rc *Client) sendCCProposal(reqCtx reqContext.Context, ccProposalType chain
 func (rc *Client) sendTransactionAndCheckEvent(eventService fab.EventService, tp *fab.TransactionProposal, txProposalResponse []*fab.TransactionProposalResponse,
 	transac fab.Transactor, reqCtx reqContext.Context) (fab.TransactionID, error) {
 	// Register for commit event
-	reg, statusNotifier, err := eventService.RegisterTxStatusEvent(string(tp.TxnID))
+	reg, statusNotifier, err := eventService.RegisterTxStatusEvent(tp.TxnID)
 	if err != nil {
 		return tp.TxnID, errors.WithMessage(err, "error registering for TxStatus event")
 	}
@@ -861,9 +861,9 @@ func (rc *Client) sendTransactionAndCheckEvent(eventService fab.EventService, tp
 	select {
 	case txStatus := <-statusNotifier:
 		if txStatus.TxValidationCode == pb.TxValidationCode_VALID {
-			return fab.TransactionID(txStatus.TxID), nil
+			return txStatus.TxID, nil
 		}
-		return fab.TransactionID(txStatus.TxID), status.New(status.EventServerStatus, int32(txStatus.TxValidationCode), "instantiateOrUpgradeCC failed", nil)
+		return txStatus.TxID, status.New(status.EventServerStatus, int32(txStatus.TxValidationCode), "instantiateOrUpgradeCC failed", nil)
 	case <-reqCtx.Done():
 		return tp.TxnID, errors.New("instantiateOrUpgradeCC timed out or cancelled")
 	}

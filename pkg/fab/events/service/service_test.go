@@ -93,9 +93,9 @@ func TestBlockEventsWithFilter(t *testing.T) {
 	}
 	defer eventService.Unregister(fbreg)
 
-	txID1 := "1234"
+	txID1 := fab.TransactionID("1234")
 	txCode1 := pb.TxValidationCode_VALID
-	txID2 := "5678"
+	txID2 := fab.TransactionID("5678")
 	txCode2 := pb.TxValidationCode_ENDORSEMENT_POLICY_FAILURE
 
 	eventProducer.Ledger().NewBlock(channelID,
@@ -156,9 +156,9 @@ func TestFilteredBlockEvents(t *testing.T) {
 	}
 	defer eventService.Unregister(registration)
 
-	txID1 := "1234"
+	txID1 := fab.TransactionID("1234")
 	txCode1 := pb.TxValidationCode_VALID
-	txID2 := "5678"
+	txID2 := fab.TransactionID("5678")
 	txCode2 := pb.TxValidationCode_ENDORSEMENT_POLICY_FAILURE
 
 	eventProducer.Ledger().NewFilteredBlock(
@@ -204,9 +204,9 @@ func TestBlockAndFilteredBlockEvents(t *testing.T) {
 	}
 	defer eventService.Unregister(fbreg)
 
-	txID1 := "1234"
+	txID1 := fab.TransactionID("1234")
 	txCode1 := pb.TxValidationCode_VALID
-	txID2 := "5678"
+	txID2 := fab.TransactionID("5678")
 	txCode2 := pb.TxValidationCode_ENDORSEMENT_POLICY_FAILURE
 
 	eventProducer.Ledger().NewBlock(channelID,
@@ -257,9 +257,9 @@ func TestTxStatusEvents(t *testing.T) {
 	defer eventProducer.Close()
 	defer eventService.Stop()
 
-	txID1 := "1234"
+	txID1 := fab.TransactionID("1234")
 	txCode1 := pb.TxValidationCode_VALID
-	txID2 := "5678"
+	txID2 := fab.TransactionID("5678")
 	txCode2 := pb.TxValidationCode_ENDORSEMENT_POLICY_FAILURE
 
 	if _, _, err1 := eventService.RegisterTxStatusEvent(""); err1 == nil {
@@ -296,7 +296,7 @@ func TestTxStatusEvents(t *testing.T) {
 	checkTxStatusEvents(eventch1, t, txID1, txCode1, eventch2, txID2, txCode2)
 }
 
-func checkTxStatusEvents(eventch1 <-chan *fab.TxStatusEvent, t *testing.T, txID1 string, txCode1 pb.TxValidationCode, eventch2 <-chan *fab.TxStatusEvent, txID2 string, txCode2 pb.TxValidationCode) {
+func checkTxStatusEvents(eventch1 <-chan *fab.TxStatusEvent, t *testing.T, txID1 fab.TransactionID, txCode1 pb.TxValidationCode, eventch2 <-chan *fab.TxStatusEvent, txID2 fab.TransactionID, txCode2 pb.TxValidationCode) {
 	numExpected := 2
 	numReceived := 0
 	done := false
@@ -466,7 +466,7 @@ func testConcurrentBlockEvents(channelID string, numEvents uint, eventService fa
 		var i uint
 		for i = 0; i < numEvents+10; i++ {
 			eventProducer.Ledger().NewBlock(channelID,
-				servicemocks.NewTransaction(fmt.Sprintf("txid_fb_%d", i), pb.TxValidationCode_VALID, cb.HeaderType_CONFIG_UPDATE),
+				servicemocks.NewTransaction(fab.TransactionID(fmt.Sprintf("txid_fb_%d", i)), pb.TxValidationCode_VALID, cb.HeaderType_CONFIG_UPDATE),
 			)
 		}
 	}()
@@ -544,7 +544,7 @@ func sendNewBlock(numEvents uint, conn *servicemocks.MockProducer, channelID str
 		for _ = 0; i < numEvents; i++ {
 			conn.Ledger().NewBlock(channelID,
 				servicemocks.NewTransaction(
-					fmt.Sprintf("txid_fb_%d", i), pb.TxValidationCode_VALID, cb.HeaderType_CONFIG_UPDATE),
+					fab.TransactionID(fmt.Sprintf("txid_fb_%d", i)), pb.TxValidationCode_VALID, cb.HeaderType_CONFIG_UPDATE),
 			)
 		}
 	}()
@@ -564,7 +564,7 @@ func testConcurrentCCEvents(channelID string, numEvents uint, eventService fab.E
 		var i uint
 		for i = 0; i < numEvents+10; i++ {
 			conn.Ledger().NewBlock(channelID,
-				servicemocks.NewTransactionWithCCEvent(fmt.Sprintf("txid_cc_%d", i), pb.TxValidationCode_VALID, ccID, event1, nil),
+				servicemocks.NewTransactionWithCCEvent(fab.TransactionID(fmt.Sprintf("txid_cc_%d", i)), pb.TxValidationCode_VALID, ccID, event1, nil),
 			)
 		}
 	}()
@@ -604,7 +604,7 @@ func testConcurrentTxStatusEvents(channelID string, numEvents uint, eventService
 
 	var receivedEvents uint32
 	for i := 0; i < int(numEvents); i++ {
-		txID := fmt.Sprintf("txid_tx_%d", i)
+		txID := fab.TransactionID(fmt.Sprintf("txid_tx_%d", i))
 		go func() {
 			defer wg.Done()
 
@@ -646,7 +646,7 @@ func testConcurrentTxStatusEvents(channelID string, numEvents uint, eventService
 	return nil
 }
 
-func checkTxStatusEvent(t *testing.T, event *fab.TxStatusEvent, expectedTxID string, expectedCode pb.TxValidationCode) {
+func checkTxStatusEvent(t *testing.T, event *fab.TxStatusEvent, expectedTxID fab.TransactionID, expectedCode pb.TxValidationCode) {
 	if event.TxID != expectedTxID {
 		t.Fatalf("expecting event for TxID [%s] but received event for TxID [%s]", expectedTxID, event.TxID)
 	}

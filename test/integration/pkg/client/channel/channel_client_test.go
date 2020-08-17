@@ -493,7 +493,7 @@ func testChaincodeEvent(t *testing.T, chClient *channel.Client, args [][]byte, c
 	select {
 	case ccEvent := <-notifier:
 		t.Logf("Received cc event: %#v", ccEvent)
-		if ccEvent.TxID != string(response.TransactionID) {
+		if ccEvent.TxID != response.TransactionID {
 			t.Fatalf("CCEvent(%s) and Execute(%s) transaction IDs don't match", ccEvent.TxID, string(response.TransactionID))
 		}
 	case <-time.After(time.Second * 20):
@@ -573,7 +573,7 @@ func testChaincodeEventListener(t *testing.T, ccID string, chClient *channel.Cli
 	select {
 	case ccEvent := <-notifier:
 		t.Logf("Received cc event: %#v", ccEvent)
-		if ccEvent.TxID != string(response.TransactionID) {
+		if ccEvent.TxID != response.TransactionID {
 			t.Fatalf("CCEvent(%s) and Execute(%s) transaction IDs don't match", ccEvent.TxID, string(response.TransactionID))
 		}
 	case <-time.After(time.Second * 20):

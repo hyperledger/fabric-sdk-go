@@ -117,9 +117,9 @@ func TestFilteredBlockEvents(t *testing.T) {
 	}
 	defer client.Unregister(registration)
 
-	txID1 := "1234"
+	txID1 := fab.TransactionID("1234")
 	txCode1 := pb.TxValidationCode_VALID
-	txID2 := "5678"
+	txID2 := fab.TransactionID("5678")
 	txCode2 := pb.TxValidationCode_ENDORSEMENT_POLICY_FAILURE
 
 	eventProducer.Ledger().NewFilteredBlock(
@@ -163,8 +163,8 @@ func TestTxStatusEvents(t *testing.T) {
 
 	client.eventService = eventService
 
-	txID1 := "1234"
-	txID2 := "5678"
+	txID1 := fab.TransactionID("1234")
+	txID2 := fab.TransactionID("5678")
 
 	if _, _, err1 := client.RegisterTxStatusEvent(""); err1 == nil {
 		t.Fatal("expecting error registering for TxStatus event without a TX ID but got none")
@@ -185,7 +185,7 @@ func TestTxStatusEvents(t *testing.T) {
 
 }
 
-func validateTxStatusEvents(t *testing.T, eventProducer *servicemocks.MockProducer, eventch1 <-chan *fab.TxStatusEvent, eventch2 <-chan *fab.TxStatusEvent, chanID string, txID1 string, txID2 string) {
+func validateTxStatusEvents(t *testing.T, eventProducer *servicemocks.MockProducer, eventch1 <-chan *fab.TxStatusEvent, eventch2 <-chan *fab.TxStatusEvent, chanID string, txID1, txID2 fab.TransactionID) {
 	txCode1 := pb.TxValidationCode_VALID
 	txCode2 := pb.TxValidationCode_ENDORSEMENT_POLICY_FAILURE
 	eventProducer.Ledger().NewFilteredBlock(
@@ -322,7 +322,7 @@ func checkCCEvent(t *testing.T, event *fab.CCEvent, expectedCCID string, expecte
 	}
 }
 
-func checkTxStatusEvent(t *testing.T, event *fab.TxStatusEvent, expectedTxID string, expectedCode pb.TxValidationCode) {
+func checkTxStatusEvent(t *testing.T, event *fab.TxStatusEvent, expectedTxID fab.TransactionID, expectedCode pb.TxValidationCode) {
 	if event.TxID != expectedTxID {
 		t.Fatalf("expecting event for TxID [%s] but received event for TxID [%s]", expectedTxID, event.TxID)
 	}

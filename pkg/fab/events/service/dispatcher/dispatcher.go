@@ -52,7 +52,7 @@ type Dispatcher struct {
 	blockRegistrations         []*BlockReg
 	filteredBlockRegistrations []*FilteredBlockReg
 	handlers                   map[reflect.Type]Handler
-	txRegistrations            map[string]*TxStatusReg
+	txRegistrations            map[fab.TransactionID]*TxStatusReg
 	ccRegistrations            map[string]*ChaincodeReg
 }
 
@@ -67,7 +67,7 @@ func New(opts ...options.Opt) *Dispatcher {
 		params:          *params,
 		handlers:        make(map[reflect.Type]Handler),
 		eventch:         make(chan interface{}, params.eventConsumerBufferSize),
-		txRegistrations: make(map[string]*TxStatusReg),
+		txRegistrations: make(map[fab.TransactionID]*TxStatusReg),
 		ccRegistrations: make(map[string]*ChaincodeReg),
 		state:           dispatcherStateInitial,
 		lastBlockNum:    math.MaxUint64,
@@ -230,7 +230,7 @@ func (ed *Dispatcher) clearTxRegistrations(closeChannel bool) {
 			close(reg.Eventch)
 		}
 	}
-	ed.txRegistrations = make(map[string]*TxStatusReg)
+	ed.txRegistrations = make(map[fab.TransactionID]*TxStatusReg)
 }
 
 // clearChaincodeRegistrations removes all chaincode registrations and closes the corresponding event channels.
@@ -594,20 +594,21 @@ func checkFilteredBlockRegistrations(ed *Dispatcher, fblock *pb.FilteredBlock, s
 
 func (ed *Dispatcher) publishTxStatusEvents(tx *pb.FilteredTransaction, blockNum uint64, sourceURL string) {
 	logger.Debugf("Publishing Tx Status event for TxID [%s]...", tx.Txid)
-	if reg, ok := ed.txRegistrations[tx.Txid]; ok {
+	txID := fab.TransactionID(tx.Txid)
+	if reg, ok := ed.txRegistrations[txID]; ok {
 		logger.Debugf("Sending Tx Status event for TxID [%s] to registrant...", tx.Txid)
 
 		if ed.eventConsumerTimeout < 0 {
 			select {
-			case reg.Eventch <- NewTxStatusEvent(tx.Txid, tx.TxValidationCode, blockNum, sourceURL):
+			case reg.Eventch <- NewTxStatusEvent(txID, tx.TxValidationCode, blockNum, sourceURL):
 			default:
 				logger.Warn("Unable to send to Tx Status event channel.")
 			}
 		} else if ed.eventConsumerTimeout == 0 {
-			reg.Eventch <- NewTxStatusEvent(tx.Txid, tx.TxValidationCode, blockNum, sourceURL)
+			reg.Eventch <- NewTxStatusEvent(txID, tx.TxValidationCode, blockNum, sourceURL)
 		} else {
 			select {
-			case reg.Eventch <- NewTxStatusEvent(tx.Txid, tx.TxValidationCode, blockNum, sourceURL):
+			case reg.Eventch <- NewTxStatusEvent(txID, tx.TxValidationCode, blockNum, sourceURL):
 			case <-time.After(ed.eventConsumerTimeout):
 				logger.Warn("Timed out sending Tx Status event.")
 			}
@@ -620,18 +621,19 @@ func (ed *Dispatcher) publishCCEvents(ccEvent *pb.ChaincodeEvent, blockNum uint6
 		logger.Debugf("Matching CCEvent[%s,%s] against Reg[%s,%s] ...", ccEvent.ChaincodeId, ccEvent.EventName, reg.ChaincodeID, reg.EventFilter)
 		if reg.ChaincodeID == ccEvent.ChaincodeId && reg.EventRegExp.MatchString(ccEvent.EventName) {
 			logger.Debugf("... matched CCEvent[%s,%s] against Reg[%s,%s]", ccEvent.ChaincodeId, ccEvent.EventName, reg.ChaincodeID, reg.EventFilter)
+			txID := fab.TransactionID(ccEvent.TxId)
 
 			if ed.eventConsumerTimeout < 0 {
 				select {
-				case reg.Eventch <- NewChaincodeEvent(ccEvent.ChaincodeId, ccEvent.EventName, ccEvent.TxId, ccEvent.Payload, blockNum, sourceURL):
+				case reg.Eventch <- NewChaincodeEvent(ccEvent.ChaincodeId, ccEvent.EventName, txID, ccEvent.Payload, blockNum, sourceURL):
 				default:
 					logger.Warn("Unable to send to CC event channel.")
 				}
 			} else if ed.eventConsumerTimeout == 0 {
-				reg.Eventch <- NewChaincodeEvent(ccEvent.ChaincodeId, ccEvent.EventName, ccEvent.TxId, ccEvent.Payload, blockNum, sourceURL)
+				reg.Eventch <- NewChaincodeEvent(ccEvent.ChaincodeId, ccEvent.EventName, txID, ccEvent.Payload, blockNum, sourceURL)
 			} else {
 				select {
-				case reg.Eventch <- NewChaincodeEvent(ccEvent.ChaincodeId, ccEvent.EventName, ccEvent.TxId, ccEvent.Payload, blockNum, sourceURL):
+				case reg.Eventch <- NewChaincodeEvent(ccEvent.ChaincodeId, ccEvent.EventName, txID, ccEvent.Payload, blockNum, sourceURL):
 				case <-time.After(ed.eventConsumerTimeout):
 					logger.Warn("Timed out sending CC event.")
 				}
