@@ -39,7 +39,7 @@ type ecdsaPrivateKey struct {
 // Bytes converts this key to its byte representation,
 // if this operation is allowed.
 func (k *ecdsaPrivateKey) Bytes() ([]byte, error) {
-	if k.exportable {
+	if !k.exportable {
 		return nil, errors.New("not supported")
 	}
 
