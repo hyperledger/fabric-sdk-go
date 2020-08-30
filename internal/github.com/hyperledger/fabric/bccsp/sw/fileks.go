@@ -145,11 +145,7 @@ func (ks *fileBasedKeyStore) GetKey(ski []byte) (bccsp.Key, error) {
 
 		switch k := key.(type) {
 		case *ecdsa.PrivateKey:
-<<<<<<< HEAD
 			return &ecdsaPrivateKey{k, true}, nil
-=======
-			return &ecdsaPrivateKey{k, false}, nil
->>>>>>> a61f75d7... added an exportable field to the struct to allow Bytes method
 		default:
 			return nil, errors.New("secret key type not recognized")
 		}
