@@ -101,7 +101,7 @@ func (*ecdsaPrivateKeyImportOptsKeyImporter) KeyImport(raw interface{}, opts bcc
 		return nil, errors.New("Failed casting to ECDSA private key. Invalid raw material.")
 	}
 
-	return &ecdsaPrivateKey{ecdsaSK, false}, nil
+	return &ecdsaPrivateKey{ecdsaSK, true}, nil
 }
 
 type ecdsaGoPublicKeyImportOptsKeyImporter struct{}
