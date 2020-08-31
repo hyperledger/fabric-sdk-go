@@ -151,6 +151,41 @@ func TestSelection(t *testing.T) {
 		testSelectionError(t, service, "error getting channel response for channel [testchannel]: no successful response received from any peer: simulated response error")
 	})
 
+	t.Run("Transient error on one target", func(t *testing.T) {
+		discClient.SetResponses(
+			&discovery.MockDiscoverEndpointResponse{
+				EndorsersErr: fmt.Errorf("no endorsement combination can be satisfied"), // Transient
+			},
+			&discovery.MockDiscoverEndpointResponse{
+				Error: fmt.Errorf("some discovery error"), // Non-transient
+			},
+		)
+		testSelectionError(t, service, "no endorsement combination can be satisfied")
+	})
+
+	t.Run("Success on one target", func(t *testing.T) {
+		discClient.SetResponses(
+			&discovery.MockDiscoverEndpointResponse{
+				EndorsersErr: fmt.Errorf("no endorsement combination can be satisfied"),
+			},
+			&discovery.MockDiscoverEndpointResponse{
+				Error: fmt.Errorf("some discovery error"),
+			},
+			&discovery.MockDiscoverEndpointResponse{
+				PeerEndpoints: []*discmocks.MockDiscoveryPeerEndpoint{
+					{
+						MSPID:        mspID1,
+						Endpoint:     peer1Org1URL,
+						LedgerHeight: 10,
+					},
+				},
+			},
+		)
+		endorsers, err := service.GetEndorsersForChaincode([]*fab.ChaincodeCall{{ID: cc1}})
+		require.NoError(t, err)
+		require.Len(t, endorsers, 1)
+	})
+
 	t.Run("CCtoCC", func(t *testing.T) {
 		discClient.SetResponses(
 			&discovery.MockDiscoverEndpointResponse{
@@ -269,8 +304,8 @@ func TestSelection(t *testing.T) {
 	t.Run("Fatal Error Access denied on all peers", func(t *testing.T) {
 		discClient.SetResponses(
 			&discovery.MockDiscoverEndpointResponse{
-				AccessDenied: true,
 				PeerEndpoints: []*discmocks.MockDiscoveryPeerEndpoint{},
+				EndorsersErr:  errors.New(AccessDenied),
 			},
 		)
 		// Wait for cache to refresh

@@ -83,23 +83,15 @@ func (r *mockDiscoverResponse) Error() error {
 type fakeResponse struct {
 	peers        []*discclient.Peer
 	err          error
-	accessDenied bool
+	endorsersErr error
 }
 
 func (r *fakeResponse) ForChannel(string) discclient.ChannelResponse {
-	chanResp := &channelResponse{
-		peers: r.peers,
-		err:   r.err,
+	return &channelResponse{
+		peers:        r.peers,
+		err:          r.err,
+		endorsersErr: r.endorsersErr,
 	}
-
-	//usually "access denied" is a successful response.
-	//The problem is that fakeResponse struct contains only peers arr and not message with content, so need to add bool if access denied
-	//see origins of https://github.com/hyperledger/fabric-sdk-go/pull/62
-	if r.accessDenied {
-		chanResp.err = errors.New("access denied")
-	}
-
-	return chanResp
 }
 
 func (r *fakeResponse) ForLocal() discclient.LocalResponse {
@@ -110,8 +102,9 @@ func (r *fakeResponse) ForLocal() discclient.LocalResponse {
 }
 
 type channelResponse struct {
-	peers discclient.Endorsers
-	err   error
+	peers        discclient.Endorsers
+	err          error
+	endorsersErr error
 }
 
 // Config returns a response for a config query, or error if something went wrong
@@ -126,8 +119,8 @@ func (cr *channelResponse) Peers(invocationChain ...*discovery.ChaincodeCall) ([
 
 // Endorsers returns the response for an endorser query
 func (cr *channelResponse) Endorsers(invocationChain discclient.InvocationChain, f discclient.Filter) (discclient.Endorsers, error) {
-	if cr.err != nil {
-		return nil, cr.err
+	if cr.endorsersErr != nil {
+		return nil, cr.endorsersErr
 	}
 
 	for _, call := range invocationChain {
@@ -154,8 +147,7 @@ type MockDiscoverEndpointResponse struct {
 	Target        string
 	PeerEndpoints []*mocks.MockDiscoveryPeerEndpoint
 	Error         error
-	//todo it's really hard to make an expectation in tests, maybe we need to switch to mocks because current thing is stub
-	AccessDenied bool
+	EndorsersErr  error
 }
 
 // Build builds a mock discovery response
@@ -171,12 +163,9 @@ func (b *MockDiscoverEndpointResponse) Build() Response {
 	}
 
 	disResp := &fakeResponse{
-		peers: peers,
-		err:   b.Error,
-	}
-
-	if b.AccessDenied {
-		disResp.accessDenied = true
+		peers:        peers,
+		err:          b.Error,
+		endorsersErr: b.EndorsersErr,
 	}
 
 	return &mockDiscoverResponse{
