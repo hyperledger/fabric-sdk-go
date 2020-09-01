@@ -97,6 +97,7 @@ var DefaultRetryableCodes = map[status.Group][]status.Code{
 // transient by fabric-sdk-go/pkg/client/resmgmt.Client
 var ResMgmtDefaultRetryableCodes = map[status.Group][]status.Code{
 	status.EndorserClientStatus: {
+		status.ConnectionFailed,
 		status.EndorsementMismatch,
 		status.ChaincodeNameNotFound,
 	},
