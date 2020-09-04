@@ -43,7 +43,10 @@ func (k *ecdsaPrivateKey) Bytes() ([]byte, error) {
 		return nil, errors.New("not supported")
 	}
 
-	x509Encoded, _ := x509.MarshalECPrivateKey(k.privKey)
+	x509Encoded, err := x509.MarshalECPrivateKey(k.privKey)
+	if err != nil {
+		return nil, err
+	}
 	pemEncoded := pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: x509Encoded})
 
 	return pemEncoded, nil
