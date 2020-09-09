@@ -216,6 +216,47 @@ func TestGetAllIdentities(t *testing.T) {
 	}
 }
 
+func TestSigningIdentityPrivateKey(t *testing.T) {
+	mspClient, sdk := setupClient(t)
+	defer integration.CleanupUserData(t, sdk)
+
+	// Generate a random user name
+	username := integration.GenerateRandomID()
+
+	req := &msp.IdentityRequest{
+		ID:          username,
+		Affiliation: "org2",
+		Type:        IdentityTypeUser,
+	}
+
+	// Create new identity
+	newIdentity, err := mspClient.CreateIdentity(req)
+	if err != nil {
+		t.Fatalf("Create identity failed: %s", err)
+	}
+
+	if newIdentity.Secret == "" {
+		t.Fatal("Secret should have been generated")
+	}
+
+	// Enroll the new user
+	err = mspClient.Enroll(username, msp.WithSecret(newIdentity.Secret))
+	if err != nil {
+		t.Fatalf("Enroll failed: %s", err)
+	}
+
+	// Get the new user's signing identity
+	si, err := mspClient.GetSigningIdentity(username)
+	if err != nil {
+		t.Fatalf("GetSigningIdentity failed: %s", err)
+	}
+
+	if _, err := si.PrivateKey().Bytes(); err != nil {
+		t.Fatalf("Get PrivateKey Bytes should not throw error: %s", err)
+	}
+
+}
+
 func containsIdentities(identities []*msp.IdentityResponse, requests ...*msp.IdentityRequest) bool {
 	for _, request := range requests {
 		if !containsIdentity(identities, request) {
