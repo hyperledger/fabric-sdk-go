@@ -8,11 +8,13 @@ package invoke
 
 import (
 	reqContext "context"
+	"fmt"
 	"net/http"
 	"strings"
 	"testing"
 	"time"
 
+	pb "github.com/hyperledger/fabric-protos-go/peer"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -23,7 +25,6 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	fcmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
-	pb "github.com/hyperledger/fabric-protos-go/peer"
 )
 
 const (
@@ -187,6 +188,21 @@ func TestEndorsementHandler(t *testing.T) {
 	handler.Handle(requestContext, clientContext)
 	assert.Nil(t, requestContext.Error)
 	assert.Truef(t, optsProviderCalled, "expecting opts provider to be called")
+
+	errExpected := fmt.Errorf("error in simulation: failed to distribute private collection, txID 695560b")
+	clientContext.Transactor.(*txnmocks.MockTransactor).Err = errExpected
+	handler.Handle(requestContext, clientContext)
+	s, ok := requestContext.Error.(*status.Status)
+	require.True(t, ok)
+	require.Equal(t, status.EndorserServerStatus, s.Group)
+	require.Equal(t, status.PvtDataDisseminationFailed.ToInt32(), s.Code)
+
+	errExpected = fmt.Errorf("error in simulation")
+	clientContext.Transactor.(*txnmocks.MockTransactor).Err = errExpected
+	handler.Handle(requestContext, clientContext)
+	s, ok = requestContext.Error.(*status.Status)
+	require.False(t, ok)
+	require.EqualError(t, requestContext.Error, errExpected.Error())
 }
 
 // Target filter

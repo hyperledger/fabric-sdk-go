@@ -21,6 +21,7 @@ type MockTransactor struct {
 	Ctx       context.Client
 	ChannelID string
 	Orderers  []fab.Orderer
+	Err       error
 }
 
 // CreateTransactionHeader creates a Transaction Header based on the current context.
@@ -35,6 +36,10 @@ func (t *MockTransactor) CreateTransactionHeader(opts ...fab.TxnHeaderOpt) (fab.
 
 // SendTransactionProposal sends a TransactionProposal to the target peers.
 func (t *MockTransactor) SendTransactionProposal(proposal *fab.TransactionProposal, targets []fab.ProposalProcessor) ([]*fab.TransactionProposalResponse, error) {
+	if t.Err != nil {
+		return nil, t.Err
+	}
+
 	rqtx, cancel := contextImpl.NewRequest(t.Ctx, contextImpl.WithTimeout(10*time.Second))
 	defer cancel()
 	return txn.SendProposal(rqtx, proposal, targets)
