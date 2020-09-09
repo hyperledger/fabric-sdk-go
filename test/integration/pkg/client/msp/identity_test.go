@@ -7,6 +7,8 @@ SPDX-License-Identifier: Apache-2.0
 package msp
 
 import (
+	"crypto/x509"
+	"encoding/pem"
 	"testing"
 
 	"fmt"
@@ -14,6 +16,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/msp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
+	"github.com/hyperledger/fabric-sdk-go/pkg/gateway"
 	"github.com/hyperledger/fabric-sdk-go/test/integration"
 	"github.com/stretchr/testify/assert"
 )
@@ -213,6 +216,58 @@ func TestGetAllIdentities(t *testing.T) {
 	_, err = mspClient.GetAllIdentities(msp.WithCA("invalid"))
 	if err == nil {
 		t.Fatal("Should have failed for invalid CA")
+	}
+}
+
+func TestSigningIdentityPrivateKey(t *testing.T) {
+	mspClient, sdk := setupClient(t)
+	defer integration.CleanupUserData(t, sdk)
+
+	// Generate a random user name
+	username := integration.GenerateRandomID()
+
+	req := &msp.IdentityRequest{
+		ID:          username,
+		Affiliation: "org2",
+		Type:        IdentityTypeUser,
+	}
+
+	// Create new identity
+	newIdentity, err := mspClient.CreateIdentity(req)
+	if err != nil {
+		t.Fatalf("Create identity failed: %s", err)
+	}
+
+	if newIdentity.Secret == "" {
+		t.Fatal("Secret should have been generated")
+	}
+
+	// Enroll the new user
+	err = mspClient.Enroll(username, msp.WithSecret(newIdentity.Secret))
+	if err != nil {
+		t.Fatalf("Enroll failed: %s", err)
+	}
+
+	// Get the new user's signing identity
+	si, err := mspClient.GetSigningIdentity(username)
+	if err != nil {
+		t.Fatalf("GetSigningIdentity failed: %s", err)
+	}
+	// Get the bytes of the private key
+	pk, err := si.PrivateKey().Bytes()
+	if err != nil {
+		t.Fatalf("Get PrivateKey Bytes should not throw error: %s", err)
+	}
+	// Test that we have a valid ECPrivateKey
+	p, _ := pem.Decode(pk)
+	_, err = x509.ParseECPrivateKey(p.Bytes)
+	if err != nil {
+		t.Fatalf("Get ParseECPrivateKey should not throw error: %s", err)
+	}
+	// Create a new Identity with the bytes
+	identity := gateway.NewX509Identity("org2", string(si.EnrollmentCertificate()), string(pk))
+	if identity == nil {
+		t.Fatalf("Should return a valid identity")
 	}
 }
 
