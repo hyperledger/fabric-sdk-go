@@ -57,6 +57,9 @@ const (
 
 	// ChaincodeNameNotFound indicates that an that an attempt was made to invoke a chaincode that's not yet initialized
 	ChaincodeNameNotFound Code = 23
+
+	// PvtDataDisseminationFailed indicates that Gossip failed to disseminate private data to the required number of peers
+	PvtDataDisseminationFailed Code = 24
 )
 
 // CodeName maps the codes in this packages to human-readable strings
@@ -74,6 +77,7 @@ var CodeName = map[int32]string{
 	11: "QUERY_ENDORSERS",
 	12: "GENERIC_TRANSIENT",
 	23: "CHAINCODE_NAME_NOT_FOUND",
+	24: "PRIVATE_DATA_DISSEMINATION_FAILED",
 }
 
 // ToInt32 cast to int32

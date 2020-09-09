@@ -135,6 +135,7 @@ var ChannelClientRetryableCodes = map[status.Group][]status.Code{
 	status.EndorserServerStatus: {
 		status.Code(common.Status_SERVICE_UNAVAILABLE),
 		status.Code(common.Status_INTERNAL_SERVER_ERROR),
+		status.PvtDataDisseminationFailed,
 	},
 	status.OrdererClientStatus: {
 		status.ConnectionFailed,
