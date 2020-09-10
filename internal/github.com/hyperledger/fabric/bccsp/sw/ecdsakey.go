@@ -24,6 +24,7 @@ import (
 	"crypto/elliptic"
 	"crypto/sha256"
 	"crypto/x509"
+	"encoding/pem"
 	"errors"
 	"fmt"
 
@@ -31,13 +32,24 @@ import (
 )
 
 type ecdsaPrivateKey struct {
-	privKey *ecdsa.PrivateKey
+	privKey    *ecdsa.PrivateKey
+	exportable bool
 }
 
 // Bytes converts this key to its byte representation,
 // if this operation is allowed.
 func (k *ecdsaPrivateKey) Bytes() ([]byte, error) {
-	return nil, errors.New("Not supported.")
+	if !k.exportable {
+		return nil, errors.New("not supported")
+	}
+
+	x509Encoded, err := x509.MarshalECPrivateKey(k.privKey)
+	if err != nil {
+		return nil, err
+	}
+	pemEncoded := pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: x509Encoded})
+
+	return pemEncoded, nil
 }
 
 // SKI returns the subject key identifier of this key.

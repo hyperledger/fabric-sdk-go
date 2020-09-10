@@ -122,7 +122,7 @@ func (kd *ecdsaPrivateKeyKeyDeriver) KeyDeriv(key bccsp.Key, opts bccsp.KeyDeriv
 		return nil, errors.New("Failed temporary public key IsOnCurve check.")
 	}
 
-	return &ecdsaPrivateKey{tempSK}, nil
+	return &ecdsaPrivateKey{tempSK, true}, nil
 }
 
 type aesPrivateKeyKeyDeriver struct {
