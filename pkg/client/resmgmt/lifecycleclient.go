@@ -21,119 +21,119 @@ import (
 
 // LifecycleInstallCCRequest contains the parameters for installing chaincode
 type LifecycleInstallCCRequest struct {
-	Label   string
-	Package []byte
+	Label   string `json:"label,omitempty"`
+	Package []byte `json:"package,omitempty"`
 }
 
 // LifecycleInstallCCResponse contains the response from a chaincode installation
 type LifecycleInstallCCResponse struct {
-	Target    string
-	Status    int32
-	PackageID string
+	Target    string `json:"target,omitempty"`
+	Status    int32  `json:"status,omitempty"`
+	PackageID string `json:"package_id,omitempty"`
 }
 
 // CCReference contains the name and version of an instantiated chaincode that
 // references the installed chaincode package.
 type CCReference struct {
-	Name    string
-	Version string
+	Name    string `json:"name,omitempty"`
+	Version string `json:"version,omitempty"`
 }
 
 // LifecycleInstalledCC contains the package ID and label of the installed chaincode,
 // including a map of channel name to chaincode name and version
 // pairs of chaincode definitions that reference this chaincode package.
 type LifecycleInstalledCC struct {
-	PackageID  string
-	Label      string
-	References map[string][]CCReference
+	PackageID  string                   `json:"package_id,omitempty"`
+	Label      string                   `json:"label,omitempty"`
+	References map[string][]CCReference `json:"references,omitempty"`
 }
 
 // LifecycleApproveCCRequest contains the parameters for approving a chaincode for an org.
 type LifecycleApproveCCRequest struct {
-	Name                string
-	Version             string
-	PackageID           string
-	Sequence            int64
-	EndorsementPlugin   string
-	ValidationPlugin    string
-	SignaturePolicy     *common.SignaturePolicyEnvelope
-	ChannelConfigPolicy string
-	CollectionConfig    []*pb.CollectionConfig
-	InitRequired        bool
+	Name                string                          `json:"name,omitempty"`
+	Version             string                          `json:"version,omitempty"`
+	PackageID           string                          `json:"package_id,omitempty"`
+	Sequence            int64                           `json:"sequence,omitempty"`
+	EndorsementPlugin   string                          `json:"endorsement_plugin,omitempty"`
+	ValidationPlugin    string                          `json:"validation_plugin,omitempty"`
+	SignaturePolicy     *common.SignaturePolicyEnvelope `json:"signature_policy,omitempty"`
+	ChannelConfigPolicy string                          `json:"channel_config_policy,omitempty"`
+	CollectionConfig    []*pb.CollectionConfig          `json:"collection_config,omitempty"`
+	InitRequired        bool                            `json:"init_required,omitempty"`
 }
 
 // LifecycleQueryApprovedCCRequest contains the parameters for querying approved chaincodes
 type LifecycleQueryApprovedCCRequest struct {
-	Name     string
-	Sequence int64
+	Name     string `json:"name,omitempty"`
+	Sequence int64  `json:"sequence,omitempty"`
 }
 
 // LifecycleApprovedChaincodeDefinition contains information about the approved chaincode
 type LifecycleApprovedChaincodeDefinition struct {
-	Name                string
-	Version             string
-	Sequence            int64
-	EndorsementPlugin   string
-	ValidationPlugin    string
-	SignaturePolicy     *common.SignaturePolicyEnvelope
-	ChannelConfigPolicy string
-	CollectionConfig    []*pb.CollectionConfig
-	InitRequired        bool
-	PackageID           string
+	Name                string                          `json:"name,omitempty"`
+	Version             string                          `json:"version,omitempty"`
+	Sequence            int64                           `json:"sequence,omitempty"`
+	EndorsementPlugin   string                          `json:"endorsement_plugin,omitempty"`
+	ValidationPlugin    string                          `json:"validation_plugin,omitempty"`
+	SignaturePolicy     *common.SignaturePolicyEnvelope `json:"signature_policy,omitempty"`
+	ChannelConfigPolicy string                          `json:"channel_config_policy,omitempty"`
+	CollectionConfig    []*pb.CollectionConfig          `json:"collection_config,omitempty"`
+	InitRequired        bool                            `json:"init_required,omitempty"`
+	PackageID           string                          `json:"package_id,omitempty"`
 }
 
 // LifecycleCheckCCCommitReadinessRequest contains the parameters for checking the 'commit readiness' of a chaincode
 type LifecycleCheckCCCommitReadinessRequest struct {
-	Name                string
-	Version             string
-	PackageID           string
-	Sequence            int64
-	EndorsementPlugin   string
-	ValidationPlugin    string
-	SignaturePolicy     *common.SignaturePolicyEnvelope
-	ChannelConfigPolicy string
-	CollectionConfig    []*pb.CollectionConfig
-	InitRequired        bool
+	Name                string                          `json:"name,omitempty"`
+	Version             string                          `json:"version,omitempty"`
+	PackageID           string                          `json:"package_id,omitempty"`
+	Sequence            int64                           `json:"sequence,omitempty"`
+	EndorsementPlugin   string                          `json:"endorsement_plugin,omitempty"`
+	ValidationPlugin    string                          `json:"validation_plugin,omitempty"`
+	SignaturePolicy     *common.SignaturePolicyEnvelope `json:"signature_policy,omitempty"`
+	ChannelConfigPolicy string                          `json:"channel_config_policy,omitempty"`
+	CollectionConfig    []*pb.CollectionConfig          `json:"collection_config,omitempty"`
+	InitRequired        bool                            `json:"init_required,omitempty"`
 }
 
 // LifecycleCheckCCCommitReadinessResponse contains the org approvals for the chaincode
 type LifecycleCheckCCCommitReadinessResponse struct {
-	Approvals map[string]bool
+	Approvals map[string]bool `json:"approvals,omitempty"`
 }
 
 // LifecycleCommitCCRequest contains the parameters for committing a chaincode
 type LifecycleCommitCCRequest struct {
-	Name                string
-	Version             string
-	Sequence            int64
-	EndorsementPlugin   string
-	ValidationPlugin    string
-	SignaturePolicy     *common.SignaturePolicyEnvelope
-	ChannelConfigPolicy string
-	CollectionConfig    []*pb.CollectionConfig
-	InitRequired        bool
+	Name                string                          `json:"name,omitempty"`
+	Version             string                          `json:"version,omitempty"`
+	Sequence            int64                           `json:"sequence,omitempty"`
+	EndorsementPlugin   string                          `json:"endorsement_plugin,omitempty"`
+	ValidationPlugin    string                          `json:"validation_plugin,omitempty"`
+	SignaturePolicy     *common.SignaturePolicyEnvelope `json:"signature_policy,omitempty"`
+	ChannelConfigPolicy string                          `json:"channel_config_policy,omitempty"`
+	CollectionConfig    []*pb.CollectionConfig          `json:"collection_config,omitempty"`
+	InitRequired        bool                            `json:"init_required,omitempty"`
 }
 
 // LifecycleQueryCommittedCCRequest contains the parameters to query committed chaincodes.
 // If name is not provided then all committed chaincodes on the given channel are returned,
 // otherwise only the chaincode with the given name is returned.
 type LifecycleQueryCommittedCCRequest struct {
-	Name string
+	Name string `json:"name,omitempty"`
 }
 
 // LifecycleChaincodeDefinition contains information about a committed chaincode.
 // Note that approvals are only returned if a chaincode name is provided in the request.
 type LifecycleChaincodeDefinition struct {
-	Name                string
-	Version             string
-	Sequence            int64
-	EndorsementPlugin   string
-	ValidationPlugin    string
-	SignaturePolicy     *common.SignaturePolicyEnvelope
-	ChannelConfigPolicy string
-	CollectionConfig    []*pb.CollectionConfig
-	InitRequired        bool
-	Approvals           map[string]bool
+	Name                string                          `json:"name,omitempty"`
+	Version             string                          `json:"version,omitempty"`
+	Sequence            int64                           `json:"sequence,omitempty"`
+	EndorsementPlugin   string                          `json:"endorsement_plugin,omitempty"`
+	ValidationPlugin    string                          `json:"validation_plugin,omitempty"`
+	SignaturePolicy     *common.SignaturePolicyEnvelope `json:"signature_policy,omitempty"`
+	ChannelConfigPolicy string                          `json:"channel_config_policy,omitempty"`
+	CollectionConfig    []*pb.CollectionConfig          `json:"collection_config,omitempty"`
+	InitRequired        bool                            `json:"init_required,omitempty"`
+	Approvals           map[string]bool                 `json:"approvals,omitempty"`
 }
 
 // LifecycleInstallCC installs a chaincode package using Fabric 2.0 chaincode lifecycle.
