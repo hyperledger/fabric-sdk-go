@@ -718,7 +718,7 @@ func createCCLifecycle(t *testing.T, mc *multiorgContext, ccName, ccVersion stri
 	queryApprovedCC(t, ccName, sequence, channelID, mc)
 
 	// Check commit readiness
-	checkCCCommitReadiness(t, packageID, ccName, ccVersion, sequence, channelID, mc)
+	checkCCCommitReadiness(t, ccName, ccVersion, sequence, channelID, mc)
 
 	// Commit cc
 	commitCC(t, ccName, ccVersion, sequence, channelID, mc)
@@ -887,7 +887,7 @@ func queryApprovedCC(t *testing.T, ccName string, sequence int64, channelID stri
 
 }
 
-func checkCCCommitReadiness(t *testing.T, packageID string, ccName, ccVersion string, sequence int64, channelID string, mc *multiorgContext) {
+func checkCCCommitReadiness(t *testing.T, ccName, ccVersion string, sequence int64, channelID string, mc *multiorgContext) {
 
 	org1Peers, err := integration.DiscoverLocalPeers(mc.org1AdminClientContext, 2)
 	require.NoError(t, err)
@@ -898,7 +898,6 @@ func checkCCCommitReadiness(t *testing.T, packageID string, ccName, ccVersion st
 	req := resmgmt.LifecycleCheckCCCommitReadinessRequest{
 		Name:              ccName,
 		Version:           ccVersion,
-		PackageID:         packageID,
 		EndorsementPlugin: "escc",
 		ValidationPlugin:  "vscc",
 		SignaturePolicy:   ccPolicy,

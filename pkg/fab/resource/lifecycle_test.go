@@ -591,26 +591,6 @@ func TestLifecycle_CreateCheckCommitReadinessProposal(t *testing.T) {
 		req := &CheckChaincodeCommitReadinessRequest{
 			Name:              "cc1",
 			Version:           "v1",
-			PackageID:         "pkg1",
-			Sequence:          1,
-			EndorsementPlugin: "eplugin",
-			ValidationPlugin:  "vplugin",
-			SignaturePolicy:   policydsl.AcceptAllPolicy,
-			CollectionConfig:  []*pb.CollectionConfig{},
-			InitRequired:      true,
-		}
-
-		p, err := lc.CreateCheckCommitReadinessProposal(&mocks.MockTransactionHeader{}, req)
-		require.NoError(t, err)
-		require.NotNil(t, p)
-		require.NotNil(t, p.Proposal)
-	})
-
-	t.Run("No package ID -> success", func(t *testing.T) {
-		req := &CheckChaincodeCommitReadinessRequest{
-			Name:              "cc1",
-			Version:           "v1",
-			PackageID:         "",
 			Sequence:          1,
 			EndorsementPlugin: "eplugin",
 			ValidationPlugin:  "vplugin",
@@ -664,7 +644,6 @@ func TestLifecycle_CreateCheckCommitReadinessProposal(t *testing.T) {
 		req := &CheckChaincodeCommitReadinessRequest{
 			Name:                "cc1",
 			Version:             "v1",
-			PackageID:           "",
 			Sequence:            1,
 			EndorsementPlugin:   "eplugin",
 			ValidationPlugin:    "vplugin",
@@ -691,7 +670,6 @@ func TestLifecycle_CreateCheckCommitReadinessProposal(t *testing.T) {
 		req := &CheckChaincodeCommitReadinessRequest{
 			Name:              "cc1",
 			Version:           "v1",
-			PackageID:         "",
 			Sequence:          1,
 			EndorsementPlugin: "eplugin",
 			ValidationPlugin:  "vplugin",

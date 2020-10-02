@@ -176,7 +176,7 @@ func PrepareExampleCCLc(sdk *fabsdk.FabricSDK, user fabsdk.ContextOption, orgNam
 		return errors.WithMessage(err, "QueryApprovedCC example chaincode failed")
 	}
 
-	err = CheckCCCommitReadiness(orgContexts, packageID, chaincodeID, exampleCCVersion, 1, channelID, ccPolicy)
+	err = CheckCCCommitReadiness(orgContexts, chaincodeID, exampleCCVersion, 1, channelID, ccPolicy)
 	if err != nil {
 		return errors.WithMessage(err, "CheckCCCommitReadiness example chaincode failed")
 	}
@@ -316,7 +316,7 @@ func queryApprovedCC(orgCtx *OrgContext, channelID string, p fabAPI.Peer, req re
 }
 
 // CheckCCCommitReadiness checkcommit the example CC on the given channel
-func CheckCCCommitReadiness(mc []*OrgContext, packageID string, ccName, ccVersion string, sequence int64, channelID string, ccPolicyStr string, collConfigs ...*pb.CollectionConfig) error {
+func CheckCCCommitReadiness(mc []*OrgContext, ccName, ccVersion string, sequence int64, channelID string, ccPolicyStr string, collConfigs ...*pb.CollectionConfig) error {
 	ccPolicy, err := policydsl.FromString(ccPolicyStr)
 	if err != nil {
 		return errors.Wrapf(err, "error creating CC policy [%s]", ccPolicyStr)
@@ -324,7 +324,6 @@ func CheckCCCommitReadiness(mc []*OrgContext, packageID string, ccName, ccVersio
 	req := resmgmt.LifecycleCheckCCCommitReadinessRequest{
 		Name:              ccName,
 		Version:           ccVersion,
-		PackageID:         packageID,
 		EndorsementPlugin: "escc",
 		ValidationPlugin:  "vscc",
 		SignaturePolicy:   ccPolicy,
@@ -589,7 +588,7 @@ func instantiateExampleChaincodeLc(sdk *fabsdk.FabricSDK, orgs []*OrgContext, ch
 		return errors.WithMessage(err, "QueryApprovedCC example chaincode failed")
 	}
 
-	err = CheckCCCommitReadiness(orgs, packageID, ccID, ccVersion, sequence, channelID, ccPolicy, collConfigs...)
+	err = CheckCCCommitReadiness(orgs, ccID, ccVersion, sequence, channelID, ccPolicy, collConfigs...)
 	if err != nil {
 		return errors.WithMessage(err, "CheckCCCommitReadiness example chaincode failed")
 	}

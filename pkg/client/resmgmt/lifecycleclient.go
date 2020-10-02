@@ -86,7 +86,6 @@ type LifecycleApprovedChaincodeDefinition struct {
 type LifecycleCheckCCCommitReadinessRequest struct {
 	Name                string                          `json:"name,omitempty"`
 	Version             string                          `json:"version,omitempty"`
-	PackageID           string                          `json:"package_id,omitempty"`
 	Sequence            int64                           `json:"sequence,omitempty"`
 	EndorsementPlugin   string                          `json:"endorsement_plugin,omitempty"`
 	ValidationPlugin    string                          `json:"validation_plugin,omitempty"`

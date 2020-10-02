@@ -258,7 +258,7 @@ func createCCLifecycle(t *testing.T, orgResMgmt *resmgmt.Client, sdk *fabsdk.Fab
 	queryApprovedCC(t, orgResMgmt)
 
 	// Check commit readiness
-	checkCCCommitReadiness(t, packageID, orgResMgmt)
+	checkCCCommitReadiness(t, orgResMgmt)
 
 	// Commit cc
 	commitCC(t, orgResMgmt)
@@ -348,12 +348,11 @@ func queryApprovedCC(t *testing.T, orgResMgmt *resmgmt.Client) {
 	require.NotNil(t, resp)
 }
 
-func checkCCCommitReadiness(t *testing.T, packageID string, orgResMgmt *resmgmt.Client) {
+func checkCCCommitReadiness(t *testing.T, orgResMgmt *resmgmt.Client) {
 	ccPolicy := policydsl.SignedByAnyMember([]string{"Org1MSP"})
 	req := resmgmt.LifecycleCheckCCCommitReadinessRequest{
 		Name:              ccID,
 		Version:           "0",
-		PackageID:         packageID,
 		EndorsementPlugin: "escc",
 		ValidationPlugin:  "vscc",
 		SignaturePolicy:   ccPolicy,
