@@ -73,7 +73,6 @@ type CommitChaincodeRequest struct {
 type CheckChaincodeCommitReadinessRequest struct {
 	Name                string
 	Version             string
-	PackageID           string
 	Sequence            int64
 	EndorsementPlugin   string
 	ValidationPlugin    string

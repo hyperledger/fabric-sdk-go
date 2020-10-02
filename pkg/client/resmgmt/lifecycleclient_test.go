@@ -437,7 +437,6 @@ func TestClient_LifecycleQueryApprovedCC(t *testing.T) {
 }
 
 func TestClient_LifecycleCheckCCCommitReadiness(t *testing.T) {
-	const packageID = "pkg1"
 	const cc1 = "cc1"
 	const v1 = "v1"
 	const channel1 = "channel1"
@@ -452,10 +451,9 @@ func TestClient_LifecycleCheckCCCommitReadiness(t *testing.T) {
 	peer1 := &fcmocks.MockPeer{Payload: responseBytes}
 
 	req := LifecycleCheckCCCommitReadinessRequest{
-		Name:      cc1,
-		Version:   v1,
-		PackageID: packageID,
-		Sequence:  1,
+		Name:     cc1,
+		Version:  v1,
+		Sequence: 1,
 	}
 
 	ctx := setupTestContext("test", "Org1MSP")
@@ -505,9 +503,8 @@ func TestClient_LifecycleCheckCCCommitReadiness(t *testing.T) {
 		ctx.SetCustomChannelProvider(cp)
 
 		req := LifecycleCheckCCCommitReadinessRequest{
-			Version:   v1,
-			PackageID: packageID,
-			Sequence:  1,
+			Version:  v1,
+			Sequence: 1,
 		}
 
 		resp, err := rc.LifecycleCheckCCCommitReadiness(channel1, req, WithTargets(peer1))
@@ -519,9 +516,8 @@ func TestClient_LifecycleCheckCCCommitReadiness(t *testing.T) {
 		ctx.SetCustomChannelProvider(cp)
 
 		req := LifecycleCheckCCCommitReadinessRequest{
-			Name:      cc1,
-			PackageID: packageID,
-			Sequence:  1,
+			Name:     cc1,
+			Sequence: 1,
 		}
 
 		resp, err := rc.LifecycleCheckCCCommitReadiness(channel1, req, WithTargets(peer1))
