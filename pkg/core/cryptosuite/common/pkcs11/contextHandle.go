@@ -8,6 +8,7 @@ package pkcs11
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/sdkpatch/cachebridge"
@@ -142,7 +143,7 @@ func (handle *ContextHandle) ReturnSession(session mPkcs11.SessionHandle) {
 		return
 	}
 
-	logger.Debugf("Returning session : %d", session)
+	logger.Debugf("Returning session : %d, found to be clean", session)
 
 	select {
 	case handle.sessions <- session:
@@ -155,6 +156,12 @@ func (handle *ContextHandle) ReturnSession(session mPkcs11.SessionHandle) {
 			logger.Warn("unable to close session: ", e)
 		}
 	}
+}
+
+// CloseSession closes session handle and clears cache entry
+func (handle *ContextHandle) CloseSession(session mPkcs11.SessionHandle) error {
+	cachebridge.ClearSession(fmt.Sprintf("%d", session))
+	return handle.ctx.CloseSession(session)
 }
 
 //GetSession returns session from session pool
@@ -384,7 +391,19 @@ func (handle *ContextHandle) Sign(session mPkcs11.SessionHandle, message []byte)
 		return nil, e
 	}
 
-	return handle.ctx.Sign(session, message)
+	bytes, e := handle.ctx.Sign(session, message)
+	if e != nil {
+		if strings.Contains(e.Error(), "CKR_OPERATION_NOT_INITIALIZED") {
+			logger.Debugf("Found CKR_OPERATION_NOT_INITIALIZED error during sign [session: %d]: closing the session", session)
+
+			err := handle.CloseSession(session)
+			if err != nil {
+				logger.Warnf("Failed to close session after failed sign operation [session: %d]: cause: %s", session, err)
+			}
+		}
+	}
+
+	return bytes, e
 }
 
 // VerifyInit initializes a verification operation, where the

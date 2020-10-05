@@ -18,6 +18,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"math/big"
+	"regexp"
 	"sync"
 	"time"
 
@@ -28,11 +29,25 @@ import (
 	"github.com/miekg/pkcs11"
 )
 
+var regex = regexp.MustCompile(".*0xB.:\\sCKR.+")
+
+func (csp *impl) handleSessionReturn(err error, session pkcs11.SessionHandle) {
+	if err != nil {
+		if regex.MatchString(err.Error()) {
+			logger.Debugf("PKCS11 session invalidated, closing session: %v, not returning to pool", err)
+			csp.pkcs11Ctx.CloseSession(session)
+			return
+		}
+	}
+
+	csp.pkcs11Ctx.ReturnSession(session)
+}
+
 // Look for an EC key by SKI, stored in CKA_ID
 func (csp *impl) getECKey(ski []byte) (pubKey *ecdsa.PublicKey, isPriv bool, err error) {
 
 	session := csp.pkcs11Ctx.GetSession()
-	defer csp.pkcs11Ctx.ReturnSession(session)
+	defer func() { csp.handleSessionReturn(err, session) }()
 	isPriv = true
 	_, err = csp.pkcs11Ctx.FindKeyPairFromSKI(session, ski, privateKeyFlag)
 	if err != nil {
@@ -108,7 +123,7 @@ func namedCurveFromOID(oid asn1.ObjectIdentifier) elliptic.Curve {
 func (csp *impl) generateECKey(curve asn1.ObjectIdentifier, ephemeral bool) (ski []byte, pubKey *ecdsa.PublicKey, err error) {
 
 	session := csp.pkcs11Ctx.GetSession()
-	defer csp.pkcs11Ctx.ReturnSession(session)
+	defer func() { csp.handleSessionReturn(err, session) }()
 
 	id := nextIDCtr()
 	publabel := fmt.Sprintf("BCPUB%s", id.Text(16))
@@ -224,7 +239,7 @@ func (csp *impl) generateECKey(curve asn1.ObjectIdentifier, ephemeral bool) (ski
 func (csp *impl) signP11ECDSA(ski []byte, msg []byte) (R, S *big.Int, err error) {
 
 	session := csp.pkcs11Ctx.GetSession()
-	defer csp.pkcs11Ctx.ReturnSession(session)
+	defer func() { csp.handleSessionReturn(err, session) }()
 
 	privateKey, err := csp.pkcs11Ctx.FindKeyPairFromSKI(session, ski, privateKeyFlag)
 	defer timeTrack(time.Now(), fmt.Sprintf("signing [session: %d]", session))
@@ -234,6 +249,7 @@ func (csp *impl) signP11ECDSA(ski []byte, msg []byte) (R, S *big.Int, err error)
 
 	err = csp.pkcs11Ctx.SignInit(session, []*pkcs11.Mechanism{pkcs11.NewMechanism(pkcs11.CKM_ECDSA, nil)}, *privateKey)
 	if err != nil {
+		logger.Errorf("Sign-initialize failed [session: %d]: cause: %s", session, err)
 		return nil, nil, fmt.Errorf("Sign-initialize  failed [%s]", err)
 	}
 
@@ -241,6 +257,7 @@ func (csp *impl) signP11ECDSA(ski []byte, msg []byte) (R, S *big.Int, err error)
 
 	sig, err = csp.pkcs11Ctx.Sign(session, msg)
 	if err != nil {
+		logger.Errorf("P11: sign failed [session: %d]: cause: %s", session, err)
 		return nil, nil, fmt.Errorf("P11: sign failed [%s]", err)
 	}
 
@@ -254,8 +271,9 @@ func (csp *impl) signP11ECDSA(ski []byte, msg []byte) (R, S *big.Int, err error)
 
 func (csp *impl) verifyP11ECDSA(ski []byte, msg []byte, R, S *big.Int, byteSize int) (bool, error) {
 
+	var err error
 	session := csp.pkcs11Ctx.GetSession()
-	defer csp.pkcs11Ctx.ReturnSession(session)
+	defer func() { csp.handleSessionReturn(err, session) }()
 
 	logger.Debugf("Verify ECDSA\n")
 
