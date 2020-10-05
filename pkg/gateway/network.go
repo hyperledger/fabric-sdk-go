@@ -48,6 +48,14 @@ func newNetwork(gateway *Gateway, channelProvider context.ChannelProvider) (*Net
 		return nil, errors.Wrap(err, "Failed to create new event client")
 	}
 
+	// the following is really to kick the discovery service into getting the TLScert
+	// so that subsequent SubmitTransaction can connect to the orderer
+	members, err := ctx.ChannelService().Membership()
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to query channel membership")
+	}
+	members.ContainsMSP(gateway.mspid)
+
 	return &n, nil
 }
 

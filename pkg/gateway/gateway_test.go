@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package gateway
 
 import (
+	"errors"
 	"os"
 	"reflect"
 	"testing"
@@ -115,6 +116,54 @@ func TestConnectWithIdentity(t *testing.T) {
 
 	if !reflect.DeepEqual(mspid, "testMSP") {
 		t.Fatalf("Incorrect mspid: %s", mspid)
+	}
+}
+
+func TestConnectWithBadConfig(t *testing.T) {
+	wallet := NewInMemoryWallet()
+	wallet.Put("user", NewX509Identity("testMSP", testCert, testPrivKey))
+
+	badConfig := func(gw *Gateway) error {
+		return errors.New("Failed Config")
+	}
+
+	_, err := Connect(
+		badConfig,
+		WithIdentity(wallet, "user"),
+	)
+
+	if err == nil {
+		t.Fatal("Expected to fail to create gateway")
+	}
+}
+
+func TestConnectWithBadIdentity(t *testing.T) {
+	badIdentity := func(gw *Gateway) error {
+		return errors.New("Failed Identity")
+	}
+
+	_, err := Connect(
+		WithConfig(config.FromFile("testdata/connection-tls.json")),
+		badIdentity,
+	)
+
+	if err == nil {
+		t.Fatal("Expected to fail to create gateway")
+	}
+}
+
+func TestConnectWithBadOption(t *testing.T) {
+	badOption := func(gw *Gateway) error {
+		return errors.New("Failed Option")
+	}
+
+	_, err := Connect(
+		WithConfig(config.FromFile("testdata/connection-tls.json")),
+		WithUser("user1"),
+		badOption,
+	)
+	if err == nil {
+		t.Fatal("Expected to fail to create gateway")
 	}
 }
 
