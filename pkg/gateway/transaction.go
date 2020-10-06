@@ -11,6 +11,7 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel/invoke"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/pkg/errors"
@@ -113,6 +114,7 @@ func (txn *Transaction) Submit(args ...string) ([]byte, error) {
 		options = append(options, channel.WithTargetEndpoints(txn.endorsingPeers...))
 	}
 	options = append(options, channel.WithTimeout(fab.Execute, txn.contract.network.gateway.options.Timeout))
+	options = append(options, channel.WithRetry(retry.DefaultChannelOpts))
 
 	response, err := txn.contract.client.InvokeHandler(
 		newSubmitHandler(txn.eventch),
