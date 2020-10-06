@@ -70,6 +70,40 @@ func RunWithSDK(t *testing.T) {
 	testGateway(gw, t)
 }
 
+// RunWithSubmit integration test with SubmitTransaction immediately following channel init
+func RunWithSubmit(t *testing.T) {
+	configPath := integration.GetConfigPath("config_e2e.yaml")
+
+	sdk, err := fabsdk.New(config.FromFile(configPath))
+
+	if err != nil {
+		t.Fatalf("Failed to create new SDK: %s", err)
+	}
+
+	gw, err := gateway.Connect(
+		gateway.WithSDK(sdk),
+		gateway.WithUser("User1"),
+	)
+
+	if err != nil {
+		t.Fatalf("Failed to create new Gateway: %s", err)
+	}
+	defer gw.Close()
+
+	nw, err := gw.GetNetwork(channelID)
+	if err != nil {
+		t.Fatalf("Failed to get network: %s", err)
+	}
+
+	contract := nw.GetContract(ccID)
+
+	_, err = contract.SubmitTransaction("invoke", "move", "a", "b", "1")
+
+	if err != nil {
+		t.Fatalf("Failed submit transaction: %s", err)
+	}
+}
+
 // RunWithWallet gateway/wallet integration test
 func RunWithWallet(t *testing.T) {
 	wallet := gateway.NewInMemoryWallet()
