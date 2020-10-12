@@ -114,15 +114,13 @@ func (cc *CachingConnector) DialContext(ctx context.Context, target string, opts
 	logger.Debugf("DialContext: %s", target)
 
 	cc.lock.Lock()
-	c, ok := cc.loadConn(target)
-	if !ok {
-		createdConn, err := cc.createConn(ctx, target, opts...)
-		if err != nil {
-			cc.lock.Unlock()
-			return nil, errors.WithMessage(err, "connection creation failed")
-		}
-		c = createdConn
+
+	createdConn, err := cc.createConn(ctx, target, opts...)
+	if err != nil {
+		cc.lock.Unlock()
+		return nil, errors.WithMessage(err, "connection creation failed")
 	}
+	c := createdConn
 
 	cc.lock.Unlock()
 
