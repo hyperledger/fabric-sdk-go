@@ -72,7 +72,7 @@ client:
   # are implementation specific
   credentialStore:
     # [Optional]. Used by user store. Not needed if all credentials are embedded in configuration
-    # and enrollments are performed elswhere.
+    # and enrollments are performed elsewhere.
     path: "/tmp/state-store"
 
     # [Optional]. Specific to the CryptoSuite implementation used by GO SDK. Software-based implementations
