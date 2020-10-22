@@ -70,6 +70,7 @@ func TestTransactionOptions(t *testing.T) {
 		t.Fatalf("Incorrect endorsing peer: %s", endorsers[0])
 	}
 
+	txn.Evaluate("arg1", "arg2")
 	txn.Submit("arg1", "arg2")
 }
 
