@@ -29,7 +29,7 @@ type LifecycleInstallCCRequest struct {
 type LifecycleInstallCCResponse struct {
 	Target    string `json:"target,omitempty"`
 	Status    int32  `json:"status,omitempty"`
-	PackageID string `json:"package_id,omitempty"`
+	PackageID string `json:"packageID,omitempty"`
 }
 
 // CCReference contains the name and version of an instantiated chaincode that
@@ -43,7 +43,7 @@ type CCReference struct {
 // including a map of channel name to chaincode name and version
 // pairs of chaincode definitions that reference this chaincode package.
 type LifecycleInstalledCC struct {
-	PackageID  string                   `json:"package_id,omitempty"`
+	PackageID  string                   `json:"packageID,omitempty"`
 	Label      string                   `json:"label,omitempty"`
 	References map[string][]CCReference `json:"references,omitempty"`
 }
@@ -52,14 +52,14 @@ type LifecycleInstalledCC struct {
 type LifecycleApproveCCRequest struct {
 	Name                string                          `json:"name,omitempty"`
 	Version             string                          `json:"version,omitempty"`
-	PackageID           string                          `json:"package_id,omitempty"`
+	PackageID           string                          `json:"packageID,omitempty"`
 	Sequence            int64                           `json:"sequence,omitempty"`
-	EndorsementPlugin   string                          `json:"endorsement_plugin,omitempty"`
-	ValidationPlugin    string                          `json:"validation_plugin,omitempty"`
-	SignaturePolicy     *common.SignaturePolicyEnvelope `json:"signature_policy,omitempty"`
-	ChannelConfigPolicy string                          `json:"channel_config_policy,omitempty"`
-	CollectionConfig    []*pb.CollectionConfig          `json:"collection_config,omitempty"`
-	InitRequired        bool                            `json:"init_required,omitempty"`
+	EndorsementPlugin   string                          `json:"endorsementPlugin,omitempty"`
+	ValidationPlugin    string                          `json:"validationPlugin,omitempty"`
+	SignaturePolicy     *common.SignaturePolicyEnvelope `json:"signaturePolicy,omitempty"`
+	ChannelConfigPolicy string                          `json:"channelConfigPolicy,omitempty"`
+	CollectionConfig    []*pb.CollectionConfig          `json:"collectionConfig,omitempty"`
+	InitRequired        bool                            `json:"initRequired,omitempty"`
 }
 
 // LifecycleQueryApprovedCCRequest contains the parameters for querying approved chaincodes
@@ -73,13 +73,13 @@ type LifecycleApprovedChaincodeDefinition struct {
 	Name                string                          `json:"name,omitempty"`
 	Version             string                          `json:"version,omitempty"`
 	Sequence            int64                           `json:"sequence,omitempty"`
-	EndorsementPlugin   string                          `json:"endorsement_plugin,omitempty"`
-	ValidationPlugin    string                          `json:"validation_plugin,omitempty"`
-	SignaturePolicy     *common.SignaturePolicyEnvelope `json:"signature_policy,omitempty"`
-	ChannelConfigPolicy string                          `json:"channel_config_policy,omitempty"`
-	CollectionConfig    []*pb.CollectionConfig          `json:"collection_config,omitempty"`
-	InitRequired        bool                            `json:"init_required,omitempty"`
-	PackageID           string                          `json:"package_id,omitempty"`
+	EndorsementPlugin   string                          `json:"endorsementPlugin,omitempty"`
+	ValidationPlugin    string                          `json:"validationPlugin,omitempty"`
+	SignaturePolicy     *common.SignaturePolicyEnvelope `json:"signaturePolicy,omitempty"`
+	ChannelConfigPolicy string                          `json:"channelConfigPolicy,omitempty"`
+	CollectionConfig    []*pb.CollectionConfig          `json:"collectionConfig,omitempty"`
+	InitRequired        bool                            `json:"initRequired,omitempty"`
+	PackageID           string                          `json:"packageID,omitempty"`
 }
 
 // LifecycleCheckCCCommitReadinessRequest contains the parameters for checking the 'commit readiness' of a chaincode
@@ -87,12 +87,12 @@ type LifecycleCheckCCCommitReadinessRequest struct {
 	Name                string                          `json:"name,omitempty"`
 	Version             string                          `json:"version,omitempty"`
 	Sequence            int64                           `json:"sequence,omitempty"`
-	EndorsementPlugin   string                          `json:"endorsement_plugin,omitempty"`
-	ValidationPlugin    string                          `json:"validation_plugin,omitempty"`
-	SignaturePolicy     *common.SignaturePolicyEnvelope `json:"signature_policy,omitempty"`
-	ChannelConfigPolicy string                          `json:"channel_config_policy,omitempty"`
-	CollectionConfig    []*pb.CollectionConfig          `json:"collection_config,omitempty"`
-	InitRequired        bool                            `json:"init_required,omitempty"`
+	EndorsementPlugin   string                          `json:"endorsementPlugin,omitempty"`
+	ValidationPlugin    string                          `json:"validationPlugin,omitempty"`
+	SignaturePolicy     *common.SignaturePolicyEnvelope `json:"signaturePolicy,omitempty"`
+	ChannelConfigPolicy string                          `json:"channelConfigPolicy,omitempty"`
+	CollectionConfig    []*pb.CollectionConfig          `json:"collectionConfig,omitempty"`
+	InitRequired        bool                            `json:"initRequired,omitempty"`
 }
 
 // LifecycleCheckCCCommitReadinessResponse contains the org approvals for the chaincode
@@ -105,12 +105,12 @@ type LifecycleCommitCCRequest struct {
 	Name                string                          `json:"name,omitempty"`
 	Version             string                          `json:"version,omitempty"`
 	Sequence            int64                           `json:"sequence,omitempty"`
-	EndorsementPlugin   string                          `json:"endorsement_plugin,omitempty"`
-	ValidationPlugin    string                          `json:"validation_plugin,omitempty"`
-	SignaturePolicy     *common.SignaturePolicyEnvelope `json:"signature_policy,omitempty"`
-	ChannelConfigPolicy string                          `json:"channel_config_policy,omitempty"`
-	CollectionConfig    []*pb.CollectionConfig          `json:"collection_config,omitempty"`
-	InitRequired        bool                            `json:"init_required,omitempty"`
+	EndorsementPlugin   string                          `json:"endorsementPlugin,omitempty"`
+	ValidationPlugin    string                          `json:"validationPlugin,omitempty"`
+	SignaturePolicy     *common.SignaturePolicyEnvelope `json:"signaturePolicy,omitempty"`
+	ChannelConfigPolicy string                          `json:"channelConfigPolicy,omitempty"`
+	CollectionConfig    []*pb.CollectionConfig          `json:"collectionConfig,omitempty"`
+	InitRequired        bool                            `json:"initRequired,omitempty"`
 }
 
 // LifecycleQueryCommittedCCRequest contains the parameters to query committed chaincodes.
@@ -126,12 +126,12 @@ type LifecycleChaincodeDefinition struct {
 	Name                string                          `json:"name,omitempty"`
 	Version             string                          `json:"version,omitempty"`
 	Sequence            int64                           `json:"sequence,omitempty"`
-	EndorsementPlugin   string                          `json:"endorsement_plugin,omitempty"`
-	ValidationPlugin    string                          `json:"validation_plugin,omitempty"`
-	SignaturePolicy     *common.SignaturePolicyEnvelope `json:"signature_policy,omitempty"`
-	ChannelConfigPolicy string                          `json:"channel_config_policy,omitempty"`
-	CollectionConfig    []*pb.CollectionConfig          `json:"collection_config,omitempty"`
-	InitRequired        bool                            `json:"init_required,omitempty"`
+	EndorsementPlugin   string                          `json:"endorsementPlugin,omitempty"`
+	ValidationPlugin    string                          `json:"validationPlugin,omitempty"`
+	SignaturePolicy     *common.SignaturePolicyEnvelope `json:"signaturePolicy,omitempty"`
+	ChannelConfigPolicy string                          `json:"channelConfigPolicy,omitempty"`
+	CollectionConfig    []*pb.CollectionConfig          `json:"collectionConfig,omitempty"`
+	InitRequired        bool                            `json:"initRequired,omitempty"`
 	Approvals           map[string]bool                 `json:"approvals,omitempty"`
 }
 
