@@ -14,6 +14,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/hyperledger/fabric-protos-go/gossip"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/balancer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/options"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/sorter/blockheightsorter"
@@ -164,6 +166,13 @@ func TestSelection(t *testing.T) {
 	})
 
 	t.Run("Success on one target", func(t *testing.T) {
+		chaincodes := []*gossip.Chaincode{
+			{
+				Name:    cc1,
+				Version: "v1",
+			},
+		}
+
 		discClient.SetResponses(
 			&discovery.MockDiscoverEndpointResponse{
 				EndorsersErr: fmt.Errorf("no endorsement combination can be satisfied"),
@@ -177,6 +186,7 @@ func TestSelection(t *testing.T) {
 						MSPID:        mspID1,
 						Endpoint:     peer1Org1URL,
 						LedgerHeight: 10,
+						Chaincodes:   chaincodes,
 					},
 				},
 			},
@@ -184,6 +194,12 @@ func TestSelection(t *testing.T) {
 		endorsers, err := service.GetEndorsersForChaincode([]*fab.ChaincodeCall{{ID: cc1}})
 		require.NoError(t, err)
 		require.Len(t, endorsers, 1)
+
+		endorser := endorsers[0]
+		require.NotEmpty(t, endorser.Properties())
+		require.Equal(t, uint64(10), endorser.Properties()[fab.PropertyLedgerHeight])
+		require.Equal(t, false, endorser.Properties()[fab.PropertyLeftChannel])
+		require.Equal(t, chaincodes, endorser.Properties()[fab.PropertyChaincodes])
 	})
 
 	t.Run("CCtoCC", func(t *testing.T) {

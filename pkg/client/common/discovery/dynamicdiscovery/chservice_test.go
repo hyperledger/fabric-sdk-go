@@ -9,7 +9,7 @@ SPDX-License-Identifier: Apache-2.0
 package dynamicdiscovery
 
 import (
-	fabDiscovery "github.com/hyperledger/fabric-sdk-go/pkg/fab/discovery"
+	"github.com/hyperledger/fabric-protos-go/gossip"
 	"github.com/pkg/errors"
 	"testing"
 	"time"
@@ -18,6 +18,7 @@ import (
 	contextAPI "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	pfab "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
+	fabDiscovery "github.com/hyperledger/fabric-sdk-go/pkg/fab/discovery"
 	discmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/discovery/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
@@ -90,6 +91,13 @@ func TestDiscoveryService(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, 0, len(peers))
 
+	chaincodes := []*gossip.Chaincode{
+		{
+			Name:    "cc1",
+			Version: "v1",
+		},
+	}
+
 	discClient.SetResponses(
 		&fabDiscovery.MockDiscoverEndpointResponse{
 			PeerEndpoints: []*discmocks.MockDiscoveryPeerEndpoint{
@@ -97,6 +105,8 @@ func TestDiscoveryService(t *testing.T) {
 					MSPID:        mspID1,
 					Endpoint:     peer1MSP1,
 					LedgerHeight: 5,
+					Chaincodes:   chaincodes,
+					LeftChannel:  false,
 				},
 			},
 			Target: peer1MSP2,
@@ -108,6 +118,12 @@ func TestDiscoveryService(t *testing.T) {
 	peers, err = service.GetPeers()
 	assert.NoError(t, err)
 	assert.Equalf(t, 1, len(peers), "Expected 1 peer")
+
+	peer := peers[0]
+	require.NotEmpty(t, peer.Properties())
+	require.Equal(t, uint64(5), peer.Properties()[fab.PropertyLedgerHeight])
+	require.Equal(t, false, peer.Properties()[fab.PropertyLeftChannel])
+	require.Equal(t, chaincodes, peer.Properties()[fab.PropertyChaincodes])
 
 	discClient.SetResponses(
 		&fabDiscovery.MockDiscoverEndpointResponse{

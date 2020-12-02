@@ -178,8 +178,9 @@ func asDiscoveryPeer(p *MockDiscoveryPeerEndpoint) *discovery.Peer {
 		Content: &gossip.GossipMessage_StateInfo{
 			StateInfo: &gossip.StateInfo{
 				Properties: &gossip.Properties{
-					Chaincodes:   nil,
 					LedgerHeight: p.LedgerHeight,
+					Chaincodes:   p.Chaincodes,
+					LeftChannel:  p.LeftChannel,
 				},
 				Timestamp: &gossip.PeerTime{
 					SeqNum: uint64(1000),
@@ -208,6 +209,8 @@ type MockDiscoveryPeerEndpoint struct {
 	MSPID        string
 	Endpoint     string
 	LedgerHeight uint64
+	Chaincodes   []*gossip.Chaincode
+	LeftChannel  bool
 }
 
 func asPeersByOrg(peers []*MockDiscoveryPeerEndpoint) map[string]*discovery.Peers {

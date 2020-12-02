@@ -196,6 +196,8 @@ func newStateInfoMessage(endpoint *mocks.MockDiscoveryPeerEndpoint) *gprotoext.S
 				StateInfo: &gossip.StateInfo{
 					Properties: &gossip.Properties{
 						LedgerHeight: endpoint.LedgerHeight,
+						Chaincodes:   endpoint.Chaincodes,
+						LeftChannel:  endpoint.LeftChannel,
 					},
 				},
 			},
