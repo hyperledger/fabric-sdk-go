@@ -145,7 +145,11 @@ func asPeer(ctx contextAPI.Client, endpoint *discclient.Peer) (fab.Peer, bool) {
 		return nil, false
 	}
 
-	peer, err := ctx.InfraProvider().CreatePeerFromConfig(&fab.NetworkPeer{PeerConfig: *peerConfig, MSPID: endpoint.MSPID})
+	peer, err := ctx.InfraProvider().CreatePeerFromConfig(&fab.NetworkPeer{
+		PeerConfig: *peerConfig,
+		MSPID:      endpoint.MSPID,
+		Properties: fabdiscovery.GetProperties(endpoint),
+	})
 	if err != nil {
 		logger.Warnf("Unable to create peer config for [%s]: %s", url, err)
 		return nil, false

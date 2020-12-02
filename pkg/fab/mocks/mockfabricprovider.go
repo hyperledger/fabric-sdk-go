@@ -43,6 +43,7 @@ func (f *MockInfraProvider) CreatePeerFromConfig(peerCfg *fab.NetworkPeer) (fab.
 	if peerCfg != nil {
 		p := NewMockPeer(peerCfg.MSPID, peerCfg.URL)
 		p.SetMSPID(peerCfg.MSPID)
+		p.SetProperties(peerCfg.Properties)
 
 		return p, nil
 	}

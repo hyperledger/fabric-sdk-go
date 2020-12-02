@@ -10,14 +10,14 @@ import (
 	"context"
 	"sort"
 
-	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/sorter/balancedsorter"
-	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/sorter/blockheightsorter"
-
 	discclient "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/discovery/client"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/balancer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/options"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/sorter/balancedsorter"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/sorter/blockheightsorter"
 	contextAPI "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
+	fabdiscovery "github.com/hyperledger/fabric-sdk-go/pkg/fab/discovery"
 )
 
 type selectionFilter struct {
@@ -149,9 +149,9 @@ func (s *selectionFilter) asPeerValue(endpoint *discclient.Peer) fab.Peer {
 	}
 
 	return &peerEndpointValue{
-		mspID:       endpoint.MSPID,
-		url:         url,
-		blockHeight: endpoint.StateInfoMessage.GetStateInfo().GetProperties().LedgerHeight,
+		mspID:      endpoint.MSPID,
+		url:        url,
+		properties: fabdiscovery.GetProperties(endpoint),
 	}
 }
 
@@ -207,9 +207,9 @@ func containsPeer(peers []fab.Peer, peer fab.Peer) bool {
 }
 
 type peerEndpointValue struct {
-	mspID       string
-	url         string
-	blockHeight uint64
+	mspID      string
+	url        string
+	properties fab.Properties
 }
 
 func (p *peerEndpointValue) MSPID() string {
@@ -220,8 +220,17 @@ func (p *peerEndpointValue) URL() string {
 	return p.url
 }
 
+func (p *peerEndpointValue) Properties() fab.Properties {
+	return p.properties
+}
+
 func (p *peerEndpointValue) BlockHeight() uint64 {
-	return p.blockHeight
+	ledgerHeight, ok := p.properties[fab.PropertyLedgerHeight]
+	if !ok {
+		return 0
+	}
+
+	return ledgerHeight.(uint64)
 }
 
 func (p *peerEndpointValue) ProcessTransactionProposal(context.Context, fab.ProcessProposalRequest) (*fab.TransactionProposalResponse, error) {

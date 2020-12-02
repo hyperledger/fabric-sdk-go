@@ -35,6 +35,7 @@ type Peer struct {
 	failFast    bool
 	inSecure    bool
 	commManager fab.CommManager
+	properties  map[fab.Property]interface{}
 }
 
 // Option describes a functional parameter for the New constructor
@@ -146,6 +147,8 @@ func FromPeerConfig(peerCfg *fab.NetworkPeer) Option {
 		p.mspID = peerCfg.MSPID
 		p.kap = getKeepAliveOptions(peerCfg)
 		p.failFast = getFailFast(peerCfg)
+		p.properties = peerCfg.Properties
+
 		return nil
 	}
 }
@@ -214,6 +217,11 @@ func (p *Peer) URL() string {
 // ProcessTransactionProposal sends the created proposal to peer for endorsement.
 func (p *Peer) ProcessTransactionProposal(ctx reqContext.Context, proposal fab.ProcessProposalRequest) (*fab.TransactionProposalResponse, error) {
 	return p.processor.ProcessTransactionProposal(ctx, proposal)
+}
+
+// Properties returns the properties of a peer.
+func (p *Peer) Properties() fab.Properties {
+	return p.properties
 }
 
 func (p *Peer) String() string {

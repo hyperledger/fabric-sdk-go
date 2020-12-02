@@ -13,8 +13,10 @@ import (
 	"time"
 
 	"github.com/golang/mock/gomock"
+	"github.com/hyperledger/fabric-protos-go/gossip"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/test/mockfab"
+	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -187,15 +189,30 @@ func TestPeerOptions(t *testing.T) {
 		GRPCOptions: grpcOpts,
 	}
 
+	chaincodes := []*gossip.Chaincode{
+		{
+			Name:    "cc1",
+			Version: "v1",
+		},
+	}
+
 	networkPeer := &fab.NetworkPeer{
 		PeerConfig: peerConfig,
 		MSPID:      "Org1MSP",
+		Properties: fab.Properties{
+			fab.PropertyLedgerHeight: uint64(100),
+			fab.PropertyLeftChannel:  true,
+			fab.PropertyChaincodes:   chaincodes,
+		},
 	}
 	//from config with grpc
-	_, err := New(config, FromPeerConfig(networkPeer))
-	if err != nil {
-		t.Fatalf("Failed to create new peer FromPeerConfig (%s)", err)
-	}
+	peer, err := New(config, FromPeerConfig(networkPeer))
+	require.NoError(t, err)
+	require.NotNil(t, peer)
+	require.NotEmpty(t, peer.Properties())
+	require.Equal(t, uint64(100), peer.Properties()[fab.PropertyLedgerHeight])
+	require.Equal(t, true, peer.Properties()[fab.PropertyLeftChannel])
+	require.Equal(t, chaincodes, peer.Properties()[fab.PropertyChaincodes])
 
 	//with peer processor
 	_, err = New(config, WithPeerProcessor(nil))

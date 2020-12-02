@@ -49,6 +49,10 @@ func TestDynamicDiscovery(t *testing.T) {
 	for _, p := range peers {
 		t.Logf("- [%s] - MSP [%s]", p.URL(), p.MSPID())
 	}
+
+	p0 := peers[0]
+	require.NotEmpty(t, p0.Properties())
+	require.Less(t, uint64(0), p0.Properties()[fab.PropertyLedgerHeight])
 }
 
 func TestDynamicLocalDiscovery(t *testing.T) {
