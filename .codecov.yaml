@@ -8,7 +8,7 @@ coverage:
       default:
         # this project is not currently at the desired target of 85%
         # target: 85%
-        target: 74%
+        target: 73%
     patch:
       default:
         target: 85%

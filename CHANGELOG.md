@@ -1,3 +1,20 @@
+## v1.0.0-rc1
+Thu  3 Dec 2020 08:17:58 GMT
+
+* [e84f33e9](https://github.com/hyperledger/fabric-sdk-go/commit/e84f33e9) [FABG-1021] Add properties to Peer (#155)
+* [5b6912cc](https://github.com/hyperledger/fabric-sdk-go/commit/5b6912cc) [FABG-1020] Changed lifecycle payloads to use camel-case in JSON fields (#154)
+* [2f93a320](https://github.com/hyperledger/fabric-sdk-go/commit/2f93a320) Fix Gateway Evaluate ignoring endpoint option (#153)
+* [a6ea771b](https://github.com/hyperledger/fabric-sdk-go/commit/a6ea771b) Fix typing error (#152)
+* [91355b02](https://github.com/hyperledger/fabric-sdk-go/commit/91355b02) Fix see redundant connector caching. (#151)
+* [9c426dcc](https://github.com/hyperledger/fabric-sdk-go/commit/9c426dcc) FABG-1018 TRANSIENT_FAILURE in SubmitTransaction (#150)
+* [03d41dd2](https://github.com/hyperledger/fabric-sdk-go/commit/03d41dd2) [FABG-1017] pkcs11 resilience - handling CKR_OPERATION_NOT_INITIALIZED (#149)
+* [a64e1ef9](https://github.com/hyperledger/fabric-sdk-go/commit/a64e1ef9) [FABG-1016] Remove PackageID field from check commit readiness request (#148)
+* [45ff9b13](https://github.com/hyperledger/fabric-sdk-go/commit/45ff9b13) [FABG-1015] Added JSON tags to lifecycle structs (#147)
+* [a18228fa](https://github.com/hyperledger/fabric-sdk-go/commit/a18228fa) [FABG-1008] Allows ecdsakey to return private key bytes (#145)
+* [842c4b3e](https://github.com/hyperledger/fabric-sdk-go/commit/842c4b3e) [FABG-1012] Retry on private data dissemination error (#144)
+* [0c18d1aa](https://github.com/hyperledger/fabric-sdk-go/commit/0c18d1aa) [FABG-1010] Added ConnectionFailed to ResMgmtDefaultRetryableCodes (#142)
+* [166507a9](https://github.com/hyperledger/fabric-sdk-go/commit/166507a9) [FABG-1009] Wait for responses from other Discovery targets (#141)
+
 ## v1.0.0-beta3 
 Wed 26 Aug 2020 08:14:23 EDT
 
