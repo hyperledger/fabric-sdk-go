@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package cryptoutil
 
 import (
+	"crypto/ecdsa"
 	"testing"
 
 	fabricCaUtil "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric-ca/sdkinternal/pkg/util"
@@ -66,11 +67,25 @@ func TestX509KeyPair(t *testing.T) {
 	}
 
 	// ECSDA Cert
-	_, err = X509KeyPair([]byte(ecdsaCert), nil, cs)
+	cert, err := X509KeyPair([]byte(ecdsaCert), nil, cs)
 	if err != nil {
 		t.Fatalf("Failed to load key pair: %s", err)
 	}
 
+	key, ok := cert.PrivateKey.(*PrivateKey)
+	if !ok {
+		t.Fatal("Should have loaded private key as cryptoutils.PrivateKey")
+	}
+
+	pubKey, ok := key.Public().(*ecdsa.PublicKey)
+	if !ok {
+		t.Fatal("Should have loaded public key as ECDSA")
+	}
+
+	// Valid public key in private key
+	if pubKey.Curve == nil {
+		t.Fatal("Should have loaded private key with valid public key")
+	}
 }
 
 func TestPrivateKey(t *testing.T) {

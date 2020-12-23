@@ -102,7 +102,7 @@ func X509KeyPair(certPEMBlock []byte, pk core.Key, cs core.CryptoSuite) (tls.Cer
 
 	switch x509Cert.PublicKey.(type) {
 	case *ecdsa.PublicKey:
-		cert.PrivateKey = &PrivateKey{cs, pk, &ecdsa.PublicKey{}}
+		cert.PrivateKey = &PrivateKey{cs, pk, x509Cert.PublicKey}
 	default:
 		return fail(errors.New("tls: unknown public key algorithm"))
 	}
