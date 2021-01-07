@@ -6,7 +6,7 @@ SPDX-License-Identifier: Apache-2.0
 
 // Package gateway enables Go developers to build client applications using the Hyperledger
 // Fabric programming model as described in the 'Developing Applications' chapter of the Fabric
-// documentation: https://hyperledger-fabric.readthedocs.io/en/master/developapps/developing_applications.html
+// documentation: https://hyperledger-fabric.readthedocs.io/en/latest/developapps/developing_applications.html
 //
 // A Gateway object is created using the Connect() function to connect to a 'gateway' peer
 // as specified in a network configuration file, using an identity stored in a wallet.
