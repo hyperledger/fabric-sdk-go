@@ -1,6 +1,13 @@
+## v1.0.0 
+Thu 14 Jan 2021 12:46:07 EST
+
+* [080cc92e](https://github.com/hyperledger/fabric-sdk-go/commit/080cc92e) FABG-1026 Fix broken link in gateway godoc (#159)
+* [88e5e474](https://github.com/hyperledger/fabric-sdk-go/commit/88e5e474) [FABG-1024] Put valid PublicKey in client PrivateKey (#157)
+
 ## v1.0.0-rc1
 Thu  3 Dec 2020 08:17:58 GMT
 
+* [2dcfaa90](https://github.com/hyperledger/fabric-sdk-go/commit/2dcfaa90) [[FAB-1022](https://jira.hyperledger.org/browse/FAB-1022)] Release v1.0.0-rc1 (#156)
 * [e84f33e9](https://github.com/hyperledger/fabric-sdk-go/commit/e84f33e9) [FABG-1021] Add properties to Peer (#155)
 * [5b6912cc](https://github.com/hyperledger/fabric-sdk-go/commit/5b6912cc) [FABG-1020] Changed lifecycle payloads to use camel-case in JSON fields (#154)
 * [2f93a320](https://github.com/hyperledger/fabric-sdk-go/commit/2f93a320) Fix Gateway Evaluate ignoring endpoint option (#153)
@@ -18,6 +25,7 @@ Thu  3 Dec 2020 08:17:58 GMT
 ## v1.0.0-beta3 
 Wed 26 Aug 2020 08:14:23 EDT
 
+* [f152f4b9](https://github.com/hyperledger/fabric-sdk-go/commit/f152f4b9) [FABG-1007] Release v1.0.0-beta3 (#140)
 * [92e563b5](https://github.com/hyperledger/fabric-sdk-go/commit/92e563b5) fix lint-submodules errors (#137)
 * [f34cc66b](https://github.com/hyperledger/fabric-sdk-go/commit/f34cc66b) [FABG 998]Integration tests (#136)
 * [bdbc9bd3](https://github.com/hyperledger/fabric-sdk-go/commit/bdbc9bd3) [FABG-1006] Fix for query committed "responses do not match" (#129)
