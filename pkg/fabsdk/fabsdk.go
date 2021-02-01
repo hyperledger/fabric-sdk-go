@@ -11,7 +11,6 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/core/operations"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
 	coptions "github.com/hyperledger/fabric-sdk-go/pkg/common/options"
 	contextApi "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
@@ -37,7 +36,6 @@ type FabricSDK struct {
 	opts          options
 	provider      *context.Provider
 	cryptoSuite   core.CryptoSuite
-	system        *operations.System
 	clientMetrics *metrics.ClientMetrics
 }
 
