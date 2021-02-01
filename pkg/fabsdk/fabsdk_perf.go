@@ -19,17 +19,16 @@ func (sdk *FabricSDK) initMetrics(configs *configs) {
 	if configs == nil {
 		return
 	}
-	if sdk.system == nil {
-		sdk.system = newOperationsSystem(configs)
 
-		err := sdk.system.Start()
-		if err != nil {
-			panic("metrics failed to start: " + err.Error())
-		}
+	system := newOperationsSystem(configs)
 
-		// for now NewClientMetrics supports channel client. TODO: if other client types require metrics tracking, update this function
-		sdk.clientMetrics = metrics.NewClientMetrics(sdk.system.Provider)
+	err := system.Start()
+	if err != nil {
+		panic("metrics failed to start: " + err.Error())
 	}
+
+	// for now NewClientMetrics supports channel client. TODO: if other client types require metrics tracking, update this function
+	sdk.clientMetrics = metrics.NewClientMetrics(system.Provider)
 }
 
 func newOperationsSystem(configs *configs) *operations.System {
