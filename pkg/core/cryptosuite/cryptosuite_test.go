@@ -1,6 +1,5 @@
 /*
 Copyright SecureKey Technologies Inc. All Rights Reserved.
-
 SPDX-License-Identifier: Apache-2.0
 */
 
@@ -19,6 +18,7 @@ const (
 	shaHashOptsAlgorithm       = "SHA"
 	sha256HashOptsAlgorithm    = "SHA256"
 	ecdsap256KeyGenOpts        = "ECDSAP256"
+	ecdsaImportOpts            = "ECDSA"
 	setDefAlreadySetErrorMsg   = "default crypto suite is already set"
 	InvalidDefSuiteSetErrorMsg = "attempting to set invalid default suite"
 )
@@ -91,11 +91,23 @@ func TestKeyGenOpts(t *testing.T) {
 	keygenOpts := GetECDSAP256KeyGenOpts(true)
 	assert.NotEmpty(t, keygenOpts, "Not supposed to be empty ECDSAP256KeyGenOpts")
 	assert.True(t, keygenOpts.Ephemeral(), "Expected keygenOpts.Ephemeral() ==> true")
-	assert.True(t, keygenOpts.Algorithm() == ecdsap256KeyGenOpts, "Unexpected SHA hash opts, expected [%v], got [%v]", ecdsap256KeyGenOpts, keygenOpts.Algorithm())
+	assert.True(t, keygenOpts.Algorithm() == ecdsap256KeyGenOpts, "Unexpected ECDSA KeyGen opts, expected [%v], got [%v]", ecdsap256KeyGenOpts, keygenOpts.Algorithm())
 
 	keygenOpts = GetECDSAP256KeyGenOpts(false)
 	assert.NotZero(t, keygenOpts, "Not supposed to be empty ECDSAP256KeyGenOpts")
 	assert.False(t, keygenOpts.Ephemeral(), "Expected keygenOpts.Ephemeral() ==> false")
-	assert.True(t, keygenOpts.Algorithm() == ecdsap256KeyGenOpts, "Unexpected SHA hash opts, expected [%v], got [%v]", ecdsap256KeyGenOpts, keygenOpts.Algorithm())
+	assert.True(t, keygenOpts.Algorithm() == ecdsap256KeyGenOpts, "Unexpected ECDSA KeyGen opts, expected [%v], got [%v]", ecdsap256KeyGenOpts, keygenOpts.Algorithm())
 
+}
+
+func TestKeyImportOpts(t *testing.T) {
+	importOpts := GetECDSAPrivateKeyImportOpts(true)
+	assert.NotEmpty(t, importOpts, "Not supposed to be empty ECDSAPrivateKeyImportOpts")
+	assert.True(t, importOpts.Ephemeral(), "Expected keygenOpts.Ephemeral() ==> true")
+	assert.True(t, importOpts.Algorithm() == ecdsaImportOpts, "UUnexpected ECDSA import opts, expected [%v], got [%v]", ecdsaImportOpts, importOpts.Algorithm())
+
+	importOpts = GetECDSAPrivateKeyImportOpts(false)
+	assert.NotZero(t, importOpts, "Not supposed to be empty ECDSAP256KeyGenOpts")
+	assert.False(t, importOpts.Ephemeral(), "Expected keygenOpts.Ephemeral() ==> false")
+	assert.True(t, importOpts.Algorithm() == ecdsaImportOpts, "Unexpected ECDSA import opts, expected [%v], got [%v]", ecdsaImportOpts, importOpts.Algorithm())
 }
