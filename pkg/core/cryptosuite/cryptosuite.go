@@ -87,3 +87,9 @@ func GetSHAOpts() core.HashOpts {
 func GetECDSAP256KeyGenOpts(ephemeral bool) core.KeyGenOpts {
 	return &bccsp.ECDSAP256KeyGenOpts{Temporary: ephemeral}
 }
+
+//GetECDSAPrivateKeyImportOpts options for ECDSA secret key importation in DER format
+// or PKCS#8 format.
+func GetECDSAPrivateKeyImportOpts(ephemeral bool) core.KeyImportOpts {
+	return &bccsp.ECDSAPrivateKeyImportOpts{Temporary: ephemeral}
+}
