@@ -23,6 +23,7 @@ type CryptoConfigOptions struct {
 	securityProviderPin
 	securityProviderLabel
 	keyStorePath
+	vaultStorePath
 }
 
 type applier func()
@@ -72,6 +73,11 @@ type securityProviderLabel interface {
 // keyStorePath interface allows to uniquely override CryptoConfig interface's KeyStorePath() function
 type keyStorePath interface {
 	KeyStorePath() string
+}
+
+// vaultStorePath interface allows to uniquely override CryptoConfig interface's VaultStorePath() function
+type vaultStorePath interface {
+	VaultStorePath() string
 }
 
 // BuildCryptoSuiteConfigFromOptions will return an CryptoConfig instance pre-built with Optional interfaces
