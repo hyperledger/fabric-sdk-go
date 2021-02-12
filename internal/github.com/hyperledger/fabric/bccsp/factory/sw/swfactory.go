@@ -49,6 +49,12 @@ func (f *SWFactory) Get(swOpts *SwOpts) (bccsp.BCCSP, error) {
 	switch {
 	case swOpts.Ephemeral:
 		ks = sw.NewDummyKeyStore()
+	case swOpts.VaultKeystore != nil:
+		fks, err := sw.NewVaultBasedKeyStore(nil, swOpts.VaultKeystore.KeyStorePath)
+		if err != nil {
+			return nil, errors.Wrapf(err, "Failed to initialize software key store")
+		}
+		ks = fks
 	case swOpts.FileKeystore != nil:
 		fks, err := sw.NewFileBasedKeyStore(nil, swOpts.FileKeystore.KeyStorePath, false)
 		if err != nil {
@@ -74,6 +80,7 @@ type SwOpts struct {
 	// Keystore Options
 	Ephemeral     bool               `mapstructure:"tempkeys,omitempty" json:"tempkeys,omitempty"`
 	FileKeystore  *FileKeystoreOpts  `mapstructure:"filekeystore,omitempty" json:"filekeystore,omitempty" yaml:"FileKeyStore"`
+	VaultKeystore *FileKeystoreOpts  `mapstructure:"vaultkeystore,omitempty" json:"vaultkeystore,omitempty" yaml:"VaultKeyStore"`
 	DummyKeystore *DummyKeystoreOpts `mapstructure:"dummykeystore,omitempty" json:"dummykeystore,omitempty"`
 	InmemKeystore *InmemKeystoreOpts `mapstructure:"inmemkeystore,omitempty" json:"inmemkeystore,omitempty"`
 }
