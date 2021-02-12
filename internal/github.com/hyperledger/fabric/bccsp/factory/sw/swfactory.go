@@ -49,7 +49,7 @@ func (f *SWFactory) Get(swOpts *SwOpts) (bccsp.BCCSP, error) {
 	switch {
 	case swOpts.Ephemeral:
 		ks = sw.NewDummyKeyStore()
-	case swOpts.VaultKeystore != nil:
+	case swOpts.VaultKeystore != nil && swOpts.FileKeystore == nil:
 		fks, err := sw.NewVaultBasedKeyStore(nil, swOpts.VaultKeystore.KeyStorePath)
 		if err != nil {
 			return nil, errors.Wrapf(err, "Failed to initialize software key store")
