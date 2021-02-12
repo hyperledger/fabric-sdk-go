@@ -115,3 +115,9 @@ func (c *Config) KeyStorePath() string {
 	keystorePath := pathvar.Subst(c.backend.GetString("client.credentialStore.cryptoStore.path"))
 	return filepath.Join(keystorePath, "keystore")
 }
+
+// VaultStorePath returns the Vault keystore path used by BCCSP
+func (c *Config) VaultStorePath() string {
+	keystorePath := pathvar.Subst(c.backend.GetString("client.BCCSP.SW.VaultKeyStore.KeyStore"))
+	return filepath.Join(keystorePath, "keystore")
+}
