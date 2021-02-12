@@ -54,7 +54,7 @@ func (vault *Vault) RecursiveSearch(vaultPath string, ski []byte, pwd []byte) (b
 		var k *ecdsaPrivateKey
 		switch kk := key.(type) {
 		case *ecdsa.PrivateKey:
-			k = &ecdsaPrivateKey{kk}
+			k = &ecdsaPrivateKey{kk, true}
 		default:
 			return nil, nil
 		}
