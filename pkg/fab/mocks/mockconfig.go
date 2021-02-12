@@ -226,6 +226,11 @@ func (c *MockConfig) KeyStorePath() string {
 	return "/tmp/fabsdkgo_test"
 }
 
+// VaultStorePath ...
+func (c *MockConfig) VaultStorePath() string {
+	return "/tmp/fabsdkgo_test"
+}
+
 // CredentialStorePath ...
 func (c *MockConfig) CredentialStorePath() string {
 	return "/tmp/userstore"

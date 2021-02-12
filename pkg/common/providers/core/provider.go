@@ -17,6 +17,7 @@ type CryptoSuiteConfig interface {
 	SecurityProviderPin() string
 	SecurityProviderLabel() string
 	KeyStorePath() string
+	VaultStorePath() string
 }
 
 // Providers represents the SDK configured core providers context.
