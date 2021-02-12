@@ -98,7 +98,7 @@ func (ks *vaultBasedKeyStore) GetKey(ski []byte) (bccsp.Key, error) {
 
 		switch k := key.(type) {
 		case *ecdsa.PrivateKey:
-			return &ecdsaPrivateKey{k}, nil
+			return &ecdsaPrivateKey{k, true}, nil
 		default:
 			return nil, errors.New("secret key type not recognized")
 		}
