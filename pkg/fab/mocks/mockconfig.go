@@ -8,6 +8,7 @@ package mocks
 
 import (
 	"crypto/tls"
+	"path"
 	"path/filepath"
 	"time"
 
@@ -22,6 +23,11 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/test/mockfab"
 	commtls "github.com/hyperledger/fabric-sdk-go/pkg/core/config/comm/tls"
 	"github.com/pkg/errors"
+)
+
+const (
+	keystorePath         = "/tmp/fabsdkgo_test"
+	credentialsStorePath = "/tmp/userstore"
 )
 
 // MockConfig ...
@@ -76,7 +82,7 @@ func (c *MockConfig) Client() *msp.ClientConfig {
 	clientConfig := msp.ClientConfig{}
 
 	clientConfig.CredentialStore = msp.CredentialStoreType{
-		Path: "/tmp/fabsdkgo_test/store",
+		Path: path.Join(keystorePath, "store"),
 	}
 
 	if c.mutualTLSEnabled {
@@ -223,22 +229,22 @@ func (c *MockConfig) OrdererConfig(name string) (*fab.OrdererConfig, bool, bool)
 
 // KeyStorePath ...
 func (c *MockConfig) KeyStorePath() string {
-	return "/tmp/fabsdkgo_test"
+	return keystorePath
 }
 
 // VaultStorePath ...
 func (c *MockConfig) VaultStorePath() string {
-	return "/tmp/fabsdkgo_test"
+	return keystorePath
 }
 
 // CredentialStorePath ...
 func (c *MockConfig) CredentialStorePath() string {
-	return "/tmp/userstore"
+	return credentialsStorePath
 }
 
 // CAKeyStorePath not implemented
 func (c *MockConfig) CAKeyStorePath() string {
-	return "/tmp/fabsdkgo_test"
+	return keystorePath
 }
 
 // CryptoConfigPath ...
