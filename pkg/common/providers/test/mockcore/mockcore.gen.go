@@ -62,6 +62,20 @@ func (mr *MockCryptoSuiteConfigMockRecorder) KeyStorePath() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "KeyStorePath", reflect.TypeOf((*MockCryptoSuiteConfig)(nil).KeyStorePath))
 }
 
+// VaultStorePath mocks base method
+func (m *MockCryptoSuiteConfig) VaultStorePath() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "KeyStorePath")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// VaultStorePath indicates an expected call of VaultStorePath
+func (mr *MockCryptoSuiteConfigMockRecorder) VaultStorePath() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "KeyStorePath", reflect.TypeOf((*MockCryptoSuiteConfig)(nil).KeyStorePath))
+}
+
 // SecurityAlgorithm mocks base method
 func (m *MockCryptoSuiteConfig) SecurityAlgorithm() string {
 	m.ctrl.T.Helper()
