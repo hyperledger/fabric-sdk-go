@@ -9,6 +9,7 @@ package discovery
 import (
 	"context"
 	"fmt"
+	discclient "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/discovery/client"
 	"net"
 	"os"
 	"testing"
@@ -140,4 +141,11 @@ func newMockContext() *mocks.MockContext {
 	context := mocks.NewMockContext(mspmocks.NewMockSigningIdentity("user1", "test"))
 	context.SetCustomInfraProvider(comm.NewMockInfraProvider())
 	return context
+}
+
+func TestWithIndifferentFilter(t *testing.T) {
+	endorsers := discclient.Endorsers{&discclient.Peer{MSPID: "org1MSP"}, &discclient.Peer{MSPID: "org2MSP"}}
+	filter := WithIndifferentFilter()
+	filteredEndorsers := filter.Filter(endorsers)
+	assert.Len(t, filteredEndorsers, len(endorsers))
 }

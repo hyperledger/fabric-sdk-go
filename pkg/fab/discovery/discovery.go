@@ -62,6 +62,14 @@ type Response interface {
 	Error() error
 }
 
+// WithIndifferentFilter returns NoPriorities/NoExclusion filter.
+// Note: this method was added just to allow users of Client to be able to use Endorsers method in response, which requires Filter as an argument.
+// It's impossible to implement interface because Filter is placed under internal dir which is not available to end user.
+// A user should filter peers by himself.
+func WithIndifferentFilter() discclient.Filter {
+	return discclient.NewFilter(discclient.NoPriorities, discclient.NoExclusion)
+}
+
 // Send retrieves information about channel peers, endorsers, and MSP config from the
 // given set of peers. A channel of successful responses is returned and an error if there is not targets.
 // Each Response contains Error method to check if there is an error.
