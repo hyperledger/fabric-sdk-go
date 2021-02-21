@@ -62,11 +62,11 @@ type Response interface {
 	Error() error
 }
 
-// WithIndifferentFilter returns NoPriorities/NoExclusion filter.
+// NewIndifferentFilter returns NoPriorities/NoExclusion filter.
 // Note: this method was added just to allow users of Client to be able to use Endorsers method in response, which requires Filter as an argument.
 // It's impossible to implement interface because Filter is placed under internal dir which is not available to end user.
 // A user should filter peers by himself.
-func WithIndifferentFilter() discclient.Filter {
+func NewIndifferentFilter() discclient.Filter {
 	return discclient.NewFilter(discclient.NoPriorities, discclient.NoExclusion)
 }
 

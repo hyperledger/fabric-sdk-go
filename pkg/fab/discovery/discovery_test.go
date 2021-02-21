@@ -143,9 +143,9 @@ func newMockContext() *mocks.MockContext {
 	return context
 }
 
-func TestWithIndifferentFilter(t *testing.T) {
+func TestNewIndifferentFilter(t *testing.T) {
 	endorsers := discclient.Endorsers{&discclient.Peer{MSPID: "org1MSP"}, &discclient.Peer{MSPID: "org2MSP"}}
-	filter := WithIndifferentFilter()
+	filter := NewIndifferentFilter()
 	filteredEndorsers := filter.Filter(endorsers)
 	assert.Len(t, filteredEndorsers, len(endorsers))
 }
