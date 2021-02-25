@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/hyperledger/fabric-protos-go/discovery"
+	discclient "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/discovery/client"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/comm"
 	discmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/discovery/mocks"
@@ -140,4 +141,11 @@ func newMockContext() *mocks.MockContext {
 	context := mocks.NewMockContext(mspmocks.NewMockSigningIdentity("user1", "test"))
 	context.SetCustomInfraProvider(comm.NewMockInfraProvider())
 	return context
+}
+
+func TestNewIndifferentFilter(t *testing.T) {
+	endorsers := discclient.Endorsers{&discclient.Peer{MSPID: "org1MSP"}, &discclient.Peer{MSPID: "org2MSP"}}
+	filter := NewIndifferentFilter()
+	filteredEndorsers := filter.Filter(endorsers)
+	assert.Len(t, filteredEndorsers, len(endorsers))
 }
