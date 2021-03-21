@@ -120,15 +120,29 @@ func (ed *Dispatcher) Start() error {
 	}
 
 	go func() {
+		var (
+			e  interface{}
+			ok bool
+		)
+
+		timer := time.NewTimer(time.Minute)
 		for {
 			if ed.getState() == dispatcherStateStopped {
 				break
 			}
 
 			logger.Debug("Listening for events...")
-			e, ok := <-ed.eventch
-			if !ok {
-				break
+			if !timer.Stop() {
+				<-timer.C
+			}
+			timer.Reset(time.Minute)
+			select {
+			case e, ok = <-ed.eventch:
+				if !ok {
+					break
+				}
+			case <-timer.C:
+				continue
 			}
 
 			logger.Debugf("Received event: %+v", reflect.TypeOf(e))
