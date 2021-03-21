@@ -126,6 +126,7 @@ func (ed *Dispatcher) Start() error {
 		)
 
 		timer := time.NewTimer(time.Minute)
+	OuterLoop:
 		for {
 			if ed.getState() == dispatcherStateStopped {
 				break
@@ -139,7 +140,7 @@ func (ed *Dispatcher) Start() error {
 			select {
 			case e, ok = <-ed.eventch:
 				if !ok {
-					break
+					break OuterLoop
 				}
 			case <-timer.C:
 				continue
