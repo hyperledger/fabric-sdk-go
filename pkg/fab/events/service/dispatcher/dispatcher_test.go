@@ -13,12 +13,12 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	cb "github.com/hyperledger/fabric-protos-go/common"
+	pb "github.com/hyperledger/fabric-protos-go/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/service/blockfilter"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/service/blockfilter/headertypefilter"
 	servicemocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/service/mocks"
-	cb "github.com/hyperledger/fabric-protos-go/common"
-	pb "github.com/hyperledger/fabric-protos-go/peer"
 )
 
 var sourceURL = "localhost:9051"
@@ -38,6 +38,20 @@ func TestInvalidUnregister(t *testing.T) {
 	dispatcherEventch <- NewUnregisterEvent("invalid registration")
 }
 
+func TestCloseEventCh(t *testing.T) {
+	dispatcher := New()
+	if err := dispatcher.Start(); err != nil {
+		t.Fatalf("Error starting dispatcher: %s", err)
+	}
+
+	dispatcherEventch, err := dispatcher.EventCh()
+	if err != nil {
+		t.Fatalf("Error getting event channel from dispatcher: %s", err)
+	}
+
+	close(dispatcherEventch)
+}
+
 func TestBlockEvents(t *testing.T) {
 	channelID := "testchannel"
 	dispatcher := New(
@@ -47,6 +61,59 @@ func TestBlockEvents(t *testing.T) {
 	if err := dispatcher.Start(); err != nil {
 		t.Fatalf("Error starting dispatcher: %s", err)
 	}
+
+	dispatcherEventch, err := dispatcher.EventCh()
+	if err != nil {
+		t.Fatalf("Error getting event channel from dispatcher: %s", err)
+	}
+
+	eventch := make(chan *fab.BlockEvent, 10)
+	regch := make(chan fab.Registration)
+	errch := make(chan error)
+
+	dispatcherEventch <- NewRegisterBlockEvent(blockfilter.AcceptAny, eventch, regch, errch)
+
+	var reg fab.Registration
+	select {
+	case reg = <-regch:
+	case err := <-errch:
+		t.Fatalf("Error registering for block events: %s", err)
+	}
+
+	dispatcherEventch <- NewBlockEvent(servicemocks.NewBlockProducer().NewBlock(channelID), sourceURL)
+
+	select {
+	case event, ok := <-eventch:
+		if !ok {
+			t.Fatalf("unexpected closed channel")
+		}
+		if event.SourceURL != sourceURL {
+			t.Fatalf("expecting source URL [%s] but got [%s]", sourceURL, event.SourceURL)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("timed out waiting for block event")
+	}
+
+	dispatcherEventch <- NewUnregisterEvent(reg)
+
+	stopResp := make(chan error)
+	dispatcherEventch <- NewStopEvent(stopResp)
+	if err := <-stopResp; err != nil {
+		t.Fatalf("Error stopping dispatcher: %s", err)
+	}
+}
+
+func TestBlockEventsWithSleep(t *testing.T) {
+	channelID := "testchannel"
+	dispatcher := New(
+		WithEventConsumerBufferSize(100),
+		WithEventConsumerTimeout(2*time.Second),
+	)
+	if err := dispatcher.Start(); err != nil {
+		t.Fatalf("Error starting dispatcher: %s", err)
+	}
+
+	time.Sleep(6 * time.Second)
 
 	dispatcherEventch, err := dispatcher.EventCh()
 	if err != nil {
