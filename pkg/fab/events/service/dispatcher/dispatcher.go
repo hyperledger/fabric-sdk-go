@@ -119,50 +119,54 @@ func (ed *Dispatcher) Start() error {
 		}
 	}
 
-	go func() {
-		var (
-			e  interface{}
-			ok bool
-		)
+	go ed.workCycle()
 
-		timer := time.NewTimer(time.Minute)
-	OuterLoop:
-		for {
-			if ed.getState() == dispatcherStateStopped {
-				break
-			}
-
-			logger.Debug("Listening for events...")
-			if !timer.Stop() {
-				<-timer.C
-			}
-			timer.Reset(time.Minute)
-			select {
-			case e, ok = <-ed.eventch:
-				if !ok {
-					break OuterLoop
-				}
-			case <-timer.C:
-				continue
-			}
-
-			logger.Debugf("Received event: %+v", reflect.TypeOf(e))
-
-			if handler, ok := ed.handlers[reflect.TypeOf(e)]; ok {
-				logger.Debugf("Dispatching event: %+v", reflect.TypeOf(e))
-				handler(e)
-			} else {
-				logger.Errorf("Handler not found for: %s", reflect.TypeOf(e))
-			}
-		}
-		logger.Debug("Exiting event dispatcher")
-	}()
 	return nil
 }
 
 // LastBlockNum returns the block number of the last block for which an event was received.
 func (ed *Dispatcher) LastBlockNum() uint64 {
 	return atomic.LoadUint64(&ed.lastBlockNum)
+}
+
+// workCycle cycle of dicpatcher.
+func (ed *Dispatcher) workCycle() {
+	var (
+		e  interface{}
+		ok bool
+	)
+
+	timer := time.NewTimer(time.Minute)
+OuterLoop:
+	for {
+		if ed.getState() == dispatcherStateStopped {
+			break
+		}
+
+		logger.Debug("Listening for events...")
+		if !timer.Stop() {
+			<-timer.C
+		}
+		timer.Reset(time.Minute)
+		select {
+		case e, ok = <-ed.eventch:
+			if !ok {
+				break OuterLoop
+			}
+		case <-timer.C:
+			continue
+		}
+
+		logger.Debugf("Received event: %+v", reflect.TypeOf(e))
+
+		if handler, ok := ed.handlers[reflect.TypeOf(e)]; ok {
+			logger.Debugf("Dispatching event: %+v", reflect.TypeOf(e))
+			handler(e)
+		} else {
+			logger.Errorf("Handler not found for: %s", reflect.TypeOf(e))
+		}
+	}
+	logger.Debug("Exiting event dispatcher")
 }
 
 // updateLastBlockNum updates the value of lastBlockNum and
