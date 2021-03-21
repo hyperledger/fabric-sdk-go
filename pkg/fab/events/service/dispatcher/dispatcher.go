@@ -136,7 +136,6 @@ func (ed *Dispatcher) workCycle() {
 		ok bool
 	)
 
-	timer := time.NewTimer(time.Minute)
 OuterLoop:
 	for {
 		if ed.getState() == dispatcherStateStopped {
@@ -144,16 +143,12 @@ OuterLoop:
 		}
 
 		logger.Debug("Listening for events...")
-		if !timer.Stop() {
-			<-timer.C
-		}
-		timer.Reset(time.Minute)
 		select {
 		case e, ok = <-ed.eventch:
 			if !ok {
 				break OuterLoop
 			}
-		case <-timer.C:
+		case <-time.After(5 * time.Second):
 			continue
 		}
 
