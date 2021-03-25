@@ -64,6 +64,7 @@ func (n *Network) Name() string {
 	return n.name
 }
 
+// GetPeersOfOrg uses the discovery service to get the available peers of an org.
 func (n *Network) GetPeersOfOrg(mspID string) ([]fab.Peer, error) {
 	ctx := n.gateway.sdk.Context()
 	client, err := ctx()
