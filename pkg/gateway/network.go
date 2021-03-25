@@ -64,6 +64,19 @@ func (n *Network) Name() string {
 	return n.name
 }
 
+func (n *Network) GetPeersOfOrg(mspID string) ([]fab.Peer, error) {
+	ctx := n.gateway.sdk.Context()
+	client, err := ctx()
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to get Client Provider")
+	}
+	ds, err := client.LocalDiscoveryProvider().CreateLocalDiscoveryService(mspID)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to create Local Discovery Service")
+	}
+	return ds.GetPeers()
+}
+
 // GetContract returns instance of a smart contract on the current network.
 //  Parameters:
 //  chaincodeID is the name of the chaincode that contains the smart contract
