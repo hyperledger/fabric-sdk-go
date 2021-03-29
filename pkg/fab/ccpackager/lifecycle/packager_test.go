@@ -64,7 +64,7 @@ func TestNewCCPackageError(t *testing.T) {
 
 		pkgBytes, err := NewCCPackage(desc)
 		require.Error(t, err)
-		require.Contains(t, err.Error(), "'go list' failed with: can't load package: package invalid is not in GOROOT")
+		require.Contains(t, err.Error(), "'go list' failed with: package invalid is not in GOROOT")
 		require.Empty(t, pkgBytes)
 	})
 
