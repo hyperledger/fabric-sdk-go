@@ -54,6 +54,7 @@ func TestTransactionOptions(t *testing.T) {
 		"txn1",
 		WithTransient(transient),
 		WithEndorsingPeers("peer1"),
+		WithCollections("_implicit_org_org1"),
 	)
 
 	if err != nil {
@@ -68,6 +69,11 @@ func TestTransactionOptions(t *testing.T) {
 	endorsers := txn.endorsingPeers
 	if endorsers[0] != "peer1" {
 		t.Fatalf("Incorrect endorsing peer: %s", endorsers[0])
+	}
+
+	collections := txn.collections
+	if collections[0] != "_implicit_org_org1" {
+		t.Fatalf("Incorrect collection: %s", collections[0])
 	}
 
 	txn.Evaluate("arg1", "arg2")

@@ -12,7 +12,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
-	"github.com/hyperledger/fabric-sdk-go/pkg/core/config"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 )
 
@@ -29,31 +28,6 @@ func TestNewNetwork(t *testing.T) {
 
 	if nw.Name() != "mychannel" {
 		t.Fatalf("Incorrect network name: %s", nw.Name())
-	}
-}
-
-func TestGetPeersOfOrg(t *testing.T) {
-	gw, err := Connect(
-		WithConfig(config.FromFile("testdata/connection-tls.json")),
-		WithUser("user1"),
-	)
-
-	if err != nil {
-		t.Fatalf("Failed to create gateway: %s", err)
-	}
-
-	nw, _ := gw.GetNetwork("mychannel")
-	if err != nil {
-		t.Fatalf("Failed to get network: %s", err)
-	}
-
-	peers, err := nw.GetPeersOfOrg(gw.getOrg())
-	if err != nil {
-		t.Fatalf("Failed to get peers: %s", err)
-	}
-
-	if len(peers) < 1 {
-		t.Fatalf("Failed to get peers")
 	}
 }
 
