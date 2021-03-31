@@ -24,3 +24,19 @@ type WalletStore interface {
 	Exists(label string) bool
 	Remove(label string) error
 }
+
+// CheckpointStore is the interface for implementations that need to persist current block and transactions to
+// enable event listening to be resumed following an application failure.
+// To create create a new checkpòinter, implement all the methods defined in this interface and provide
+// a factory method that wraps an instance of this in a new Checkpoint object. E.g:
+//   func NewCheckpoint() *Checkpoint {
+//	   store := &myCheckpoint{ }
+//	   return &Checkpoint{store}
+//   }
+type CheckpointStore interface {
+	GetBlockNumber() uint64
+	SetBlockNumber(blockNumber uint64)
+	GetTransactionIds() []string
+	AddTransactionId(transactionId string)
+}
+
