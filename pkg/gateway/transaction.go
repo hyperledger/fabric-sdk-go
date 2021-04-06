@@ -28,6 +28,7 @@ type Transaction struct {
 	contract       *Contract
 	request        *channel.Request
 	endorsingPeers []string
+	collections    []string
 	eventch        chan *fab.TxStatusEvent
 }
 
@@ -74,6 +75,14 @@ func WithEndorsingPeers(peers ...string) TransactionOption {
 	}
 }
 
+// WithCollections is an optional argument to the CreateTransaction method which sets the collections
+func WithCollections(collections ...string) TransactionOption {
+	return func(txn *Transaction) error {
+		txn.collections = collections
+		return nil
+	}
+}
+
 // Evaluate a transaction function and return its results.
 // The transaction function will be evaluated on the endorsing peers but
 // the responses will not be sent to the ordering service and hence will
@@ -90,6 +99,10 @@ func (txn *Transaction) Evaluate(args ...string) ([]byte, error) {
 		options = append(options, channel.WithTargetEndpoints(txn.endorsingPeers...))
 	}
 	options = append(options, channel.WithTimeout(fab.Query, txn.contract.network.gateway.options.Timeout))
+
+	if txn.collections != nil {
+		txn.request.InvocationChain = append(txn.request.InvocationChain, &fab.ChaincodeCall{ID: txn.contract.chaincodeID, Collections: txn.collections})
+	}
 
 	response, err := txn.contract.client.Query(
 		*txn.request,
@@ -118,6 +131,10 @@ func (txn *Transaction) Submit(args ...string) ([]byte, error) {
 	}
 	options = append(options, channel.WithTimeout(fab.Execute, txn.contract.network.gateway.options.Timeout))
 	options = append(options, channel.WithRetry(retry.DefaultChannelOpts))
+
+	if txn.collections != nil {
+		txn.request.InvocationChain = append(txn.request.InvocationChain, &fab.ChaincodeCall{ID: txn.contract.chaincodeID, Collections: txn.collections})
+	}
 
 	response, err := txn.contract.client.InvokeHandler(
 		newSubmitHandler(txn.eventch),
