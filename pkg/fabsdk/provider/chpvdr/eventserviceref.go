@@ -139,6 +139,7 @@ func (ref *EventClientRef) initializer() lazyref.Initializer {
 		}
 		logger.Debug("...connecting event client...")
 		if err := eventClient.Connect(); err != nil {
+			eventClient.Close()
 			return nil, err
 		}
 		ref.eventClient = eventClient
