@@ -382,6 +382,44 @@ func TestSelectionAccessDenied(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestInitButNotConnected(t *testing.T) {
+	ctx := mocks.NewMockProviderContext()
+
+	user := mspmocks.NewMockSigningIdentity("user", "user")
+
+	clientCtx := &mockClientContext{
+		Providers:       ctx,
+		SigningIdentity: user,
+	}
+
+	cp, err := New(clientCtx.EndpointConfig())
+	if err != nil {
+		t.Fatalf("Unexpected error creating Channel Provider: %s", err)
+	}
+
+	err = cp.Initialize(ctx)
+	assert.NoError(t, err)
+
+	testChannelCfg := mocks.NewMockChannelCfg("testchannel")
+	testChannelCfg.MockCapabilities[fab.ApplicationGroupKey][fab.V1_2Capability] = true
+
+	SetChannelConfig(chconfig.NewChannelCfg(""), chconfig.NewChannelCfg("mychannel"), testChannelCfg)
+
+	channelService, err := cp.ChannelService(clientCtx, "mychannel")
+	if err != nil {
+		t.Fatalf("Unexpected error creating Channel Service: %s", err)
+	}
+
+	eventService, err := channelService.EventService()
+	require.NoError(t, err)
+	require.NotNil(t, eventService)
+
+	reg, ch, err := eventService.RegisterFilteredBlockEvent()
+	require.Error(t, err)
+	require.Nil(t, reg)
+	require.Nil(t, ch)
+}
+
 func getChannelProvider(t *testing.T, providers context.Providers, opts ...options.Opt) *ChannelProvider {
 	cp, err := New(providers.EndpointConfig(), opts...)
 	require.NoError(t, err)
