@@ -163,13 +163,13 @@ func e2eModifyChannel(t *testing.T, ordererClCtx *dsClientCtx, org1ClCtx *dsClie
 	txID, err := ordererClCtx.rsCl.SaveChannel(req, resmgmt.WithConfigSignatures(signedConfigOrderer), resmgmt.WithOrdererEndpoint("orderer.example.com"))
 	require.Errorf(t, err, "SaveChannel should fail when signed by orderer org")
 
-	// Vefiry that org1 alone cannot sign the change
+	// Verify that org1 alone cannot sign the change
 	configReader = bytes.NewReader(configEnvelopeBytes)
 	req = resmgmt.SaveChannelRequest{ChannelID: channelID, ChannelConfig: configReader}
 	txID, err = org1ClCtx.rsCl.SaveChannel(req, resmgmt.WithConfigSignatures(signedConfigOrg1), resmgmt.WithOrdererEndpoint("orderer.example.com"))
 	require.Errorf(t, err, "SaveChannel should fail when signed by org1 only")
 
-	// Vefiry that org2 alone cannot sign the change
+	// Verify that org2 alone cannot sign the change
 	configReader = bytes.NewReader(configEnvelopeBytes)
 	req = resmgmt.SaveChannelRequest{ChannelID: channelID, ChannelConfig: configReader}
 	txID, err = org2ClCtx.rsCl.SaveChannel(req, resmgmt.WithConfigSignatures(signedConfigOrg2), resmgmt.WithOrdererEndpoint("orderer.example.com"))
