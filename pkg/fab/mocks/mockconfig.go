@@ -137,7 +137,7 @@ func (c *MockConfig) PeersConfig(org string) ([]fab.PeerConfig, bool) {
 // PeerConfig Retrieves a specific peer from the configuration by org and name
 func (c *MockConfig) PeerConfig(nameOrURL string) (*fab.PeerConfig, bool) {
 
-	if nameOrURL == "invalid" {
+	if nameOrURL == "invalid" || nameOrURL == "missing" {
 		return nil, false
 	}
 	if c.customPeerCfg != nil {
