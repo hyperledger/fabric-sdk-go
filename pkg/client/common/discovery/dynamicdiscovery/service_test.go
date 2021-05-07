@@ -87,5 +87,5 @@ func TestDiscoveryServiceEndpointsEvaluation(t *testing.T) {
 
 	peers, err = service.GetPeers()
 	assert.NoError(t, err)
-	assert.Equalf(t, 2, len(peers), "Expected 2 peers")
+	assert.Equalf(t, 2, len(peers), "expected 2 peers")
 }
