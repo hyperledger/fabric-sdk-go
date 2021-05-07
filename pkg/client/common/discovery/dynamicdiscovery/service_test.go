@@ -88,34 +88,4 @@ func TestDiscoveryServiceEndpointsEvaluation(t *testing.T) {
 	peers, err = service.GetPeers()
 	assert.NoError(t, err)
 	assert.Equalf(t, 2, len(peers), "Expected 2 peers")
-
-	//discClient.SetResponses(
-	//	&fabDiscovery.MockDiscoverEndpointResponse{
-	//		PeerEndpoints: []*discmocks.MockDiscoveryPeerEndpoint{
-	//			{
-	//				MSPID:        mspID1,
-	//				Endpoint:     peer1MSP1,
-	//				LedgerHeight: 5,
-	//			},
-	//			{
-	//				MSPID:        mspID2,
-	//				Endpoint:     peer1MSP2,
-	//				LedgerHeight: 15,
-	//			},
-	//		},
-	//	},
-	//)
-	//
-	//time.Sleep(1 * time.Second)
-	//
-	////one of the peer for MSPID2 should be filtered out since it is not yet being updated by memebership cache (ContainsMSP returns false)
-	//peers, err = service.GetPeers()
-	//assert.NoError(t, err)
-	//assert.Equalf(t, 1, len(peers), "Expected 1 peer among 2 been discovered, since one of them belong to new org with pending membership update")
-	//
-	//filteredService := discovery.NewDiscoveryFilterService(service, &blockHeightFilter{minBlockHeight: 10})
-	//peers, err = filteredService.GetPeers()
-	//require.NoError(t, err)
-	//require.Equalf(t, 0, len(peers), "expecting discovery filter to return only one peer")
-
 }
