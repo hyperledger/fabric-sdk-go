@@ -58,7 +58,7 @@ func connectionFailedStatus(url string) error {
 func createMockPeers(fromIndex int, toIndex int) []fab.Peer {
 	var mockPeers []fab.Peer
 	for i := fromIndex; i < toIndex; i++ {
-		mockPeers = append(mockPeers, mocks.NewMockPeer("testPeer"+string(i),
+		mockPeers = append(mockPeers, mocks.NewMockPeer(fmt.Sprintf("testPeer%d", i),
 			"grpcs://myPeer.org:"+strconv.Itoa(i)))
 	}
 	return mockPeers

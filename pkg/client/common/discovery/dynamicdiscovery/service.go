@@ -15,6 +15,7 @@ import (
 	contextAPI "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	fabdiscovery "github.com/hyperledger/fabric-sdk-go/pkg/fab/discovery"
+	peerImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/util/concurrent/lazyref"
 	"github.com/pkg/errors"
 )
@@ -139,17 +140,28 @@ func asPeer(ctx contextAPI.Client, endpoint *discclient.Peer) (fab.Peer, bool) {
 
 	logger.Debugf("Adding endpoint [%s]", url)
 
+	var (
+		peer fab.Peer
+		err  error
+	)
+
 	peerConfig, found := ctx.EndpointConfig().PeerConfig(url)
-	if !found {
-		logger.Debugf("Peer config not found for url [%s]", url)
-		return nil, false
+	if found {
+		peer, err = ctx.InfraProvider().CreatePeerFromConfig(&fab.NetworkPeer{
+			PeerConfig: *peerConfig,
+			MSPID:      endpoint.MSPID,
+			Properties: fabdiscovery.GetProperties(endpoint),
+		})
+	} else {
+		peer, err = peerImpl.New(ctx.EndpointConfig(), peerImpl.FromPeerConfig(&fab.NetworkPeer{
+			PeerConfig: fab.PeerConfig{
+				URL: url,
+			},
+			MSPID:      endpoint.MSPID,
+			Properties: fabdiscovery.GetProperties(endpoint),
+		}))
 	}
 
-	peer, err := ctx.InfraProvider().CreatePeerFromConfig(&fab.NetworkPeer{
-		PeerConfig: *peerConfig,
-		MSPID:      endpoint.MSPID,
-		Properties: fabdiscovery.GetProperties(endpoint),
-	})
 	if err != nil {
 		logger.Warnf("Unable to create peer config for [%s]: %s", url, err)
 		return nil, false
