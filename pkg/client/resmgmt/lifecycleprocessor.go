@@ -282,7 +282,7 @@ func (p *lifecycleProcessor) queryCommitted(reqCtx reqContext.Context, channelID
 
 	err = p.verifyResponsesMatch(txProposalResponse,
 		func(payload []byte) (proto.Message, error) {
-			return unmarshalCCDefResults(req.Name, payload)
+			return unmarshalInOrderCCDefResults(req.Name, payload)
 		},
 	)
 	if err != nil {
@@ -565,16 +565,21 @@ func (p *lifecycleProcessor) verifyResponsesMatch(responses []*fab.TransactionPr
 	return nil
 }
 
-func unmarshalCCDefResults(name string, payload []byte) (proto.Message, error) {
+// unmarshalls payload into QueryChaincodeDefinition(s)Result and sorts chaincodes by name
+func unmarshalInOrderCCDefResults(name string, payload []byte) (proto.Message, error) {
 	if name != "" {
 		result := &lb.QueryChaincodeDefinitionResult{}
-		return result, proto.Unmarshal(payload, result)
+		if err := proto.Unmarshal(payload, result); err != nil {
+			return result, errors.Wrapf(err, "failed to unmarshal payload with name %s into QueryChaincodeDefinitionResult", name)
+		}
+
+		return result, nil
 	}
 
 	result := &lb.QueryChaincodeDefinitionsResult{}
 
 	if err := proto.Unmarshal(payload, result); err != nil {
-		return result, err
+		return result, errors.Wrap(err, "failed to unmarshal payload into QueryChaincodeDefinitionsResult")
 	}
 
 	// need to sort them by name because peers return list of chaincodes in unexpected order(slice).
