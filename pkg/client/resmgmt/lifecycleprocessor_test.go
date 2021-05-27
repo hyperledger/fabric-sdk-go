@@ -1,5 +1,5 @@
 /*
-Copyright SecureKey Technologies Inc. All Rights Reserved.
+Copyright IntellectEU, NV. All Rights Reserved.
 
 SPDX-License-Identifier: Apache-2.0
 */
