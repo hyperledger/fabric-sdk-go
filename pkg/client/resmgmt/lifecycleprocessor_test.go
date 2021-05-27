@@ -1,11 +1,12 @@
 package resmgmt
 
 import (
+	"testing"
+
 	"github.com/golang/protobuf/proto"
 	lb "github.com/hyperledger/fabric-protos-go/peer/lifecycle"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 func TestUnmarshalInOrderCCDefResults(t *testing.T) {
