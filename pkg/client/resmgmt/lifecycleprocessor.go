@@ -9,6 +9,7 @@ package resmgmt
 import (
 	reqContext "context"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/golang/protobuf/proto"
@@ -571,5 +572,16 @@ func unmarshalCCDefResults(name string, payload []byte) (proto.Message, error) {
 	}
 
 	result := &lb.QueryChaincodeDefinitionsResult{}
-	return result, proto.Unmarshal(payload, result)
+
+	if err := proto.Unmarshal(payload, result); err != nil {
+		return result, err
+	}
+
+	// need to sort them by name because peers return list of chaincodes in unexpected order(slice).
+	// proto.Equal fails to compare them
+	sort.Slice(result.ChaincodeDefinitions, func(i, j int) bool {
+		return result.ChaincodeDefinitions[i].Name > result.ChaincodeDefinitions[j].Name
+	})
+
+	return result, nil
 }

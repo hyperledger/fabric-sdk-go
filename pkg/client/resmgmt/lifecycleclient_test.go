@@ -841,6 +841,17 @@ func TestClient_LifecycleQueryCommittedCC(t *testing.T) {
 	lcDefsBytes, err := proto.Marshal(lcDefs)
 	require.NoError(t, err)
 
+	//this result is used to test a case when peers return list of definitions in unexpected order
+	lcDefsInDifferentOrder := &lb.QueryChaincodeDefinitionsResult{
+		ChaincodeDefinitions: []*lb.QueryChaincodeDefinitionsResult_ChaincodeDefinition{
+			{Name: cc2, Sequence: 2, Version: v1, ValidationParameter: policyBytes},
+			{Name: cc1, Sequence: 1, Version: v1, ValidationParameter: policyBytes, Collections: collections},
+		},
+	}
+
+	lcDefsInDifferentOrderBytes, err := proto.Marshal(lcDefsInDifferentOrder)
+	require.NoError(t, err)
+
 	ctx := setupTestContext("test", "Org1MSP")
 	ctx.SetEndpointConfig(getNetworkConfig(t))
 
@@ -862,6 +873,13 @@ func TestClient_LifecycleQueryCommittedCC(t *testing.T) {
 			ProposalResponse: &pb.ProposalResponse{
 				Response: &pb.Response{
 					Payload: lcDefsBytes,
+				},
+			},
+		},
+		{
+			ProposalResponse: &pb.ProposalResponse{
+				Response: &pb.Response{
+					Payload: lcDefsInDifferentOrderBytes,
 				},
 			},
 		},
