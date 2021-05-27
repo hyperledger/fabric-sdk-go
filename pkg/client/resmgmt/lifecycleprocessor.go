@@ -582,8 +582,8 @@ func unmarshalInOrderCCDefResults(name string, payload []byte) (proto.Message, e
 		return result, errors.Wrap(err, "failed to unmarshal payload into QueryChaincodeDefinitionsResult")
 	}
 
-	// need to sort them by name because peers return list of chaincodes in unexpected order(slice).
-	// proto.Equal fails to compare them
+	// need to sort cc definitions by name because peers return lists of chaincodes in an unexpected order.
+	// proto.Equal fails to compare them because slice is used, thus it compares each value x[i] == x[j]
 	sort.Slice(result.ChaincodeDefinitions, func(i, j int) bool {
 		return result.ChaincodeDefinitions[i].Name > result.ChaincodeDefinitions[j].Name
 	})
