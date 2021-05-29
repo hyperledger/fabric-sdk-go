@@ -140,12 +140,10 @@ func (s *selectionFilter) filterDiscovered(peers []fab.Peer) []fab.Peer {
 func (s *selectionFilter) asPeerValue(endpoint *discclient.Peer) fab.Peer {
 	url := endpoint.AliveMessage.GetAliveMsg().GetMembership().Endpoint
 
-	// Get the mapped URL of the peer
+	// Get the mapped URL of the peer if such defined in EndpointConfig
 	peerConfig, found := s.ctx.EndpointConfig().PeerConfig(url)
 	if found {
 		url = peerConfig.URL
-	} else {
-		logger.Debugf("Peer config not found for url [%s]", url)
 	}
 
 	return &peerEndpointValue{
