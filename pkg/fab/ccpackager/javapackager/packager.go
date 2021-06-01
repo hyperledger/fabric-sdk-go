@@ -93,11 +93,11 @@ func findSource(filePath string) ([]*Descriptor, error) {
 			}
 			if fileInfo.Mode().IsRegular() && isSource(path) {
 				relPath := path
-				if strings.Contains(path, "/META-INF/") {
-					relPath = path[strings.Index(path, "/META-INF/")+1:]
-				}
 				if len(relPath) > len(folder) {
 					relPath = relPath[len(folder)+1:]
+				}
+				if strings.Contains(path, "/META-INF/") {
+					relPath = path[strings.Index(path, "/META-INF/")+1:]
 				}
 				descriptors = append(descriptors, &Descriptor{name: relPath, fqp: path})
 			}
