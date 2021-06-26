@@ -129,7 +129,7 @@ func WithConfig(config core.ConfigProvider) ConfigOption {
 
 		value, ok = gw.cfg.Lookup("organizations." + gw.org + ".mspid")
 		if !ok {
-			return errors.New("No client organization defined in the config")
+			return errors.New("No mspid defined in the config for " + gw.org)
 		}
 		gw.mspid = value.(string)
 
