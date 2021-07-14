@@ -86,7 +86,7 @@ func TestCACACertConfig(t *testing.T) {
 	}
 
 	// SystemCertPool is disabled
-	ok := mockBackend.Set("client.tlscerts.systemcertpool", false)
+	ok := mockBackend.SetMock("client.tlscerts.systemcertpool", false)
 	if !ok {
 		t.Fatal("Failed to set client.tlscerts.systemcertpool")
 	}
@@ -107,7 +107,7 @@ func TestCACACertConfig(t *testing.T) {
 		}
 		b := mocks.MockConfigBackend{KeyValueMap: ca}
 		// remove CA cert path
-		if !b.Set("tlscacerts.path", "") {
+		if !b.SetMock("tlscacerts.path", "") {
 			t.Fatal("Failed to set tlscacerts.path")
 		}
 	}
@@ -121,7 +121,7 @@ func TestCACACertConfig(t *testing.T) {
 	}
 
 	// enable SystemCertPool, it should be sufficient for good configuration
-	ok = mockBackend.Set("client.tlscerts.systemcertpool", true)
+	ok = mockBackend.SetMock("client.tlscerts.systemcertpool", true)
 	if !ok {
 		t.Fatal("Failed to set client.tlscerts.systemcertpool")
 	}

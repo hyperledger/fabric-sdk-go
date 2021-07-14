@@ -24,8 +24,12 @@ func (b *MockConfigBackend) Lookup(key string) (interface{}, bool) {
 	return v, ok
 }
 
-// Set sets a backend value
-func (b *MockConfigBackend) Set(key string, value interface{}) bool {
+// stub
+func (b *MockConfigBackend) Set(key string, value interface{}) {
+}
+
+// SetMock sets a backend value with full path to config section specified using dots ("path.to.param")
+func (b *MockConfigBackend) SetMock(key string, value interface{}) bool {
 	if key != "" {
 		node := b.KeyValueMap
 		ss := strings.Split(key, ".")
