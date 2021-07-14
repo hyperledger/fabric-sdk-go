@@ -386,3 +386,7 @@ func (gc *gatewayConfig) Lookup(key string) (interface{}, bool) {
 	}
 	return conf, exists
 }
+
+func (gc *gatewayConfig) Set(key string, value interface{}) {
+	gc.backend.Set(key, value)
+}
