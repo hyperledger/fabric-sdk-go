@@ -42,7 +42,7 @@ type ConfigLookup struct {
 	backends []core.ConfigBackend
 }
 
-// stub
+// Set stub
 func (c *ConfigLookup) Set(key string, value interface{}) {
 }
 

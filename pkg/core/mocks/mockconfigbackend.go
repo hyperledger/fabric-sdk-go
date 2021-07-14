@@ -24,7 +24,7 @@ func (b *MockConfigBackend) Lookup(key string) (interface{}, bool) {
 	return v, ok
 }
 
-// stub
+// Set stub
 func (b *MockConfigBackend) Set(key string, value interface{}) {
 }
 
