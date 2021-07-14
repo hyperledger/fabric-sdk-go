@@ -42,6 +42,10 @@ type ConfigLookup struct {
 	backends []core.ConfigBackend
 }
 
+// stub
+func (c *ConfigLookup) Set(key string, value interface{}) {
+}
+
 //Lookup returns value for given key
 func (c *ConfigLookup) Lookup(key string) (interface{}, bool) {
 	//loop through each backend to find the value by key, fallback to next one if not found
