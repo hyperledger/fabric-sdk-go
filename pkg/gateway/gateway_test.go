@@ -291,8 +291,8 @@ func Test_gatewayConfig_Set(t *testing.T) {
 	assert.Equal(t, 1, len(configBackend), "invalid config file")
 
 	configBackend[0].Set("test_key", "test_value")
-	value, err := configBackend[0].Lookup("test_key")
-	assert.NoError(t, err)
+	value, ok := configBackend[0].Lookup("test_key")
+	assert.True(t, ok, "failed to find value in gatewayConfig")
 	valueString, ok := value.(string)
 	assert.True(t, ok, "failed to cast value to string")
 	assert.Equal(t, "test_value", valueString)
