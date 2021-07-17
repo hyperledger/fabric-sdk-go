@@ -55,6 +55,7 @@ func TestMockConfigBackend(t *testing.T) {
 
 // stub-test for stub-method to make coverage checker happy
 func Test_Set(t *testing.T) {
+	configPath := filepath.Join(getConfigPath(), "config_test.yaml")
 	mockBackend, err := BackendFromFile(configPath)
 	if err != nil {
 		t.Fatalf("Unexpected error reading config: %s", err)
