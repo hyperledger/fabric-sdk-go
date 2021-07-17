@@ -31,4 +31,5 @@ type ConfigProvider func() ([]ConfigBackend, error)
 //ConfigBackend backend for all config types in SDK
 type ConfigBackend interface {
 	Lookup(key string) (interface{}, bool)
+	Set(key string, value interface{})
 }

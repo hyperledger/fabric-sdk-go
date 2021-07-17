@@ -382,6 +382,9 @@ func containsAttribute(att msp.Attribute, attributes []msp.Attribute) bool {
 type emptyCredentialStorePathBackend struct {
 }
 
+func (c *emptyCredentialStorePathBackend) Set(key string, value interface{}) {
+}
+
 func (c *emptyCredentialStorePathBackend) Lookup(key string) (interface{}, bool) {
 	if key == "client.credentialStore.path" {
 		return "", true

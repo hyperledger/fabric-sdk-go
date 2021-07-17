@@ -27,6 +27,11 @@ func (c *defConfigBackend) Lookup(key string) (interface{}, bool) {
 	return value, true
 }
 
+// Set sets a value for config key
+func (c *defConfigBackend) Set(key string, value interface{}) {
+	c.configViper.Set(key, value)
+}
+
 // load Default config
 func (c *defConfigBackend) loadTemplateConfig() error {
 	// get Environment Default Config Path
