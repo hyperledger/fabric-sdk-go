@@ -367,6 +367,11 @@ func TestConfigBackend_Lookup(t *testing.T) {
 	checkConfigMapKey(t, "organizations", 3)
 }
 
+func TestConfigBackend_Set(t *testing.T) {
+	configBackend.Set("some_key", "some_value")
+	checkConfigStringKey(t, "some_key", "some_value", true)
+}
+
 func checkConfigStringKey(t *testing.T, configKey string, expectedValue string, checkNotEquals bool) {
 	value, ok := configBackend.Lookup(configKey)
 	if !ok {
