@@ -8,6 +8,7 @@ package gateway
 
 import (
 	"errors"
+	"github.com/stretchr/testify/assert"
 	"os"
 	"reflect"
 	"testing"
@@ -46,6 +47,7 @@ func TestConnectIdentityInCcp(t *testing.T) {
 		WithConfig(config.FromFile("testdata/connection-tls.json")),
 		WithUser("user1"),
 	)
+
 	if err != nil {
 		t.Fatalf("Failed to create gateway: %s", err)
 	}
@@ -279,4 +281,19 @@ func TestAsLocalhost(t *testing.T) {
 		t.Fatalf("Failed to get network: %s", err)
 	}
 
+}
+
+func Test_gatewayConfig_Set(t *testing.T) {
+	configProvider := config.FromFile("testdata/connection-discovery.json")
+	configBackendProvider := createGatewayConfigProvider(configProvider, func() string { return "Org1" })
+	configBackend, err := configBackendProvider()
+	assert.NoError(t, err)
+	assert.Equal(t, 1, len(configBackend), "invalid config file")
+
+	configBackend[0].Set("test_key", "test_value")
+	value, err := configBackend[0].Lookup("test_key")
+	assert.NoError(t, err)
+	valueString, ok := value.(string)
+	assert.True(t, ok, "failed to cast value to string")
+	assert.Equal(t, "test_value", valueString)
 }
