@@ -18,7 +18,9 @@ import (
 func TestNewNetwork(t *testing.T) {
 	c := mockChannelProvider("mychannel")
 
-	gw := &Gateway{}
+	gw := &Gateway{
+		options: &gatewayOptions{},
+	}
 
 	nw, err := newNetwork(gw, c)
 
@@ -31,10 +33,29 @@ func TestNewNetwork(t *testing.T) {
 	}
 }
 
+func TestNewNetworkWithEventOptions(t *testing.T) {
+	c := mockChannelProvider("mychannel")
+
+	gw := &Gateway{
+		options: &gatewayOptions{
+			FromBlock:    2,
+			FromBlockSet: true,
+		},
+	}
+
+	_, err := newNetwork(gw, c)
+
+	if err != nil {
+		t.Fatalf("Failed to create network: %s", err)
+	}
+}
+
 func TestGetContract(t *testing.T) {
 	c := mockChannelProvider("mychannel")
 
-	gw := &Gateway{}
+	gw := &Gateway{
+		options: &gatewayOptions{},
+	}
 
 	nw, err := newNetwork(gw, c)
 
@@ -53,7 +74,9 @@ func TestGetContract(t *testing.T) {
 func TestGetContractWithName(t *testing.T) {
 	c := mockChannelProvider("mychannel")
 
-	gw := &Gateway{}
+	gw := &Gateway{
+		options: &gatewayOptions{},
+	}
 
 	nw, err := newNetwork(gw, c)
 
@@ -120,7 +143,9 @@ func TestFilteredBlocktEvent(t *testing.T) {
 func TestNewNetworkFailure1(t *testing.T) {
 	c := mockBadChannelProvider("mychannel", 2)
 
-	gw := &Gateway{}
+	gw := &Gateway{
+		options: &gatewayOptions{},
+	}
 
 	_, err := newNetwork(gw, c)
 
@@ -132,7 +157,9 @@ func TestNewNetworkFailure1(t *testing.T) {
 func TestNewNetworkFailure2(t *testing.T) {
 	c := mockBadChannelProvider("mychannel", 3)
 
-	gw := &Gateway{}
+	gw := &Gateway{
+		options: &gatewayOptions{},
+	}
 
 	_, err := newNetwork(gw, c)
 
