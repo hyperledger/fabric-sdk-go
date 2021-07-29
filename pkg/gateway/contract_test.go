@@ -13,7 +13,9 @@ import (
 func TestCreateTransaction(t *testing.T) {
 	c := mockChannelProvider("mychannel")
 
-	gw := &Gateway{}
+	gw := &Gateway{
+		options: &gatewayOptions{},
+	}
 
 	nw, err := newNetwork(gw, c)
 
@@ -38,7 +40,9 @@ func TestCreateTransaction(t *testing.T) {
 func TestCreateTransactionNamespaced(t *testing.T) {
 	c := mockChannelProvider("mychannel")
 
-	gw := &Gateway{}
+	gw := &Gateway{
+		options: &gatewayOptions{},
+	}
 
 	nw, err := newNetwork(gw, c)
 
@@ -65,7 +69,7 @@ func TestSubmitTransaction(t *testing.T) {
 
 	gw := &Gateway{
 		options: &gatewayOptions{
-			Timeout:   defaultTimeout,
+			Timeout: defaultTimeout,
 		},
 	}
 
@@ -93,7 +97,7 @@ func TestEvaluateTransaction(t *testing.T) {
 
 	gw := &Gateway{
 		options: &gatewayOptions{
-			Timeout:   defaultTimeout,
+			Timeout: defaultTimeout,
 		},
 	}
 
@@ -121,7 +125,7 @@ func TestContractEvent(t *testing.T) {
 
 	gw := &Gateway{
 		options: &gatewayOptions{
-			Timeout:   defaultTimeout,
+			Timeout: defaultTimeout,
 		},
 	}
 

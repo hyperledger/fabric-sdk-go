@@ -52,6 +52,9 @@ type gatewayOptions struct {
 	Identity mspProvider.SigningIdentity
 	User     string
 	Timeout  time.Duration
+	// FromBlock specify the initial block to be considerer by event client
+	FromBlock    uint64
+	FromBlockSet bool
 }
 
 // Option functional arguments can be supplied when connecting to the gateway.
@@ -236,6 +239,15 @@ func WithUser(user string) IdentityOption {
 func WithTimeout(timeout time.Duration) Option {
 	return func(gw *Gateway) error {
 		gw.options.Timeout = timeout
+		return nil
+	}
+}
+
+// WithBlockNum optionaly indicates the block number from which events are to be received.
+func WithBlockNum(from uint64) Option {
+	return func(gw *Gateway) error {
+		gw.options.FromBlock = from
+		gw.options.FromBlockSet = true
 		return nil
 	}
 }
