@@ -33,6 +33,23 @@ func TestNewNetwork(t *testing.T) {
 	}
 }
 
+func TestNewNetworkWithEventOptions(t *testing.T) {
+	c := mockChannelProvider("mychannel")
+
+	gw := &Gateway{
+		options: &gatewayOptions{
+			FromBlock:    2,
+			FromBlockSet: true,
+		},
+	}
+
+	_, err := newNetwork(gw, c)
+
+	if err != nil {
+		t.Fatalf("Failed to create network: %s", err)
+	}
+}
+
 func TestGetContract(t *testing.T) {
 	c := mockChannelProvider("mychannel")
 
