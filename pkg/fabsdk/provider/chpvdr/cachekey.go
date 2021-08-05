@@ -8,10 +8,11 @@ package chpvdr
 
 import (
 	"crypto/sha256"
-	"strconv"
+	"fmt"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/deliverclient/seek"
 )
 
 // ctxtCacheKey is a lazy cache key for the context cache
@@ -99,6 +100,8 @@ func (k *eventCacheKey) String() string {
 
 type params struct {
 	permitBlockEvents bool
+	seekType          seek.Type
+	fromBlock         uint64
 }
 
 func defaultParams() *params {
@@ -109,8 +112,18 @@ func (p *params) PermitBlockEvents() {
 	p.permitBlockEvents = true
 }
 
+func (p *params) SetFromBlock(value uint64) {
+	p.fromBlock = value
+}
+
+func (p *params) SetSeekType(value seek.Type) {
+	if value != "" {
+		p.seekType = value
+	}
+}
+
 func (p *params) getOptKey() string {
 	//	Construct opts portion
-	optKey := "blockEvents:" + strconv.FormatBool(p.permitBlockEvents)
+	optKey := fmt.Sprintf("blockEvents:%t,seekType:%s,fromBlock:%d", p.permitBlockEvents, p.seekType, p.fromBlock)
 	return optKey
 }
