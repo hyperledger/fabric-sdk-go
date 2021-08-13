@@ -24,3 +24,11 @@ type WalletStore interface {
 	Exists(label string) bool
 	Remove(label string) error
 }
+
+// To allow for custom wallets.
+
+// WalletFromStore is a simple way that allows to create custom wallets
+// based on the user's requirements.
+func WalletFromStore(store WalletStore) *Wallet{
+	return &Wallet{store}
+}

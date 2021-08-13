@@ -20,7 +20,7 @@ type inMemoryWalletStore struct {
 //  A Wallet object.
 func NewInMemoryWallet() *Wallet {
 	store := &inMemoryWalletStore{make(map[string][]byte, 10)}
-	return &Wallet{store}
+	return WalletFromStore(store)
 }
 
 // Put an identity into the wallet.
