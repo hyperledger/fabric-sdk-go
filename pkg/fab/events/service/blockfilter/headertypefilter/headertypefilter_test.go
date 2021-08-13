@@ -9,9 +9,9 @@ package headertypefilter
 import (
 	"testing"
 
-	servicemocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/service/mocks"
 	cb "github.com/hyperledger/fabric-protos-go/common"
 	pb "github.com/hyperledger/fabric-protos-go/peer"
+	servicemocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/service/mocks"
 )
 
 func TestHeaderTypeBlockFilter(t *testing.T) {

@@ -525,14 +525,14 @@ func TestForGRPCErrorsWithKeepAliveOpts(t *testing.T) {
 }
 
 func TestNewOrdererFromOrdererName(t *testing.T) {
-	t.Run("run simple FromOrdererName", func(t *testing.T){
+	t.Run("run simple FromOrdererName", func(t *testing.T) {
 		_, err := New(mocks.NewMockEndpointConfig(), FromOrdererName("orderer"))
 		if err != nil {
 			t.Fatalf("Failed to get new orderer from name. Error: %s", err)
 		}
 	})
 
-	t.Run("run FromOrdererName with Ignore orderer in config", func(t *testing.T){
+	t.Run("run FromOrdererName with Ignore orderer in config", func(t *testing.T) {
 		mockCtrl := gomock.NewController(t)
 		defer mockCtrl.Finish()
 		mockEndpoingCfg := mockfab.NewMockEndpointConfig(mockCtrl)
@@ -545,7 +545,7 @@ func TestNewOrdererFromOrdererName(t *testing.T) {
 		}
 	})
 
-	t.Run("run FromOrdererName with orderer not found in config", func(t *testing.T){
+	t.Run("run FromOrdererName with orderer not found in config", func(t *testing.T) {
 		mockCtrl := gomock.NewController(t)
 		defer mockCtrl.Finish()
 		mockEndpoingCfg := mockfab.NewMockEndpointConfig(mockCtrl)

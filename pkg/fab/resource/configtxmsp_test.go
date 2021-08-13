@@ -17,8 +17,8 @@ import (
 
 	"github.com/hyperledger/fabric-sdk-go/test/metadata"
 
-	mspcfg "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/msp"
 	"github.com/hyperledger/fabric-protos-go/msp"
+	mspcfg "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/msp"
 	"github.com/stretchr/testify/require"
 )
 

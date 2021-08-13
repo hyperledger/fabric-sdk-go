@@ -29,6 +29,6 @@ type WalletStore interface {
 
 // WalletFromStore is a simple way that allows to create custom wallets
 // based on the user's requirements.
-func WalletFromStore(store WalletStore) *Wallet{
+func WalletFromStore(store WalletStore) *Wallet {
 	return &Wallet{store}
 }
