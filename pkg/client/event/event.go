@@ -15,21 +15,25 @@ SPDX-License-Identifier: Apache-2.0
 package event
 
 import (
+	"time"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/deliverclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/deliverclient/seek"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/service/dispatcher"
 	"github.com/pkg/errors"
 )
 
 // Client enables access to a channel events on a Fabric network.
 type Client struct {
-	eventService      fab.EventService
-	permitBlockEvents bool
-	fromBlock         uint64
-	seekType          seek.Type
+	eventService         fab.EventService
+	permitBlockEvents    bool
+	fromBlock            uint64
+	seekType             seek.Type
+	eventConsumerTimeout *time.Duration
 }
 
 // New returns a Client instance. Client receives events such as block, filtered block,
@@ -63,6 +67,9 @@ func New(channelProvider context.ChannelProvider, opts ...ClientOption) (*Client
 			if eventClient.seekType == seek.FromBlock {
 				opts = append(opts, deliverclient.WithBlockNum(eventClient.fromBlock))
 			}
+		}
+		if eventClient.eventConsumerTimeout != nil {
+			opts = append(opts, dispatcher.WithEventConsumerTimeout(*eventClient.eventConsumerTimeout))
 		}
 		es, err = channelContext.ChannelService().EventService(opts...)
 	} else {
