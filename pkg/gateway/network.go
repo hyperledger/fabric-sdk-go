@@ -11,6 +11,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/event"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/deliverclient/seek"
 	"github.com/pkg/errors"
 )
 
@@ -43,7 +44,12 @@ func newNetwork(gateway *Gateway, channelProvider context.ChannelProvider) (*Net
 
 	n.name = ctx.ChannelID()
 
-	n.event, err = event.New(channelProvider, event.WithBlockEvents())
+	eventOpts := []event.ClientOption{event.WithBlockEvents()}
+	if gateway.options.FromBlockSet {
+		eventOpts = append(eventOpts, event.WithSeekType(seek.FromBlock), event.WithBlockNum(gateway.options.FromBlock))
+	}
+
+	n.event, err = event.New(channelProvider, eventOpts...)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to create new event client")
 	}

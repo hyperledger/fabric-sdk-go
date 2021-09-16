@@ -72,6 +72,24 @@ func TestConnectNoOptions(t *testing.T) {
 	}
 }
 
+func TestConnectWithBlockNum(t *testing.T) {
+	gw, err := Connect(
+		WithConfig(config.FromFile("testdata/connection-tls.json")),
+		WithUser("user1"),
+		WithBlockNum(2),
+	)
+
+	if err != nil {
+		t.Fatalf("Failed to create gateway: %s", err)
+	}
+
+	options := gw.options
+
+	if !options.FromBlockSet || options.FromBlock != 2 {
+		t.Fatal("BlockNum not correctly initialized")
+	}
+}
+
 func TestConnectWithSDK(t *testing.T) {
 	sdk, err := fabsdk.New(config.FromFile("testdata/connection-tls.json"))
 
