@@ -69,7 +69,7 @@ func TestEnrollAndReenroll(t *testing.T) {
 	// Reenroll with empty user
 	err = f.caClient.Reenroll(&api.ReenrollmentRequest{Name: ""})
 	if err == nil {
-		t.Fatal("Expected error with enpty user")
+		t.Fatal("Expected error with empty user")
 	}
 	if err.Error() != "user name missing" {
 		t.Fatalf("Expected error user required. Got: %s", err)
