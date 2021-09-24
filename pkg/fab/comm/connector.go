@@ -129,6 +129,7 @@ func (cc *CachingConnector) DialContext(ctx context.Context, target string, opts
 		setClosed(c, err)
 		cc.removeConn(c)
 		cc.lock.Unlock()
+
 		return nil, errors.WithMessagef(err, "dialing connection on target [%s]", target)
 	}
 	return c.conn, nil
