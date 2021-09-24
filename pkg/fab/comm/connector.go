@@ -124,9 +124,9 @@ func (cc *CachingConnector) DialContext(ctx context.Context, target string, opts
 
 	cc.lock.Unlock()
 
-	if err := cc.openConn(ctx, c); err != nil {
+	if err = cc.openConn(ctx, c); err != nil {
 		cc.lock.Lock()
-		setClosed(c)
+		setClosed(c, err)
 		cc.removeConn(c)
 		cc.lock.Unlock()
 		return nil, errors.WithMessagef(err, "dialing connection on target [%s]", target)
@@ -160,7 +160,7 @@ func (cc *CachingConnector) ReleaseConn(conn *grpc.ClientConn) {
 	}
 	logger.Debugf("ReleaseConn [%s]", cconn.target)
 
-	setClosed(cconn)
+	setClosed(cconn, nil)
 
 	cc.ensureJanitorStarted()
 }
@@ -342,9 +342,12 @@ func closeConn(conn *grpc.ClientConn) {
 	cancel()
 }
 
-func setClosed(cconn *cachedConn) {
+func setClosed(cconn *cachedConn, err error) {
 	if cconn.open > 0 {
-		cconn.lastClose = time.Now()
+		if err == nil {
+			cconn.lastClose = time.Now()
+		}
+
 		cconn.open--
 	}
 }
