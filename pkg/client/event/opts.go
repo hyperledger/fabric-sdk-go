@@ -6,7 +6,11 @@ SPDX-License-Identifier: Apache-2.0
 
 package event
 
-import "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/deliverclient/seek"
+import (
+	"time"
+
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/deliverclient/seek"
+)
 
 // ClientOption describes a functional parameter for the New constructor
 type ClientOption func(*Client) error
@@ -34,6 +38,17 @@ func WithBlockNum(from uint64) ClientOption {
 func WithSeekType(seek seek.Type) ClientOption {
 	return func(c *Client) error {
 		c.seekType = seek
+		return nil
+	}
+}
+
+// WithEventConsumerTimeout is the timeout when sending events to a registered consumer.
+// If < 0, if buffer full, unblocks immediately and does not send.
+// If 0, if buffer full, will block and guarantee the event will be sent out.
+// If > 0, if buffer full, blocks util timeout.
+func WithEventConsumerTimeout(value time.Duration) ClientOption {
+	return func(c *Client) error {
+		c.eventConsumerTimeout = &value
 		return nil
 	}
 }
