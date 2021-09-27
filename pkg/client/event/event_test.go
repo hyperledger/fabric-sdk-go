@@ -43,7 +43,7 @@ func TestNewEventClient(t *testing.T) {
 		t.Fatalf("Failed to create new event client: %s", err)
 	}
 
-	_, err = New(ctx, WithBlockEvents(), WithSeekType(seek.Newest), WithBlockNum(math.MaxUint64))
+	_, err = New(ctx, WithBlockEvents(), WithSeekType(seek.Newest), WithBlockNum(math.MaxUint64), WithEventConsumerTimeout(500 * time.Millisecond))
 	if err != nil {
 		t.Fatalf("Failed to create new event client: %s", err)
 	}
