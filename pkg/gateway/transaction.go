@@ -25,11 +25,13 @@ import (
 // Instances of this class are stateful. A new instance <strong>must</strong>
 // be created for each transaction invocation.
 type Transaction struct {
-	contract       *Contract
-	request        *channel.Request
-	endorsingPeers []string
-	collections    []string
-	eventch        chan *fab.TxStatusEvent
+	contract        *Contract
+	request         *channel.Request
+	endorsingPeers  []string
+	collections     []string
+	eventch         chan *fab.TxStatusEvent
+	reqOptsEvaluate []channel.RequestOption
+	reqOptsSubmit   []channel.RequestOption
 }
 
 // TransactionOption functional arguments can be supplied when creating a transaction object
@@ -83,6 +85,24 @@ func WithCollections(collections ...string) TransactionOption {
 	}
 }
 
+// WithEvaluateRequestOptions is an optional argument to the CreateTransaction method which
+// sets RequestOptions on SDK request Query calls such as attempts count and so on
+func WithEvaluateRequestOptions(opts ...channel.RequestOption) TransactionOption {
+	return func(txn *Transaction) error {
+		txn.reqOptsEvaluate = opts
+		return nil
+	}
+}
+
+// WithSubmitRequestOptions is an optional argument to the CreateTransaction method which
+// sets RequestOptions on SDK request Execute calls such as attempts count and so on
+func WithSubmitRequestOptions(opts ...channel.RequestOption) TransactionOption {
+	return func(txn *Transaction) error {
+		txn.reqOptsSubmit = opts
+		return nil
+	}
+}
+
 // Evaluate a transaction function and return its results.
 // The transaction function will be evaluated on the endorsing peers but
 // the responses will not be sent to the ordering service and hence will
@@ -102,6 +122,10 @@ func (txn *Transaction) Evaluate(args ...string) ([]byte, error) {
 
 	if txn.collections != nil {
 		txn.request.InvocationChain = append(txn.request.InvocationChain, &fab.ChaincodeCall{ID: txn.contract.chaincodeID, Collections: txn.collections})
+	}
+
+	if txn.reqOptsEvaluate != nil {
+		options = append(options, txn.reqOptsEvaluate...)
 	}
 
 	response, err := txn.contract.client.Query(
@@ -131,6 +155,10 @@ func (txn *Transaction) Submit(args ...string) ([]byte, error) {
 	}
 	options = append(options, channel.WithTimeout(fab.Execute, txn.contract.network.gateway.options.Timeout))
 	options = append(options, channel.WithRetry(retry.DefaultChannelOpts))
+
+	if txn.reqOptsSubmit != nil {
+		options = append(options, txn.reqOptsSubmit...)
+	}
 
 	if txn.collections != nil {
 		txn.request.InvocationChain = append(txn.request.InvocationChain, &fab.ChaincodeCall{ID: txn.contract.chaincodeID, Collections: txn.collections})
