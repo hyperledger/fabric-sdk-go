@@ -90,12 +90,11 @@ func testContentsOfWallet(t *testing.T, wallet *Wallet) {
 }
 
 func testRemovalFromWallet(t *testing.T, wallet *Wallet) {
-	contents, _ := wallet.List()
 	wallet.Put("label1", NewX509Identity("msp", "testCert1", "testPrivKey"))
 	wallet.Put("label2", NewX509Identity("msp", "testCert2", "testPrivKey"))
 	wallet.Put("label3", NewX509Identity("msp", "testCert3", "testPrivKey"))
 	wallet.Remove("label2")
-	contents, _ = wallet.List()
+	contents, _ := wallet.List()
 	sort.Strings(contents)
 	expected := []string{"label1", "label3"}
 	if !reflect.DeepEqual(contents, expected) {

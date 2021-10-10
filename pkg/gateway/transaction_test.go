@@ -15,8 +15,10 @@ import (
 	"time"
 
 	"github.com/hyperledger/fabric-protos-go/peer"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel/invoke"
 	txnmocks "github.com/hyperledger/fabric-sdk-go/pkg/client/common/mocks"
+	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/retry"
 	cpc "github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	fcmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
@@ -55,6 +57,8 @@ func TestTransactionOptions(t *testing.T) {
 		WithTransient(transient),
 		WithEndorsingPeers("peer1"),
 		WithCollections("_implicit_org_org1"),
+		WithEvaluateRequestOptions(channel.WithRetry(retry.DefaultOpts)),
+		WithSubmitRequestOptions(channel.WithRetry(retry.DefaultOpts)),
 	)
 
 	if err != nil {
@@ -97,6 +101,10 @@ func TestCommitEvent(t *testing.T) {
 
 	contr := nw.GetContract("contract1")
 	txn, err := contr.CreateTransaction("txn1")
+	if err != nil {
+		t.Fatalf("Failed to create transaction: %s", err)
+	}
+
 	notifier := txn.RegisterCommitEvent()
 
 	result, err := txn.Submit("arg1", "arg2")
