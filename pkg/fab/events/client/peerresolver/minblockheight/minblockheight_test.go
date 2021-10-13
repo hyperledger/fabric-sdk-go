@@ -169,4 +169,19 @@ func TestOpts(t *testing.T) {
 		assert.Equal(t, 9, params.reconnectBlockHeightLagThreshold)
 	})
 
+	t.Run("No filter", func(t *testing.T) {
+		policy := fab.EventServicePolicy{
+			BlockHeightLagThreshold:    -1,
+			MinBlockHeightResolverMode: fab.ResolveByThreshold,
+		}
+		config.SetCustomChannelConfig(channelID, &fab.ChannelEndpointConfig{
+			Policies: fab.ChannelPolicies{
+				EventService: policy,
+			},
+		})
+
+		params := defaultParams(context, channelID)
+		require.NotNil(t, params)
+		assert.Equal(t, -1, params.blockHeightLagThreshold)
+	})
 }
