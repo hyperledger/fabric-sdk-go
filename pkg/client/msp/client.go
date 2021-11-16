@@ -74,7 +74,7 @@ func New(clientProvider context.ClientProvider, opts ...ClientOption) (*Client, 
 		c.caName = ca.CAName
 	}
 
-	err = veiifyOrgCA(org, c.caID)
+	err = verifyOrgCA(org, c.caID)
 	if err != nil {
 		return nil, err
 	}
@@ -105,7 +105,7 @@ func initClientFromOptions(clientProvider context.ClientProvider, opts ...Client
 	return ctx, &c, nil
 }
 
-func veiifyOrgCA(org fab.OrganizationConfig, caID string) error {
+func verifyOrgCA(org fab.OrganizationConfig, caID string) error {
 	if caID == "" {
 		return nil
 	}
