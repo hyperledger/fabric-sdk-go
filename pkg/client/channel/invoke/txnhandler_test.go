@@ -8,6 +8,7 @@ package invoke
 
 import (
 	reqContext "context"
+	"fmt"
 	"net/http"
 	"strings"
 	"testing"
@@ -17,13 +18,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	pb "github.com/hyperledger/fabric-protos-go/peer"
 	txnmocks "github.com/hyperledger/fabric-sdk-go/pkg/client/common/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	fcmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
-	pb "github.com/hyperledger/fabric-protos-go/peer"
 )
 
 const (
@@ -237,6 +238,92 @@ func TestResponseValidation(t *testing.T) {
 	s, ok := status.FromError(err)
 	assert.True(t, ok, "expected status error")
 	assert.EqualValues(t, int32(status.EndorsementMismatch), s.Code, "expected endorsement mismatch")
+}
+
+func TestJSONResponseValidation(t *testing.T) {
+	json1 := `{
+		"name": "jack",
+		"age": 23
+	}
+	`
+	json2 := `{
+		"age": 23,
+		"name": "jack"
+	}
+	`
+
+	// fmt.Println(json.Valid([]byte(json1)))
+	type testCase struct {
+		p1     *fab.TransactionProposalResponse
+		p2     *fab.TransactionProposalResponse
+		haserr bool
+	}
+	testCases := []testCase{
+		{
+			p1: &fab.TransactionProposalResponse{
+				Endorser: "peer 1",
+				Status:   http.StatusOK,
+				ProposalResponse: &pb.ProposalResponse{Response: &pb.Response{
+					Message: "test", Status: http.StatusOK, Payload: []byte(json1)},
+					Payload: []byte("ProposalPayload1"),
+				}},
+			p2: &fab.TransactionProposalResponse{
+				Endorser: "peer 1",
+				Status:   http.StatusOK,
+				ProposalResponse: &pb.ProposalResponse{Response: &pb.Response{
+					Message: "test", Status: http.StatusOK, Payload: []byte(json2)},
+					Payload: []byte("ProposalPayload1"),
+				}},
+			haserr: false,
+		},
+		{
+			p1: &fab.TransactionProposalResponse{
+				Endorser: "peer 1",
+				Status:   http.StatusOK,
+				ProposalResponse: &pb.ProposalResponse{Response: &pb.Response{
+					Message: "test", Status: http.StatusOK, Payload: []byte(json1)},
+					Payload: []byte(json1),
+				}},
+			p2: &fab.TransactionProposalResponse{
+				Endorser: "peer 1",
+				Status:   http.StatusOK,
+				ProposalResponse: &pb.ProposalResponse{Response: &pb.Response{
+					Message: "test", Status: http.StatusOK, Payload: []byte(json2)},
+					Payload: []byte(json2),
+				}},
+			haserr: false,
+		},
+		{
+			p1: &fab.TransactionProposalResponse{
+				Endorser: "peer 1",
+				Status:   http.StatusOK,
+				ProposalResponse: &pb.ProposalResponse{Response: &pb.Response{
+					Message: "test", Status: http.StatusOK, Payload: []byte(json1)},
+					Payload: []byte("ProposalPayload1"),
+				}},
+			p2: &fab.TransactionProposalResponse{
+				Endorser: "peer 1",
+				Status:   http.StatusOK,
+				ProposalResponse: &pb.ProposalResponse{Response: &pb.Response{
+					Message: "test", Status: http.StatusOK, Payload: []byte(json1)},
+					Payload: []byte("ProposalPayloadDiff"),
+				}},
+			haserr: true,
+		},
+	}
+
+	for i, test := range testCases {
+		h := EndorsementValidationHandler{}
+		err := h.validate([]*fab.TransactionProposalResponse{test.p1, test.p2})
+		if test.haserr {
+			assert.NotNil(t, err, fmt.Sprintf("expected error with different response payloads, case %d", i))
+			s, ok := status.FromError(err)
+			assert.True(t, ok, fmt.Sprintf("expected status error, case %d", i))
+			assert.EqualValues(t, int32(status.EndorsementMismatch), s.Code, fmt.Sprintf("expected endorsement mismatch, case %d", i))
+		} else {
+			assert.Nil(t, err, fmt.Sprintf("expected success, case %d", i))
+		}
+	}
 }
 
 func TestProposalProcessorHandlerError(t *testing.T) {
