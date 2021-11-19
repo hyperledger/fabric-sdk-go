@@ -8,6 +8,9 @@ package invoke
 
 import (
 	"bytes"
+	"encoding/json"
+	"fmt"
+	"reflect"
 	"strings"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
@@ -149,14 +152,47 @@ func (f *EndorsementValidationHandler) validate(txProposalResponse []*fab.Transa
 			continue
 		}
 
-		if !bytes.Equal(a1.Payload, r.ProposalResponse.Payload) ||
-			!bytes.Equal(a1.GetResponse().Payload, response.Payload) {
+		if equal, err := comparePayload(a1.Payload, r.ProposalResponse.Payload); err != nil {
+			return status.New(status.EndorserClientStatus, status.EndorsementMismatch.ToInt32(),
+				err.Error(), nil)
+		} else if !equal {
+			return status.New(status.EndorserClientStatus, status.EndorsementMismatch.ToInt32(),
+				"ProposalResponsePayloads do not match", nil)
+		}
+		if equal, err := comparePayload(a1.GetResponse().Payload, response.Payload); err != nil {
+			return status.New(status.EndorserClientStatus, status.EndorsementMismatch.ToInt32(),
+				err.Error(), nil)
+		} else if !equal {
 			return status.New(status.EndorserClientStatus, status.EndorsementMismatch.ToInt32(),
 				"ProposalResponsePayloads do not match", nil)
 		}
 	}
 
 	return nil
+}
+
+func comparePayload(payload1, payload2 []byte) (bool, error) {
+	if json.Valid(payload1) && json.Valid(payload2) {
+		return compareJson(payload1, payload2)
+	}
+	if !json.Valid(payload1) && !json.Valid(payload2) {
+		return bytes.Equal(payload1, payload2), nil
+	}
+	return false, nil
+}
+
+func compareJson(json1, json2 []byte) (bool, error) {
+	object1 := make(map[string]interface{})
+	object2 := make(map[string]interface{})
+	err := json.Unmarshal(json1, &object1)
+	if err != nil {
+		return false, fmt.Errorf("jsonCompare err, %s", err)
+	}
+	err = json.Unmarshal(json2, &object2)
+	if err != nil {
+		return false, fmt.Errorf("jsonCompare err, %s", err)
+	}
+	return reflect.DeepEqual(object1, object2), nil
 }
 
 //CommitTxHandler for committing transactions
