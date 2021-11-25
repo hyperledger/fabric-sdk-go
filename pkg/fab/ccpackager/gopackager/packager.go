@@ -13,6 +13,7 @@ import (
 	"go/build"
 	"io"
 	"os"
+	"runtime"
 	"path/filepath"
 	"time"
 
@@ -89,6 +90,7 @@ func NewCCPackage(chaincodePath string, goPath string) (*resource.CCPackage, err
 // -------------------------------------------------------------------------
 func findSource(goPath string, filePath string) ([]*Descriptor, error) {
 	var descriptors []*Descriptor
+	os_type := runtime.GOOS
 	err := filepath.Walk(filePath,
 		func(path string, fileInfo os.FileInfo, err error) error {
 			if err != nil {
@@ -101,6 +103,9 @@ func findSource(goPath string, filePath string) ([]*Descriptor, error) {
 				}
 				if strings.Contains(relPath, "/META-INF/") {
 					relPath = relPath[strings.Index(relPath, "/META-INF/")+1:]
+				}
+				if os_type == "windows"{
+					relPath = strings.Replace(relPath, "\\", "/", -1)
 				}
 				descriptors = append(descriptors, &Descriptor{name: relPath, fqp: path})
 			}
