@@ -17,11 +17,11 @@ unset GOCACHE
 
 echo "Installing chaincodes ..."
 cd ${CHAINCODE_PATH}/github.com/example_cc
-go install github.com/example_cc
+${GO_CMD} install github.com/example_cc
 cd ${CHAINCODE_PATH}/github.com/example_pvt_cc
-go install github.com/example_pvt_cc
+${GO_CMD} install github.com/example_pvt_cc
 cd ${CHAINCODED_PATH}
-go install chaincoded/cmd/chaincoded
+${GO_CMD} install chaincoded/cmd/chaincoded
 
 PEERS=(
     peer0.org1.example.com:7052
