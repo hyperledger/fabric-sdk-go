@@ -198,13 +198,13 @@ func getFailFast(ordererCfg *fab.OrdererConfig) bool {
 func getKeepAliveOptions(ordererCfg *fab.OrdererConfig) keepalive.ClientParameters {
 
 	var kap keepalive.ClientParameters
-	if kaTime, ok := ordererCfg.GRPCOptions["keep-alive-time"].(time.Duration); ok {
+	if kaTime, ok := ordererCfg.GRPCOptions["keep-alive-time"]; ok {
 		kap.Time = cast.ToDuration(kaTime)
 	}
-	if kaTimeout, ok := ordererCfg.GRPCOptions["keep-alive-timeout"].(time.Duration); ok {
+	if kaTimeout, ok := ordererCfg.GRPCOptions["keep-alive-timeout"]; ok {
 		kap.Timeout = cast.ToDuration(kaTimeout)
 	}
-	if kaPermit, ok := ordererCfg.GRPCOptions["keep-alive-permit"].(time.Duration); ok {
+	if kaPermit, ok := ordererCfg.GRPCOptions["keep-alive-permit"]; ok {
 		kap.PermitWithoutStream = cast.ToBool(kaPermit)
 	}
 	return kap
