@@ -12,6 +12,7 @@ import (
 
 	"github.com/hyperledger/fabric-protos-go/discovery"
 	"github.com/hyperledger/fabric-protos-go/gossip"
+	"github.com/hyperledger/fabric-protos-go/peer"
 	discclient "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/discovery/client"
 	gprotoext "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/gossip/protoext"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
@@ -113,7 +114,7 @@ func (cr *channelResponse) Config() (*discovery.ConfigResult, error) {
 }
 
 // Peers returns a response for a peer membership query, or error if something went wrong
-func (cr *channelResponse) Peers(invocationChain ...*discovery.ChaincodeCall) ([]*discclient.Peer, error) {
+func (cr *channelResponse) Peers(invocationChain ...*peer.ChaincodeCall) ([]*discclient.Peer, error) {
 	return cr.peers, cr.err
 }
 
