@@ -15,23 +15,102 @@ import (
 	"time"
 
 	pb "github.com/hyperledger/fabric-protos-go/peer"
-	"github.com/pkg/errors"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-
-	pb "github.com/hyperledger/fabric-protos-go/peer"
 	txnmocks "github.com/hyperledger/fabric-sdk-go/pkg/client/common/mocks"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 	fcmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
+	"github.com/pkg/errors"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const (
 	testTimeOut              = 20 * time.Second
 	selectionServiceError    = "Selection service error"
 	endorsementMisMatchError = "ProposalResponsePayloads do not match"
+)
+
+const (
+	// templateJson
+	templateJson = `{
+		"JsonObject": {
+			"Name": "jack",
+			"Age": 10,
+			"Courses": [
+				"chemistry",
+				"english",
+				"math"
+			],
+			"Ismale": true
+		},
+		"Json": "{\"name\": \"jack\",\"age\": 23}",
+		"Slice": "{\"stringA\", \"stringB\"}",
+		"Null": null,
+		"Int": 20,
+		"Bool": true
+	}
+	`
+	// JsonKey order is different from templateJson
+	keyJson = `{
+		"Bool": true,
+		"JsonObject": {
+			"Age": 10,
+			"Courses": [
+				"chemistry",
+				"english",
+				"math"
+			],
+			"Ismale": true,
+			"Name": "jack"
+		},
+		"Null": null,
+		"Int": 20,
+		"Json": "{\"name\": \"jack\",\"age\": 23}",
+		"Slice": "{\"stringA\", \"stringB\"}"
+	}
+	`
+
+	// only order of JsonObject.Slice is diff from templateJson
+	sliceJson = `{
+		"JsonObject": {
+			"Name": "jack",
+			"Age": 10,
+			"Courses": [
+				"chemistry",
+				"english",
+				"math"
+			],
+			"Ismale": true
+		},
+		"Json": "{\"name\": \"jack\",\"age\": 23}",
+		"Slice": "{\"stringB\",\"stringA\"}",
+		"Null": null,
+		"Int": 20,
+		"Bool": true	
+	}
+	`
+
+	// only jsonstr order is different from templateJson
+	strJson = `{
+		"JsonObject": {
+			"Name": "jack",
+			"Age": 10,
+			"Courses": [
+				"chemistry",
+				"english",
+				"math"
+			],
+			"Ismale": true
+		},
+		"Json": "{\"age\": 23,\"name\": \"jack\"}",
+		"Slice": "{\"stringB\",\"stringA\"}",
+		"Null": null,
+		"Int": 20,
+		"Bool": true	
+	}
+	`
 )
 
 func TestQueryHandlerSuccess(t *testing.T) {
@@ -256,39 +335,56 @@ func TestResponseValidation(t *testing.T) {
 	assert.EqualValues(t, int32(status.EndorsementMismatch), s.Code, "expected endorsement mismatch")
 }
 
-func TestJSONResponseValidation(t *testing.T) {
-	json1 := `{
-		"name": "jack",
-		"age": 23
+func TestComparePayload(t *testing.T) {
+	type testCase struct {
+		p1     string
+		p2     string
+		isSame bool
 	}
-	`
-	json2 := `{
-		"age": 23,
-		"name": "jack"
+	testCases := []testCase{
+		{templateJson, keyJson, true},
+		{templateJson, sliceJson, false},
+		{templateJson, strJson, false},
+		{"ProposalPayload", "ProposalPayload", true},
+		{"ProposalPayload1", "ProposalPayload2", false},
+		{templateJson, "ProposalPayload", false},
 	}
-	`
+	for i, test := range testCases {
+		isSame, err := comparePayload([]byte(test.p1), []byte(test.p2))
+		if err != nil {
+			assert.Nil(t, err, fmt.Sprintf("unexpected error happened, case %d err: %s", i, err))
+			continue
+		}
+		if test.isSame {
+			assert.True(t, isSame, fmt.Sprintf("p1 and p2 should be the same, case %d result: %t", i, isSame))
+		} else {
+			assert.False(t, isSame, fmt.Sprintf("p1 and p2 should not be the same, case %d result: %t", i, isSame))
+		}
+	}
+}
 
-	// fmt.Println(json.Valid([]byte(json1)))
+func TestJSONResponseValidation(t *testing.T) {
 	type testCase struct {
 		p1     *fab.TransactionProposalResponse
 		p2     *fab.TransactionProposalResponse
 		haserr bool
 	}
+
 	testCases := []testCase{
 		{
 			p1: &fab.TransactionProposalResponse{
 				Endorser: "peer 1",
 				Status:   http.StatusOK,
 				ProposalResponse: &pb.ProposalResponse{Response: &pb.Response{
-					Message: "test", Status: http.StatusOK, Payload: []byte(json1)},
-					Payload: []byte("ProposalPayload1"),
+					Message: "test", Status: http.StatusOK, Payload: []byte(templateJson)},
+					Payload: []byte("ProposalPayload"),
 				}},
 			p2: &fab.TransactionProposalResponse{
 				Endorser: "peer 1",
 				Status:   http.StatusOK,
 				ProposalResponse: &pb.ProposalResponse{Response: &pb.Response{
-					Message: "test", Status: http.StatusOK, Payload: []byte(json2)},
-					Payload: []byte("ProposalPayload1"),
+					Message: "test", Status: http.StatusOK, Payload: []byte(keyJson)},
+					Payload: []byte("ProposalPayload"),
 				}},
 			haserr: false,
 		},
@@ -297,15 +393,15 @@ func TestJSONResponseValidation(t *testing.T) {
 				Endorser: "peer 1",
 				Status:   http.StatusOK,
 				ProposalResponse: &pb.ProposalResponse{Response: &pb.Response{
-					Message: "test", Status: http.StatusOK, Payload: []byte(json1)},
-					Payload: []byte(json1),
+					Message: "test", Status: http.StatusOK, Payload: []byte(templateJson)},
+					Payload: []byte(templateJson),
 				}},
 			p2: &fab.TransactionProposalResponse{
 				Endorser: "peer 1",
 				Status:   http.StatusOK,
 				ProposalResponse: &pb.ProposalResponse{Response: &pb.Response{
-					Message: "test", Status: http.StatusOK, Payload: []byte(json2)},
-					Payload: []byte(json2),
+					Message: "test", Status: http.StatusOK, Payload: []byte(keyJson)},
+					Payload: []byte(keyJson),
 				}},
 			haserr: false,
 		},
@@ -314,15 +410,49 @@ func TestJSONResponseValidation(t *testing.T) {
 				Endorser: "peer 1",
 				Status:   http.StatusOK,
 				ProposalResponse: &pb.ProposalResponse{Response: &pb.Response{
-					Message: "test", Status: http.StatusOK, Payload: []byte(json1)},
-					Payload: []byte("ProposalPayload1"),
+					Message: "test", Status: http.StatusOK, Payload: []byte(templateJson)},
+					Payload: []byte("ProposalPayload"),
 				}},
 			p2: &fab.TransactionProposalResponse{
 				Endorser: "peer 1",
 				Status:   http.StatusOK,
 				ProposalResponse: &pb.ProposalResponse{Response: &pb.Response{
-					Message: "test", Status: http.StatusOK, Payload: []byte(json1)},
+					Message: "test", Status: http.StatusOK, Payload: []byte(sliceJson)},
+					Payload: []byte("ProposalPayload"),
+				}},
+			haserr: true,
+		},
+		{
+			p1: &fab.TransactionProposalResponse{
+				Endorser: "peer 1",
+				Status:   http.StatusOK,
+				ProposalResponse: &pb.ProposalResponse{Response: &pb.Response{
+					Message: "test", Status: http.StatusOK, Payload: []byte(templateJson)},
+					Payload: []byte("ProposalPayload"),
+				}},
+			p2: &fab.TransactionProposalResponse{
+				Endorser: "peer 1",
+				Status:   http.StatusOK,
+				ProposalResponse: &pb.ProposalResponse{Response: &pb.Response{
+					Message: "test", Status: http.StatusOK, Payload: []byte(templateJson)},
 					Payload: []byte("ProposalPayloadDiff"),
+				}},
+			haserr: true,
+		},
+		{
+			p1: &fab.TransactionProposalResponse{
+				Endorser: "peer 1",
+				Status:   http.StatusOK,
+				ProposalResponse: &pb.ProposalResponse{Response: &pb.Response{
+					Message: "test", Status: http.StatusOK, Payload: []byte(templateJson)},
+					Payload: []byte(templateJson),
+				}},
+			p2: &fab.TransactionProposalResponse{
+				Endorser: "peer 1",
+				Status:   http.StatusOK,
+				ProposalResponse: &pb.ProposalResponse{Response: &pb.Response{
+					Message: "test", Status: http.StatusOK, Payload: []byte(templateJson)},
+					Payload: []byte(sliceJson),
 				}},
 			haserr: true,
 		},
