@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hyperledger/fabric-protos-go/discovery"
+	"github.com/hyperledger/fabric-protos-go/peer"
 	discclient "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/discovery/client"
 	"github.com/hyperledger/fabric-sdk-go/pkg/client/common/random"
 	soptions "github.com/hyperledger/fabric-sdk-go/pkg/client/common/selection/options"
@@ -300,8 +300,8 @@ func (s *Service) getTargets(ctx contextAPI.Client) ([]fab.PeerConfig, error) {
 	return random.PickRandomNPeerConfigs(chpeers, chConfig.Policies.Discovery.MaxTargets), nil
 }
 
-func asChaincodeInterests(chaincodes []*fab.ChaincodeCall) *discovery.ChaincodeInterest {
-	return &discovery.ChaincodeInterest{
+func asChaincodeInterests(chaincodes []*fab.ChaincodeCall) *peer.ChaincodeInterest {
+	return &peer.ChaincodeInterest{
 		Chaincodes: asInvocationChain(chaincodes),
 	}
 }
@@ -309,7 +309,7 @@ func asChaincodeInterests(chaincodes []*fab.ChaincodeCall) *discovery.ChaincodeI
 func asInvocationChain(chaincodes []*fab.ChaincodeCall) discclient.InvocationChain {
 	var invocChain discclient.InvocationChain
 	for _, cc := range chaincodes {
-		invocChain = append(invocChain, &discovery.ChaincodeCall{
+		invocChain = append(invocChain, &peer.ChaincodeCall{
 			Name:            cc.ID,
 			CollectionNames: cc.Collections,
 		})

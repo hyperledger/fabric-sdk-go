@@ -1,3 +1,4 @@
+//go:build !prev
 // +build !prev
 
 /*
@@ -27,7 +28,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	fabdiscovery "github.com/hyperledger/fabric-protos-go/discovery"
+	"github.com/hyperledger/fabric-protos-go/peer"
 	discclient "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/discovery/client"
 	"github.com/hyperledger/fabric-sdk-go/pkg/context"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk"
@@ -300,7 +301,7 @@ func TestDiscoveryClientEndorsers(t *testing.T) {
 	})
 }
 
-func testEndorsers(t *testing.T, sdk *fabsdk.FabricSDK, interest *fabdiscovery.ChaincodeInterest, filter discclient.Filter, expectedEndorserGroups ...[]string) {
+func testEndorsers(t *testing.T, sdk *fabsdk.FabricSDK, interest *peer.ChaincodeInterest, filter discclient.Filter, expectedEndorserGroups ...[]string) {
 	ctxProvider := sdk.Context(fabsdk.WithUser(org1User), fabsdk.WithOrg(org1Name))
 	ctx, err := ctxProvider()
 	require.NoError(t, err, "error getting channel context")
@@ -403,7 +404,7 @@ func setupOrgContext(t *testing.T) []*integration.OrgContext {
 	}
 }
 
-func sendEndorserQuery(t *testing.T, ctx contextAPI.Client, client discovery.Client, interest *fabdiscovery.ChaincodeInterest, peerConfig fab.PeerConfig) (discclient.ChannelResponse, error) {
+func sendEndorserQuery(t *testing.T, ctx contextAPI.Client, client discovery.Client, interest *peer.ChaincodeInterest, peerConfig fab.PeerConfig) (discclient.ChannelResponse, error) {
 	req, err := discovery.NewRequest().OfChannel(orgChannelID).AddEndorsersQuery(interest)
 	require.NoError(t, err, "error adding endorsers query")
 
@@ -463,15 +464,15 @@ func contains(group []string, endorser string) bool {
 	return false
 }
 
-func newCCCall(ccID string, collections ...string) *fabdiscovery.ChaincodeCall {
-	return &fabdiscovery.ChaincodeCall{
+func newCCCall(ccID string, collections ...string) *peer.ChaincodeCall {
+	return &peer.ChaincodeCall{
 		Name:            ccID,
 		CollectionNames: collections,
 	}
 }
 
-func newInterest(ccCalls ...*fabdiscovery.ChaincodeCall) *fabdiscovery.ChaincodeInterest {
-	return &fabdiscovery.ChaincodeInterest{Chaincodes: ccCalls}
+func newInterest(ccCalls ...*peer.ChaincodeCall) *peer.ChaincodeInterest {
+	return &peer.ChaincodeInterest{Chaincodes: ccCalls}
 }
 
 func asURLs(t *testing.T, endorsers discclient.Endorsers) []string {
