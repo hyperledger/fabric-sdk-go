@@ -152,47 +152,30 @@ func (f *EndorsementValidationHandler) validate(txProposalResponse []*fab.Transa
 			continue
 		}
 
-		if equal, err := comparePayload(a1.Payload, r.ProposalResponse.Payload); err != nil {
+		if !comparePayload(a1.Payload, r.ProposalResponse.Payload) ||
+			!comparePayload(a1.GetResponse().Payload, response.Payload) {
 			return status.New(status.EndorserClientStatus, status.EndorsementMismatch.ToInt32(),
-				err.Error(), nil)
-		} else if !equal {
-			return status.New(status.EndorserClientStatus, status.EndorsementMismatch.ToInt32(),
-				"ProposalResponsePayloads do not match", nil)
-		}
-		if equal, err := comparePayload(a1.GetResponse().Payload, response.Payload); err != nil {
-			return status.New(status.EndorserClientStatus, status.EndorsementMismatch.ToInt32(),
-				err.Error(), nil)
-		} else if !equal {
-			return status.New(status.EndorserClientStatus, status.EndorsementMismatch.ToInt32(),
-				"ProposalResponsePayloads do not match", nil)
+				"ProposalResponsePayloads do not match", []interface{}{
+					fmt.Sprintf("ProposalResponse.Payload isSame: %t", comparePayload(a1.Payload, r.ProposalResponse.Payload)),
+					fmt.Sprintf("ProposalResponse.GetResponse().Payload isSame: %t", comparePayload(a1.GetResponse().Payload, response.Payload)),
+				})
 		}
 	}
 
 	return nil
 }
 
-func comparePayload(payload1, payload2 []byte) (bool, error) {
-	if json.Valid(payload1) && json.Valid(payload2) {
-		return compareJson(payload1, payload2)
+func comparePayload(payload1, payload2 []byte) bool {
+	jsonMap1 := make(map[string]interface{})
+	jsonMap2 := make(map[string]interface{})
+	if (json.Unmarshal(payload1, &jsonMap1) == nil) && (json.Unmarshal(payload2, &jsonMap2) == nil) {
+		return reflect.DeepEqual(jsonMap1, jsonMap2)
 	}
-	if !json.Valid(payload1) && !json.Valid(payload2) {
-		return bytes.Equal(payload1, payload2), nil
-	}
-	return false, nil
-}
 
-func compareJson(json1, json2 []byte) (bool, error) {
-	object1 := make(map[string]interface{})
-	object2 := make(map[string]interface{})
-	err := json.Unmarshal(json1, &object1)
-	if err != nil {
-		return false, fmt.Errorf("jsonCompare err, %s", err)
+	if (json.Unmarshal(payload1, &jsonMap1) != nil) && (json.Unmarshal(payload2, &jsonMap2) != nil) {
+		return bytes.Equal(payload1, payload2)
 	}
-	err = json.Unmarshal(json2, &object2)
-	if err != nil {
-		return false, fmt.Errorf("jsonCompare err, %s", err)
-	}
-	return reflect.DeepEqual(object1, object2), nil
+	return false
 }
 
 //CommitTxHandler for committing transactions

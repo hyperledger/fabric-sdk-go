@@ -347,14 +347,17 @@ func TestComparePayload(t *testing.T) {
 		{templateJson, strJson, false},
 		{"ProposalPayload", "ProposalPayload", true},
 		{"ProposalPayload1", "ProposalPayload2", false},
-		{templateJson, "ProposalPayload", false},
+		{templateJson, "12345", false},
+		{"12345", "12345", true},
+		{"12345", "54321", false},
+		{"", "", true},
+		{"", "noempty", false},
+		{`["age","name"]`, `["name","age"]`, false},
+		{`["age","name"]`, `["age","name"]`, true},
 	}
+
 	for i, test := range testCases {
-		isSame, err := comparePayload([]byte(test.p1), []byte(test.p2))
-		if err != nil {
-			assert.Nil(t, err, fmt.Sprintf("unexpected error happened, case %d err: %s", i, err))
-			continue
-		}
+		isSame := comparePayload([]byte(test.p1), []byte(test.p2))
 		if test.isSame {
 			assert.True(t, isSame, fmt.Sprintf("p1 and p2 should be the same, case %d result: %t", i, isSame))
 		} else {
