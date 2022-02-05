@@ -14,7 +14,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-        "runtime"
+	"runtime"
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
