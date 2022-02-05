@@ -14,6 +14,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+        "runtime"
 	"time"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
@@ -101,6 +102,9 @@ func findSource(goPath string, filePath string) ([]*Descriptor, error) {
 				}
 				if strings.Contains(relPath, "/META-INF/") {
 					relPath = relPath[strings.Index(relPath, "/META-INF/")+1:]
+				}
+				if runtime.GOOS == "windows" {
+					relPath = strings.Replace(relPath, "\\", "/", -1)
 				}
 				descriptors = append(descriptors, &Descriptor{name: relPath, fqp: path})
 			}
