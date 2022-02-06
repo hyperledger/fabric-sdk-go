@@ -8,6 +8,7 @@ SPDX-License-Identifier: Apache-2.0
 package fabsdk
 
 import (
+	"io/fs"
 	"math/rand"
 	"time"
 
@@ -23,6 +24,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/logging/api"
 	fabImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab"
 	sdkApi "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defmsp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/metrics"
 	metricsCfg "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/metrics/cfg"
 	mspImpl "github.com/hyperledger/fabric-sdk-go/pkg/msp"
@@ -171,6 +173,14 @@ func WithCorePkg(core sdkApi.CoreProviderFactory) Option {
 func WithMSPPkg(msp sdkApi.MSPProviderFactory) Option {
 	return func(opts *options) error {
 		opts.MSP = msp
+		return nil
+	}
+}
+
+// WithDefMSPPkg injects the MSP implementation into the SDK.
+func WithDefMSPPkgFS(filesystem fs.FS) Option {
+	return func(opts *options) error {
+		opts.MSP = defmsp.NewProviderFactory(defmsp.WithFS(filesystem))
 		return nil
 	}
 }

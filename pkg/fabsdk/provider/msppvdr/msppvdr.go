@@ -26,6 +26,18 @@ type MSPProvider struct {
 
 type MSPProviderOption func(*mspProviderOptions) error
 
+// WithFS creates ProviderFactory with fs.FS read only based storage.
+func WithFS(filesystem fs.FS) MSPProviderOption {
+	return func(pfo *mspProviderOptions) error {
+		if filesystem == nil {
+			return errors.New("filesystem is nils")
+		}
+
+		pfo.filesystem = filesystem
+		return nil
+	}
+}
+
 type mspProviderOptions struct {
 	filesystem fs.FS
 }

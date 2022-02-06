@@ -20,16 +20,15 @@ import (
 
 // ProviderFactory represents the default MSP provider factory.
 type ProviderFactory struct {
-	opts providerFactoryOptions
+	opts *providerFactoryOptions
 }
 
-type ProviderFactoryOption func(*providerFactoryOptions) error
+type ProviderFactoryOption func(*providerFactoryOptions)
 
 // WithFS creates ProviderFactory with fs.FS read only based storage.
 func WithFS(filesystem fs.FS) ProviderFactoryOption {
-	return func(pfo *providerFactoryOptions) error {
+	return func(pfo *providerFactoryOptions) {
 		pfo.filesystem = filesystem
-		return nil
 	}
 }
 
@@ -39,7 +38,13 @@ type providerFactoryOptions struct {
 
 // NewProviderFactory returns the default MSP provider factory.
 func NewProviderFactory(opts ...ProviderFactoryOption) *ProviderFactory {
-	f := ProviderFactory{}
+	pfo := new(providerFactoryOptions)
+	for _, opt := range opts {
+		opt(pfo)
+	}
+	f := ProviderFactory{
+		opts: pfo,
+	}
 	return &f
 }
 
@@ -69,5 +74,10 @@ func (f *ProviderFactory) CreateUserStore(config msp.IdentityConfig) (msp.UserSt
 
 // CreateIdentityManagerProvider returns a new default implementation of MSP provider
 func (f *ProviderFactory) CreateIdentityManagerProvider(endpointConfig fab.EndpointConfig, cryptoProvider core.CryptoSuite, userStore msp.UserStore) (msp.IdentityManagerProvider, error) {
-	return msppvdr.New(endpointConfig, cryptoProvider, userStore)
+	var mspo msppvdr.MSPProviderOption
+	if f.opts.filesystem != nil {
+		mspo = msppvdr.WithFS(f.opts.filesystem)
+	}
+
+	return msppvdr.New(endpointConfig, cryptoProvider, userStore, mspo)
 }
