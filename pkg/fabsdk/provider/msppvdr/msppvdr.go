@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package msppvdr
 
 import (
+	"io/fs"
 	"strings"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
@@ -23,13 +24,33 @@ type MSPProvider struct {
 	identityManager map[string]msp.IdentityManager
 }
 
-// New creates a MSP context provider
-func New(endpointConfig fab.EndpointConfig, cryptoSuite core.CryptoSuite, userStore msp.UserStore) (*MSPProvider, error) {
+type MSPProviderOption func(*mspProviderOptions) error
 
-	identityManager := make(map[string]msp.IdentityManager)
-	netConfig := endpointConfig.NetworkConfig()
+type mspProviderOptions struct {
+	filesystem fs.FS
+}
+
+// New creates a MSP context provider
+func New(endpointConfig fab.EndpointConfig, cryptoSuite core.CryptoSuite, userStore msp.UserStore, opts ...MSPProviderOption) (*MSPProvider, error) {
+	var (
+		mpo             = new(mspProviderOptions)
+		identityManager = make(map[string]msp.IdentityManager)
+		netConfig       = endpointConfig.NetworkConfig()
+	)
+
+	for _, opt := range opts {
+		if err := opt(mpo); err != nil {
+			return nil, err
+		}
+	}
+
+	var imo mspimpl.IdentityManagerOption
+	if mpo.filesystem != nil {
+		imo = mspimpl.WithFS(mpo.filesystem)
+	}
+
 	for orgName := range netConfig.Organizations {
-		mgr, err := mspimpl.NewIdentityManager(orgName, userStore, cryptoSuite, endpointConfig)
+		mgr, err := mspimpl.NewIdentityManager(orgName, userStore, cryptoSuite, endpointConfig, imo)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to initialize identity manager for organization: %s", orgName)
 		}
