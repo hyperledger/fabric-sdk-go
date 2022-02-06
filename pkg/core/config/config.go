@@ -9,6 +9,8 @@ package config
 import (
 	"bytes"
 	"io"
+	"io/fs"
+	"path/filepath"
 	"strings"
 
 	"github.com/spf13/viper"
@@ -66,6 +68,27 @@ func FromFile(name string, opts ...Option) core.ConfigProvider {
 		setLogLevel(backend)
 
 		return []core.ConfigBackend{backend}, nil
+	}
+}
+
+// FromFile reads from file from a virtual filesystem
+func FromFS(name string, fs fs.FS, opts ...Option) core.ConfigProvider {
+	return func() ([]core.ConfigBackend, error) {
+		f, err := fs.Open(name)
+		if err != nil {
+			return nil, errors.Wrapf(err, "loading config file failed: %s", name)
+		}
+
+		b, err := io.ReadAll(f)
+		if err != nil {
+			return nil, errors.Wrapf(err, "loading config file failed: %s", name)
+		}
+
+		if err := f.Close(); err != nil {
+			return nil, errors.Wrapf(err, "loading config file failed: %s", name)
+		}
+
+		return initFromReader(bytes.NewBuffer(b), filepath.Ext(name)[1:], opts...)
 	}
 }
 

@@ -8,6 +8,7 @@ package config
 
 import (
 	"bytes"
+	"embed"
 	"os"
 	"path/filepath"
 	"testing"
@@ -33,6 +34,9 @@ const (
 var (
 	configTestFilePath = filepath.Join("testdata", configFile)
 	defaultConfigPath  = filepath.Join("testdata", "template")
+
+	//go:embed testdata/*
+	testFS embed.FS
 )
 
 func TestFromRawSuccess(t *testing.T) {
@@ -90,10 +94,26 @@ func TestFromFileEmptyFilename(t *testing.T) {
 	}
 }
 
+func TestFromFSEmptyFilename(t *testing.T) {
+	_, err := FromFS("", testFS)()
+	if err == nil {
+		t.Fatal("Expected error when passing empty string to FromFile")
+	}
+}
+
 func TestInitConfigSuccess(t *testing.T) {
 	//Test init config
 	//...Positive case
 	_, err := FromFile(configTestFilePath)()
+	if err != nil {
+		t.Fatalf("Failed to initialize config. Error: %s", err)
+	}
+}
+
+func TestInitConfigFSSuccess(t *testing.T) {
+	//Test init config
+	//...Positive case
+	_, err := FromFS(configTestFilePath, testFS)()
 	if err != nil {
 		t.Fatalf("Failed to initialize config. Error: %s", err)
 	}
@@ -150,6 +170,14 @@ func TestInitConfigPanic(t *testing.T) {
 func TestInitConfigInvalidLocation(t *testing.T) {
 	//...Negative case
 	_, err := FromFile("invalid file location")()
+	if err == nil {
+		t.Fatalf("Config file initialization is supposed to fail. Error: %s", err)
+	}
+}
+
+func TestInitConfigFSInvalidLocation(t *testing.T) {
+	//...Negative case
+	_, err := FromFS("invalid file location", testFS)()
 	if err == nil {
 		t.Fatalf("Config file initialization is supposed to fail. Error: %s", err)
 	}
