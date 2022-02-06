@@ -7,6 +7,8 @@ SPDX-License-Identifier: Apache-2.0
 package defcore
 
 import (
+	"io/fs"
+
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/logging"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
@@ -23,11 +25,31 @@ var logger = logging.NewLogger("fabsdk")
 
 // ProviderFactory represents the default SDK provider factory.
 type ProviderFactory struct {
+	opts *providerFactoryOptions
+}
+
+type ProviderFactoryOption func(*providerFactoryOptions)
+
+// WithFS creates ProviderFactory with fs.FS read only based storage.
+func WithFS(filesystem fs.FS) ProviderFactoryOption {
+	return func(pfo *providerFactoryOptions) {
+		pfo.filesystem = filesystem
+	}
+}
+
+type providerFactoryOptions struct {
+	filesystem fs.FS
 }
 
 // NewProviderFactory returns the default SDK provider factory.
-func NewProviderFactory() *ProviderFactory {
-	f := ProviderFactory{}
+func NewProviderFactory(opts ...ProviderFactoryOption) *ProviderFactory {
+	pfo := new(providerFactoryOptions)
+	for _, opt := range opts {
+		opt(pfo)
+	}
+	f := ProviderFactory{
+		opts: pfo,
+	}
 	return &f
 }
 
@@ -36,7 +58,7 @@ func (f *ProviderFactory) CreateCryptoSuiteProvider(config core.CryptoSuiteConfi
 	if config.SecurityProvider() != "sw" {
 		logger.Warnf("default provider factory doesn't support '%s' crypto provider", config.SecurityProvider())
 	}
-	cryptoSuiteProvider, err := cryptosuiteimpl.GetSuiteByConfig(config)
+	cryptoSuiteProvider, err := cryptosuiteimpl.GetSuiteByConfigFS(f.opts.filesystem, config)
 	return cryptoSuiteProvider, err
 }
 

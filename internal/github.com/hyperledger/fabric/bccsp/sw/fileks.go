@@ -17,6 +17,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -32,6 +33,17 @@ import (
 // will be forbidden
 func NewFileBasedKeyStore(pwd []byte, path string, readOnly bool) (bccsp.KeyStore, error) {
 	ks := &fileBasedKeyStore{}
+	return ks, ks.Init(pwd, path, readOnly)
+}
+
+// NewFileBasedKeyStore instantiated a file-based key store at a given position.
+// The key store can be encrypted if a non-empty password is specified.
+// It can be also be set as read only. In this case, any store operation
+// will be forbidden
+func NewFileBasedKeyStoreFS(filesystem fs.FS, pwd []byte, path string, readOnly bool) (bccsp.KeyStore, error) {
+	ks := &fileBasedKeyStore{
+		filesystem: filesystem,
+	}
 	return ks, ks.Init(pwd, path, readOnly)
 }
 
@@ -52,6 +64,8 @@ type fileBasedKeyStore struct {
 
 	// Sync
 	m sync.Mutex
+
+	filesystem fs.FS
 }
 
 // Init initializes this KeyStore with a password, a path to a folder
@@ -203,10 +217,32 @@ func (ks *fileBasedKeyStore) StoreKey(k bccsp.Key) (err error) {
 	return
 }
 
-func (ks *fileBasedKeyStore) searchKeystoreForSKI(ski []byte) (k bccsp.Key, err error) {
+func (ks *fileBasedKeyStore) readDir(path string) (files []fs.FileInfo) {
+	if ks.filesystem != nil {
+		de, _ := fs.ReadDir(ks.filesystem, ks.path)
+		for _, d := range de {
+			if fi, err := d.Info(); err == nil {
+				files = append(files, fi)
+			}
+		}
+	} else {
+		files, _ = ioutil.ReadDir(ks.path)
+	}
 
-	files, _ := ioutil.ReadDir(ks.path)
-	for _, f := range files {
+	return
+}
+
+func (ks *fileBasedKeyStore) readFile(filename string) (raw []byte, err error) {
+	if ks.filesystem != nil {
+		raw, err = fs.ReadFile(ks.filesystem, filename)
+	} else {
+		raw, err = ioutil.ReadFile(filename)
+	}
+	return
+}
+
+func (ks *fileBasedKeyStore) searchKeystoreForSKI(ski []byte) (k bccsp.Key, err error) {
+	for _, f := range ks.readDir(ks.path) {
 		if f.IsDir() {
 			continue
 		}
@@ -215,7 +251,7 @@ func (ks *fileBasedKeyStore) searchKeystoreForSKI(ski []byte) (k bccsp.Key, err 
 			continue
 		}
 
-		raw, err := ioutil.ReadFile(filepath.Join(ks.path, f.Name()))
+		raw, err := ks.readFile(filepath.Join(ks.path, f.Name()))
 		if err != nil {
 			continue
 		}
@@ -242,7 +278,7 @@ func (ks *fileBasedKeyStore) searchKeystoreForSKI(ski []byte) (k bccsp.Key, err 
 }
 
 func (ks *fileBasedKeyStore) getSuffix(alias string) string {
-	files, _ := ioutil.ReadDir(ks.path)
+	files := ks.readDir(ks.path)
 	for _, f := range files {
 		if strings.HasPrefix(f.Name(), alias) {
 			if strings.HasSuffix(f.Name(), "sk") {
@@ -312,7 +348,7 @@ func (ks *fileBasedKeyStore) loadPrivateKey(alias string) (interface{}, error) {
 	path := ks.getPathForAlias(alias, "sk")
 	logger.Debugf("Loading private key [%s] at [%s]...", alias, path)
 
-	raw, err := ioutil.ReadFile(path)
+	raw, err := ks.readFile(path)
 	if err != nil {
 		logger.Errorf("Failed loading private key [%s]: [%s].", alias, err.Error())
 
@@ -333,7 +369,7 @@ func (ks *fileBasedKeyStore) loadPublicKey(alias string) (interface{}, error) {
 	path := ks.getPathForAlias(alias, "pk")
 	logger.Debugf("Loading public key [%s] at [%s]...", alias, path)
 
-	raw, err := ioutil.ReadFile(path)
+	raw, err := ks.readFile(path)
 	if err != nil {
 		logger.Errorf("Failed loading public key [%s]: [%s].", alias, err.Error())
 
@@ -354,7 +390,7 @@ func (ks *fileBasedKeyStore) loadKey(alias string) ([]byte, error) {
 	path := ks.getPathForAlias(alias, "key")
 	logger.Debugf("Loading key [%s] at [%s]...", alias, path)
 
-	pem, err := ioutil.ReadFile(path)
+	pem, err := ks.readFile(path)
 	if err != nil {
 		logger.Errorf("Failed loading key [%s]: [%s].", alias, err.Error())
 

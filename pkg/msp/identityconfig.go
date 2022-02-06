@@ -19,6 +19,7 @@ import (
 
 	"regexp"
 
+	"io/fs"
 	"io/ioutil"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/core"
@@ -35,9 +36,13 @@ var defaultCAServerListenPort = 7054
 
 //ConfigFromBackend returns identity config implementation of given backend
 func ConfigFromBackend(coreBackend ...core.ConfigBackend) (msp.IdentityConfig, error) {
+	return ConfigFromBackendFS(nil, coreBackend...)
+}
 
+//ConfigFromBackend returns identity config implementation of given backend with fs.FS interface
+func ConfigFromBackendFS(filesystem fs.FS, coreBackend ...core.ConfigBackend) (msp.IdentityConfig, error) {
 	//create identity config
-	config := &IdentityConfig{backend: lookup.New(coreBackend...)}
+	config := &IdentityConfig{backend: lookup.New(coreBackend...), filesystem: filesystem}
 
 	//preload config identities
 	err := config.loadIdentityConfigEntities()
@@ -57,6 +62,7 @@ type IdentityConfig struct {
 	credentialStorePath string
 	caMatchers          []matcherEntry
 	tlsCertPool         commtls.CertPool
+	filesystem          fs.FS
 }
 
 //entityMatchers for identity configuration
@@ -300,7 +306,9 @@ func (c *IdentityConfig) loadClientTLSConfig(configEntity *identityConfigEntity)
 	//resolve paths and org name
 	configEntity.Client.Organization = strings.ToLower(configEntity.Client.Organization)
 	configEntity.Client.TLSCerts.Client.Key.Path = pathvar.Subst(configEntity.Client.TLSCerts.Client.Key.Path)
+	configEntity.Client.TLSCerts.Client.Key.Filesystem = c.filesystem
 	configEntity.Client.TLSCerts.Client.Cert.Path = pathvar.Subst(configEntity.Client.TLSCerts.Client.Cert.Path)
+	configEntity.Client.TLSCerts.Client.Cert.Filesystem = c.filesystem
 
 	//pre load client key and cert bytes
 	err := configEntity.Client.TLSCerts.Client.Key.LoadBytes()
@@ -332,7 +340,9 @@ func (c *IdentityConfig) loadCATLSConfig(configEntity *identityConfigEntity) err
 		//resolve paths
 		caConfig.TLSCACerts.Path = pathvar.Subst(caConfig.TLSCACerts.Path)
 		caConfig.TLSCACerts.Client.Key.Path = pathvar.Subst(caConfig.TLSCACerts.Client.Key.Path)
+		caConfig.TLSCACerts.Client.Key.Filesystem = c.filesystem
 		caConfig.TLSCACerts.Client.Cert.Path = pathvar.Subst(caConfig.TLSCACerts.Client.Cert.Path)
+		caConfig.TLSCACerts.Client.Cert.Filesystem = c.filesystem
 		//pre load key and cert bytes
 		err := caConfig.TLSCACerts.Client.Key.LoadBytes()
 		if err != nil {
@@ -423,10 +433,22 @@ func (c *IdentityConfig) getServerCerts(caConfig *CAConfig) ([][]byte, error) {
 		certFiles := strings.Split(caConfig.TLSCACerts.Path, ",")
 		serverCerts = make([][]byte, len(certFiles))
 		for i, certPath := range certFiles {
-			bytes, err := ioutil.ReadFile(pathvar.Subst(certPath))
-			if err != nil {
-				return nil, errors.WithMessage(err, "failed to load server certs")
+			var (
+				bytes []byte
+				err   error
+			)
+			if c.filesystem != nil {
+				bytes, err = fs.ReadFile(c.filesystem, pathvar.Subst(certPath))
+				if err != nil {
+					return nil, errors.WithMessage(err, "failed to load server certs from fs")
+				}
+			} else {
+				bytes, err = ioutil.ReadFile(pathvar.Subst(certPath))
+				if err != nil {
+					return nil, errors.WithMessage(err, "failed to load server certs")
+				}
 			}
+
 			serverCerts[i] = bytes
 		}
 	}

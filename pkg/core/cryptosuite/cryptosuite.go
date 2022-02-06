@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package cryptosuite
 
 import (
+	"io/fs"
 	"sync/atomic"
 
 	"errors"
@@ -38,6 +39,11 @@ func initSuite(defaultSuite core.CryptoSuite) error {
 
 //GetDefault returns default core
 func GetDefault() core.CryptoSuite {
+	return GetDefaultFS(nil)
+}
+
+//GetDefault returns default core
+func GetDefaultFS(filesystem fs.FS) core.CryptoSuite {
 	if atomic.LoadInt32(&initialized) > 0 {
 		return defaultCryptoSuite
 	}
@@ -45,7 +51,7 @@ func GetDefault() core.CryptoSuite {
 	logger.Info("No default cryptosuite found, using default SW implementation")
 
 	// Use SW as the default cryptosuite when not initialized properly - should be for testing only
-	s, err := sw.GetSuiteWithDefaultEphemeral()
+	s, err := sw.GetSuiteWithDefaultEphemeralFS(filesystem)
 	if err != nil {
 		logger.Panicf("Could not initialize default cryptosuite: %s", err)
 	}

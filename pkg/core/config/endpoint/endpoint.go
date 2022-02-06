@@ -9,6 +9,7 @@ package endpoint
 import (
 	"crypto/x509"
 	"encoding/pem"
+	"io/fs"
 	"io/ioutil"
 	"strings"
 
@@ -80,6 +81,8 @@ type TLSConfig struct {
 	Path string
 	// Certificate actual content
 	Pem string
+	// Filesystem fs.FS filesystem to load configurations
+	Filesystem fs.FS
 	//bytes from Pem/Path
 	bytes []byte
 }
@@ -96,7 +99,11 @@ func (cfg *TLSConfig) LoadBytes() error {
 	if cfg.Pem != "" {
 		cfg.bytes = []byte(cfg.Pem)
 	} else if cfg.Path != "" {
-		cfg.bytes, err = ioutil.ReadFile(cfg.Path)
+		if cfg.Filesystem != nil {
+			cfg.bytes, err = fs.ReadFile(cfg.Filesystem, cfg.Path)
+		} else {
+			cfg.bytes, err = ioutil.ReadFile(cfg.Path)
+		}
 		if err != nil {
 			return errors.Wrapf(err, "failed to load pem bytes from path %s", cfg.Path)
 		}

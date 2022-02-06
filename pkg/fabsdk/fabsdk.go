@@ -24,6 +24,7 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/core/logging/api"
 	fabImpl "github.com/hyperledger/fabric-sdk-go/pkg/fab"
 	sdkApi "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/api"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defcore"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/factory/defmsp"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/metrics"
 	metricsCfg "github.com/hyperledger/fabric-sdk-go/pkg/fabsdk/metrics/cfg"
@@ -59,6 +60,7 @@ type options struct {
 	ConfigBackend     []core.ConfigBackend
 	ProviderOpts      []coptions.Opt // Provider options are passed along to the various providers
 	metricsConfig     metricsCfg.MetricsConfig
+	filesystem        fs.FS
 }
 
 // Option configures the SDK.
@@ -177,10 +179,12 @@ func WithMSPPkg(msp sdkApi.MSPProviderFactory) Option {
 	}
 }
 
-// WithDefMSPPkg injects the MSP implementation into the SDK.
-func WithDefMSPPkgFS(filesystem fs.FS) Option {
+// WithDefPkgFS injects the default implementation into the SDK with fs.FS support.
+func WithDefPkgFS(filesystem fs.FS) Option {
 	return func(opts *options) error {
 		opts.MSP = defmsp.NewProviderFactory(defmsp.WithFS(filesystem))
+		opts.Core = defcore.NewProviderFactory(defcore.WithFS(filesystem))
+		opts.filesystem = filesystem
 		return nil
 	}
 }
@@ -456,7 +460,7 @@ func (sdk *FabricSDK) loadConfigs(configProvider core.ConfigProvider) (*configs,
 	}
 
 	// load identity config
-	c.identityConfig, err = sdk.loadIdentityConfig(configBackend...)
+	c.identityConfig, err = sdk.loadIdentityConfig(sdk.opts.filesystem, configBackend...)
 	if err != nil {
 		return nil, errors.WithMessage(err, "unable to load identity config")
 	}
@@ -479,7 +483,7 @@ func (sdk *FabricSDK) loadEndpointConfig(configBackend ...core.ConfigBackend) (f
 	// if optional endpoint was nil or not all of its sub interface functions were overridden,
 	// then get default endpoint config and override the functions that were not overridden by opts
 	if sdk.opts.endpointConfig == nil || (ok && !fabImpl.IsEndpointConfigFullyOverridden(endpointConfigOpt)) {
-		defEndpointConfig, err := fabImpl.ConfigFromBackend(configBackend...)
+		defEndpointConfig, err := fabImpl.ConfigFromBackendFS(sdk.opts.filesystem, configBackend...)
 		if err != nil {
 			return nil, errors.WithMessage(err, "failed to initialize endpoint config from config backend")
 		}
@@ -518,11 +522,11 @@ func (sdk *FabricSDK) loadCryptoConfig(configBackend ...core.ConfigBackend) (cor
 	return cryptoConfigOpt, nil
 }
 
-func (sdk *FabricSDK) loadIdentityConfig(configBackend ...core.ConfigBackend) (msp.IdentityConfig, error) {
+func (sdk *FabricSDK) loadIdentityConfig(filesystem fs.FS, configBackend ...core.ConfigBackend) (msp.IdentityConfig, error) {
 	identityConfigOpt, ok := sdk.opts.IdentityConfig.(*mspImpl.IdentityConfigOptions)
 
 	if sdk.opts.IdentityConfig == nil || (ok && !mspImpl.IsIdentityConfigFullyOverridden(identityConfigOpt)) {
-		defIdentityConfig, err := mspImpl.ConfigFromBackend(configBackend...)
+		defIdentityConfig, err := mspImpl.ConfigFromBackendFS(filesystem, configBackend...)
 		if err != nil {
 			return nil, errors.WithMessage(err, "failed to initialize identity config from config backend")
 		}

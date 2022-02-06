@@ -9,6 +9,7 @@ package fab
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"io/fs"
 	"reflect"
 	"regexp"
 	"strconv"
@@ -125,9 +126,15 @@ var (
 
 //ConfigFromBackend returns endpoint config implementation for given backend
 func ConfigFromBackend(coreBackend ...core.ConfigBackend) (fab.EndpointConfig, error) {
+	return ConfigFromBackendFS(nil, coreBackend...)
+}
+
+//ConfigFromBackend returns endpoint config implementation for given backend and fs.FS filesystem
+func ConfigFromBackendFS(filesystem fs.FS, coreBackend ...core.ConfigBackend) (fab.EndpointConfig, error) {
 
 	config := &EndpointConfig{
-		backend: lookup.New(coreBackend...),
+		backend:    lookup.New(coreBackend...),
+		filesystem: filesystem,
 	}
 
 	if err := config.loadEndpointConfiguration(); err != nil {
@@ -159,6 +166,7 @@ type EndpointConfig struct {
 	defaultOrdererConfig     fab.OrdererConfig
 	defaultChannelPolicies   fab.ChannelPolicies
 	defaultChannel           *fab.ChannelEndpointConfig
+	filesystem               fs.FS
 }
 
 //endpointConfigEntity contains endpoint config elements needed by endpointconfig
@@ -1161,7 +1169,9 @@ func (c *EndpointConfig) loadClientTLSConfig(configEntity *endpointConfigEntity)
 	//resolve paths and org name
 	configEntity.Client.Organization = strings.ToLower(configEntity.Client.Organization)
 	configEntity.Client.TLSCerts.Client.Key.Path = pathvar.Subst(configEntity.Client.TLSCerts.Client.Key.Path)
+	configEntity.Client.TLSCerts.Client.Key.Filesystem = c.filesystem
 	configEntity.Client.TLSCerts.Client.Cert.Path = pathvar.Subst(configEntity.Client.TLSCerts.Client.Cert.Path)
+	configEntity.Client.TLSCerts.Client.Cert.Filesystem = c.filesystem
 
 	//pre load client key and cert bytes
 	err := configEntity.Client.TLSCerts.Client.Key.LoadBytes()
@@ -1185,7 +1195,9 @@ func (c *EndpointConfig) loadOrgTLSConfig(configEntity *endpointConfigEntity) er
 		for user, userConfig := range orgConfig.Users {
 			//resolve paths
 			userConfig.Key.Path = pathvar.Subst(userConfig.Key.Path)
+			userConfig.Key.Filesystem = c.filesystem
 			userConfig.Cert.Path = pathvar.Subst(userConfig.Cert.Path)
+			userConfig.Cert.Filesystem = c.filesystem
 			//pre load key and cert bytes
 			err := userConfig.Key.LoadBytes()
 			if err != nil {
@@ -1211,6 +1223,7 @@ func (c *EndpointConfig) loadOrdererPeerTLSConfig(configEntity *endpointConfigEn
 	for orderer, ordererConfig := range configEntity.Orderers {
 		//resolve paths
 		ordererConfig.TLSCACerts.Path = pathvar.Subst(ordererConfig.TLSCACerts.Path)
+		ordererConfig.TLSCACerts.Filesystem = c.filesystem
 		//pre load key and cert bytes
 		err := ordererConfig.TLSCACerts.LoadBytes()
 		if err != nil {
@@ -1223,6 +1236,7 @@ func (c *EndpointConfig) loadOrdererPeerTLSConfig(configEntity *endpointConfigEn
 	for peer, peerConfig := range configEntity.Peers {
 		//resolve paths
 		peerConfig.TLSCACerts.Path = pathvar.Subst(peerConfig.TLSCACerts.Path)
+		peerConfig.TLSCACerts.Filesystem = c.filesystem
 		//pre load key and cert bytes
 		err := peerConfig.TLSCACerts.LoadBytes()
 		if err != nil {
@@ -1400,7 +1414,7 @@ func (c *EndpointConfig) loadTLSClientCerts(configEntity *endpointConfigEntity) 
 	}
 
 	// Load private key from cert using default crypto suite
-	cs := cryptosuite.GetDefault()
+	cs := cryptosuite.GetDefaultFS(c.filesystem)
 	pk, err := cryptoutil.GetPrivateKeyFromCert(cb, cs)
 
 	// If CryptoSuite fails to load private key from cert then load private key from config

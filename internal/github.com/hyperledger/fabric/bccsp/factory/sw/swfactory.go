@@ -20,6 +20,8 @@ Please review third_party pinning scripts and patches for more details.
 package sw
 
 import (
+	"io/fs"
+
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/sw"
 	"github.com/pkg/errors"
@@ -50,7 +52,7 @@ func (f *SWFactory) Get(swOpts *SwOpts) (bccsp.BCCSP, error) {
 	case swOpts.Ephemeral:
 		ks = sw.NewDummyKeyStore()
 	case swOpts.FileKeystore != nil:
-		fks, err := sw.NewFileBasedKeyStore(nil, swOpts.FileKeystore.KeyStorePath, false)
+		fks, err := sw.NewFileBasedKeyStoreFS(swOpts.Filesystem, nil, swOpts.FileKeystore.KeyStorePath, false)
 		if err != nil {
 			return nil, errors.Wrapf(err, "Failed to initialize software key store")
 		}
@@ -76,6 +78,9 @@ type SwOpts struct {
 	FileKeystore  *FileKeystoreOpts  `mapstructure:"filekeystore,omitempty" json:"filekeystore,omitempty" yaml:"FileKeyStore"`
 	DummyKeystore *DummyKeystoreOpts `mapstructure:"dummykeystore,omitempty" json:"dummykeystore,omitempty"`
 	InmemKeystore *InmemKeystoreOpts `mapstructure:"inmemkeystore,omitempty" json:"inmemkeystore,omitempty"`
+
+	// Filesystem
+	Filesystem fs.FS
 }
 
 // Pluggable Keystores, could add JKS, P12, etc..

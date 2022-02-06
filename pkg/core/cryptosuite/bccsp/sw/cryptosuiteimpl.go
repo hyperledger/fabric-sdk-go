@@ -7,6 +7,8 @@ SPDX-License-Identifier: Apache-2.0
 package sw
 
 import (
+	"io/fs"
+
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp"
 	bccspSw "github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/factory/sw"
 	"github.com/hyperledger/fabric-sdk-go/internal/github.com/hyperledger/fabric/bccsp/sw"
@@ -20,12 +22,19 @@ var logger = logging.NewLogger("fabsdk/core")
 
 //GetSuiteByConfig returns cryptosuite adaptor for bccsp loaded according to given config
 func GetSuiteByConfig(config core.CryptoSuiteConfig) (core.CryptoSuite, error) {
+	return GetSuiteByConfigFS(nil, config)
+}
+
+//GetSuiteByConfigFS returns cryptosuite adaptor for bccsp loaded according to given config
+func GetSuiteByConfigFS(filesystem fs.FS, config core.CryptoSuiteConfig) (core.CryptoSuite, error) {
 	// TODO: delete this check?
 	if config.SecurityProvider() != "sw" {
 		return nil, errors.Errorf("Unsupported BCCSP Provider: %s", config.SecurityProvider())
 	}
 
 	opts := getOptsByConfig(config)
+	opts.Filesystem = filesystem
+
 	bccsp, err := getBCCSPFromOpts(opts)
 	if err != nil {
 		return nil, err
@@ -35,7 +44,12 @@ func GetSuiteByConfig(config core.CryptoSuiteConfig) (core.CryptoSuite, error) {
 
 //GetSuiteWithDefaultEphemeral returns cryptosuite adaptor for bccsp with default ephemeral options (intended to aid testing)
 func GetSuiteWithDefaultEphemeral() (core.CryptoSuite, error) {
-	opts := getEphemeralOpts()
+	return GetSuiteWithDefaultEphemeralFS(nil)
+}
+
+//GetSuiteWithDefaultEphemeral returns cryptosuite adaptor for bccsp with default ephemeral options (intended to aid testing)
+func GetSuiteWithDefaultEphemeralFS(filesystem fs.FS) (core.CryptoSuite, error) {
+	opts := getEphemeralOpts(filesystem)
 
 	bccsp, err := getBCCSPFromOpts(opts)
 	if err != nil {
@@ -78,11 +92,12 @@ func getOptsByConfig(c core.CryptoSuiteConfig) *bccspSw.SwOpts {
 	return opts
 }
 
-func getEphemeralOpts() *bccspSw.SwOpts {
+func getEphemeralOpts(filesystem fs.FS) *bccspSw.SwOpts {
 	opts := &bccspSw.SwOpts{
 		HashFamily: "SHA2",
 		SecLevel:   256,
 		Ephemeral:  false,
+		Filesystem: filesystem,
 	}
 	logger.Debug("Initialized ephemeral SW cryptosuite with default opts")
 
