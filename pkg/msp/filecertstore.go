@@ -8,6 +8,7 @@ package msp
 
 import (
 	"fmt"
+	"io/fs"
 	"path/filepath"
 	"strings"
 
@@ -17,7 +18,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-// NewFileCertStore ...
+// NewFileCertStore loads certs stored in the cryptoconfig directory layout.
 func NewFileCertStore(cryptoConfigMSPPath string) (core.KVStore, error) {
 	_, orgName := filepath.Split(filepath.Dir(filepath.Dir(filepath.Dir(cryptoConfigMSPPath))))
 	opts := &keyvaluestore.FileKeyValueStoreOptions{
@@ -36,6 +37,30 @@ func NewFileCertStore(cryptoConfigMSPPath string) (core.KVStore, error) {
 			certDir := filepath.Join(r.Replace(cryptoConfigMSPPath), "signcerts")
 			return filepath.Join(certDir, fmt.Sprintf("%s@%s-cert.pem", ck.ID, orgName)), nil
 		},
+	}
+	return keyvaluestore.New(opts)
+}
+
+// NewFileCertStoreFS loads certs stored in the cryptoconfig directory layout of a virtual filesystem.
+func NewFileCertStoreFS(cryptoConfigMSPPath string, filesystem fs.FS) (core.KVStore, error) {
+	_, orgName := filepath.Split(filepath.Dir(filepath.Dir(filepath.Dir(cryptoConfigMSPPath))))
+	opts := &keyvaluestore.FileKeyValueStoreOptions{
+		Path: cryptoConfigMSPPath,
+		KeySerializer: func(key interface{}) (string, error) {
+			ck, ok := key.(*msp.IdentityIdentifier)
+			if !ok {
+				return "", errors.New("converting key to CertKey failed")
+			}
+			if ck == nil || ck.MSPID == "" || ck.ID == "" {
+				return "", errors.New("invalid key")
+			}
+
+			// TODO: refactor to case insensitive or remove eventually.
+			r := strings.NewReplacer("{userName}", ck.ID, "{username}", ck.ID)
+			certDir := filepath.Join(r.Replace(cryptoConfigMSPPath), "signcerts")
+			return filepath.Join(certDir, fmt.Sprintf("%s@%s-cert.pem", ck.ID, orgName)), nil
+		},
+		Filesystem: filesystem,
 	}
 	return keyvaluestore.New(opts)
 }
