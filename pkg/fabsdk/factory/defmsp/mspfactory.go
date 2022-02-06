@@ -74,10 +74,10 @@ func (f *ProviderFactory) CreateUserStore(config msp.IdentityConfig) (msp.UserSt
 
 // CreateIdentityManagerProvider returns a new default implementation of MSP provider
 func (f *ProviderFactory) CreateIdentityManagerProvider(endpointConfig fab.EndpointConfig, cryptoProvider core.CryptoSuite, userStore msp.UserStore) (msp.IdentityManagerProvider, error) {
-	var mspo msppvdr.MSPProviderOption
+	var mspo []msppvdr.MSPProviderOption
 	if f.opts.filesystem != nil {
-		mspo = msppvdr.WithFS(f.opts.filesystem)
+		mspo = append(mspo, msppvdr.WithFS(f.opts.filesystem))
 	}
 
-	return msppvdr.New(endpointConfig, cryptoProvider, userStore, mspo)
+	return msppvdr.New(endpointConfig, cryptoProvider, userStore, mspo...)
 }

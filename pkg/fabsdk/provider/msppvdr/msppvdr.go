@@ -56,13 +56,13 @@ func New(endpointConfig fab.EndpointConfig, cryptoSuite core.CryptoSuite, userSt
 		}
 	}
 
-	var imo mspimpl.IdentityManagerOption
+	var imo []mspimpl.IdentityManagerOption
 	if mpo.filesystem != nil {
-		imo = mspimpl.WithFS(mpo.filesystem)
+		imo = append(imo, mspimpl.WithFS(mpo.filesystem))
 	}
 
 	for orgName := range netConfig.Organizations {
-		mgr, err := mspimpl.NewIdentityManager(orgName, userStore, cryptoSuite, endpointConfig, imo)
+		mgr, err := mspimpl.NewIdentityManager(orgName, userStore, cryptoSuite, endpointConfig, imo...)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to initialize identity manager for organization: %s", orgName)
 		}
