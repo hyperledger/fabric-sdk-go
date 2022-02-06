@@ -8,6 +8,7 @@ package keyvaluestore
 
 import (
 	"bytes"
+	"embed"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -18,10 +19,59 @@ import (
 	"github.com/pkg/errors"
 )
 
-var storePath = "/tmp/testkeyvaluestore"
+var (
+	storePath = "/tmp/testkeyvaluestore"
+
+	//go:embed testdata/*
+	embedFS embed.FS
+)
 
 func TestDefaultFKVS(t *testing.T) {
 	testFKVS(t, nil)
+}
+
+func TestEmbedFSFKVS(t *testing.T) {
+	var (
+		store core.KVStore
+		err   error
+	)
+	store, err = New(
+		&FileKeyValueStoreOptions{
+			Path:       "testdata/",
+			Filesystem: embedFS,
+		},
+	)
+	if err != nil {
+		t.Fatalf("New failed [%s]", err)
+	}
+
+	var (
+		key1   = "file1.txt"
+		value1 = []byte("First")
+	)
+
+	// Check key1, value1
+	assertKey(store, key1, value1, t)
+
+	var (
+		key2   = "file2.txt"
+		value2 = []byte("Second")
+	)
+
+	// Check key2, value2
+	assertKey(store, key2, value2, t)
+
+	if _, err := store.Load("fake"); err != core.ErrKeyValueNotFound {
+		t.Fatal(err)
+	}
+
+	if err := store.Store("fake", "fake"); err == core.ErrKeyValueNotFound {
+		t.Fatal("it is possible to write read only store")
+	}
+
+	if err := store.Delete("fake"); err == core.ErrKeyValueNotFound {
+		t.Fatal("it is possible to delete read only store")
+	}
 }
 
 func TestFKVSWithCustomKeySerializer(t *testing.T) {
@@ -199,4 +249,14 @@ func compare(v interface{}, expected []byte) error {
 		return errors.New("value from store comparison failed")
 	}
 	return nil
+}
+
+func assertKey(store core.KVStore, key interface{}, expected []byte, t *testing.T) {
+	v, err := store.Load(key)
+	if err != nil {
+		t.Fatalf("failed to read key: %v", err)
+	}
+	if err = compare(v, expected); err != nil {
+		t.Fatalf("failed to compare key: %v", err)
+	}
 }

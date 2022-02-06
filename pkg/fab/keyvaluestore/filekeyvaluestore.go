@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package keyvaluestore
 
 import (
+	"io/fs"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -38,6 +39,7 @@ type FileKeyValueStore struct {
 	keySerializer KeySerializer
 	marshaller    Marshaller
 	unmarshaller  Unmarshaller
+	filesystem    fs.FS
 }
 
 // FileKeyValueStoreOptions allow overriding store defaults
@@ -50,6 +52,8 @@ type FileKeyValueStoreOptions struct {
 	Marshaller Marshaller
 	// Optional. If not provided, default Unmarshaller is used.
 	Unmarshaller Unmarshaller
+	// Optional. If not provided, default disk filesystem is used.
+	Filesystem fs.FS
 }
 
 // Default Marshaller
@@ -98,11 +102,13 @@ func New(opts *FileKeyValueStoreOptions) (*FileKeyValueStore, error) {
 	if opts.Unmarshaller == nil {
 		opts.Unmarshaller = defaultUnmarshaller
 	}
+
 	return &FileKeyValueStore{
 		path:          opts.Path,
 		keySerializer: opts.KeySerializer,
 		marshaller:    opts.Marshaller,
 		unmarshaller:  opts.Unmarshaller,
+		filesystem:    opts.Filesystem,
 	}, nil
 }
 
@@ -113,10 +119,28 @@ func (fkvs *FileKeyValueStore) Load(key interface{}) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	if _, err1 := os.Stat(file); os.IsNotExist(err1) {
-		return nil, core.ErrKeyValueNotFound
+
+	var f fs.File
+
+	if fkvs.filesystem != nil {
+		if _, err := fs.Stat(fkvs.filesystem, file); os.IsNotExist(err) {
+			return nil, core.ErrKeyValueNotFound
+		}
+		f, err = fkvs.filesystem.Open(file)
+	} else {
+		if _, err := os.Stat(file); os.IsNotExist(err) {
+			return nil, core.ErrKeyValueNotFound
+		}
+		f, err = os.Open(file)
 	}
-	bytes, err := ioutil.ReadFile(file) // nolint: gas
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer f.Close()
+
+	bytes, err := ioutil.ReadAll(f) // nolint: gas
 	if err != nil {
 		return nil, err
 	}
@@ -131,9 +155,15 @@ func (fkvs *FileKeyValueStore) Store(key interface{}, value interface{}) error {
 	if key == nil {
 		return errors.New("key is nil")
 	}
+
 	if value == nil {
 		return errors.New("value is nil")
 	}
+
+	if fkvs.filesystem != nil {
+		return errors.New("can't store to read only filesystem")
+	}
+
 	file, err := fkvs.keySerializer(key)
 	if err != nil {
 		return err
@@ -142,6 +172,7 @@ func (fkvs *FileKeyValueStore) Store(key interface{}, value interface{}) error {
 	if err != nil {
 		return err
 	}
+
 	err = os.MkdirAll(filepath.Dir(file), newDirMode)
 	if err != nil {
 		return err
@@ -154,6 +185,11 @@ func (fkvs *FileKeyValueStore) Delete(key interface{}) error {
 	if key == nil {
 		return errors.New("key is nil")
 	}
+
+	if fkvs.filesystem != nil {
+		return errors.New("can't delete from read only filesystem")
+	}
+
 	file, err := fkvs.keySerializer(key)
 	if err != nil {
 		return err
