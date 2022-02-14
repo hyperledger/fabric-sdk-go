@@ -12,8 +12,8 @@ GO_CMD="${GO_CMD:-go}"
 SCRIPT_DIR="$(dirname "$0")"
 PKG_ROOT="${PKG_ROOT:-./}"
 
-PROJECT_MODULE=$(awk -F' ' '$1 == "module" {print $2}' < $(go env GOMOD))
-PROJECT_DIR=$(dirname $(go env GOMOD))
+PROJECT_MODULE=$(awk -F' ' '$1 == "module" {print $2}' < $(${GO_CMD} env GOMOD))
+PROJECT_DIR=$(dirname $(${GO_CMD} env GOMOD))
 
 CONFIG_DIR=${PROJECT_DIR}
 

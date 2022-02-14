@@ -58,14 +58,14 @@ function installGoPkg {
 
     echo "Installing ${repo}@${revision} to $GOPATH/bin ..."
 
-    GO111MODULE=off GOPATH=${BUILD_TMP} go get -d ${repo}
+    GO111MODULE=off GOPATH=${BUILD_TMP} ${GO_CMD} get -d ${repo}
     tag=$(cd ${BUILD_TMP}/src/${repo} && git tag -l --sort=-version:refname | head -n 1 | grep "${revision}" || true)
     if [ ! -z "${tag}" ]; then
         revision=${tag}
         echo "  using tag ${revision}"
     fi
     (cd ${BUILD_TMP}/src/${repo} && git reset --hard ${revision})
-    GO111MODULE=off GOPATH=${BUILD_TMP} GOBIN=${BUILD_TMP}/bin go install -i ${repo}/${pkgPath}
+    GO111MODULE=off GOPATH=${BUILD_TMP} GOBIN=${BUILD_TMP}/bin ${GO_CMD} install -i ${repo}/${pkgPath}
 
     mkdir -p ${GOPATH}/bin
     for cmd in ${cmds[@]}
@@ -119,7 +119,7 @@ function isDependenciesInstalled {
     declare -a msgs=()
 
     # Check that Go tools are installed and help the user if they are missing
-    type ${GOBIN_CMD} >/dev/null 2>&1 || msgs+=("${GOBIN_CMD} is not installed (GO111MODULE=off go get -u github.com/myitcv/gobin)")
+    type ${GOBIN_CMD} >/dev/null 2>&1 || msgs+=("${GOBIN_CMD} is not installed (GO111MODULE=off ${GO_CMD} get -u github.com/myitcv/gobin)")
 
     if [ ${#msgs[@]} -gt 0 ]; then
         if [ ${printMsgs} = true ]; then
