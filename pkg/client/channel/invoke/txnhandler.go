@@ -13,6 +13,7 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/errors/status"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/options"
 	"github.com/pkg/errors"
@@ -66,7 +67,13 @@ func (e *EndorsementHandler) Handle(requestContext *RequestContext, clientContex
 
 	requestContext.Response.Responses = transactionProposalResponses
 	if len(transactionProposalResponses) > 0 {
-		requestContext.Response.Payload = transactionProposalResponses[0].ProposalResponse.GetResponse().Payload
+		responsePayload, err := getResultFromProposalResponse(transactionProposalResponses[0].ProposalResponse)
+		if err != nil {
+			requestContext.Error = err
+			return
+		}
+
+		requestContext.Response.Payload = responsePayload
 		requestContext.Response.ChaincodeStatus = transactionProposalResponses[0].ChaincodeStatus
 	}
 
@@ -74,6 +81,24 @@ func (e *EndorsementHandler) Handle(requestContext *RequestContext, clientContex
 	if e.next != nil {
 		e.next.Handle(requestContext, clientContext)
 	}
+}
+
+func getResultFromProposalResponse(proposalResponse *pb.ProposalResponse) ([]byte, error) {
+	responsePayload := &pb.ProposalResponsePayload{}
+	if err := proto.Unmarshal(proposalResponse.GetPayload(), responsePayload); err != nil {
+		return nil, errors.Wrap(err, "failed to deserialize proposal response payload")
+	}
+
+	return getResultFromProposalResponsePayload(responsePayload)
+}
+
+func getResultFromProposalResponsePayload(responsePayload *pb.ProposalResponsePayload) ([]byte, error) {
+	chaincodeAction := &pb.ChaincodeAction{}
+	if err := proto.Unmarshal(responsePayload.GetExtension(), chaincodeAction); err != nil {
+		return nil, errors.Wrap(err, "failed to deserialize chaincode action")
+	}
+
+	return chaincodeAction.GetResponse().GetPayload(), nil
 }
 
 //ProposalProcessorHandler for selecting proposal processors
