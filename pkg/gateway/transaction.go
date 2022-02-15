@@ -187,16 +187,17 @@ func (c *commitTxHandler) Handle(requestContext *invoke.RequestContext, clientCo
 
 	select {
 	case txStatus := <-statusNotifier:
-		if c.eventch != nil {
-			c.eventch <- txStatus
-			close(c.eventch)
-		}
 		requestContext.Response.TxValidationCode = txStatus.TxValidationCode
 
 		if txStatus.TxValidationCode != peer.TxValidationCode_VALID {
 			requestContext.Error = status.New(status.EventServerStatus, int32(txStatus.TxValidationCode),
 				"received invalid transaction", nil)
 			return
+		}
+
+		if c.eventch != nil {
+			c.eventch <- txStatus
+			close(c.eventch)
 		}
 	case <-requestContext.Ctx.Done():
 		requestContext.Error = status.New(status.ClientStatus, status.Timeout.ToInt32(),
