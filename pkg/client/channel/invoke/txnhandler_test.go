@@ -14,6 +14,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/golang/protobuf/proto"
 	pb "github.com/hyperledger/fabric-protos-go/peer"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
@@ -162,47 +163,104 @@ func TestExecuteTxHandlerErrors(t *testing.T) {
 func TestEndorsementHandler(t *testing.T) {
 	request := Request{ChaincodeID: "test", Fcn: "invoke", Args: [][]byte{[]byte("move"), []byte("a"), []byte("b"), []byte("1")}}
 
-	clientContext := setupChannelClientContext(nil, nil, nil, t)
-	requestContext := prepareRequestContext(request, Opts{Targets: nil}, t)
+	t.Run("no targets, produces an error", func(t *testing.T) {
+		clientContext := setupChannelClientContext(nil, nil, nil, t)
+		requestContext := prepareRequestContext(request, Opts{Targets: nil}, t)
+		handler := NewEndorsementHandler()
 
-	handler := NewEndorsementHandler()
-	handler.Handle(requestContext, clientContext)
-	assert.NotNil(t, requestContext.Error)
+		handler.Handle(requestContext, clientContext)
 
-	requestContext = prepareRequestContext(request, Opts{Targets: []fab.Peer{fcmocks.NewMockPeer("p2", "")}}, t)
+		require.Error(t, requestContext.Error)
+	})
 
-	handler = NewEndorsementHandler()
-	handler.Handle(requestContext, clientContext)
-	assert.Nil(t, requestContext.Error)
+	t.Run("with a target, runs without error", func(t *testing.T) {
+		clientContext := setupChannelClientContext(nil, nil, nil, t)
+		requestContext := prepareRequestContext(request, Opts{Targets: []fab.Peer{fcmocks.NewMockPeer("p2", "")}}, t)
+		handler := NewEndorsementHandler()
 
-	optsProviderCalled := false
-	optsProvider := func() []fab.TxnHeaderOpt {
-		optsProviderCalled = true
-		var opts []fab.TxnHeaderOpt
-		opts = append(opts, fab.WithCreator([]byte("somecreator")))
-		opts = append(opts, fab.WithNonce([]byte("somenonce")))
-		return opts
-	}
+		handler.Handle(requestContext, clientContext)
 
-	handler = NewEndorsementHandlerWithOpts(nil, optsProvider)
-	handler.Handle(requestContext, clientContext)
-	assert.Nil(t, requestContext.Error)
-	assert.Truef(t, optsProviderCalled, "expecting opts provider to be called")
+		require.NoError(t, requestContext.Error)
+	})
 
-	errExpected := fmt.Errorf("error in simulation: failed to distribute private collection, txID 695560b")
-	clientContext.Transactor.(*txnmocks.MockTransactor).Err = errExpected
-	handler.Handle(requestContext, clientContext)
-	s, ok := requestContext.Error.(*status.Status)
-	require.True(t, ok)
-	require.Equal(t, status.EndorserServerStatus, s.Group)
-	require.Equal(t, status.PvtDataDisseminationFailed.ToInt32(), s.Code)
+	t.Run("calls opts provider", func(t *testing.T) {
+		clientContext := setupChannelClientContext(nil, nil, nil, t)
+		requestContext := prepareRequestContext(request, Opts{Targets: []fab.Peer{fcmocks.NewMockPeer("p2", "")}}, t)
+		optsProviderCalled := false
+		optsProvider := func() []fab.TxnHeaderOpt {
+			optsProviderCalled = true
+			return []fab.TxnHeaderOpt{
+				fab.WithCreator([]byte("somecreator")),
+				fab.WithNonce([]byte("somenonce")),
+			}
+		}
+		handler := NewEndorsementHandlerWithOpts(nil, optsProvider)
 
-	errExpected = fmt.Errorf("error in simulation")
-	clientContext.Transactor.(*txnmocks.MockTransactor).Err = errExpected
-	handler.Handle(requestContext, clientContext)
-	s, ok = requestContext.Error.(*status.Status)
-	require.False(t, ok)
-	require.EqualError(t, requestContext.Error, errExpected.Error())
+		handler.Handle(requestContext, clientContext)
+		require.NoError(t, requestContext.Error)
+
+		require.True(t, optsProviderCalled, "expecting opts provider to be called")
+	})
+
+	t.Run("returns EndorserServerStatus error from Transactor", func(t *testing.T) {
+		clientContext := setupChannelClientContext(nil, nil, nil, t)
+		requestContext := prepareRequestContext(request, Opts{Targets: []fab.Peer{fcmocks.NewMockPeer("p2", "")}}, t)
+		handler := NewEndorsementHandler()
+		clientContext.Transactor.(*txnmocks.MockTransactor).Err = fmt.Errorf("error in simulation: failed to distribute private collection, txID 695560b")
+
+		handler.Handle(requestContext, clientContext)
+
+		s, ok := requestContext.Error.(*status.Status)
+		require.True(t, ok)
+		require.Equal(t, status.EndorserServerStatus, s.Group)
+		require.Equal(t, status.PvtDataDisseminationFailed.ToInt32(), s.Code)
+	})
+
+	t.Run("returns error from simulation", func(t *testing.T) {
+		clientContext := setupChannelClientContext(nil, nil, nil, t)
+		errExpected := fmt.Errorf("error in simulation")
+		requestContext := prepareRequestContext(request, Opts{Targets: []fab.Peer{fcmocks.NewMockPeer("p2", "")}}, t)
+		handler := NewEndorsementHandler()
+		clientContext.Transactor.(*txnmocks.MockTransactor).Err = errExpected
+
+		handler.Handle(requestContext, clientContext)
+
+		_, ok := requestContext.Error.(*status.Status)
+		require.False(t, ok)
+		require.EqualError(t, requestContext.Error, errExpected.Error())
+	})
+
+	t.Run("returns error deserializing proposal response payload", func(t *testing.T) {
+		clientContext := setupChannelClientContext(nil, nil, nil, t)
+		mockPeer := fcmocks.NewMockPeer("p2", "")
+		mockPeer.ProposalResponsePayload = []byte("invalid serialized protobuf message")
+		requestContext := prepareRequestContext(request, Opts{Targets: []fab.Peer{mockPeer}}, t)
+		handler := NewEndorsementHandler()
+
+		handler.Handle(requestContext, clientContext)
+
+		require.Error(t, requestContext.Error)
+		require.Contains(t, requestContext.Error.Error(), "failed to deserialize proposal response payload")
+	})
+
+	t.Run("returns error deserializing chaincode action", func(t *testing.T) {
+		proposalResponsePayload := &pb.ProposalResponsePayload{
+			Extension: []byte("invalid serialized protobuf message"),
+		}
+		proposalResponsePayloadBytes, err := proto.Marshal(proposalResponsePayload)
+		require.NoError(t, err)
+
+		clientContext := setupChannelClientContext(nil, nil, nil, t)
+		mockPeer := fcmocks.NewMockPeer("p2", "")
+		mockPeer.ProposalResponsePayload = proposalResponsePayloadBytes
+		requestContext := prepareRequestContext(request, Opts{Targets: []fab.Peer{mockPeer}}, t)
+		handler := NewEndorsementHandler()
+
+		handler.Handle(requestContext, clientContext)
+
+		require.Error(t, requestContext.Error)
+		require.Contains(t, requestContext.Error.Error(), "failed to deserialize chaincode action")
+	})
 }
 
 // Target filter

@@ -21,21 +21,22 @@ import (
 
 // MockPeer is a mock fabricsdk.Peer.
 type MockPeer struct {
-	RWLock               *sync.RWMutex
-	Error                error
-	MockName             string
-	MockURL              string
-	MockRoles            []string
-	MockCert             *pem.Block
-	Payload              []byte
-	ResponseMessage      string
-	MockMSP              string
-	Status               int32
-	ProcessProposalCalls int
-	Endorser             []byte
-	ChaincodeID          string
-	RwSets               []*rwsetutil.NsRwSet
-	properties           fab.Properties
+	RWLock                  *sync.RWMutex
+	Error                   error
+	MockName                string
+	MockURL                 string
+	MockRoles               []string
+	MockCert                *pem.Block
+	Payload                 []byte
+	ResponseMessage         string
+	ProposalResponsePayload []byte // Overrides proposal response payload generated from other values
+	MockMSP                 string
+	Status                  int32
+	ProcessProposalCalls    int
+	Endorser                []byte
+	ChaincodeID             string
+	RwSets                  []*rwsetutil.NsRwSet
+	properties              fab.Properties
 }
 
 // NewMockPeer creates basic mock peer
@@ -146,43 +147,61 @@ func (p *MockPeer) getProposalResponsePayload() []byte {
 		p.ChaincodeID = p.RwSets[0].NameSpace
 	}
 
-	var err error
-	var resultBytes []byte
-	if len(p.RwSets) > 0 {
-		txRWSet := &rwsetutil.TxRwSet{
-			NsRwSets: p.RwSets,
-		}
-		resultBytes, err = txRWSet.ToProtoBytes()
-		if err != nil {
-			panic(err)
-		}
+	if len(p.ProposalResponsePayload) > 0 {
+		return p.ProposalResponsePayload
 	}
 
-	var chaincodeActionBytes []byte
-	if p.ChaincodeID != "" {
-		chaincodeAction := &pb.ChaincodeAction{
-			ChaincodeId: &pb.ChaincodeID{Name: p.ChaincodeID},
-			Events:      nil,
-			Response: &pb.Response{
-				Message: p.ResponseMessage,
-				Status:  p.Status,
-				Payload: p.Payload,
-			},
-			Results: resultBytes,
-		}
-		chaincodeActionBytes, err = proto.Marshal(chaincodeAction)
-		if err != nil {
-			panic(err)
-		}
-	}
-
-	prp := &pb.ProposalResponsePayload{
-		Extension: chaincodeActionBytes,
-	}
-	payloadBytes, err := proto.Marshal(prp)
+	payload := p.newProposalResponsePayload()
+	payloadBytes, err := proto.Marshal(payload)
 	if err != nil {
 		panic(err)
 	}
 
 	return payloadBytes
+}
+
+func (p *MockPeer) newProposalResponsePayload() *pb.ProposalResponsePayload {
+	chaincodeAction := p.newChaincodeAction()
+	chaincodeActionBytes, err := proto.Marshal(chaincodeAction)
+	if err != nil {
+		panic(err)
+	}
+
+	return &pb.ProposalResponsePayload{
+		Extension: chaincodeActionBytes,
+	}
+}
+
+func (p *MockPeer) newChaincodeAction() *pb.ChaincodeAction {
+	chaincodeAction := &pb.ChaincodeAction{
+		Events: nil,
+		Response: &pb.Response{
+			Message: p.ResponseMessage,
+			Status:  p.Status,
+			Payload: p.Payload,
+		},
+		Results: p.getRWSet(),
+	}
+
+	if p.ChaincodeID != "" {
+		chaincodeAction.ChaincodeId = &pb.ChaincodeID{Name: p.ChaincodeID}
+	}
+
+	return chaincodeAction
+}
+
+func (p *MockPeer) getRWSet() []byte {
+	if len(p.RwSets) == 0 {
+		return nil
+	}
+
+	txRWSet := &rwsetutil.TxRwSet{
+		NsRwSets: p.RwSets,
+	}
+	txRWSetBytes, err := txRWSet.ToProtoBytes()
+	if err != nil {
+		panic(err)
+	}
+
+	return txRWSetBytes
 }
