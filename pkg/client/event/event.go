@@ -59,29 +59,7 @@ func New(channelProvider context.ChannelProvider, opts ...ClientOption) (*Client
 		return nil, errors.New("channel service not initialized")
 	}
 
-	var es fab.EventService
-	if eventClient.permitBlockEvents {
-		var opts []options.Opt
-		opts = append(opts, client.WithBlockEvents())
-		if eventClient.seekType != "" {
-			opts = append(opts, deliverclient.WithSeekType(eventClient.seekType))
-			if eventClient.seekType == seek.FromBlock {
-				opts = append(opts, deliverclient.WithBlockNum(eventClient.fromBlock))
-			}
-		}
-		if eventClient.eventConsumerTimeout != nil {
-			opts = append(opts, dispatcher.WithEventConsumerTimeout(*eventClient.eventConsumerTimeout))
-		}
-		//nolint:gocyclo
-		if eventClient.noCacheInit {
-			es, err = channelContext.ChannelService().EventServiceNoCache(opts...)
-		} else {
-			es, err = channelContext.ChannelService().EventService(opts...)
-		}
-	} else {
-		es, err = channelContext.ChannelService().EventService()
-	}
-
+	es, err := eventService(channelContext, &eventClient)
 	if err != nil {
 		return nil, errors.WithMessage(err, "event service creation failed")
 	}
@@ -135,4 +113,32 @@ func (c *Client) RegisterTxStatusEvent(txID string) (fab.Registration, <-chan *f
 //  reg is the registration handle that was returned from one of the Register functions
 func (c *Client) Unregister(reg fab.Registration) {
 	c.eventService.Unregister(reg)
+}
+
+func blockEventOpts(eventClient *Client) (opts []options.Opt) {
+	opts = append(opts, client.WithBlockEvents())
+	if eventClient.seekType != "" {
+		opts = append(opts, deliverclient.WithSeekType(eventClient.seekType))
+		if eventClient.seekType == seek.FromBlock {
+			opts = append(opts, deliverclient.WithBlockNum(eventClient.fromBlock))
+		}
+	}
+	if eventClient.eventConsumerTimeout != nil {
+		opts = append(opts, dispatcher.WithEventConsumerTimeout(*eventClient.eventConsumerTimeout))
+	}
+	return
+}
+
+func eventService(channelContext context.Channel, eventClient *Client) (es fab.EventService, err error) {
+	if eventClient.permitBlockEvents {
+		opts := blockEventOpts(eventClient)
+		if eventClient.noCacheInit {
+			es, err = channelContext.ChannelService().EventServiceNoCache(opts...)
+		} else {
+			es, err = channelContext.ChannelService().EventService(opts...)
+		}
+	} else {
+		es, err = channelContext.ChannelService().EventService()
+	}
+	return
 }
