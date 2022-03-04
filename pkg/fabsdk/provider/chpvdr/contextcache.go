@@ -20,9 +20,20 @@ import (
 	"github.com/pkg/errors"
 )
 
+type DrainType int
+
+const (
+	DrainEventSevice DrainType = iota + 1
+	DrainMembershipCache
+	DrainChCfgCache
+	DrainSelectionServiceCache
+	DrainDiscoveryServiceCache
+)
+
 type cache interface {
 	Get(lazycache.Key, ...interface{}) (interface{}, error)
 	Close()
+	DeleteAll()
 }
 
 type contextCache struct {
@@ -80,6 +91,21 @@ func newContextCache(ctx fab.ClientContext, opts []options.Opt) *contextCache {
 	)
 
 	return c
+}
+
+func (c *contextCache) Drain(whatToDrain DrainType) {
+	switch whatToDrain {
+	case DrainEventSevice:
+		c.eventServiceCache.DeleteAll()
+	case DrainMembershipCache:
+		c.membershipCache.DeleteAll()
+	case DrainChCfgCache:
+		c.chCfgCache.DeleteAll()
+	case DrainSelectionServiceCache:
+		c.selectionServiceCache.DeleteAll()
+	case DrainDiscoveryServiceCache:
+		c.discoveryServiceCache.DeleteAll()
+	}
 }
 
 func (c *contextCache) Close() {
@@ -170,6 +196,7 @@ func (c *contextCache) GetEventService(channelID string, opts ...options.Opt) (f
 	if err != nil {
 		return nil, err
 	}
+
 	eventService, err := c.eventServiceCache.Get(key)
 	if err != nil {
 		return nil, err

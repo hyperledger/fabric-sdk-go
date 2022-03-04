@@ -34,6 +34,7 @@ type Client struct {
 	fromBlock            uint64
 	seekType             seek.Type
 	eventConsumerTimeout *time.Duration
+	noCacheInit          bool
 }
 
 // New returns a Client instance. Client receives events such as block, filtered block,
@@ -71,7 +72,11 @@ func New(channelProvider context.ChannelProvider, opts ...ClientOption) (*Client
 		if eventClient.eventConsumerTimeout != nil {
 			opts = append(opts, dispatcher.WithEventConsumerTimeout(*eventClient.eventConsumerTimeout))
 		}
-		es, err = channelContext.ChannelService().EventService(opts...)
+		if eventClient.noCacheInit {
+			es, err = channelContext.ChannelService().EventServiceNoCache(opts...)
+		} else {
+			es, err = channelContext.ChannelService().EventService(opts...)
+		}
 	} else {
 		es, err = channelContext.ChannelService().EventService()
 	}

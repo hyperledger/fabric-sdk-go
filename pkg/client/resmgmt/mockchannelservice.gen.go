@@ -155,6 +155,23 @@ func (fake *MockChannelService) EventService(opts ...options.Opt) (fab.EventServ
 	return fake.eventServiceReturns.result1, fake.eventServiceReturns.result2
 }
 
+func (fake *MockChannelService) EventServiceNoCache(opts ...options.Opt) (fab.EventService, error) {
+	fake.eventServiceMutex.Lock()
+	ret, specificReturn := fake.eventServiceReturnsOnCall[len(fake.eventServiceArgsForCall)]
+	fake.eventServiceArgsForCall = append(fake.eventServiceArgsForCall, struct {
+		opts []options.Opt
+	}{opts})
+	fake.recordInvocation("EventService", []interface{}{opts})
+	fake.eventServiceMutex.Unlock()
+	if fake.EventServiceStub != nil {
+		return fake.EventServiceStub(opts...)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fake.eventServiceReturns.result1, fake.eventServiceReturns.result2
+}
+
 func (fake *MockChannelService) EventServiceCallCount() int {
 	fake.eventServiceMutex.RLock()
 	defer fake.eventServiceMutex.RUnlock()
