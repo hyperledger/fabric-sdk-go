@@ -20,13 +20,18 @@ import (
 	"github.com/pkg/errors"
 )
 
-type DrainType int
+type drainType int
 
 const (
-	DrainEventSevice DrainType = iota + 1
+	// DrainEventSevice used to drain event service cache
+	DrainEventSevice drainType = iota + 1
+	// DrainMembershipCache used to drain membership service cache
 	DrainMembershipCache
+	// DrainChCfgCache used to drain channel config cache
 	DrainChCfgCache
+	// DrainSelectionServiceCache used to drain selection service cache
 	DrainSelectionServiceCache
+	// DrainDiscoveryServiceCache used to drain discovery service cache
 	DrainDiscoveryServiceCache
 )
 
@@ -93,7 +98,8 @@ func newContextCache(ctx fab.ClientContext, opts []options.Opt) *contextCache {
 	return c
 }
 
-func (c *contextCache) Drain(whatToDrain DrainType) {
+// Drain deletes all entries from the specified cache.
+func (c *contextCache) Drain(whatToDrain drainType) {
 	switch whatToDrain {
 	case DrainEventSevice:
 		c.eventServiceCache.DeleteAll()

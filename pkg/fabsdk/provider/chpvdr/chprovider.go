@@ -104,6 +104,7 @@ func (cs *ChannelService) EventService(opts ...options.Opt) (fab.EventService, e
 	return cs.ctxtCache.GetEventService(cs.channelID, opts...)
 }
 
+// EventServiceNoCache creates EventService and returns it (without using cache).
 func (cs *ChannelService) EventServiceNoCache(opts ...options.Opt) (fab.EventService, error) {
 	cs.ctxtCache.Drain(DrainEventSevice)
 	return cs.ctxtCache.GetEventService(cs.channelID, opts...)
