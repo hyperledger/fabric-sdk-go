@@ -72,6 +72,7 @@ func New(channelProvider context.ChannelProvider, opts ...ClientOption) (*Client
 		if eventClient.eventConsumerTimeout != nil {
 			opts = append(opts, dispatcher.WithEventConsumerTimeout(*eventClient.eventConsumerTimeout))
 		}
+		//nolint:gocyclo
 		if eventClient.noCacheInit {
 			es, err = channelContext.ChannelService().EventServiceNoCache(opts...)
 		} else {
