@@ -8,8 +8,10 @@
 PROJECT_NAME="hyperledger/fabric-sdk-go"
 MAX_RELEASE_VER_FATAL=0
 
+GO_CMD="${GO_CMD:-go}"
+
 echo "Checking Go version"
-GO_VER_FULL=`go version`
+GO_VER_FULL=`${GO_CMD} version`
 echo ${GO_VER_FULL}
 GO_VER=`echo ${GO_VER_FULL} |awk '{print $3}'`
 
