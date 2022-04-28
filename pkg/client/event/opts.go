@@ -15,6 +15,14 @@ import (
 // ClientOption describes a functional parameter for the New constructor
 type ClientOption func(*Client) error
 
+// WithNoCache indicates that event service must be initialized without cache.
+func WithNoCache() ClientOption {
+	return func(c *Client) error {
+		c.noCacheInit = true
+		return nil
+	}
+}
+
 // WithBlockEvents indicates that block events are to be received.
 // Note that the caller must have sufficient privileges for this option.
 func WithBlockEvents() ClientOption {

@@ -72,6 +72,11 @@ func (cs *MockChannelService) EventService(opts ...options.Opt) (fab.EventServic
 	return NewMockEventService(), nil
 }
 
+// EventServiceNoCache returns a mock event service
+func (cs *MockChannelService) EventServiceNoCache(opts ...options.Opt) (fab.EventService, error) {
+	return NewMockEventService(), nil
+}
+
 // SetTransactor changes the return value of Transactor
 func (cs *MockChannelService) SetTransactor(t fab.Transactor) {
 	cs.transactor = t

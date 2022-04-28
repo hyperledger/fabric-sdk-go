@@ -20,9 +20,25 @@ import (
 	"github.com/pkg/errors"
 )
 
+type drainType int
+
+const (
+	// DrainEventSevice used to drain event service cache
+	DrainEventSevice drainType = iota + 1
+	// DrainMembershipCache used to drain membership service cache
+	DrainMembershipCache
+	// DrainChCfgCache used to drain channel config cache
+	DrainChCfgCache
+	// DrainSelectionServiceCache used to drain selection service cache
+	DrainSelectionServiceCache
+	// DrainDiscoveryServiceCache used to drain discovery service cache
+	DrainDiscoveryServiceCache
+)
+
 type cache interface {
 	Get(lazycache.Key, ...interface{}) (interface{}, error)
 	Close()
+	DeleteAll()
 }
 
 type contextCache struct {
@@ -80,6 +96,22 @@ func newContextCache(ctx fab.ClientContext, opts []options.Opt) *contextCache {
 	)
 
 	return c
+}
+
+// Drain deletes all entries from the specified cache.
+func (c *contextCache) Drain(whatToDrain drainType) {
+	switch whatToDrain {
+	case DrainEventSevice:
+		c.eventServiceCache.DeleteAll()
+	case DrainMembershipCache:
+		c.membershipCache.DeleteAll()
+	case DrainChCfgCache:
+		c.chCfgCache.DeleteAll()
+	case DrainSelectionServiceCache:
+		c.selectionServiceCache.DeleteAll()
+	case DrainDiscoveryServiceCache:
+		c.discoveryServiceCache.DeleteAll()
+	}
 }
 
 func (c *contextCache) Close() {
@@ -170,6 +202,7 @@ func (c *contextCache) GetEventService(channelID string, opts ...options.Opt) (f
 	if err != nil {
 		return nil, err
 	}
+
 	eventService, err := c.eventServiceCache.Get(key)
 	if err != nil {
 		return nil, err
