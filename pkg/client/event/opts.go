@@ -42,6 +42,15 @@ func WithSeekType(seek seek.Type) ClientOption {
 	}
 }
 
+// WithChaincodeId indicates the target chaincode
+// Only deliverclient supports this
+func WithChaincodeId(id string) ClientOption {
+	return func(c *Client) error {
+		c.chaincodeId = id
+		return nil
+	}
+}
+
 // WithEventConsumerTimeout is the timeout when sending events to a registered consumer.
 // If < 0, if buffer full, unblocks immediately and does not send.
 // If 0, if buffer full, will block and guarantee the event will be sent out.

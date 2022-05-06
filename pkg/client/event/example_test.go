@@ -77,6 +77,25 @@ func ExampleClient_RegisterChaincodeEvent() {
 
 }
 
+func ExampleClient_RegisterChaincodeEvent_NewService() {
+
+	ec, err := New(mockChannelProvider("mychannel"), WithChaincodeId("examplecc"))
+	if err != nil {
+		fmt.Println("failed to create client")
+	}
+
+	registration, _, err := ec.RegisterChaincodeEvent("examplecc", "event123")
+	if err != nil {
+		fmt.Println("failed to register chaincode event")
+	}
+	defer ec.Unregister(registration)
+
+	fmt.Println("chaincode event registered successfully")
+
+	// Output: chaincode event registered successfully
+
+}
+
 func ExampleClient_RegisterChaincodeEvent_withPayload() {
 
 	// If you require payload for chaincode events you have to use WithBlockEvents() option

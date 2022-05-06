@@ -19,6 +19,7 @@ type params struct {
 	connProvider api.ConnectionProvider
 	seekType     seek.Type
 	fromBlock    uint64
+	chaincodeId  string
 	respTimeout  time.Duration
 }
 
@@ -48,12 +49,25 @@ func WithBlockNum(value uint64) options.Opt {
 	}
 }
 
+// WithChaincodeId specifies the chaincode from which events are to be received.
+func WithChaincodeId(value string) options.Opt {
+	return func(p options.Params) {
+		if setter, ok := p.(chaincodeIdSetter); ok {
+			setter.SetChaincodeId(value)
+		}
+	}
+}
+
 type seekTypeSetter interface {
 	SetSeekType(value seek.Type)
 }
 
 type fromBlockSetter interface {
 	SetFromBlock(value uint64)
+}
+
+type chaincodeIdSetter interface {
+	SetChaincodeId(value string)
 }
 
 func (p *params) PermitBlockEvents() {
@@ -77,6 +91,11 @@ func (p *params) SetSeekType(value seek.Type) {
 	if value != "" {
 		p.seekType = value
 	}
+}
+
+func (p *params) SetChaincodeId(value string) {
+	logger.Debugf("ChaincodId: %d", value)
+	p.chaincodeId = value
 }
 
 func (p *params) SetResponseTimeout(value time.Duration) {

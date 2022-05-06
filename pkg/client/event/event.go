@@ -33,6 +33,7 @@ type Client struct {
 	permitBlockEvents    bool
 	fromBlock            uint64
 	seekType             seek.Type
+	chaincodeId          string
 	eventConsumerTimeout *time.Duration
 }
 
@@ -67,6 +68,9 @@ func New(channelProvider context.ChannelProvider, opts ...ClientOption) (*Client
 			if eventClient.seekType == seek.FromBlock {
 				opts = append(opts, deliverclient.WithBlockNum(eventClient.fromBlock))
 			}
+		}
+		if eventClient.chaincodeId != "" {
+			opts = append(opts, deliverclient.WithChaincodeId(eventClient.chaincodeId))
 		}
 		if eventClient.eventConsumerTimeout != nil {
 			opts = append(opts, dispatcher.WithEventConsumerTimeout(*eventClient.eventConsumerTimeout))
