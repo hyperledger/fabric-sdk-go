@@ -10,6 +10,7 @@ import (
 	reqContex "context"
 	"net/http"
 
+	"github.com/golang/protobuf/proto"
 	pb "github.com/hyperledger/fabric-protos-go/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
 )
@@ -29,9 +30,13 @@ func (t *MockTransactor) CreateTransactionHeader(opts ...fab.TxnHeaderOpt) (fab.
 // SendTransactionProposal sends a TransactionProposal to the target peers.
 func (t *MockTransactor) SendTransactionProposal(proposal *fab.TransactionProposal, targets []fab.ProposalProcessor) ([]*fab.TransactionProposalResponse, error) {
 	response := make([]*fab.TransactionProposalResponse, 1)
+	txResponse := &pb.Response{Message: "success", Payload: []byte("abc"), Status: http.StatusOK}
 	response[0] = &fab.TransactionProposalResponse{Endorser: "example.com", Status: 200,
-		ProposalResponse: &pb.ProposalResponse{Response: &pb.Response{Message: "success", Payload: []byte("abc"), Status: http.StatusOK},
-			Endorsement: &pb.Endorsement{Endorser: []byte("example.com"), Signature: []byte("signature")}},
+		ProposalResponse: &pb.ProposalResponse{
+			Response:    txResponse,
+			Payload:     getProposalResponsePayloadBytes(txResponse),
+			Endorsement: &pb.Endorsement{Endorser: []byte("example.com"), Signature: []byte("signature")},
+		},
 	}
 	return response, nil
 }
@@ -53,4 +58,24 @@ func (t *MockTransactor) SendTransaction(tx *fab.Transaction) (*fab.TransactionR
 		Orderer: "example.com",
 	}
 	return response, nil
+}
+
+func getProposalResponsePayloadBytes(response *pb.Response) []byte {
+	chaincodeAction := &pb.ChaincodeAction{
+		Response: response,
+	}
+	chaincodeActionBytes, err := proto.Marshal(chaincodeAction)
+	if err != nil {
+		panic(err)
+	}
+
+	prp := &pb.ProposalResponsePayload{
+		Extension: chaincodeActionBytes,
+	}
+	payloadBytes, err := proto.Marshal(prp)
+	if err != nil {
+		panic(err)
+	}
+
+	return payloadBytes
 }

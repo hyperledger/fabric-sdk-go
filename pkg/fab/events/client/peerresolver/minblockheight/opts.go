@@ -104,10 +104,6 @@ func getBlockHeightLagThreshold(policy fab.EventServicePolicy) int {
 		threshold = 0
 	case fab.ResolveByThreshold:
 		threshold = policy.BlockHeightLagThreshold
-		if threshold <= 0 {
-			logger.Warnf("Invalid BlockHeightLagThreshold: %d. Using default: %d", threshold, defaultBlockHeightLagThreshold)
-			threshold = defaultBlockHeightLagThreshold
-		}
 	default:
 		logger.Warnf("Invalid MinBlockHeightResolverMode: [%s]. Using default: [%s]", policy.MinBlockHeightResolverMode, fab.ResolveByThreshold)
 		threshold = policy.BlockHeightLagThreshold

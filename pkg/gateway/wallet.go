@@ -25,6 +25,16 @@ type wallet interface {
 	List() ([]string, error)
 }
 
+// NewWalletWithStore is used for creating wallets with custom walletstores as backends.
+//  Parameters:
+//  store is the WalletStore you want to use as the backend for the wallet.
+//
+//  Returns:
+//  The Wallet object.
+func NewWalletWithStore(store WalletStore) *Wallet {
+	return &Wallet{store: store}
+}
+
 // A Wallet stores identity information used to connect to a Hyperledger Fabric network.
 // Instances are created using factory methods on the implementing objects.
 type Wallet struct {

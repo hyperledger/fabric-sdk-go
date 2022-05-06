@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package fabricselection
 
 import (
+	"context"
 	"testing"
 
 	"github.com/hyperledger/fabric-sdk-go/pkg/common/providers/fab"
@@ -32,7 +33,7 @@ func TestPeerEndpointValue(t *testing.T) {
 		require.Equal(t, uint64(1001), ep.Properties()[fab.PropertyLedgerHeight])
 		require.Equal(t, uint64(1001), ep.BlockHeight())
 		require.Panics(t, func() {
-			_, err := ep.ProcessTransactionProposal(nil, fab.ProcessProposalRequest{})
+			_, err := ep.ProcessTransactionProposal(context.TODO(), fab.ProcessProposalRequest{})
 			require.NoError(t, err)
 		})
 	})
