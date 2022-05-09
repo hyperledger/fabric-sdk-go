@@ -79,7 +79,7 @@ func ExampleClient_RegisterChaincodeEvent() {
 
 func ExampleClient_RegisterChaincodeEvent_NewService() {
 
-	ec, err := New(mockChannelProvider("mychannel"), WithChaincodeId("examplecc"))
+	ec, err := New(mockChannelProvider("mychannel"), WithChaincodeID("examplecc"))
 	if err != nil {
 		fmt.Println("failed to create client")
 	}

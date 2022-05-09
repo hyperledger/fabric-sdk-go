@@ -25,8 +25,8 @@ DOCKER_CMD         ?= docker
 DOCKER_COMPOSE_CMD ?= docker-compose
 
 # Fabric versions used in the Makefile
-FABRIC_STABLE_VERSION           := 2.2.0
-FABRIC_STABLE_VERSION_MINOR     := 2.2
+FABRIC_STABLE_VERSION           := 2.4.3
+FABRIC_STABLE_VERSION_MINOR     := 2.4
 FABRIC_STABLE_VERSION_MAJOR     := 2
 
 FABRIC_PRERELEASE_VERSION       :=
@@ -114,7 +114,7 @@ CC_MODE_LSCC = lscc
 
 # Local variables used by makefile
 PROJECT_NAME           := fabric-sdk-go
-ARCH                   := $(shell uname -m)
+ARCH                   := amd64
 OS_NAME                := $(shell uname -s)
 FIXTURE_PROJECT_NAME   := fabsdkgo
 MAKEFILE_THIS          := $(lastword $(MAKEFILE_LIST))

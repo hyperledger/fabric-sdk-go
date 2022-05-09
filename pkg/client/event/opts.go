@@ -42,11 +42,11 @@ func WithSeekType(seek seek.Type) ClientOption {
 	}
 }
 
-// WithChaincodeId indicates the target chaincode
+// WithChaincodeID indicates the target chaincode
 // Only deliverclient supports this
-func WithChaincodeId(id string) ClientOption {
+func WithChaincodeID(id string) ClientOption {
 	return func(c *Client) error {
-		c.chaincodeId = id
+		c.chaincodeID = id
 		return nil
 	}
 }

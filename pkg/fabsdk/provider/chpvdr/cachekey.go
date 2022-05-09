@@ -102,7 +102,7 @@ type params struct {
 	permitBlockEvents bool
 	seekType          seek.Type
 	fromBlock         uint64
-	chaincodeId       string
+	chaincodeID       string
 }
 
 func defaultParams() *params {
@@ -123,14 +123,14 @@ func (p *params) SetSeekType(value seek.Type) {
 	}
 }
 
-func (p *params) SetChaincodeId(value string) {
+func (p *params) SetChaincodeID(value string) {
 	if value != "" {
-		p.chaincodeId = value
+		p.chaincodeID = value
 	}
 }
 
 func (p *params) getOptKey() string {
 	//	Construct opts portion
-	optKey := fmt.Sprintf("blockEvents:%t,seekType:%s,fromBlock:%d,chaincodeId:%s", p.permitBlockEvents, p.seekType, p.fromBlock, p.chaincodeId)
+	optKey := fmt.Sprintf("blockEvents:%t,seekType:%s,fromBlock:%d,chaincodeId:%s", p.permitBlockEvents, p.seekType, p.fromBlock, p.chaincodeID)
 	return optKey
 }
