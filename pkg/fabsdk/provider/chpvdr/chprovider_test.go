@@ -86,7 +86,7 @@ func TestBasicValidChannel(t *testing.T) {
 	assert.NotNil(t, channelConfig)
 	assert.NotEmptyf(t, channelConfig.ID(), "Got empty channel ID from channel config")
 
-	eventService, err := channelService.EventService(client.WithBlockEvents(), deliverclient.WithChaincodeID("testChaincode"))
+	eventService, err := channelService.EventService(client.WithBlockEvents(), deliverclient.WithSeekType("from"), deliverclient.WithBlockNum(10), deliverclient.WithChaincodeID("testChaincode"))
 	require.NoError(t, err)
 	require.NotNil(t, eventService)
 
