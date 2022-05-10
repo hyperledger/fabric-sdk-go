@@ -20,11 +20,11 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 
+	pb "github.com/hyperledger/fabric-protos-go/peer"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/deliverclient/seek"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/service"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/service/dispatcher"
 	servicemocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/events/service/mocks"
-	pb "github.com/hyperledger/fabric-protos-go/peer"
 )
 
 var (
@@ -43,7 +43,7 @@ func TestNewEventClient(t *testing.T) {
 		t.Fatalf("Failed to create new event client: %s", err)
 	}
 
-	_, err = New(ctx, WithBlockEvents(), WithSeekType(seek.Newest), WithBlockNum(math.MaxUint64), WithEventConsumerTimeout(500 * time.Millisecond))
+	_, err = New(ctx, WithBlockEvents(), WithSeekType(seek.Newest), WithBlockNum(math.MaxUint64), WithEventConsumerTimeout(500*time.Millisecond), WithChaincodeID("testChaincode"))
 	if err != nil {
 		t.Fatalf("Failed to create new event client: %s", err)
 	}
@@ -52,6 +52,22 @@ func TestNewEventClient(t *testing.T) {
 	_, err = New(ctxErr)
 	if err == nil {
 		t.Fatal("Should have failed with 'Test Error'")
+	}
+}
+
+func TestNewEventClientWithFromBlock(t *testing.T) {
+
+	fabCtx := setupCustomTestContext(t, nil)
+	ctx := createChannelContext(fabCtx, channelID)
+
+	_, err := New(ctx)
+	if err != nil {
+		t.Fatalf("Failed to create new event client: %s", err)
+	}
+
+	_, err = New(ctx, WithBlockEvents(), WithSeekType(seek.FromBlock), WithBlockNum(100), WithChaincodeID("testChaincode"))
+	if err != nil {
+		t.Fatalf("Failed to create new event client: %s", err)
 	}
 }
 

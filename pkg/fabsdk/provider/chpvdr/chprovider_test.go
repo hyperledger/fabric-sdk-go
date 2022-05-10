@@ -1,3 +1,4 @@
+//go:build testing
 // +build testing
 
 /*
@@ -24,6 +25,8 @@ import (
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/chconfig"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/discovery"
 	discmocks "github.com/hyperledger/fabric-sdk-go/pkg/fab/discovery/mocks"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/client"
+	"github.com/hyperledger/fabric-sdk-go/pkg/fab/events/deliverclient"
 	"github.com/hyperledger/fabric-sdk-go/pkg/fab/mocks"
 	mspmocks "github.com/hyperledger/fabric-sdk-go/pkg/msp/test/mockmsp"
 	"github.com/pkg/errors"
@@ -83,7 +86,7 @@ func TestBasicValidChannel(t *testing.T) {
 	assert.NotNil(t, channelConfig)
 	assert.NotEmptyf(t, channelConfig.ID(), "Got empty channel ID from channel config")
 
-	eventService, err := channelService.EventService()
+	eventService, err := channelService.EventService(client.WithBlockEvents(), deliverclient.WithChaincodeID("testChaincode"))
 	require.NoError(t, err)
 	require.NotNil(t, eventService)
 
