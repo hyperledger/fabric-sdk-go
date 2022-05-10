@@ -33,11 +33,13 @@ type Client struct {
 	permitBlockEvents    bool
 	fromBlock            uint64
 	seekType             seek.Type
+	chaincodeID          string
 	eventConsumerTimeout *time.Duration
 }
 
 // New returns a Client instance. Client receives events such as block, filtered block,
 // chaincode, and transaction status events.
+// nolint: gocyclo
 func New(channelProvider context.ChannelProvider, opts ...ClientOption) (*Client, error) {
 
 	channelContext, err := channelProvider()
@@ -67,6 +69,9 @@ func New(channelProvider context.ChannelProvider, opts ...ClientOption) (*Client
 			if eventClient.seekType == seek.FromBlock {
 				opts = append(opts, deliverclient.WithBlockNum(eventClient.fromBlock))
 			}
+		}
+		if eventClient.chaincodeID != "" {
+			opts = append(opts, deliverclient.WithChaincodeID(eventClient.chaincodeID))
 		}
 		if eventClient.eventConsumerTimeout != nil {
 			opts = append(opts, dispatcher.WithEventConsumerTimeout(*eventClient.eventConsumerTimeout))
