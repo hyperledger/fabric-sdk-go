@@ -119,11 +119,21 @@ func (txn *Transaction) Evaluate(args ...string) ([]byte, error) {
 // will be evaluated on the endorsing peers and then submitted to the ordering service
 // for committing to the ledger.
 func (txn *Transaction) Submit(args ...string) ([]byte, error) {
+	return txn.submit(false, args...)
+}
+
+// SubmitInit sends an initialization transaction, for chaincodes that requires init before processing regular transactions
+func (txn *Transaction) SubmitInit(args ...string) ([]byte, error) {
+	return txn.submit(true, args...)
+}
+
+func (txn *Transaction) submit(isInit bool, args ...string) ([]byte, error) {
 	bytes := make([][]byte, len(args))
 	for i, v := range args {
 		bytes[i] = []byte(v)
 	}
 	txn.request.Args = bytes
+	txn.request.IsInit = isInit
 
 	var options []channel.RequestOption
 	if txn.endorsingPeers != nil {
