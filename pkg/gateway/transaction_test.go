@@ -105,6 +105,7 @@ func TestInitTransactionOptions(t *testing.T) {
 		WithTransient(transient),
 		WithEndorsingPeers("peer1"),
 		WithCollections("_implicit_org_org1"),
+		WithInit(),
 	)
 
 	if err != nil {
@@ -127,7 +128,7 @@ func TestInitTransactionOptions(t *testing.T) {
 	}
 
 	txn.Evaluate("arg1", "arg2")
-	txn.SubmitInit("arg1", "arg2")
+	txn.Submit("arg1", "arg2")
 }
 
 func TestCommitEvent(t *testing.T) {

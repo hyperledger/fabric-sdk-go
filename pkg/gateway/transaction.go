@@ -29,6 +29,7 @@ type Transaction struct {
 	request        *channel.Request
 	endorsingPeers []string
 	collections    []string
+	isInit         bool
 	eventch        chan *fab.TxStatusEvent
 }
 
@@ -83,6 +84,15 @@ func WithCollections(collections ...string) TransactionOption {
 	}
 }
 
+// WithInit is an option that makes the transaction fulfill the --init-required condition before the chaincode
+// can be invoked to process regular transactions
+func WithInit() TransactionOption {
+	return func(txn *Transaction) error {
+		txn.isInit = true
+		return nil
+	}
+}
+
 // Evaluate a transaction function and return its results.
 // The transaction function will be evaluated on the endorsing peers but
 // the responses will not be sent to the ordering service and hence will
@@ -119,21 +129,12 @@ func (txn *Transaction) Evaluate(args ...string) ([]byte, error) {
 // will be evaluated on the endorsing peers and then submitted to the ordering service
 // for committing to the ledger.
 func (txn *Transaction) Submit(args ...string) ([]byte, error) {
-	return txn.submit(false, args...)
-}
-
-// SubmitInit sends an initialization transaction, for chaincodes that requires init before processing regular transactions
-func (txn *Transaction) SubmitInit(args ...string) ([]byte, error) {
-	return txn.submit(true, args...)
-}
-
-func (txn *Transaction) submit(isInit bool, args ...string) ([]byte, error) {
 	bytes := make([][]byte, len(args))
 	for i, v := range args {
 		bytes[i] = []byte(v)
 	}
 	txn.request.Args = bytes
-	txn.request.IsInit = isInit
+	txn.request.IsInit = txn.isInit
 
 	var options []channel.RequestOption
 	if txn.endorsingPeers != nil {
