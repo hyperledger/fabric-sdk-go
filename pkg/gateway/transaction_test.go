@@ -80,6 +80,57 @@ func TestTransactionOptions(t *testing.T) {
 	txn.Submit("arg1", "arg2")
 }
 
+func TestInitTransactionOptions(t *testing.T) {
+	transient := make(map[string][]byte)
+	transient["price"] = []byte("8500")
+
+	c := mockChannelProvider("mychannel")
+
+	gw := &Gateway{
+		options: &gatewayOptions{
+			Timeout: defaultTimeout,
+		},
+	}
+
+	nw, err := newNetwork(gw, c)
+
+	if err != nil {
+		t.Fatalf("Failed to create network: %s", err)
+	}
+
+	contr := nw.GetContract("contract1")
+
+	txn, err := contr.CreateTransaction(
+		"txn1",
+		WithTransient(transient),
+		WithEndorsingPeers("peer1"),
+		WithCollections("_implicit_org_org1"),
+		WithInit(),
+	)
+
+	if err != nil {
+		t.Fatalf("Failed to create transaction: %s", err)
+	}
+
+	data := txn.request.TransientMap["price"]
+	if string(data) != "8500" {
+		t.Fatalf("Incorrect transient data: %s", string(data))
+	}
+
+	endorsers := txn.endorsingPeers
+	if endorsers[0] != "peer1" {
+		t.Fatalf("Incorrect endorsing peer: %s", endorsers[0])
+	}
+
+	collections := txn.collections
+	if collections[0] != "_implicit_org_org1" {
+		t.Fatalf("Incorrect collection: %s", collections[0])
+	}
+
+	txn.Evaluate("arg1", "arg2")
+	txn.Submit("arg1", "arg2")
+}
+
 func TestCommitEvent(t *testing.T) {
 	c := mockChannelProvider("mychannel")
 
