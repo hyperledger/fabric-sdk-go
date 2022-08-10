@@ -88,7 +88,6 @@ read:
 		case block, ok := <-blocks:
 			if ok {
 				t.Fatalf("Expected error got block: %#v", block)
-				break read
 			}
 		case err := <-errs:
 			if err == nil {
@@ -99,7 +98,6 @@ read:
 			break read
 		case <-time.After(time.Second * 5):
 			t.Fatal("Did not receive block or error from SendDeliver")
-			break read
 		}
 	}
 }
@@ -231,7 +229,6 @@ read:
 		case block, ok := <-blocks:
 			if ok {
 				t.Fatalf("This usecase was not supposed to receive blocks : %#v", block)
-				break read
 			}
 		case err := <-errors:
 			if !strings.Contains(err.Error(), "BAD_REQUEST") {
@@ -240,7 +237,6 @@ read:
 			break read
 		case <-time.After(time.Second * 5):
 			t.Fatal("Did not receive error from SendDeliver")
-			break read
 		}
 	}
 }
@@ -298,7 +294,6 @@ read:
 		case block, ok := <-blocks:
 			if ok {
 				t.Fatalf("This usecase was not supposed to get valid block %+v", block)
-				break read
 			}
 		case err := <-errs:
 			if err == nil || !strings.HasPrefix(err.Error(), "recv from ordering service failed") {
@@ -307,7 +302,6 @@ read:
 			break read
 		case <-time.After(time.Second * 5):
 			t.Fatal("Timeout: did not receive any response or error from SendDeliver")
-			break read
 		}
 	}
 }
@@ -479,10 +473,8 @@ read:
 			break read
 		case err := <-errs:
 			t.Fatalf("Unexpected error from SendDeliver(): %s", err)
-			break read
 		case <-time.After(time.Second * 5):
 			t.Fatal("Did not receive block or error from SendDeliver")
-			break read
 		}
 	}
 
@@ -525,14 +517,14 @@ func TestForGRPCErrorsWithKeepAliveOpts(t *testing.T) {
 }
 
 func TestNewOrdererFromOrdererName(t *testing.T) {
-	t.Run("run simple FromOrdererName", func(t *testing.T){
+	t.Run("run simple FromOrdererName", func(t *testing.T) {
 		_, err := New(mocks.NewMockEndpointConfig(), FromOrdererName("orderer"))
 		if err != nil {
 			t.Fatalf("Failed to get new orderer from name. Error: %s", err)
 		}
 	})
 
-	t.Run("run FromOrdererName with Ignore orderer in config", func(t *testing.T){
+	t.Run("run FromOrdererName with Ignore orderer in config", func(t *testing.T) {
 		mockCtrl := gomock.NewController(t)
 		defer mockCtrl.Finish()
 		mockEndpoingCfg := mockfab.NewMockEndpointConfig(mockCtrl)
@@ -545,7 +537,7 @@ func TestNewOrdererFromOrdererName(t *testing.T) {
 		}
 	})
 
-	t.Run("run FromOrdererName with orderer not found in config", func(t *testing.T){
+	t.Run("run FromOrdererName with orderer not found in config", func(t *testing.T) {
 		mockCtrl := gomock.NewController(t)
 		defer mockCtrl.Finish()
 		mockEndpoingCfg := mockfab.NewMockEndpointConfig(mockCtrl)

@@ -207,7 +207,6 @@ func TestMustGetPanic(t *testing.T) {
 
 	cache.MustGet(NewStringKey("error"))
 	t.Fatal("Expecting panic but got none")
-	cache.Close()
 }
 
 type closableValue struct {
