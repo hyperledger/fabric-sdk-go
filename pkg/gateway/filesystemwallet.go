@@ -37,7 +37,7 @@ func NewFileSystemWallet(path string) (*Wallet, error) {
 	}
 
 	store := &fileSystemWalletStore{cleanPath}
-	return &Wallet{store}, nil
+	return NewWalletWithStore(store), nil
 
 }
 

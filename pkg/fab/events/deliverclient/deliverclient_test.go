@@ -72,6 +72,7 @@ func TestClientConnect(t *testing.T) {
 		),
 		WithSeekType(seek.FromBlock),
 		WithBlockNum(0),
+		WithChaincodeID("testChaincode"),
 		client.WithResponseTimeout(3*time.Second),
 	)
 	if err != nil {
