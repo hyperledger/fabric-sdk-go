@@ -129,12 +129,24 @@ func (txn *Transaction) Evaluate(args ...string) ([]byte, error) {
 // will be evaluated on the endorsing peers and then submitted to the ordering service
 // for committing to the ledger.
 func (txn *Transaction) Submit(args ...string) ([]byte, error) {
+	var emptyTransientMap map[string][]byte
+	return txn.submit(args, emptyTransientMap)
+}
+
+func (txn *Transaction) SubmitWithTransientMap(transientMap map[string][]byte, args ...string) ([]byte, error) {
+	return txn.submit(args, transientMap)
+}
+
+func (txn *Transaction) submit(args []string, transientMap map[string][]byte) ([]byte, error) {
 	bytes := make([][]byte, len(args))
 	for i, v := range args {
 		bytes[i] = []byte(v)
 	}
 	txn.request.Args = bytes
 	txn.request.IsInit = txn.isInit
+	if len(transientMap) > 0 {
+		txn.request.TransientMap = transientMap
+	}
 
 	var options []channel.RequestOption
 	if txn.endorsingPeers != nil {
