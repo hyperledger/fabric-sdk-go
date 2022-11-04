@@ -133,6 +133,10 @@ func (txn *Transaction) Submit(args ...string) ([]byte, error) {
 	return txn.submit(args, emptyTransientMap)
 }
 
+// SubmitWithTransientMap submits a transaction to the ledger with a transient map.
+// The transaction function represented by this object
+// will be evaluated on the endorsing peers and then submitted to the ordering service
+// for committing to the ledger.
 func (txn *Transaction) SubmitWithTransientMap(transientMap map[string][]byte, args ...string) ([]byte, error) {
 	return txn.submit(args, transientMap)
 }
