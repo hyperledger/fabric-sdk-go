@@ -135,7 +135,7 @@ func (c *Client) setSeekFromLastBlockReceived() error {
 		logger.Debugf("Setting seek info from last block received + 1: %d", c.fromBlock)
 	} else {
 		// We haven't received any blocks yet. We will leave the seek which was set by client
-		logger.Debugf("We will leave the seek which was set by client")
+		logger.Debugf("We will leave the seek which was set by client ")
 	}
 	return nil
 }
