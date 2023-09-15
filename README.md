@@ -1,5 +1,7 @@
 # Hyperledger Fabric Client SDK for Go
 
+CI trial - DO NOT MERGE - secured from non-members
+
 [![Release](https://img.shields.io/github/release/hyperledger/fabric-sdk-go.svg?style=flat-square)](https://github.com/hyperledger/fabric-sdk-go/releases/latest)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://raw.githubusercontent.com/hyperledger/fabric-sdk-go/main/LICENSE)
 [![GoDoc](https://godoc.org/github.com/hyperledger/fabric-sdk-go?status.svg)](https://godoc.org/github.com/hyperledger/fabric-sdk-go)
@@ -181,7 +183,7 @@ make integration-tests-local
 #go test -args testLocal=true
 
 #cd fabric-sdk-go/test/integration/orgs
-#go test -args testLocal=true 
+#go test -args testLocal=true
 
 # You should review test/scripts/integration.sh for options and details.
 # Note: you should generally prefer the scripted version to setup parameters for you.
