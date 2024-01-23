@@ -8,6 +8,9 @@
 [![codecov](https://codecov.io/gh/hyperledger/fabric-sdk-go/branch/main/graph/badge.svg)](https://codecov.io/gh/hyperledger/fabric-sdk-go)
 [![Go Report Card](https://goreportcard.com/badge/github.com/hyperledger/fabric-sdk-go)](https://goreportcard.com/report/github.com/hyperledger/fabric-sdk-go)
 
+> **Note:** This API is deprecated and is no longer maintained as of Fabric v2.5. When developing applications for Hyperledger Fabric v2.4 and later, you should use the [Fabric Gateway client API](https://hyperledger.github.io/fabric-gateway/).
+
+
 This SDK enables Go developers to build solutions that interact with [Hyperledger Fabric](http://hyperledger-fabric.readthedocs.io/en/latest/).
 
 ## Getting started
