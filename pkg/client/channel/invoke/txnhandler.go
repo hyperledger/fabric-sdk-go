@@ -27,13 +27,13 @@ import (
 // the provider to specify a custom creator and/or nonce.
 type TxnHeaderOptsProvider func() []fab.TxnHeaderOpt
 
-//EndorsementHandler for handling endorse transactions
+// EndorsementHandler for handling endorse transactions
 type EndorsementHandler struct {
 	next               Handler
 	headerOptsProvider TxnHeaderOptsProvider
 }
 
-//Handle for endorsing transactions
+// Handle for endorsing transactions
 func (e *EndorsementHandler) Handle(requestContext *RequestContext, clientContext *ClientContext) {
 
 	if len(requestContext.Opts.Targets) == 0 {
@@ -98,12 +98,12 @@ func getResultFromProposalResponsePayload(responsePayload *pb.ProposalResponsePa
 	return chaincodeAction.GetResponse().GetPayload(), nil
 }
 
-//ProposalProcessorHandler for selecting proposal processors
+// ProposalProcessorHandler for selecting proposal processors
 type ProposalProcessorHandler struct {
 	next Handler
 }
 
-//Handle selects proposal processors
+// Handle selects proposal processors
 func (h *ProposalProcessorHandler) Handle(requestContext *RequestContext, clientContext *ClientContext) {
 	//Get proposal processor, if not supplied then use selection service to get available peers as endorser
 	if len(requestContext.Opts.Targets) == 0 {
@@ -141,12 +141,12 @@ func newInvocationChain(requestContext *RequestContext) []*fab.ChaincodeCall {
 	return invocChain
 }
 
-//EndorsementValidationHandler for transaction proposal response filtering
+// EndorsementValidationHandler for transaction proposal response filtering
 type EndorsementValidationHandler struct {
 	next Handler
 }
 
-//Handle for Filtering proposal response
+// Handle for Filtering proposal response
 func (f *EndorsementValidationHandler) Handle(requestContext *RequestContext, clientContext *ClientContext) {
 
 	//Filter tx proposal responses
@@ -184,14 +184,20 @@ func (f *EndorsementValidationHandler) validate(txProposalResponse []*fab.Transa
 	return nil
 }
 
-//CommitTxHandler for committing transactions
+// CommitTxHandler for committing transactions
 type CommitTxHandler struct {
 	next Handler
 }
 
-//Handle handles commit tx
+// Handle handles commit tx
 func (c *CommitTxHandler) Handle(requestContext *RequestContext, clientContext *ClientContext) {
 	txnID := requestContext.Response.TransactionID
+
+	if clientContext == nil {
+		requestContext.Error = status.New(status.ClientStatus, status.ConnectionFailed.ToInt32(),
+			"clientContext is nil", nil)
+		return
+	}
 
 	//Register Tx event
 	reg, statusNotifier, err := clientContext.EventService.RegisterTxStatusEvent(string(txnID)) // TODO: Change func to use TransactionID instead of string
@@ -228,7 +234,7 @@ func (c *CommitTxHandler) Handle(requestContext *RequestContext, clientContext *
 	}
 }
 
-//NewQueryHandler returns query handler with chain of ProposalProcessorHandler, EndorsementHandler, EndorsementValidationHandler and SignatureValidationHandler
+// NewQueryHandler returns query handler with chain of ProposalProcessorHandler, EndorsementHandler, EndorsementValidationHandler and SignatureValidationHandler
 func NewQueryHandler(next ...Handler) Handler {
 	return NewProposalProcessorHandler(
 		NewEndorsementHandler(
@@ -239,7 +245,7 @@ func NewQueryHandler(next ...Handler) Handler {
 	)
 }
 
-//NewExecuteHandler returns execute handler with chain of SelectAndEndorseHandler, EndorsementValidationHandler, SignatureValidationHandler and CommitHandler
+// NewExecuteHandler returns execute handler with chain of SelectAndEndorseHandler, EndorsementValidationHandler, SignatureValidationHandler and CommitHandler
 func NewExecuteHandler(next ...Handler) Handler {
 	return NewSelectAndEndorseHandler(
 		NewEndorsementValidationHandler(
@@ -248,27 +254,27 @@ func NewExecuteHandler(next ...Handler) Handler {
 	)
 }
 
-//NewProposalProcessorHandler returns a handler that selects proposal processors
+// NewProposalProcessorHandler returns a handler that selects proposal processors
 func NewProposalProcessorHandler(next ...Handler) *ProposalProcessorHandler {
 	return &ProposalProcessorHandler{next: getNext(next)}
 }
 
-//NewEndorsementHandler returns a handler that endorses a transaction proposal
+// NewEndorsementHandler returns a handler that endorses a transaction proposal
 func NewEndorsementHandler(next ...Handler) *EndorsementHandler {
 	return &EndorsementHandler{next: getNext(next)}
 }
 
-//NewEndorsementHandlerWithOpts returns a handler that endorses a transaction proposal
+// NewEndorsementHandlerWithOpts returns a handler that endorses a transaction proposal
 func NewEndorsementHandlerWithOpts(next Handler, provider TxnHeaderOptsProvider) *EndorsementHandler {
 	return &EndorsementHandler{next: next, headerOptsProvider: provider}
 }
 
-//NewEndorsementValidationHandler returns a handler that validates an endorsement
+// NewEndorsementValidationHandler returns a handler that validates an endorsement
 func NewEndorsementValidationHandler(next ...Handler) *EndorsementValidationHandler {
 	return &EndorsementValidationHandler{next: getNext(next)}
 }
 
-//NewCommitHandler returns a handler that commits transaction propsal responses
+// NewCommitHandler returns a handler that commits transaction propsal responses
 func NewCommitHandler(next ...Handler) *CommitTxHandler {
 	return &CommitTxHandler{next: getNext(next)}
 }
