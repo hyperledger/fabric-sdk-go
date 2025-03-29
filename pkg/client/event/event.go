@@ -52,7 +52,7 @@ func New(channelProvider context.ChannelProvider, opts ...ClientOption) (*Client
 	for _, param := range opts {
 		err1 := param(&eventClient)
 		if err1 != nil {
-			return nil, errors.WithMessage(err, "option failed")
+			return nil, errors.WithMessage(err1, "option failed")
 		}
 	}
 
