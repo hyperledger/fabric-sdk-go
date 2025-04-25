@@ -590,7 +590,7 @@ func loadConfigValue(configItems *ChannelCfg, key string, versionsValue *common.
 	//	}
 	//	// TODO: Do something with this value
 
-	case channelConfig.OrdererAddressesKey:
+	case channelConfig.OrdererAddressesKey, channelConfig.EndpointsKey:
 		if err := loadOrdererAddressesKey(configValue, configItems); err != nil {
 			return err
 		}
