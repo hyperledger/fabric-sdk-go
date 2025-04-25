@@ -1,0 +1,52 @@
+# SPDX-License-Identifier: Apache-2.0
+
+name: Verify Build
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+env:
+  GOPATH: /opt/go
+  PATH: /opt/go/bin:/bin:/usr/bin:/sbin:/usr/sbin:/usr/local/bin:/usr/local/sbin
+  GO_VER: 1.14.4
+
+jobs:
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-18.04
+    timeout-minutes: 60
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: ${{ env.GO_VER }}
+      - name: Install gobin
+        run: GO111MODULE=off go get -u github.com/myitcv/gobin
+      - name: Checkout Fabric Code
+        uses: actions/checkout@v3
+      - name: Run tests
+        run: make unit-test
+      - name: Upload coverage to Codecov
+        run: bash <(curl https://codecov.io/bash) -t ${{ secrets.CODECOV_UPLOAD_TOKEN }}
+        env:
+          CODECOV_UPLOAD_TOKEN: ${{ secrets.CODECOV_UPLOAD_TOKEN }}
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-18.04
+    timeout-minutes: 60
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: ${{ env.GO_VER }}
+      - name: Install gobin
+        run: GO111MODULE=off go get -u github.com/myitcv/gobin
+      - name: Checkout Fabric Code
+        uses: actions/checkout@v3
+      - name: Run tests
+        run: make integration-test
