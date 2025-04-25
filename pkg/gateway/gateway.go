@@ -259,13 +259,21 @@ func WithBlockNum(from uint64) Option {
 //  Returns:
 //  A Network object representing the channel
 func (gw *Gateway) GetNetwork(name string) (*Network, error) {
-	var channelProvider context.ChannelProvider
-	if gw.options.Identity != nil {
-		channelProvider = gw.sdk.ChannelContext(name, fabsdk.WithIdentity(gw.options.Identity), fabsdk.WithOrg(gw.org))
-	} else {
-		channelProvider = gw.sdk.ChannelContext(name, fabsdk.WithUser(gw.options.User), fabsdk.WithOrg(gw.org))
-	}
+	channelProvider := gw.GetChannelProvider(name)
 	return newNetwork(gw, channelProvider)
+}
+
+// GetChannelProvider returns a ChannelProvider function.
+//  Parameters:
+//  name is the name of the network channel
+//
+//  Returns:
+//  A function returning a Channel client context
+func (gw *Gateway) GetChannelProvider(name string) context.ChannelProvider {
+	if gw.options.Identity != nil {
+		return gw.sdk.ChannelContext(name, fabsdk.WithIdentity(gw.options.Identity), fabsdk.WithOrg(gw.org))
+	}
+	return gw.sdk.ChannelContext(name, fabsdk.WithUser(gw.options.User), fabsdk.WithOrg(gw.org))
 }
 
 // Close the gateway connection and all associated resources, including removing listeners attached to networks and
