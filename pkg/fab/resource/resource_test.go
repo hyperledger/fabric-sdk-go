@@ -8,7 +8,6 @@ package resource
 
 import (
 	"bytes"
-	"fmt"
 	"io/ioutil"
 	"path/filepath"
 	"testing"
@@ -59,7 +58,7 @@ func TestCreateChannel(t *testing.T) {
 
 	// Setup mock orderer
 	verifyBroadcast := make(chan *fab.SignedEnvelope)
-	orderer := mocks.NewMockOrderer(fmt.Sprintf("0.0.0.0:1234"), verifyBroadcast)
+	orderer := mocks.NewMockOrderer("0.0.0.0:1234", verifyBroadcast)
 
 	// Create channel without envelope
 	reqCtx, cancel := contextImpl.NewRequest(ctx, contextImpl.WithTimeout(10*time.Second))

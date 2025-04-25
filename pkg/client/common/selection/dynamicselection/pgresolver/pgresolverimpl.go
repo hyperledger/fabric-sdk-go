@@ -81,10 +81,10 @@ func (c *peerGroupResolver) Resolve(peers []fab.Peer) (PeerGroup, error) {
 			for i, grp := range peerGroups {
 				s += fmt.Sprintf("%d - %+v", i, grp)
 				if i+1 < len(peerGroups) {
-					s += fmt.Sprintf(" OR ")
+					s += " OR "
 				}
 			}
-			s += fmt.Sprintf(" ")
+			s += " "
 		}
 		logger.Debugf(s)
 	}
@@ -107,10 +107,10 @@ func (c *peerGroupResolver) getPeerGroups(peerRetriever MSPPeerRetriever) ([]Pee
 		for i, g := range mspGroups {
 			s += fmt.Sprintf("%+v", g)
 			if i+1 < len(mspGroups) {
-				s += fmt.Sprintf("  OR ")
+				s += "  OR "
 			}
 		}
-		s += fmt.Sprintf(" ")
+		s += " "
 		logger.Debugf(s)
 	}
 

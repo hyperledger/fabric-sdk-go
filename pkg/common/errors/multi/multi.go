@@ -11,7 +11,6 @@ SPDX-License-Identifier: Apache-2.0
 package multi
 
 import (
-	"fmt"
 	"strings"
 )
 
@@ -71,7 +70,7 @@ func (errs Errors) Error() string {
 		return errs[0].Error()
 	}
 
-	errors := []string{fmt.Sprint("Multiple errors occurred:")}
+	errors := []string{"Multiple errors occurred:"}
 	for _, err := range errs {
 		errors = append(errors, err.Error())
 	}
