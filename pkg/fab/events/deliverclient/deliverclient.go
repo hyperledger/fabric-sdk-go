@@ -72,10 +72,10 @@ func New(context fabcontext.Client, chConfig fab.ChannelCfg, discoveryService fa
 
 	dispatcher := dispatcher.New(context, chConfig, discoveryWrapper, params.connProvider, opts...)
 
-	//default seek type is `Newest`
+	// default seek type is `Newest`
 	if params.seekType == "" {
 		params.seekType = seek.Newest
-		//discard (do not publish) next BlockEvent/FilteredBlockEvent in dispatcher, since default seek type 'newest' is
+		// discard (do not publish) next BlockEvent/FilteredBlockEvent in dispatcher, since default seek type 'newest' is
 		// only needed for block height calculations
 		dispatcher.UpdateLastBlockInfoOnly()
 	}
@@ -134,9 +134,8 @@ func (c *Client) setSeekFromLastBlockReceived() error {
 		c.fromBlock = c.Dispatcher().LastBlockNum() + 1
 		logger.Debugf("Setting seek info from last block received + 1: %d", c.fromBlock)
 	} else {
-		// We haven't received any blocks yet. Just ask for the newest
-		logger.Debugf("Setting seek info from newest")
-		c.seekType = seek.Newest
+		// We haven't received any blocks yet. We will leave the seek which was set by client
+		logger.Debugf("We will leave the seek which was set by client ")
 	}
 	return nil
 }
